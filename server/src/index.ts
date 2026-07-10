@@ -16,7 +16,12 @@ const HOST = process.env.HOST ?? '0.0.0.0';
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET ?? 'change-me-in-production';
 
 export async function createApp(db: Db) {
-  const app = Fastify({ logger: true });
+  const app = Fastify({
+    logger: {
+      // Never log the Authorization header — it carries the raw API key.
+      redact: ['req.headers.authorization', 'req.headers.cookie'],
+    },
+  });
 
   // Auth preHandler: extract and verify Bearer key
   app.addHook('preHandler', async (request, reply) => {
@@ -56,6 +61,13 @@ export async function createApp(db: Db) {
 }
 
 async function main() {
+  if (WEBHOOK_SECRET === 'change-me-in-production') {
+    console.warn(
+      '[impri] WARNING: WEBHOOK_SECRET is the default value. Webhook signatures ' +
+      'are forgeable. Set WEBHOOK_SECRET to a strong random value in production.',
+    );
+  }
+
   const db = createDb(DB_PATH);
 
   // Bootstrap admin key on first run

@@ -102,27 +102,42 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
     const actionId = genId('act_');
     const inboxUrl = `${process.env.BASE_URL ?? 'http://localhost:8484'}/inbox/${actionId}`;
 
-    db.prepare(`
-      INSERT INTO actions
-        (id, project_id, kind, title, preview, payload, target_url, callback_url,
-         expires_at, idempotency_key, editable, status, preview_hash, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
-    `).run(
-      actionId,
-      key.projectId,
-      body.kind,
-      body.title,
-      JSON.stringify(body.preview),
-      payloadStr,
-      body.target_url ?? null,
-      body.callback_url ?? null,
-      expiresAt,
-      body.idempotency_key ?? null,
-      JSON.stringify(body.editable),
-      previewHash,
-      now,
-      now,
-    );
+    try {
+      db.prepare(`
+        INSERT INTO actions
+          (id, project_id, kind, title, preview, payload, target_url, callback_url,
+           expires_at, idempotency_key, editable, status, preview_hash, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
+      `).run(
+        actionId,
+        key.projectId,
+        body.kind,
+        body.title,
+        JSON.stringify(body.preview),
+        payloadStr,
+        body.target_url ?? null,
+        body.callback_url ?? null,
+        expiresAt,
+        body.idempotency_key ?? null,
+        JSON.stringify(body.editable),
+        previewHash,
+        now,
+        now,
+      );
+    } catch (err) {
+      // Concurrent request with the same idempotency_key won the INSERT race —
+      // return the existing action (200) instead of a 500. PLAYBOOK A5.
+      if (err instanceof Error && err.message.includes('UNIQUE') && body.idempotency_key) {
+        const existing = db.prepare(
+          'SELECT * FROM actions WHERE project_id = ? AND idempotency_key = ?',
+        ).get(key.projectId, body.idempotency_key) as Record<string, unknown> | undefined;
+        if (existing) {
+          reply.status(200);
+          return serializeActionWithDelivery(db, existing);
+        }
+      }
+      throw err;
+    }
 
     db.prepare(
       "INSERT INTO audit_log (project_id, action_id, event, created_at) VALUES (?, ?, 'action.created', ?)",
@@ -272,7 +287,11 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
     const newStatus = body.decision === 'approve' ? 'approved' : 'rejected';
     const decisionId = genId('dec_');
 
-    try {
+    // Decision + status flip + audit must be atomic: a crash between them would
+    // leave a decision with a still-pending action (or vice versa). The unique
+    // constraint on decisions(action_id) makes the first writer win; a
+    // concurrent second decision rolls back and gets 409. PLAYBOOK A1.
+    const commitDecision = db.transaction(() => {
       db.prepare(`
         INSERT INTO decisions (id, action_id, verdict, decided_by, decided_at, channel, final_preview, diff)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -286,6 +305,14 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
         JSON.stringify(finalPreview),
         diff,
       );
+      db.prepare("UPDATE actions SET status = ?, updated_at = ? WHERE id = ?").run(newStatus, now, action.id);
+      db.prepare(
+        "INSERT INTO audit_log (project_id, action_id, event, actor, channel, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+      ).run(key.projectId, action.id, `action.${body.decision}d`, key.keyId, body.channel ?? 'api', now);
+    });
+
+    try {
+      commitDecision();
     } catch (err) {
       // Unique constraint violation = concurrent decision
       if (err instanceof Error && err.message.includes('UNIQUE')) {
@@ -298,12 +325,6 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
       }
       throw err;
     }
-
-    db.prepare("UPDATE actions SET status = ?, updated_at = ? WHERE id = ?").run(newStatus, now, action.id);
-
-    db.prepare(
-      "INSERT INTO audit_log (project_id, action_id, event, actor, channel, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-    ).run(key.projectId, action.id, `action.${body.decision}d`, key.keyId, body.channel ?? 'api', now);
 
     // Schedule webhook delivery if callback_url set
     if (action.callback_url) {

@@ -1,6 +1,7 @@
 import { createHmac, randomBytes } from 'node:crypto';
 import type { Db } from './db.js';
 import { genId, nowSec } from './db.js';
+import { assertPublicUrl } from './net-guard.js';
 
 // Retry schedule in seconds after first attempt
 const RETRY_DELAYS = [60, 300, 1500, 7200, 43200]; // 1m, 5m, 25m, 2h, 12h
@@ -31,6 +32,18 @@ export async function deliverWebhook(
   const timestamp = nowSec();
   const nonce = randomBytes(8).toString('hex');
   const signature = signWebhookBody(webhookSecret, body, timestamp, nonce);
+
+  // SSRF: never POST to a private/link-local address. A blocked target can
+  // never become deliverable, so DLQ it immediately rather than retrying.
+  try {
+    await assertPublicUrl(callbackUrl);
+  } catch (guardErr) {
+    const msg = guardErr instanceof Error ? guardErr.message : String(guardErr);
+    db.prepare(
+      "UPDATE webhook_deliveries SET status = 'dlq', last_attempt_at = ?, last_error = ? WHERE id = ?",
+    ).run(nowSec(), `SSRF blocked: ${msg}`, deliveryId);
+    return false;
+  }
 
   let statusCode: number | undefined;
   let error: string | undefined;
@@ -143,16 +156,24 @@ export async function runExpiryTick(db: Db, webhookSecret: string): Promise<void
     "SELECT * FROM actions WHERE status = 'pending' AND expires_at IS NOT NULL AND expires_at <= ?",
   ).all(now) as Array<{ id: string; callback_url: string | null; project_id: string }>;
 
-  for (const action of expired) {
-    db.prepare(
-      "UPDATE actions SET status = 'expired', updated_at = ? WHERE id = ?",
-    ).run(now, action.id);
-
+  // Expire atomically with a status guard: a concurrent approve/reject that
+  // commits between our SELECT and UPDATE must win (TOCTOU) — otherwise we'd
+  // overwrite an approved action with 'expired' and desync it from its
+  // recorded decision. PLAYBOOK A1/A2.
+  const expireOne = db.transaction((a: { id: string; project_id: string }): boolean => {
+    const res = db.prepare(
+      "UPDATE actions SET status = 'expired', updated_at = ? WHERE id = ? AND status = 'pending'",
+    ).run(now, a.id);
+    if (res.changes === 0) return false; // already decided — leave it alone
     db.prepare(
       "INSERT INTO audit_log (project_id, action_id, event, created_at) VALUES (?, ?, 'action.expired', ?)",
-    ).run(action.project_id, action.id, now);
+    ).run(a.project_id, a.id, now);
+    return true;
+  });
 
-    if (action.callback_url) {
+  for (const action of expired) {
+    const didExpire = expireOne(action);
+    if (didExpire && action.callback_url) {
       scheduleWebhookDelivery(db, action.id, action.callback_url);
     }
   }

@@ -20,7 +20,8 @@ export function registerKeyRoutes(app: FastifyInstance, db: Db): void {
     }
     const body = parsed.data;
 
-    const projectId = body.project_id ?? key.projectId;
+    // A key always belongs to the caller's project — no cross-project minting.
+    const projectId = key.projectId;
 
     const secret = randomBytes(32).toString('base64url');
     const rawKey = `im_${secret}`;

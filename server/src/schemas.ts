@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import { isIP } from 'node:net';
+import { isPrivateIp } from './net-guard.js';
+
+// Only http/https — z.string().url() also accepts javascript:/data:/file:,
+// which would become an XSS sink when rendered as an "Open" link in the UI.
+const httpUrl = (msg = 'Only http/https URLs are allowed') =>
+  z.string().url().refine(u => /^https?:\/\//i.test(u), msg);
 
 export const PreviewSchema = z.object({
   format: z.enum(['markdown', 'plain', 'diff']).default('plain'),
@@ -8,11 +15,13 @@ export type Preview = z.infer<typeof PreviewSchema>;
 
 export const CreateActionBody = z.object({
   kind: z.string().min(1).max(100),
-  title: z.string().min(1).max(500),
+  // No CR/LF — title flows into notification headers (ntfy Title:, email
+  // subject); a newline there is HTTP header / email header injection.
+  title: z.string().min(1).max(500).regex(/^[^\r\n]+$/, 'Title must not contain newlines'),
   preview: PreviewSchema,
   payload: z.unknown().optional(),
-  target_url: z.string().url().optional(),
-  callback_url: z.string().url().optional(),
+  target_url: httpUrl().optional(),
+  callback_url: httpUrl().optional(),
   expires_in: z.number().int().min(300).max(30 * 24 * 3600).default(72 * 3600),
   idempotency_key: z.string().max(255).optional(),
   editable: z.array(z.string()).default([]),
@@ -50,7 +59,8 @@ export type ListActionsQuery = z.infer<typeof ListActionsQuery>;
 export const CreateKeyBody = z.object({
   name: z.string().min(1).max(100),
   scopes: z.array(z.enum(['actions', 'watch', 'admin'])).min(1),
-  project_id: z.string().optional(),
+  // No project_id: a key always belongs to the caller's project. Accepting a
+  // client-supplied project_id let an admin key mint keys into another project.
 });
 export type CreateKeyBody = z.infer<typeof CreateKeyBody>;
 
@@ -62,8 +72,17 @@ export const ScoringRule = z.object({
 });
 export type ScoringRule = z.infer<typeof ScoringRule>;
 
+const DURATION_UNIT_SEC: Record<string, number> = { m: 60, h: 3600, d: 86_400 };
+function durationToSec(s: string): number {
+  const unit = s.slice(-1);
+  return parseInt(s.slice(0, -1), 10) * (DURATION_UNIT_SEC[unit] ?? 0);
+}
+
 export const WatcherSchedule = z.object({
-  every: z.string().regex(/^\d+[mhd]$/, 'Invalid duration (e.g. "8h", "30m", "1d")'),
+  // Min 60s: "0m" would otherwise fire every scheduler tick and hammer the
+  // source (rate-ban risk); anything below the tick is meaningless anyway.
+  every: z.string().regex(/^\d+[mhd]$/, 'Invalid duration (e.g. "8h", "30m", "1d")')
+    .refine(v => durationToSec(v) >= 60, 'Minimum interval is 60 seconds'),
   jitter: z.string().regex(/^\d+[mhd]$/).optional(),
   window: z.string().regex(/^\d{2}:\d{2}-\d{2}:\d{2}$/, 'Invalid window (e.g. "06:00-22:00")').optional(),
 });
@@ -103,6 +122,18 @@ export const CreateWatcherBody = z.object({
             path: ['config', 'url'],
             message: 'Only http/https URLs are allowed',
           });
+        } else {
+          // Reject obvious private-IP literals at create time (defense in
+          // depth; DNS-resolving hostnames are caught by the SSRF guard at
+          // fetch time). PLAYBOOK B1.
+          const host = u.hostname.replace(/^\[|\]$/g, '');
+          if (isIP(host) && isPrivateIp(host)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ['config', 'url'],
+              message: `Blocked private address: ${host}`,
+            });
+          }
         }
       } catch {
         // URL format already validated by z.string().url()

@@ -15,13 +15,16 @@ export async function notifyNtfy(payload: NotifyPayload): Promise<void> {
   if (!ntfyUrl || !ntfyTopic) return;
 
   const url = `${ntfyUrl.replace(/\/$/, '')}/${ntfyTopic}`;
+  // Strip CR/LF before values reach HTTP headers (header-injection guard).
+  // Schema already rejects newlines in title, but notify() must not assume it.
+  const headerSafe = (s: string) => s.replace(/[\r\n]+/g, ' ');
   try {
     await fetch(url, {
       method: 'POST',
       headers: {
-        'Title': payload.title,
+        'Title': headerSafe(payload.title),
         'Priority': 'default',
-        'Tags': `impri,${payload.kind}`,
+        'Tags': `impri,${headerSafe(payload.kind)}`,
         'Click': payload.inboxUrl,
         'Content-Type': 'text/plain',
       },

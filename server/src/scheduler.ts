@@ -2,9 +2,13 @@ import { XMLParser } from 'fast-xml-parser';
 import { createHash } from 'node:crypto';
 import type { Db } from './db.js';
 import { genId, nowSec, hashContent } from './db.js';
+import { assertPublicUrl } from './net-guard.js';
 
 const WATCHER_USER_AGENT = 'Impri-Watcher/1.0 (+https://impri.dev/bot)';
 const FETCH_TIMEOUT_MS = 15_000;
+// Cap response body to bound memory: a watcher URL serving a huge payload
+// (accidental or malicious) must not OOM the process. PLAYBOOK B1 / econ report.
+const MAX_FETCH_BYTES = 5 * 1024 * 1024;
 // After FAIL_THRESHOLD consecutive failures the watcher goes degraded
 const FAIL_THRESHOLD = 3;
 // After 24 h in degraded state the watcher is auto-paused (PLAYBOOK B1)
@@ -262,6 +266,12 @@ function parseRssItems(xml: string): FetchedItem[] {
 // --- Network helpers ---
 
 async function fetchWithPoliteness(url: string): Promise<Response> {
+  // SSRF guard resolves DNS; skip under vitest where fetch is mocked and hosts
+  // like example.com would trigger real lookups. Covered by net-guard tests.
+  if (!process.env.VITEST) {
+    await assertPublicUrl(url);
+  }
+
   const host = new URL(url).hostname;
 
   const lastFetch = lastFetchByHost.get(host) ?? 0;
@@ -277,6 +287,36 @@ async function fetchWithPoliteness(url: string): Promise<Response> {
   });
 }
 
+// Read a response body with a hard byte cap. Streams so an oversized body is
+// aborted mid-flight rather than fully buffered. Falls back to text() when the
+// body isn't a stream (never in prod; keeps non-stream mocks working).
+async function readCapped(res: Response, max = MAX_FETCH_BYTES): Promise<string> {
+  const contentLength = res.headers?.get?.('content-length');
+  if (contentLength && Number(contentLength) > max) {
+    throw new Error(`Response exceeds ${max} bytes (Content-Length ${contentLength})`);
+  }
+  const body = res.body as ReadableStream<Uint8Array> | null;
+  if (!body || typeof body.getReader !== 'function') {
+    const text = await res.text();
+    if (text.length > max) throw new Error(`Response exceeds ${max} bytes`);
+    return text;
+  }
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    received += value.length;
+    if (received > max) {
+      await reader.cancel().catch(() => {});
+      throw new Error(`Response exceeds ${max} bytes`);
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks).toString('utf-8');
+}
+
 async function fetchRss(url: string): Promise<FetchedItem[]> {
   const res = await fetchWithPoliteness(url);
   // Propagate backoff hint on 429/403 (PLAYBOOK B1)
@@ -288,7 +328,7 @@ async function fetchRss(url: string): Promise<FetchedItem[]> {
     throw err;
   }
   if (!res.ok) throw new Error(`HTTP ${res.status} from ${url}`);
-  const text = await res.text();
+  const text = await readCapped(res);
   return parseRssItems(text);
 }
 
@@ -306,7 +346,7 @@ async function fetchUrlDiff(url: string): Promise<FetchedItem> {
     throw Object.assign(new Error(`HTTP ${res.status} from ${url}`), { backoffSec: retryAfterSec });
   }
   if (!res.ok) throw new Error(`HTTP ${res.status} from ${url}`);
-  const text = await res.text();
+  const text = await readCapped(res);
   // Content fingerprint: SHA-256 of the page text
   const contentHash = createHash('sha256').update(text).digest('hex').slice(0, 32);
   const canonical = canonicalizeUrl(url);
@@ -374,6 +414,10 @@ function createWatcherAction(
       url: item.url,
       score,
       matched_keywords: matchedKeywords,
+      // Title/preview/url came from an external source (RSS/reddit/page) and may
+      // contain adversarial text (e.g. "ignore previous instructions"). Agents
+      // must treat these as data, never as instructions. PLAYBOOK B6.
+      untrusted: true,
     }),
     item.url || null,
     expiresAt,
