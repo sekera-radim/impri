@@ -8,9 +8,11 @@ PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS projects (
-  id         TEXT PRIMARY KEY,
-  name       TEXT NOT NULL,
-  created_at INTEGER NOT NULL
+  id             TEXT PRIMARY KEY,
+  name           TEXT NOT NULL,
+  webhook_secret TEXT,
+  timezone       TEXT NOT NULL DEFAULT 'UTC',
+  created_at     INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS api_keys (
@@ -95,6 +97,29 @@ CREATE TABLE IF NOT EXISTS audit_log (
   created_at INTEGER NOT NULL
 );
 
+-- PII (request IP) is kept apart from the immutable audit trail so it can be
+-- pruned/erased (GDPR art. 17) without rewriting audit history. PLAYBOOK F.
+CREATE TABLE IF NOT EXISTS pii_log (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id TEXT NOT NULL,
+  action_id  TEXT,
+  event      TEXT NOT NULL,
+  ip         TEXT,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_pii_log_created ON pii_log(created_at);
+
+-- Persistent fixed-window rate limiter (survives restart; shared across a
+-- single instance). Bucket = floor(now/60). PLAYBOOK F.
+CREATE TABLE IF NOT EXISTS rate_limits (
+  key_id       TEXT NOT NULL,
+  route        TEXT NOT NULL,
+  window_start INTEGER NOT NULL,
+  count        INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (key_id, route, window_start)
+);
+
 CREATE TABLE IF NOT EXISTS watchers (
   id             TEXT PRIMARY KEY,
   project_id     TEXT NOT NULL,
@@ -127,6 +152,7 @@ CREATE TABLE IF NOT EXISTS watcher_items (
   item_hash   TEXT NOT NULL,
   url         TEXT,
   title       TEXT,
+  size_bytes  INTEGER,
   first_seen  INTEGER NOT NULL,
   UNIQUE(watcher_id, item_hash)
 );
@@ -134,9 +160,26 @@ CREATE TABLE IF NOT EXISTS watcher_items (
 CREATE INDEX IF NOT EXISTS idx_watcher_items_watcher ON watcher_items(watcher_id, first_seen);
 `;
 
+// Idempotent column adds for DBs created before these columns existed.
+// CREATE TABLE IF NOT EXISTS never alters an existing table, so evolving
+// columns need explicit ALTERs guarded by PRAGMA table_info.
+function migrate(db: Db): void {
+  const columns = (table: string): Set<string> =>
+    new Set((db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map(c => c.name));
+
+  const project = columns('projects');
+  if (!project.has('webhook_secret')) db.exec('ALTER TABLE projects ADD COLUMN webhook_secret TEXT');
+  if (!project.has('timezone')) db.exec("ALTER TABLE projects ADD COLUMN timezone TEXT NOT NULL DEFAULT 'UTC'");
+
+  if (!columns('watcher_items').has('size_bytes')) {
+    db.exec('ALTER TABLE watcher_items ADD COLUMN size_bytes INTEGER');
+  }
+}
+
 export function createDb(path: string): Db {
   const db = new Database(path);
   db.exec(SCHEMA_SQL);
+  migrate(db);
   return db;
 }
 

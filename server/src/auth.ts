@@ -12,16 +12,26 @@ export interface ApiKeyRecord {
   key_prefix: string;
 }
 
-// Rate limit store: keyId -> array of request timestamps (unix ms)
-const rateLimitStore = new Map<string, number[]>();
+// Persistent fixed-window rate limiter: one row per (key, route, minute).
+// Survives restart and is consistent for a single instance (the MVP target).
+// Horizontal scale-out would need a shared store — tracked in PLAYBOOK F.
+export function checkRateLimit(db: Db, keyId: string, route: string, limitPerMin = 60): boolean {
+  const now = nowSec();
+  const windowStart = Math.floor(now / 60) * 60;
 
-export function checkRateLimit(keyId: string, limitPerMin = 60): boolean {
-  const now = Date.now();
-  const windowStart = now - 60_000;
-  const timestamps = (rateLimitStore.get(keyId) ?? []).filter(t => t > windowStart);
-  if (timestamps.length >= limitPerMin) return false;
-  timestamps.push(now);
-  rateLimitStore.set(keyId, timestamps);
+  const row = db.prepare(
+    'SELECT count FROM rate_limits WHERE key_id = ? AND route = ? AND window_start = ?',
+  ).get(keyId, route, windowStart) as { count: number } | undefined;
+
+  if ((row?.count ?? 0) >= limitPerMin) return false;
+
+  db.prepare(`
+    INSERT INTO rate_limits (key_id, route, window_start, count) VALUES (?, ?, ?, 1)
+    ON CONFLICT(key_id, route, window_start) DO UPDATE SET count = count + 1
+  `).run(keyId, route, windowStart);
+
+  // Opportunistic cleanup of windows older than 2 minutes.
+  db.prepare('DELETE FROM rate_limits WHERE window_start < ?').run(windowStart - 120);
   return true;
 }
 
@@ -62,11 +72,13 @@ export async function bootstrapAdminKey(db: Db): Promise<BootstrapResult | null>
   const existing = db.prepare('SELECT COUNT(*) as cnt FROM api_keys').get() as { cnt: number };
   if (existing.cnt > 0) return null;
 
-  // Create default project
+  // Create default project with its own webhook signing secret
   const projectId = genId('proj_');
-  db.prepare('INSERT INTO projects (id, name, created_at) VALUES (?, ?, ?)').run(
+  const webhookSecret = randomBytes(32).toString('base64url');
+  db.prepare('INSERT INTO projects (id, name, webhook_secret, created_at) VALUES (?, ?, ?, ?)').run(
     projectId,
     'Default Project',
+    webhookSecret,
     nowSec(),
   );
 

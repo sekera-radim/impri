@@ -131,6 +131,13 @@ export async function runWebhookTick(db: Db, webhookSecret: string): Promise<voi
       Record<string, unknown> | undefined;
     if (!action) continue;
 
+    // Sign with the project's own secret so a receiver can verify, and so one
+    // tenant's leaked secret can't forge another's webhooks. Fall back to the
+    // instance secret for rows created before per-project secrets existed.
+    const project = db.prepare('SELECT webhook_secret FROM projects WHERE id = ?').get(action.project_id) as
+      { webhook_secret: string | null } | undefined;
+    const secret = project?.webhook_secret ?? webhookSecret;
+
     const decision = db.prepare('SELECT * FROM decisions WHERE action_id = ?').get(delivery.action_id) as
       Record<string, unknown> | undefined;
 
@@ -146,7 +153,7 @@ export async function runWebhookTick(db: Db, webhookSecret: string): Promise<voi
       }),
     };
 
-    await deliverWebhook(db, delivery.id, delivery.callback_url, event, webhookSecret);
+    await deliverWebhook(db, delivery.id, delivery.callback_url, event, secret);
   }
 }
 

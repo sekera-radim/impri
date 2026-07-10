@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { Db } from '../db.js';
 import { genId, nowSec } from '../db.js';
-import { hasScope } from '../auth.js';
+import { hasScope, checkRateLimit } from '../auth.js';
 import { computeNextRunAt } from '../scheduler.js';
 import { CreateWatcherBody, UpdateWatcherBody, ListWatchersQuery } from '../schemas.js';
 
@@ -31,6 +31,10 @@ export function registerWatcherRoutes(app: FastifyInstance, db: Db): void {
     const key = request.apiKey;
     if (!key || !hasScope(key.scopes, 'watch')) {
       return reply.status(403).send({ error: 'Forbidden', message: 'Scope "watch" required' });
+    }
+
+    if (!checkRateLimit(db, key.keyId, 'watchers:create', 30)) {
+      return reply.status(429).send({ error: 'Too Many Requests', message: 'Rate limit: 30 requests/min per key' });
     }
 
     const parsed = CreateWatcherBody.safeParse(request.body);

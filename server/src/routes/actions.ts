@@ -11,6 +11,17 @@ import {
   ListActionsQuery,
 } from '../schemas.js';
 
+// Opaque pagination cursor: "<created_at>.<id>" base64url-encoded.
+function encodeCursor(createdAt: number, id: string): string {
+  return Buffer.from(`${createdAt}.${id}`, 'utf-8').toString('base64url');
+}
+function decodeCursor(cursor: string): [number, string] {
+  const raw = Buffer.from(cursor, 'base64url').toString('utf-8');
+  const dot = raw.indexOf('.');
+  if (dot === -1) return [Number(raw) || 0, '￿']; // tolerate legacy ts-only cursor
+  return [Number(raw.slice(0, dot)) || 0, raw.slice(dot + 1)];
+}
+
 function serializeAction(row: Record<string, unknown>) {
   return {
     id: row.id,
@@ -57,7 +68,7 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
     }
 
     // Rate limit: 60/min per key
-    if (!checkRateLimit(key.keyId, 60)) {
+    if (!checkRateLimit(db, key.keyId, 'actions:create', 60)) {
       return reply.status(429).send({ error: 'Too Many Requests', message: 'Rate limit: 60 requests/min per key' });
     }
 
@@ -163,6 +174,11 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
       return reply.status(403).send({ error: 'Forbidden' });
     }
 
+    // Higher ceiling than writes: agents long-poll this endpoint.
+    if (!checkRateLimit(db, key.keyId, 'actions:list', 300)) {
+      return reply.status(429).send({ error: 'Too Many Requests', message: 'Rate limit: 300 requests/min per key' });
+    }
+
     const parsed = ListActionsQuery.safeParse(request.query);
     if (!parsed.success) {
       return reply.status(400).send({ error: 'Bad Request', issues: parsed.error.issues });
@@ -175,19 +191,26 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
     if (q.status) { sql += ' AND status = ?'; params.push(q.status); }
     if (q.since) { sql += ' AND created_at >= ?'; params.push(q.since); }
     if (q.kind) { sql += ' AND kind = ?'; params.push(q.kind); }
-    if (q.cursor) { sql += ' AND created_at < ?'; params.push(Number(q.cursor)); }
+    // Composite (created_at, id) cursor so two rows in the same second are
+    // never skipped or duplicated across page boundaries.
+    if (q.cursor) {
+      const [cTs, cId] = decodeCursor(q.cursor);
+      sql += ' AND (created_at < ? OR (created_at = ? AND id < ?))';
+      params.push(cTs, cTs, cId);
+    }
 
-    sql += ' ORDER BY created_at DESC LIMIT ?';
+    sql += ' ORDER BY created_at DESC, id DESC LIMIT ?';
     params.push(q.limit + 1);
 
     const rows = db.prepare(sql).all(...params) as Array<Record<string, unknown>>;
     const hasMore = rows.length > q.limit;
     const items = hasMore ? rows.slice(0, q.limit) : rows;
+    const last = items[items.length - 1];
 
     return {
       items: items.map(r => serializeAction(r)),
       has_more: hasMore,
-      next_cursor: hasMore ? String(items[items.length - 1].created_at) : undefined,
+      next_cursor: hasMore ? encodeCursor(last.created_at as number, last.id as string) : undefined,
     };
   });
 
@@ -227,6 +250,10 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
     const key = request.apiKey;
     if (!key || !hasScope(key.scopes, 'actions')) {
       return reply.status(403).send({ error: 'Forbidden' });
+    }
+
+    if (!checkRateLimit(db, key.keyId, 'actions:decide', 60)) {
+      return reply.status(429).send({ error: 'Too Many Requests', message: 'Rate limit: 60 requests/min per key' });
     }
 
     const parsed = DecisionBody.safeParse(request.body);
@@ -309,6 +336,10 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
       db.prepare(
         "INSERT INTO audit_log (project_id, action_id, event, actor, channel, created_at) VALUES (?, ?, ?, ?, ?, ?)",
       ).run(key.projectId, action.id, `action.${body.decision}d`, key.keyId, body.channel ?? 'api', now);
+      // Request IP is PII → separate, erasable table (not the immutable audit).
+      db.prepare(
+        "INSERT INTO pii_log (project_id, action_id, event, ip, created_at) VALUES (?, ?, ?, ?, ?)",
+      ).run(key.projectId, action.id, `action.${body.decision}d`, request.ip ?? null, now);
     });
 
     try {

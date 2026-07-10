@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import type { Db } from './db.js';
 import { genId, nowSec, hashContent } from './db.js';
 import { assertPublicUrl } from './net-guard.js';
+import { isFetchAllowed } from './robots.js';
 
 const WATCHER_USER_AGENT = 'Impri-Watcher/1.0 (+https://impri.dev/bot)';
 const FETCH_TIMEOUT_MS = 15_000;
@@ -30,6 +31,8 @@ export interface FetchedItem {
   hash: string;
   url: string;
   title: string;
+  // Only for url_diff: byte length of the fetched page, used to show a delta.
+  sizeBytes?: number;
 }
 
 export interface ScoreResult {
@@ -81,10 +84,27 @@ export function parseDuration(s: string): number {
 }
 
 /**
- * Check whether the given timestamp (ms) falls within the UTC window "HH:MM-HH:MM".
- * If window is malformed, returns true (fail-open → always run).
+ * Minutes-since-midnight of `nowMs` in the given IANA timezone. DST is handled
+ * by Intl (offset varies with the date), unlike a fixed numeric offset.
  */
-export function isInWindow(window: string, nowMs = Date.now()): boolean {
+function minutesInZone(nowMs: number, timezone: string): number {
+  if (timezone === 'UTC') {
+    const d = new Date(nowMs);
+    return d.getUTCHours() * 60 + d.getUTCMinutes();
+  }
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(new Date(nowMs));
+  const h = Number(parts.find(p => p.type === 'hour')?.value) % 24; // Intl may emit "24" at midnight
+  const m = Number(parts.find(p => p.type === 'minute')?.value);
+  return h * 60 + m;
+}
+
+/**
+ * Check whether the given timestamp (ms) falls within the window "HH:MM-HH:MM"
+ * interpreted in `timezone` (default UTC). Malformed window → true (fail-open).
+ */
+export function isInWindow(window: string, nowMs = Date.now(), timezone = 'UTC'): boolean {
   const parts = window.split('-');
   if (parts.length !== 2) return true;
   const [startStr, endStr] = parts;
@@ -92,8 +112,7 @@ export function isInWindow(window: string, nowMs = Date.now()): boolean {
   const [endH, endM] = endStr.split(':').map(Number);
   if ([startH, startM, endH, endM].some(n => isNaN(n))) return true;
 
-  const d = new Date(nowMs);
-  const nowMinutes = d.getUTCHours() * 60 + d.getUTCMinutes();
+  const nowMinutes = minutesInZone(nowMs, timezone);
   const startMinutes = startH * 60 + startM;
   const endMinutes = endH * 60 + endM;
 
@@ -340,6 +359,11 @@ async function fetchRedditSearch(subreddit: string, query: string): Promise<Fetc
 }
 
 async function fetchUrlDiff(url: string): Promise<FetchedItem> {
+  // Respect robots.txt for page monitoring (SPEC 3.2). Disallow → degrade the
+  // watcher with a clear reason rather than crawling anyway.
+  if (!(await isFetchAllowed(url, WATCHER_USER_AGENT))) {
+    throw new Error(`robots_disallowed: ${url}`);
+  }
   const res = await fetchWithPoliteness(url);
   if (res.status === 429 || res.status === 403) {
     const retryAfterSec = parseInt(res.headers.get('Retry-After') ?? '0', 10) || 300;
@@ -353,8 +377,8 @@ async function fetchUrlDiff(url: string): Promise<FetchedItem> {
   return {
     hash: contentHash,
     url: canonical,
-    // Store length in title so the action preview can show length delta
-    title: String(text.length),
+    title: canonical,
+    sizeBytes: text.length,
   };
 }
 
@@ -369,7 +393,7 @@ function createWatcherAction(
   score: number,
   matchedKeywords: string[],
   isUrlDiff: boolean,
-  prevLengthTitle?: string,
+  prevSizeBytes?: number,
 ): void {
   const actionId = genId('act_');
   const now = nowSec();
@@ -379,8 +403,8 @@ function createWatcherAction(
   let previewBody: string;
 
   if (isUrlDiff) {
-    const newLen = parseInt(item.title, 10);
-    const prevLen = prevLengthTitle ? parseInt(prevLengthTitle, 10) : undefined;
+    const newLen = item.sizeBytes ?? 0;
+    const prevLen = prevSizeBytes;
     title = `Page changed: ${item.url}`;
     previewBody = [
       `URL: ${item.url}`,
@@ -445,8 +469,12 @@ export async function processWatcher(db: Db, watcher: WatcherRow): Promise<void>
     window?: string;
   };
 
-  // Check window — if outside, defer without counting as a failure (PLAYBOOK B3)
-  if (schedule.window && !isInWindow(schedule.window)) {
+  // Check window in the project's timezone (DST-correct) — if outside, defer
+  // without counting as a failure (PLAYBOOK B3)
+  const project = db.prepare('SELECT timezone FROM projects WHERE id = ?').get(watcher.project_id) as
+    { timezone: string } | undefined;
+  const tz = project?.timezone ?? 'UTC';
+  if (schedule.window && !isInWindow(schedule.window, Date.now(), tz)) {
     const nextMs = nextWindowStartMs(schedule.window);
     db.prepare('UPDATE watchers SET next_run_at = ?, updated_at = ? WHERE id = ?').run(
       Math.ceil(nextMs / 1000),
@@ -542,14 +570,14 @@ export async function processWatcher(db: Db, watcher: WatcherRow): Promise<void>
   const newItems = fetchedItems.filter(item => !existingHashes.has(item.hash));
 
   const insertItem = db.prepare(
-    'INSERT OR IGNORE INTO watcher_items (id, watcher_id, item_hash, url, title, first_seen) VALUES (?, ?, ?, ?, ?, ?)',
+    'INSERT OR IGNORE INTO watcher_items (id, watcher_id, item_hash, url, title, size_bytes, first_seen) VALUES (?, ?, ?, ?, ?, ?, ?)',
   );
 
   // Baseline run: store all fetched items but publish nothing (PLAYBOOK B2)
   if (isBaseline) {
     const storeAll = db.transaction((items: FetchedItem[]) => {
       for (const item of items) {
-        insertItem.run(genId('wi_'), watcher.id, item.hash, item.url || null, item.title || null, now);
+        insertItem.run(genId('wi_'), watcher.id, item.hash, item.url || null, item.title || null, item.sizeBytes ?? null, now);
       }
     });
     storeAll(fetchedItems);
@@ -575,22 +603,23 @@ export async function processWatcher(db: Db, watcher: WatcherRow): Promise<void>
   const toPublish = isBurst ? scored.slice(0, BURST_TOP_N) : scored;
   const overflowCount = isBurst ? scored.length - BURST_TOP_N : 0;
 
+  // For url_diff, look up the previously stored page size BEFORE inserting the
+  // new item, so the preview can show the delta.
+  let prevSizeBytes: number | undefined;
+  if (isUrlDiff && toPublish.length > 0) {
+    const prev = db.prepare(
+      'SELECT size_bytes FROM watcher_items WHERE watcher_id = ? AND url = ? ORDER BY first_seen DESC LIMIT 1',
+    ).get(watcher.id, toPublish[0].item.url) as { size_bytes: number | null } | undefined;
+    prevSizeBytes = prev?.size_bytes ?? undefined;
+  }
+
   // Store ALL new items for dedup (even those that didn't pass the keyword filter)
   const storeNew = db.transaction((items: FetchedItem[]) => {
     for (const item of items) {
-      insertItem.run(genId('wi_'), watcher.id, item.hash, item.url || null, item.title || null, now);
+      insertItem.run(genId('wi_'), watcher.id, item.hash, item.url || null, item.title || null, item.sizeBytes ?? null, now);
     }
   });
   storeNew(newItems);
-
-  // For url_diff, look up the previous stored length for the preview
-  let prevLengthTitle: string | undefined;
-  if (isUrlDiff && toPublish.length > 0) {
-    const prev = db.prepare(
-      'SELECT title FROM watcher_items WHERE watcher_id = ? AND url = ? ORDER BY first_seen DESC LIMIT 1',
-    ).get(watcher.id, toPublish[0].item.url) as { title: string | null } | undefined;
-    prevLengthTitle = prev?.title ?? undefined;
-  }
 
   // Create inbox actions
   for (let i = 0; i < toPublish.length; i++) {
@@ -609,7 +638,7 @@ export async function processWatcher(db: Db, watcher: WatcherRow): Promise<void>
       s.score,
       s.matchedKeywords,
       isUrlDiff,
-      prevLengthTitle,
+      prevSizeBytes,
     );
   }
 

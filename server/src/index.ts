@@ -5,6 +5,7 @@ import { verifyApiKey, bootstrapAdminKey } from './auth.js';
 import { registerActionRoutes } from './routes/actions.js';
 import { registerKeyRoutes } from './routes/keys.js';
 import { registerWatcherRoutes } from './routes/watchers.js';
+import { registerProjectRoutes } from './routes/project.js';
 import { runExpiryTick } from './webhooks.js';
 import { runWatcherTick, startWatcherScheduler } from './scheduler.js';
 import { buildOpenApiDocument } from './openapi.js';
@@ -56,6 +57,9 @@ export async function createApp(db: Db) {
 
   // Watcher CRUD routes
   registerWatcherRoutes(app, db);
+
+  // Project settings + GDPR export/erase routes
+  registerProjectRoutes(app, db);
 
   return app;
 }
