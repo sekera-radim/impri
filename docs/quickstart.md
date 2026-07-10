@@ -12,7 +12,7 @@ From zero to your first approved action in under 5 minutes.
 ## Step 1 — Start Impri
 
 ```bash
-git clone https://github.com/impri-dev/impri.git   # or your self-host copy
+git clone https://gitlab.com/sekera.radim/impri.git
 cd impri
 
 # Set a strong webhook secret before starting

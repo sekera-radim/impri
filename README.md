@@ -102,11 +102,18 @@ docs/     Research, ADRs
 
 ## Documentation
 
+- **Web docs:** <https://impri.dev/docs>
 - [Quickstart](docs/quickstart.md) — signup → first approved action in < 5 min
+- [Example agent](examples/approval-gated-agent.mjs) — a complete, dependency-free
+  agent that proposes an action, waits for approval, then acts and reports back
 - [How to add human approval to an AI agent](docs/how-to-add-human-approval-to-an-ai-agent.md)
 - [Self-hosting](docs/self-hosting.md) — Docker, env vars, backups, reverse proxy
 - [Webhooks](docs/webhooks.md) — HMAC verification, retries, polling fallback
 - [`llms.txt`](docs/llms.txt) — machine-readable index for AI assistants
+
+> **Hosted cloud (beta):** a managed instance runs at `app.impri.dev` /
+> `api.impri.dev`. Self-serve signup isn't open yet — open an issue for early
+> access. Everything here works self-hosted today.
 
 ## Self-hosting notes
 

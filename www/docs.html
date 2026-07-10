@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Impri Docs — human approval for AI agents</title>
+  <meta name="description" content="Impri documentation: add a human approval step to any AI agent. Self-host in 5 minutes, integrate over REST or MCP, and use watchers to surface work with no code." />
+  <meta name="theme-color" content="#06070d" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .docs-wrap { max-width: 1100px; margin: 0 auto; padding: 96px 22px 120px; display: grid; grid-template-columns: 220px 1fr; gap: 44px; }
+    .toc { position: sticky; top: 90px; align-self: start; font-size: 14px; line-height: 1.5; }
+    .toc strong { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .55; margin: 18px 0 8px; }
+    .toc a { display: block; color: var(--muted, #9aa3b2); text-decoration: none; padding: 3px 0; }
+    .toc a:hover { color: #fff; }
+    .docs h1 { font-size: 40px; line-height: 1.1; margin: 0 0 10px; }
+    .docs h2 { font-size: 26px; margin: 52px 0 12px; scroll-margin-top: 90px; }
+    .docs h3 { font-size: 18px; margin: 30px 0 8px; scroll-margin-top: 90px; }
+    .docs p, .docs li { color: #c4ccd8; line-height: 1.7; }
+    .docs a { color: #a5b4fc; }
+    .docs .lede { font-size: 18px; color: #aeb7c6; }
+    .docs pre { background: rgba(0,0,0,.34); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 16px 18px; overflow-x: auto; font-size: 13px; line-height: 1.55; }
+    .docs code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .docs :not(pre) > code { background: rgba(124,140,255,.14); padding: 2px 6px; border-radius: 6px; font-size: .88em; }
+    .docs table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 14px; }
+    .docs th, .docs td { text-align: left; padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .docs th { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; opacity: .6; }
+    .callout { border: 1px solid rgba(124,140,255,.28); background: rgba(99,102,241,.08); border-radius: 12px; padding: 14px 18px; margin: 18px 0; }
+    .callout.warn { border-color: rgba(251,191,36,.3); background: rgba(251,191,36,.07); }
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+    .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 18px 0; }
+    .card2 { border: 1px solid rgba(255,255,255,.1); border-radius: 14px; padding: 18px 20px; background: rgba(255,255,255,.02); }
+    .card2 h3 { margin-top: 0; }
+    @media (max-width: 820px) {
+      .docs-wrap { grid-template-columns: 1fr; padding-top: 84px; }
+      .toc { display: none; }
+      .cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-aurora"></div>
+  <div class="bg-grid"></div>
+  <div class="bg-vignette"></div>
+
+  <nav class="nav" id="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/">
+        <span class="mark">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        Impri
+      </a>
+      <div class="nav-links">
+        <a class="link" href="/#how">How it works</a>
+        <a class="link" href="/#pricing">Pricing</a>
+        <a class="link" href="/docs.html">Docs</a>
+        <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="docs-wrap">
+    <aside class="toc">
+      <strong>Start</strong>
+      <a href="#what">What is Impri</a>
+      <a href="#use">Two ways to use it</a>
+      <a href="#quickstart">Quickstart (self-host)</a>
+      <a href="#agent">Wire up an agent</a>
+      <a href="#mcp">MCP (Claude &amp; co.)</a>
+      <strong>Concepts</strong>
+      <a href="#actions">Actions</a>
+      <a href="#watchers">Watchers (no code)</a>
+      <a href="#keys">Keys &amp; scopes</a>
+      <strong>Reference</strong>
+      <a href="#api">API reference</a>
+      <a href="#selfhost">Self-hosting</a>
+      <a href="#more">More docs</a>
+    </aside>
+
+    <main class="docs">
+      <h1>Impri documentation</h1>
+      <p class="lede">Add a human approval step to any AI agent. An agent proposes an
+        action, a person approves or rejects it in the inbox, and only then does it run.</p>
+
+      <h2 id="what">What is Impri</h2>
+      <p>Impri is a <strong>human-in-the-loop gate</strong> for AI agents and automations. It
+        does not act on its own — it holds an agent's proposed action until a human says yes.
+        Two moving parts:</p>
+      <ul>
+        <li><strong>Approval inbox</strong> — a web app where you review and approve/reject the
+          actions your agents propose (and can edit them first).</li>
+        <li><strong>Watchers</strong> — scheduled checks (a subreddit, an RSS feed, a web page)
+          that drop matching items into the inbox automatically, no code required.</li>
+      </ul>
+      <p>Agents integrate over a small <strong>REST API</strong> or the <strong>MCP</strong>
+        server. It is open-core (MIT) and self-hostable.</p>
+
+      <h2 id="use">Two ways to use it</h2>
+      <div class="cards">
+        <div class="card2">
+          <h3>Self-host</h3>
+          <p><code>docker compose up</code> and you have the full core running locally in a few
+            minutes. This is the complete, production-ready path today. Start below.</p>
+        </div>
+        <div class="card2">
+          <h3>Hosted cloud <span style="opacity:.6;font-size:13px">(beta)</span></h3>
+          <p>A hosted instance runs at <code>app.impri.dev</code> / <code>api.impri.dev</code>.
+            Self-serve signup isn't open yet — <a href="https://gitlab.com/sekera.radim/impri">reach out on GitLab</a>
+            for early access. Everything below applies; just swap the base URL.</p>
+        </div>
+      </div>
+
+      <h2 id="quickstart">Quickstart (self-host)</h2>
+      <p>From zero to your first approved action in under five minutes. You need Docker and
+        <code>curl</code>.</p>
+
+      <h3>1. Start Impri</h3>
+      <pre><code>git clone https://gitlab.com/sekera.radim/impri.git
+cd impri
+
+# set a strong secret for signed webhooks
+export WEBHOOK_SECRET=$(openssl rand -hex 32)
+
+docker compose up -d</code></pre>
+      <p>The API runs on <code>http://localhost:8484</code> and the web inbox on
+        <code>http://localhost:8080</code>. On first start the server prints a one-time
+        <strong>bootstrap admin key</strong> to its log:</p>
+      <pre><code>docker compose logs server | grep "Admin API Key"
+# Admin API Key: im_...   (shown once, then hashed — store it now)
+export ADMIN_KEY="im_..."</code></pre>
+      <p>Paste that key into the web inbox login to sign in.</p>
+
+      <h3>2. Create a key for your agent</h3>
+      <p>The bootstrap key has <code>admin</code> scope. Mint a narrower <code>actions</code> key
+        for the agent so you can rotate it independently:</p>
+      <pre><code>curl -s -X POST http://localhost:8484/v1/keys \
+  -H "Authorization: Bearer $ADMIN_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"my-agent","scopes":["actions"]}'
+# → { "key": "im_...", ... }   store as $AGENT_KEY</code></pre>
+
+      <h3>3. Propose an action</h3>
+      <p>This is the single call your agent makes before doing anything consequential:</p>
+      <pre><code>curl -s -X POST http://localhost:8484/v1/actions \
+  -H "Authorization: Bearer $AGENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kind": "email.send",
+    "title": "Send welcome email to jane@acme.com",
+    "preview": { "format": "markdown", "body": "To: jane@acme.com\n\nWelcome aboard!" },
+    "expires_in": 3600,
+    "editable": ["preview.body"]
+  }'
+# → { "id": "act_...", "status": "pending", ... }</code></pre>
+
+      <h3>4. Approve it</h3>
+      <p>Open the inbox at <code>http://localhost:8080</code>. The pending action shows up as a
+        card with its preview. Click <strong>Approve</strong> or <strong>Reject</strong>. If you
+        set <code>editable</code>, you can edit the content first — the agent receives the final,
+        human-edited version.</p>
+
+      <h3>5. Act only if approved, then report back</h3>
+      <pre><code># poll until the decision arrives
+curl -s http://localhost:8484/v1/actions/act_... \
+  -H "Authorization: Bearer $AGENT_KEY"
+# → { "status": "approved", ... }  (or rejected / expired)
+
+# your agent performs the action, then closes the loop:
+curl -s -X POST http://localhost:8484/v1/actions/act_.../result \
+  -H "Authorization: Bearer $AGENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"executed","detail":"email sent"}'</code></pre>
+      <div class="callout">Lifecycle: <code>pending → approved → executed</code>. If the human
+        rejects, the agent does nothing — that's the whole point.</div>
+
+      <h2 id="agent">Wire up an agent</h2>
+      <p>A complete, dependency-free example agent (Node 18+) that runs the whole loop lives in
+        the repo at <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/examples/approval-gated-agent.mjs"><code>examples/approval-gated-agent.mjs</code></a>:</p>
+      <pre><code>IMPRI_API_KEY=im_your_key \
+IMPRI_BASE_URL=http://localhost:8484 \
+node examples/approval-gated-agent.mjs</code></pre>
+      <p>It proposes an action, waits for you to approve it in the inbox, then runs and reports
+        the result. Edit the <code>task</code> and replace <code>performAction()</code> with the
+        real thing you want gated (send an email, deploy, issue a refund, spend money…).</p>
+
+      <h2 id="mcp">MCP (Claude &amp; other agents)</h2>
+      <p>If your agent is an LLM, you usually don't write the loop by hand — give it the Impri MCP
+        server and it can request approval as a tool call. Published on npm as
+        <a href="https://www.npmjs.com/package/@impri/mcp"><code>@impri/mcp</code></a>:</p>
+      <pre><code>{
+  "mcpServers": {
+    "impri": {
+      "command": "npx",
+      "args": ["-y", "@impri/mcp"],
+      "env": { "IMPRI_API_KEY": "im_...", "IMPRI_BASE_URL": "http://localhost:8484" }
+    }
+  }
+}</code></pre>
+      <p>It exposes tools to push an action, await the decision, report the result, and manage
+        watchers — the same API, agent-native.</p>
+
+      <h2 id="actions">Actions</h2>
+      <p>An <strong>action</strong> is one approval request. Fields:</p>
+      <table>
+        <tr><th>Field</th><th>Notes</th></tr>
+        <tr><td><code>kind</code> *</td><td>Free-form label, e.g. <code>email.send</code>, <code>deploy</code>.</td></tr>
+        <tr><td><code>title</code> *</td><td>One-line summary shown in the inbox.</td></tr>
+        <tr><td><code>preview</code> *</td><td><code>{ format: "markdown" | "plain" | "diff", body }</code> — what the human reviews.</td></tr>
+        <tr><td><code>payload</code></td><td>Any JSON your agent needs back with the decision.</td></tr>
+        <tr><td><code>target_url</code></td><td>Optional link to the thing being acted on.</td></tr>
+        <tr><td><code>expires_in</code></td><td>Seconds until it auto-expires (default 3 days).</td></tr>
+        <tr><td><code>editable</code></td><td>Paths the human may edit before approving, e.g. <code>["preview.body"]</code>.</td></tr>
+      </table>
+      <p>States: <code>pending → approved | rejected | expired</code>, then
+        <code>executed | execute_failed</code> once the agent reports back.</p>
+
+      <h2 id="watchers">Watchers (no code)</h2>
+      <p>A watcher checks a source on a schedule and drops matches into the inbox — the no-code
+        way to feed Impri. Create them in the web UI (Watchers → Create) or via
+        <code>POST /v1/watchers</code>. Three kinds:</p>
+      <table>
+        <tr><th>Kind</th><th>Watches</th></tr>
+        <tr><td><code>reddit_search</code></td><td>A subreddit for posts matching a query.</td></tr>
+        <tr><td><code>rss</code></td><td>An RSS/Atom feed for new entries.</td></tr>
+        <tr><td><code>url_diff</code></td><td>A web page for content changes.</td></tr>
+      </table>
+      <p>Optional keywords score/filter results before they reach you; a schedule sets how often
+        it runs. Each surfaced item becomes a pending action you review.</p>
+
+      <h2 id="keys">Keys &amp; scopes</h2>
+      <p>API keys start with <code>im_</code> and are hashed at rest. Scopes: <code>admin</code>
+        (full control, billing, keys, watchers) and <code>actions</code> (create actions + report
+        results — give this to agents). Manage keys via <code>/v1/keys</code>.</p>
+
+      <h2 id="api">API reference</h2>
+      <p>Base URL <code>&lt;host&gt;/v1</code>. Auth header <code>Authorization: Bearer im_...</code>.
+        Full spec at <code>/v1/openapi.json</code>.</p>
+      <table>
+        <tr><th>Method</th><th>Path</th><th>Description</th></tr>
+        <tr><td>POST</td><td><code>/actions</code></td><td>Propose an action for approval</td></tr>
+        <tr><td>GET</td><td><code>/actions</code></td><td>List actions (<code>?status=pending</code>)</td></tr>
+        <tr><td>GET</td><td><code>/actions/:id</code></td><td>Get one action + its decision</td></tr>
+        <tr><td>POST</td><td><code>/actions/:id/decision</code></td><td>Approve or reject</td></tr>
+        <tr><td>POST</td><td><code>/actions/:id/result</code></td><td>Report execution result</td></tr>
+        <tr><td>GET / POST</td><td><code>/watchers</code></td><td>List / create watchers</td></tr>
+        <tr><td>PATCH / DELETE</td><td><code>/watchers/:id</code></td><td>Update / delete a watcher</td></tr>
+        <tr><td>GET / POST / DELETE</td><td><code>/keys</code></td><td>List / mint / revoke API keys</td></tr>
+        <tr><td>GET</td><td><code>/project/export</code></td><td>GDPR export of project data</td></tr>
+        <tr><td>DELETE</td><td><code>/project/data</code></td><td>Erase project data</td></tr>
+      </table>
+
+      <h2 id="selfhost">Self-hosting</h2>
+      <p><code>docker compose up</code> runs the server + inbox with a persistent SQLite volume.
+        Key environment variables:</p>
+      <table>
+        <tr><th>Var</th><th>Purpose</th></tr>
+        <tr><td><code>WEBHOOK_SECRET</code></td><td>Signs outbound webhooks (set a strong random value).</td></tr>
+        <tr><td><code>BASE_URL</code></td><td>Public URL of the API (used in links).</td></tr>
+        <tr><td><code>APP_URL</code></td><td>Public URL of the web inbox (checkout/return links).</td></tr>
+        <tr><td><code>SMTP_*</code> / <code>NTFY_*</code></td><td>Optional email / ntfy notifications on new approvals.</td></tr>
+        <tr><td><code>VAPID_*</code></td><td>Optional web-push notifications.</td></tr>
+        <tr><td><code>REDIS_URL</code></td><td>Optional — Redis-backed rate limiting for multi-instance.</td></tr>
+        <tr><td><code>STRIPE_*</code></td><td>Optional — only if you run the paid tiers yourself.</td></tr>
+      </table>
+      <p>Full guide: <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/docs/self-hosting.md">self-hosting.md</a>
+        (env, backups, reverse proxy).</p>
+
+      <h2 id="more">More docs</h2>
+      <ul>
+        <li><a href="https://gitlab.com/sekera.radim/impri/-/blob/main/docs/quickstart.md">Quickstart</a> — the full step-by-step</li>
+        <li><a href="https://gitlab.com/sekera.radim/impri/-/blob/main/docs/how-to-add-human-approval-to-an-ai-agent.md">How to add human approval to an AI agent</a></li>
+        <li><a href="https://gitlab.com/sekera.radim/impri/-/blob/main/docs/webhooks.md">Webhooks</a> — HMAC verification, retries, polling fallback</li>
+        <li><a href="https://gitlab.com/sekera.radim/impri/-/blob/main/docs/self-hosting.md">Self-hosting</a> — Docker, env, backups</li>
+        <li><a href="https://gitlab.com/sekera.radim/impri">Source on GitLab</a> · <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp on npm</a></li>
+      </ul>
+    </main>
+  </div>
+</body>
+</html>
