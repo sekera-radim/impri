@@ -93,6 +93,21 @@ describe('GDPR export and erasure', () => {
   });
 });
 
+describe('watcher serialization surfaces degraded diagnostics', () => {
+  it('returns last_error so the UI can show why a watcher degraded', async () => {
+    const { db, app, adminKey } = await setup();
+    const created = await app.inject({
+      method: 'POST', url: '/v1/watchers', headers: auth(adminKey),
+      payload: { name: 'w', kind: 'rss', config: { url: 'https://example.com/feed.xml' }, schedule: { every: '30m' } },
+    });
+    const id = created.json().id as string;
+    db.prepare("UPDATE watchers SET status = 'degraded', last_error = ? WHERE id = ?").run('Connection refused', id);
+
+    const got = await app.inject({ method: 'GET', url: `/v1/watchers/${id}`, headers: auth(adminKey) });
+    expect(got.json().last_error).toBe('Connection refused');
+  });
+});
+
 describe('composite cursor pagination', () => {
   it('walks all actions with no dupes even within the same second', async () => {
     const { app, adminKey } = await setup();

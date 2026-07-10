@@ -17,6 +17,8 @@ function serializeWatcher(row: Record<string, unknown>) {
     schedule: JSON.parse(row.schedule as string),
     status: row.status,
     fail_count: row.fail_count,
+    last_error: row.last_error ?? undefined,
+    degraded_since: row.degraded_since ?? undefined,
     first_run_done: Boolean(row.first_run_done),
     last_run_at: row.last_run_at ?? undefined,
     next_run_at: row.next_run_at,
