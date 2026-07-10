@@ -1,7 +1,7 @@
 import { createHmac, randomBytes } from 'node:crypto';
 import type { Db } from './db.js';
 import { genId, nowSec } from './db.js';
-import { assertPublicUrl } from './net-guard.js';
+import { assertPublicUrl, fetchGuarded } from './net-guard.js';
 
 // Retry schedule in seconds after first attempt
 const RETRY_DELAYS = [60, 300, 1500, 7200, 43200]; // 1m, 5m, 25m, 2h, 12h
@@ -49,7 +49,7 @@ export async function deliverWebhook(
   let error: string | undefined;
 
   try {
-    const res = await fetch(callbackUrl, {
+    const res = await fetchGuarded(callbackUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -115,6 +115,19 @@ CREATE TABLE IF NOT EXISTS pii_log (
 
 CREATE INDEX IF NOT EXISTS idx_pii_log_created ON pii_log(created_at);
 
+-- Web-push (VAPID) subscriptions per project. endpoint is the unique browser
+-- push endpoint; keys are the client's p256dh/auth for payload encryption.
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id         TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  endpoint   TEXT NOT NULL UNIQUE,
+  p256dh     TEXT NOT NULL,
+  auth       TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_push_subs_project ON push_subscriptions(project_id);
+
 -- Persistent fixed-window rate limiter (survives restart; shared across a
 -- single instance). Bucket = floor(now/60). PLAYBOOK F.
 CREATE TABLE IF NOT EXISTS rate_limits (

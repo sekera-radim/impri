@@ -250,6 +250,25 @@ export function buildOpenApiDocument(baseUrl = 'http://localhost:8484'): unknown
           responses: { 200: { description: 'Event processed' }, 400: { description: 'Bad signature' } },
         },
       },
+      '/push/vapid-public-key': {
+        get: {
+          operationId: 'getVapidPublicKey',
+          summary: 'VAPID public key for browser push subscription (public)',
+          responses: { 200: { description: '{ enabled, public_key }' } },
+        },
+      },
+      '/push/subscribe': {
+        post: {
+          operationId: 'pushSubscribe',
+          summary: 'Register a browser push subscription (actions scope)',
+          responses: { 201: { description: 'Subscribed' }, 400: { description: 'Push disabled / invalid' } },
+        },
+        delete: {
+          operationId: 'pushUnsubscribe',
+          summary: 'Remove a browser push subscription (actions scope)',
+          responses: { 204: { description: 'Removed' } },
+        },
+      },
     },
   };
 }

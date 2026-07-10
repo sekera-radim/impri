@@ -1,5 +1,7 @@
 import { lookup } from 'node:dns/promises';
-import { isIP } from 'node:net';
+import dns from 'node:dns';
+import { isIP, type LookupFunction } from 'node:net';
+import { Agent } from 'undici';
 
 // SSRF guard. Outbound URLs supplied by API clients (webhook callback_url,
 // watcher source URLs) must not be able to reach private/link-local ranges —
@@ -66,4 +68,47 @@ export async function assertPublicUrl(rawUrl: string): Promise<void> {
       throw new Error(`Blocked: ${host} resolves to private address ${r.address}`);
     }
   }
+}
+
+// Shared dispatcher whose DNS lookup validates AND pins the address at connect
+// time. Because the private-IP check happens inside the same lookup that hands
+// the socket its address, there is no window for a DNS rebind to swap in a
+// private IP between validation and connect (the residual TOCTOU that
+// assertPublicUrl alone can't close). TLS still validates the original hostname.
+const guardedLookup: LookupFunction = (hostname, _options, callback) => {
+  dns.lookup(hostname, { all: true }, (err, addresses) => {
+    if (err) return callback(err, '', 0);
+    const list = addresses as dns.LookupAddress[];
+    for (const a of list) {
+      if (isPrivateIp(a.address)) {
+        return callback(new Error(`Blocked private address ${a.address} for ${hostname}`), '', 0);
+      }
+    }
+    const chosen = list[0];
+    callback(null, chosen.address, chosen.family);
+  });
+};
+
+const guardedDispatcher = new Agent({ connect: { lookup: guardedLookup } });
+
+/**
+ * fetch() that refuses private/link-local targets and pins the connection to a
+ * validated IP (full DNS-rebinding mitigation). Use for every outbound request
+ * to a client-supplied URL (webhooks, watcher sources). Opt out per instance
+ * with IMPRI_ALLOW_PRIVATE_TARGETS=1.
+ */
+export async function fetchGuarded(rawUrl: string, init?: RequestInit): Promise<Response> {
+  if (process.env.IMPRI_ALLOW_PRIVATE_TARGETS === '1') return fetch(rawUrl, init);
+
+  const u = new URL(rawUrl);
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+    throw new Error('Only http/https URLs are allowed');
+  }
+  // Literal IPs skip DNS entirely (net.connect wouldn't call our lookup), so
+  // validate them here.
+  const host = u.hostname.replace(/^\[|\]$/g, '');
+  if (isIP(host) && isPrivateIp(host)) {
+    throw new Error(`Blocked private address: ${host}`);
+  }
+  return fetch(rawUrl, { ...init, dispatcher: guardedDispatcher } as RequestInit & { dispatcher: Agent });
 }

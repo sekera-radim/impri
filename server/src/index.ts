@@ -7,7 +7,9 @@ import { registerKeyRoutes } from './routes/keys.js';
 import { registerWatcherRoutes } from './routes/watchers.js';
 import { registerProjectRoutes } from './routes/project.js';
 import { registerBillingRoutes } from './routes/billing.js';
+import { registerPushRoutes } from './routes/push.js';
 import { billingActive } from './billing.js';
+import { pushEnabled } from './push.js';
 import { runExpiryTick } from './webhooks.js';
 import { runWatcherTick, startWatcherScheduler } from './scheduler.js';
 import { buildOpenApiDocument } from './openapi.js';
@@ -78,6 +80,9 @@ export async function createApp(db: Db) {
   // Billing routes (no-op checkout/portal when Stripe keys are unset)
   registerBillingRoutes(app, db);
 
+  // Web-push subscription routes (no-op when VAPID keys are unset)
+  registerPushRoutes(app, db);
+
   return app;
 }
 
@@ -94,6 +99,7 @@ async function main() {
       ? '[impri] billing: ENABLED (Stripe) — tier limits enforced'
       : '[impri] billing: disabled (self-host — all features free, no limits)',
   );
+  console.log(`[impri] web push: ${pushEnabled() ? 'ENABLED (VAPID)' : 'disabled'}`);
 
   const db = createDb(DB_PATH);
 

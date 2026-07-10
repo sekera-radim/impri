@@ -5,6 +5,7 @@ import { hasScope, checkRateLimit } from '../auth.js';
 import { approvalsLimitReached, getProjectBilling, TIER_LIMITS } from '../billing.js';
 import { scheduleWebhookDelivery } from '../webhooks.js';
 import { notifyAll } from '../notify.js';
+import { notifyPush } from '../push.js';
 import {
   CreateActionBody,
   DecisionBody,
@@ -69,7 +70,7 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
     }
 
     // Rate limit: 60/min per key
-    if (!checkRateLimit(db, key.keyId, 'actions:create', 60)) {
+    if (!(await checkRateLimit(db, key.keyId, 'actions:create', 60))) {
       return reply.status(429).send({ error: 'Too Many Requests', message: 'Rate limit: 60 requests/min per key' });
     }
 
@@ -169,6 +170,7 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
 
     // Send notifications asynchronously (don't await to keep response fast)
     notifyAll({ actionId, title: body.title, kind: body.kind, inboxUrl }).catch(() => {});
+    notifyPush(db, key.projectId, { title: body.title, body: 'New action pending your approval', url: inboxUrl }).catch(() => {});
 
     reply.status(201);
     return {
@@ -188,7 +190,7 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
     }
 
     // Higher ceiling than writes: agents long-poll this endpoint.
-    if (!checkRateLimit(db, key.keyId, 'actions:list', 300)) {
+    if (!(await checkRateLimit(db, key.keyId, 'actions:list', 300))) {
       return reply.status(429).send({ error: 'Too Many Requests', message: 'Rate limit: 300 requests/min per key' });
     }
 
@@ -265,7 +267,7 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
       return reply.status(403).send({ error: 'Forbidden' });
     }
 
-    if (!checkRateLimit(db, key.keyId, 'actions:decide', 60)) {
+    if (!(await checkRateLimit(db, key.keyId, 'actions:decide', 60))) {
       return reply.status(429).send({ error: 'Too Many Requests', message: 'Rate limit: 60 requests/min per key' });
     }
 

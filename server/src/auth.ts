@@ -1,7 +1,36 @@
 import argon2 from 'argon2';
 import { randomBytes } from 'node:crypto';
+import { Redis } from 'ioredis';
 import type { Db } from './db.js';
 import { nowSec, genId } from './db.js';
+
+// Optional Redis backend for the rate limiter — enables a SHARED window across
+// multiple instances (horizontal scale-out). Without REDIS_URL we use the
+// per-instance SQLite table, which is correct for the single-instance MVP.
+let redis: Redis | null = null;
+let redisInit = false;
+function getRedis(): Redis | null {
+  if (!process.env.REDIS_URL) return null;
+  if (!redisInit) {
+    redisInit = true;
+    try {
+      redis = new Redis(process.env.REDIS_URL, {
+        maxRetriesPerRequest: 2,
+        enableOfflineQueue: false,
+        lazyConnect: false,
+      });
+      redis.on('error', (e: Error) => console.error('[ratelimit] redis error:', e.message));
+    } catch (e) {
+      console.error('[ratelimit] redis init failed, using SQLite:', e instanceof Error ? e.message : e);
+      redis = null;
+    }
+  }
+  return redis;
+}
+
+export async function closeRedis(): Promise<void> {
+  if (redis) { await redis.quit().catch(() => {}); redis = null; redisInit = false; }
+}
 
 export interface ApiKeyRecord {
   id: string;
@@ -12,13 +41,28 @@ export interface ApiKeyRecord {
   key_prefix: string;
 }
 
-// Persistent fixed-window rate limiter: one row per (key, route, minute).
-// Survives restart and is consistent for a single instance (the MVP target).
-// Horizontal scale-out would need a shared store — tracked in PLAYBOOK F.
-export function checkRateLimit(db: Db, keyId: string, route: string, limitPerMin = 60): boolean {
-  const now = nowSec();
-  const windowStart = Math.floor(now / 60) * 60;
+// Fixed-window rate limiter, one window per (key, route, minute). Uses Redis
+// when REDIS_URL is set (shared across instances) and otherwise a per-instance
+// SQLite table. Both survive restart; Redis errors fall back to SQLite.
+export async function checkRateLimit(db: Db, keyId: string, route: string, limitPerMin = 60): Promise<boolean> {
+  const windowStart = Math.floor(nowSec() / 60) * 60;
 
+  const r = getRedis();
+  if (r) {
+    try {
+      const rkey = `rl:${keyId}:${route}:${windowStart}`;
+      const count = await r.incr(rkey);
+      if (count === 1) await r.expire(rkey, 120);
+      return count <= limitPerMin;
+    } catch {
+      // Redis unavailable → fall through to SQLite (fail to a working limiter).
+    }
+  }
+
+  return checkRateLimitSqlite(db, keyId, route, windowStart, limitPerMin);
+}
+
+function checkRateLimitSqlite(db: Db, keyId: string, route: string, windowStart: number, limitPerMin: number): boolean {
   const row = db.prepare(
     'SELECT count FROM rate_limits WHERE key_id = ? AND route = ? AND window_start = ?',
   ).get(keyId, route, windowStart) as { count: number } | undefined;
@@ -30,7 +74,6 @@ export function checkRateLimit(db: Db, keyId: string, route: string, limitPerMin
     ON CONFLICT(key_id, route, window_start) DO UPDATE SET count = count + 1
   `).run(keyId, route, windowStart);
 
-  // Opportunistic cleanup of windows older than 2 minutes.
   db.prepare('DELETE FROM rate_limits WHERE window_start < ?').run(windowStart - 120);
   return true;
 }

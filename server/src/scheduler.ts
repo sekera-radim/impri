@@ -2,7 +2,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { createHash } from 'node:crypto';
 import type { Db } from './db.js';
 import { genId, nowSec, hashContent } from './db.js';
-import { assertPublicUrl } from './net-guard.js';
+import { fetchGuarded } from './net-guard.js';
 import { isFetchAllowed } from './robots.js';
 
 const WATCHER_USER_AGENT = 'Impri-Watcher/1.0 (+https://impri.dev/bot)';
@@ -285,12 +285,6 @@ function parseRssItems(xml: string): FetchedItem[] {
 // --- Network helpers ---
 
 async function fetchWithPoliteness(url: string): Promise<Response> {
-  // SSRF guard resolves DNS; skip under vitest where fetch is mocked and hosts
-  // like example.com would trigger real lookups. Covered by net-guard tests.
-  if (!process.env.VITEST) {
-    await assertPublicUrl(url);
-  }
-
   const host = new URL(url).hostname;
 
   const lastFetch = lastFetchByHost.get(host) ?? 0;
@@ -300,7 +294,7 @@ async function fetchWithPoliteness(url: string): Promise<Response> {
   }
   lastFetchByHost.set(host, Date.now());
 
-  return fetch(url, {
+  return fetchGuarded(url, {
     headers: { 'User-Agent': WATCHER_USER_AGENT },
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });

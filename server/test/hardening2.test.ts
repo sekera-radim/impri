@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createDb } from '../src/db.js';
 import { checkRateLimit } from '../src/auth.js';
+// checkRateLimit is async (may hit Redis); tests below await it.
 import { isInWindow } from '../src/scheduler.js';
 import { checkRobots } from '../src/robots.js';
 import { bootstrapAdminKey } from '../src/auth.js';
@@ -19,14 +20,14 @@ const auth = (k: string) => ({ Authorization: `Bearer ${k}` });
 const validAction = { kind: 'test', title: 'Hi', preview: { format: 'plain', body: 'b' } };
 
 describe('persistent rate limiter', () => {
-  it('blocks after the limit and persists in the db', () => {
+  it('blocks after the limit and persists in the db', async () => {
     const db = createDb(':memory:');
-    expect(checkRateLimit(db, 'k1', 'r', 3)).toBe(true);
-    expect(checkRateLimit(db, 'k1', 'r', 3)).toBe(true);
-    expect(checkRateLimit(db, 'k1', 'r', 3)).toBe(true);
-    expect(checkRateLimit(db, 'k1', 'r', 3)).toBe(false); // 4th over limit 3
+    expect(await checkRateLimit(db, 'k1', 'r', 3)).toBe(true);
+    expect(await checkRateLimit(db, 'k1', 'r', 3)).toBe(true);
+    expect(await checkRateLimit(db, 'k1', 'r', 3)).toBe(true);
+    expect(await checkRateLimit(db, 'k1', 'r', 3)).toBe(false); // 4th over limit 3
     // A different key/route is independent
-    expect(checkRateLimit(db, 'k2', 'r', 3)).toBe(true);
+    expect(await checkRateLimit(db, 'k2', 'r', 3)).toBe(true);
     const row = db.prepare('SELECT count FROM rate_limits WHERE key_id = ? AND route = ?').get('k1', 'r') as { count: number };
     expect(row.count).toBeGreaterThanOrEqual(3);
   });

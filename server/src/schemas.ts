@@ -47,6 +47,15 @@ export const ResultBody = z.object({
 });
 export type ResultBody = z.infer<typeof ResultBody>;
 
+export const PushSubscribeBody = z.object({
+  endpoint: httpUrl().refine(u => /^https:\/\//i.test(u), 'endpoint must be https'),
+  keys: z.object({
+    p256dh: z.string().min(1).max(512),
+    auth: z.string().min(1).max(512),
+  }),
+});
+export type PushSubscribeBody = z.infer<typeof PushSubscribeBody>;
+
 export const ListActionsQuery = z.object({
   status: ActionStatus.optional(),
   since: z.coerce.number().int().optional(),
