@@ -18,14 +18,21 @@ const CheckoutBody = z.object({
 // Mirror a Stripe subscription onto the local project row (tier is derived from
 // the price; Stripe stays the source of truth for status/period).
 function applySubscription(db: Db, customerId: string, sub: Stripe.Subscription): void {
-  const priceId = sub.items.data[0]?.price?.id ?? '';
+  const item = sub.items.data[0];
+  const priceId = item?.price?.id ?? '';
   const tier: Tier = priceToTier(priceId) ?? 'free';
   const active = sub.status === 'active' || sub.status === 'trialing';
+  // Newer Stripe API versions (2025+) moved current_period_end onto the
+  // subscription item; older ones keep it on the subscription. Read both.
+  const periodEnd =
+    (item as { current_period_end?: number } | undefined)?.current_period_end ??
+    (sub as { current_period_end?: number }).current_period_end ??
+    null;
   db.prepare(
     `UPDATE projects
         SET tier = ?, stripe_subscription_id = ?, subscription_status = ?, current_period_end = ?
       WHERE stripe_customer_id = ?`,
-  ).run(active ? tier : 'free', sub.id, sub.status, sub.current_period_end ?? null, customerId);
+  ).run(active ? tier : 'free', sub.id, sub.status, periodEnd, customerId);
 }
 
 export function registerBillingRoutes(app: FastifyInstance, db: Db): void {

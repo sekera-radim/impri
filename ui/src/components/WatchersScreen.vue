@@ -139,10 +139,14 @@
   </template>
 
   <!-- ─── Create dialog ─── -->
-  <v-dialog v-model="showCreate" max-width="640" scrollable>
-    <v-card title="Create watcher">
+  <v-dialog v-model="showCreate" max-width="600" scrollable>
+    <v-card :title="createTitle">
       <v-card-text style="max-height: 75vh; overflow-y: auto">
-        <!-- General -->
+        <p class="text-body-2 text-medium-emphasis mb-4">
+          {{ kindHelp }}
+        </p>
+
+        <!-- Name -->
         <v-text-field
           v-model="form.name"
           label="Name *"
@@ -152,9 +156,11 @@
           :error-messages="formError && !form.name.trim() ? ['Name is required'] : []"
         />
 
+        <!-- Kind (hidden when opened from a preset button) -->
         <v-select
+          v-if="!presetLocked"
           v-model="form.kind"
-          label="Kind *"
+          label="Type *"
           variant="outlined"
           density="comfortable"
           :items="kindOptions"
@@ -165,11 +171,10 @@
         <v-text-field
           v-if="form.kind === 'rss' || form.kind === 'url_diff'"
           v-model="form.configUrl"
-          label="URL *"
+          :label="form.kind === 'rss' ? 'Feed URL *' : 'Page URL *'"
           variant="outlined"
           density="comfortable"
-          placeholder="https://example.com/feed.xml"
-          hint="Must be an http/https URL"
+          :placeholder="form.kind === 'rss' ? 'https://example.com/feed.xml' : 'https://example.com/pricing'"
           class="mb-3"
         />
 
@@ -180,150 +185,102 @@
             label="Subreddit *"
             variant="outlined"
             density="comfortable"
-            placeholder="programming"
+            placeholder="AI_Agents"
+            prefix="r/"
             class="mb-3"
           />
           <v-text-field
             v-model="form.configQuery"
-            label="Search query *"
+            label="Search for *"
             variant="outlined"
             density="comfortable"
-            placeholder="AI tools"
+            placeholder="human in the loop"
             class="mb-3"
           />
         </template>
 
-        <v-divider class="mb-4" />
-
-        <!-- Schedule -->
-        <p class="text-body-2 font-weight-medium mb-2">Schedule</p>
-
-        <div class="d-flex gap-3 mb-3">
-          <v-text-field
-            v-model="form.scheduleEvery"
-            label="Interval *"
-            variant="outlined"
-            density="comfortable"
-            placeholder="1h"
-            hint="e.g. &quot;30m&quot;, &quot;2h&quot;, &quot;1d&quot; — min 1m"
-            style="flex: 1"
-          />
-          <v-text-field
-            v-model="form.scheduleJitter"
-            label="Jitter"
-            variant="outlined"
-            density="comfortable"
-            placeholder="5m"
-            hint="Random delay added to interval"
-            style="flex: 1"
-          />
-        </div>
-
-        <v-text-field
-          v-model="form.scheduleWindow"
-          label="Active window"
+        <!-- How often -->
+        <v-select
+          v-model="form.frequency"
+          label="How often should it check?"
           variant="outlined"
           density="comfortable"
-          placeholder="06:00-22:00"
-          hint="Only run within this time window (HH:MM-HH:MM)"
+          :items="frequencyOptions"
+          class="mb-3"
+        />
+        <v-text-field
+          v-if="form.frequency === 'custom'"
+          v-model="form.customEvery"
+          label="Custom interval *"
+          variant="outlined"
+          density="comfortable"
+          placeholder="90m"
+          hint='Number + m / h / d — e.g. "90m", "4h", "2d" (min 1m)'
           class="mb-3"
         />
 
-        <v-divider class="mb-4" />
-
-        <!-- Scoring -->
-        <p class="text-body-2 font-weight-medium mb-1">Scoring</p>
-        <v-text-field
-          v-model.number="form.minScore"
-          label="Min score"
-          type="number"
+        <!-- Words to look for -->
+        <v-combobox
+          v-model="form.keywordTags"
+          label="Words to look for (optional)"
           variant="outlined"
           density="comfortable"
-          :min="0"
+          multiple
+          chips
+          closable-chips
+          clearable
+          hint="Only items containing one of these reach your inbox. Leave empty to get everything. Press Enter after each word."
+          persistent-hint
           class="mb-3"
-          hint="Items below this score are ignored (0 = accept all)"
         />
 
-        <!-- Keywords (include) -->
-        <p class="text-body-2 font-weight-medium mb-1">
-          Keywords
-          <span class="text-caption text-medium-emphasis font-weight-regular ml-1">— each match adds points</span>
-        </p>
-        <div
-          v-for="(kw, idx) in form.keywords"
-          :key="idx"
-          class="d-flex gap-2 mb-2"
-        >
-          <v-text-field
-            v-model="kw.pattern"
-            label="Pattern"
-            variant="outlined"
-            density="compact"
-            style="flex: 1"
-            hide-details
-          />
-          <v-text-field
-            v-model.number="kw.points"
-            label="Points"
-            type="number"
-            variant="outlined"
-            density="compact"
-            :min="1"
-            :max="100"
-            style="width: 90px; flex-shrink: 0"
-            hide-details
-          />
-          <v-btn
-            icon="mdi-close"
-            size="x-small"
-            variant="text"
-            @click="form.keywords.splice(idx, 1)"
-          />
-        </div>
+        <!-- Advanced -->
         <v-btn
-          size="x-small"
           variant="text"
-          prepend-icon="mdi-plus"
-          class="mb-4"
-          @click="form.keywords.push({ pattern: '', points: 1 })"
+          size="small"
+          :prepend-icon="showAdvanced ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+          class="mb-1"
+          @click="showAdvanced = !showAdvanced"
         >
-          Add keyword
+          Advanced options
         </v-btn>
-
-        <!-- Keywords none (exclude) -->
-        <p class="text-body-2 font-weight-medium mb-1">
-          Exclude keywords
-          <span class="text-caption text-medium-emphasis font-weight-regular ml-1">— items matching these are dropped</span>
-        </p>
-        <div
-          v-for="(kw, idx) in form.keywordsNone"
-          :key="idx"
-          class="d-flex gap-2 mb-2"
-        >
-          <v-text-field
-            v-model="form.keywordsNone[idx]"
-            label="Pattern"
-            variant="outlined"
-            density="compact"
-            hide-details
-            style="flex: 1"
-          />
-          <v-btn
-            icon="mdi-close"
-            size="x-small"
-            variant="text"
-            @click="form.keywordsNone.splice(idx, 1)"
-          />
-        </div>
-        <v-btn
-          size="x-small"
-          variant="text"
-          prepend-icon="mdi-plus"
-          class="mb-2"
-          @click="form.keywordsNone.push('')"
-        >
-          Add exclude keyword
-        </v-btn>
+        <v-expand-transition>
+          <div v-if="showAdvanced" class="pt-2">
+            <v-combobox
+              v-model="form.keywordsNone"
+              label="Exclude words"
+              variant="outlined"
+              density="comfortable"
+              multiple
+              chips
+              closable-chips
+              clearable
+              hint="Items containing any of these are dropped."
+              persistent-hint
+              class="mb-4"
+            />
+            <div class="d-flex gap-3">
+              <v-text-field
+                v-model="form.scheduleJitter"
+                label="Jitter"
+                variant="outlined"
+                density="comfortable"
+                placeholder="5m"
+                hint="Random delay per run"
+                style="flex: 1"
+              />
+              <v-text-field
+                v-model="form.scheduleWindow"
+                label="Active window"
+                variant="outlined"
+                density="comfortable"
+                placeholder="06:00-22:00"
+                hint="Only run within HH:MM-HH:MM"
+                style="flex: 1"
+              />
+            </div>
+          </div>
+        </v-expand-transition>
 
         <!-- Validation error -->
         <v-alert
@@ -331,7 +288,7 @@
           type="error"
           variant="tonal"
           density="compact"
-          class="mt-3"
+          class="mt-4"
         >
           {{ formError }}
         </v-alert>
@@ -346,7 +303,7 @@
           :loading="creating"
           @click="submitCreate"
         >
-          Create
+          Create watcher
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -372,8 +329,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import type { Watcher, WatcherKind, ScoringRule } from '../types'
+import { ref, reactive, computed, onMounted } from 'vue'
+import type { Watcher, WatcherKind } from '../types'
 import { useWatchersStore } from '../stores/watchers'
 import { ApiClientError } from '../api/client'
 
@@ -453,10 +410,25 @@ async function confirmDelete(): Promise<void> {
 // ─── Create form ─────────────────────────────────────────────────────────────
 
 const kindOptions: { title: string; value: WatcherKind }[] = [
-  { title: 'RSS feed', value: 'rss' },
   { title: 'Reddit search', value: 'reddit_search' },
-  { title: 'URL diff (change detection)', value: 'url_diff' },
+  { title: 'RSS feed', value: 'rss' },
+  { title: 'Web page changes', value: 'url_diff' },
 ]
+
+const frequencyOptions = [
+  { title: 'Every 15 minutes', value: '15m' },
+  { title: 'Every hour', value: '1h' },
+  { title: 'Every 3 hours', value: '3h' },
+  { title: 'Every 6 hours', value: '6h' },
+  { title: 'Once a day', value: '1d' },
+  { title: 'Custom…', value: 'custom' },
+]
+
+const kindHelpText: Record<WatcherKind, string> = {
+  reddit_search: 'Checks a subreddit for posts matching your search and sends new matches to your inbox to review.',
+  rss: 'Checks an RSS/Atom feed and sends new entries to your inbox to review.',
+  url_diff: 'Checks a web page on a schedule and notifies you when its content changes.',
+}
 
 interface FormState {
   name: string
@@ -464,26 +436,26 @@ interface FormState {
   configUrl: string
   configSubreddit: string
   configQuery: string
-  scheduleEvery: string
+  frequency: string
+  customEvery: string
   scheduleJitter: string
   scheduleWindow: string
-  minScore: number
-  keywords: ScoringRule[]
+  keywordTags: string[]
   keywordsNone: string[]
 }
 
 function emptyForm(): FormState {
   return {
     name: '',
-    kind: 'rss',
+    kind: 'reddit_search',
     configUrl: '',
     configSubreddit: '',
     configQuery: '',
-    scheduleEvery: '1h',
+    frequency: '1h',
+    customEvery: '',
     scheduleJitter: '',
     scheduleWindow: '',
-    minScore: 1,
-    keywords: [],
+    keywordTags: [],
     keywordsNone: [],
   }
 }
@@ -492,21 +464,31 @@ const showCreate = ref(false)
 const form = reactive<FormState>(emptyForm())
 const formError = ref<string | null>(null)
 const creating = ref(false)
+const showAdvanced = ref(false)
+const presetLocked = ref(false)
+
+const createTitle = computed(() =>
+  presetLocked.value ? kindOptions.find((k) => k.value === form.kind)?.title ?? 'New watcher' : 'Create watcher',
+)
+const kindHelp = computed(() => kindHelpText[form.kind])
 
 function openCreate(preset?: WatcherKind): void {
   Object.assign(form, emptyForm())
+  showAdvanced.value = false
+  presetLocked.value = false
   // Preset buttons pass a kind + sensible defaults; the header button passes none.
   if (preset && typeof preset === 'string') {
     form.kind = preset
+    presetLocked.value = true
     if (preset === 'reddit_search') {
       form.name = 'Reddit — my topic'
-      form.scheduleEvery = '2h'
+      form.frequency = '3h'
     } else if (preset === 'rss') {
       form.name = 'RSS feed'
-      form.scheduleEvery = '1h'
+      form.frequency = '1h'
     } else if (preset === 'url_diff') {
       form.name = 'Page changes'
-      form.scheduleEvery = '6h'
+      form.frequency = '6h'
     }
   }
   formError.value = null
@@ -515,6 +497,10 @@ function openCreate(preset?: WatcherKind): void {
 
 function closeCreate(): void {
   showCreate.value = false
+}
+
+function effectiveEvery(): string {
+  return (form.frequency === 'custom' ? form.customEvery : form.frequency).trim()
 }
 
 function validateForm(): string | null {
@@ -527,23 +513,19 @@ function validateForm(): string | null {
 
   if (form.kind === 'reddit_search') {
     if (!form.configSubreddit.trim()) return 'Subreddit is required'
-    if (!form.configQuery.trim()) return 'Search query is required'
+    if (!form.configQuery.trim()) return 'Search text is required'
   }
 
-  if (!form.scheduleEvery.trim()) return 'Schedule interval is required'
-  if (!/^\d+[mhd]$/.test(form.scheduleEvery.trim())) {
-    return 'Invalid interval format — use e.g. "30m", "2h", "1d"'
-  }
-  if (durationToSec(form.scheduleEvery.trim()) < 60) {
-    return 'Minimum interval is 60 seconds (1m)'
-  }
+  const every = effectiveEvery()
+  if (!every) return 'Interval is required'
+  if (!/^\d+[mhd]$/.test(every)) return 'Invalid interval — use e.g. "90m", "4h", "2d"'
+  if (durationToSec(every) < 60) return 'Minimum interval is 60 seconds (1m)'
 
   if (form.scheduleJitter && !/^\d+[mhd]$/.test(form.scheduleJitter.trim())) {
-    return 'Invalid jitter format — use e.g. "5m", "1h"'
+    return 'Invalid jitter — use e.g. "5m", "1h"'
   }
-
   if (form.scheduleWindow && !/^\d{2}:\d{2}-\d{2}:\d{2}$/.test(form.scheduleWindow.trim())) {
-    return 'Invalid window format — use e.g. "06:00-22:00"'
+    return 'Invalid window — use e.g. "06:00-22:00"'
   }
 
   return null
@@ -562,23 +544,28 @@ async function submitCreate(): Promise<void> {
     const config: Record<string, string> = {}
     if (form.kind === 'rss' || form.kind === 'url_diff') config.url = form.configUrl.trim()
     if (form.kind === 'reddit_search') {
-      config.subreddit = form.configSubreddit.trim()
+      config.subreddit = form.configSubreddit.trim().replace(/^r\//i, '')
       config.query = form.configQuery.trim()
     }
 
-    const schedule: { every: string; jitter?: string; window?: string } = {
-      every: form.scheduleEvery.trim(),
-    }
+    const schedule: { every: string; jitter?: string; window?: string } = { every: effectiveEvery() }
     if (form.scheduleJitter.trim()) schedule.jitter = form.scheduleJitter.trim()
     if (form.scheduleWindow.trim()) schedule.window = form.scheduleWindow.trim()
+
+    const keywords = form.keywordTags
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .map((pattern) => ({ pattern, points: 1 }))
+    const keywordsNone = form.keywordsNone.map((k) => k.trim()).filter(Boolean)
 
     await store.createWatcher({
       name: form.name.trim(),
       kind: form.kind,
       config,
-      keywords: form.keywords.filter((k) => k.pattern.trim()),
-      keywords_none: form.keywordsNone.filter((k) => k.trim()),
-      min_score: form.minScore,
+      keywords,
+      keywords_none: keywordsNone,
+      // Require at least one keyword match when keywords are given; otherwise accept everything.
+      min_score: keywords.length > 0 ? 1 : 0,
       schedule,
     })
 
