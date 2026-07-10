@@ -174,22 +174,6 @@
 
       <!-- Plan cards (only when billing is enabled) -->
       <template v-if="store.billing.billing_enabled">
-        <!-- Period toggle -->
-        <div class="d-flex align-center justify-end mb-4 gap-2">
-          <span class="text-body-2">Monthly</span>
-          <v-switch
-            v-model="yearlyBilling"
-            density="compact"
-            hide-details
-            color="primary"
-            class="flex-grow-0"
-          />
-          <span class="text-body-2">
-            Yearly
-            <v-chip size="x-small" color="success" variant="tonal" label class="ml-1">save ~15%</v-chip>
-          </span>
-        </div>
-
         <!-- Plan cards -->
         <v-row class="mb-4">
           <v-col
@@ -205,12 +189,8 @@
               <v-card-text class="d-flex flex-column h-100">
                 <div class="text-h6 font-weight-bold mb-1">{{ plan.name }}</div>
                 <div class="mb-3">
-                  <span class="text-h5 font-weight-bold">
-                    {{ yearlyBilling && plan.yearlyPrice ? plan.yearlyPrice : plan.monthlyPrice }}
-                  </span>
-                  <span v-if="plan.id !== 'free'" class="text-caption text-medium-emphasis ml-1">
-                    {{ yearlyBilling ? '/yr' : '/mo' }}
-                  </span>
+                  <span class="text-h5 font-weight-bold">{{ plan.monthlyPrice }}</span>
+                  <span v-if="plan.id !== 'free'" class="text-caption text-medium-emphasis ml-1">/mo</span>
                 </div>
 
                 <v-list density="compact" class="flex-grow-1 pa-0 mb-4">
@@ -364,10 +344,6 @@ function formatDate(ts: number): string {
   })
 }
 
-// ─── Period toggle ─────────────────────────────────────────────────────────────
-
-const yearlyBilling = ref(false)
-
 // ─── Plan definitions ──────────────────────────────────────────────────────────
 
 const plans = [
@@ -379,8 +355,7 @@ const plans = [
     features: [
       '3 watchers',
       '100 approvals / month',
-      'Email + ntfy notifications',
-      '7 days history',
+      'Checks as often as every 15 min',
     ],
   },
   {
@@ -391,9 +366,7 @@ const plans = [
     features: [
       '20 watchers',
       '2,000 approvals / month',
-      'Push notifications',
-      '90 days history',
-      'Priority webhooks',
+      'Checks as often as every 5 min',
     ],
   },
   {
@@ -404,9 +377,7 @@ const plans = [
     features: [
       'Unlimited watchers',
       'Unlimited approvals',
-      '5 team members',
-      'Audit export',
-      '1 year history',
+      'Checks as often as every minute',
     ],
   },
 ]
@@ -421,7 +392,7 @@ async function upgradeToPlan(plan: 'indie' | 'team'): Promise<void> {
   checkingOut.value = plan
   actionError.value = null
   try {
-    await store.checkout(plan, yearlyBilling.value ? 'yearly' : 'monthly')
+    await store.checkout(plan, 'monthly')
   } catch (err) {
     actionError.value = err instanceof Error ? err.message : 'Failed to start checkout'
   } finally {
