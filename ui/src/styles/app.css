@@ -1,6 +1,6 @@
-/* Impri web inbox — animated aurora background + glassy surfaces.
-   Theme-aware (dark default, light supported). CSP-safe: pure CSS, no
-   external assets, no inline <style> injection. */
+/* Impri web inbox — premium UI: layered-depth background, glass surfaces,
+   refined gradient buttons. Theme-aware (dark default), CSP-safe (pure CSS,
+   no external assets, no injected <style>). */
 
 html,
 body,
@@ -8,152 +8,177 @@ body,
   height: 100%;
 }
 
-/* Let the fixed animated backdrop show through Vuetify's app surface. */
+/* Let the fixed backdrop show through Vuetify's app surface. */
 .v-application,
 .v-application__wrap {
   background: transparent !important;
 }
 
 .v-theme--dark {
-  --bg-a: #080c18;
-  --bg-b: #101733;
-  --bg-c: #0c1f33;
-  --bg-d: #191033;
-  --orb-1: #4f46e5;
-  --orb-2: #0891b2;
-  --orb-3: #7c3aed;
+  --bg-base: #070a14;
+  --glow-1: rgba(99, 102, 241, 0.22);
+  --glow-2: rgba(139, 92, 246, 0.16);
+  --grid: rgba(255, 255, 255, 0.03);
+  --orb: rgba(99, 102, 241, 0.16);
 }
 
 .v-theme--light {
-  --bg-a: #eef2fb;
-  --bg-b: #e7edf9;
-  --bg-c: #f1ecfb;
-  --bg-d: #e9f3ff;
-  --orb-1: #a5b4fc;
-  --orb-2: #7dd3fc;
-  --orb-3: #c4b5fd;
+  --bg-base: #f4f6fc;
+  --glow-1: rgba(99, 102, 241, 0.13);
+  --glow-2: rgba(139, 92, 246, 0.1);
+  --grid: rgba(15, 23, 42, 0.035);
+  --orb: rgba(99, 102, 241, 0.09);
 }
 
-/* ---- animated backdrop ---- */
+/* ---- layered backdrop (glows + fine grid + one drifting light) ---- */
 .app-bg {
   position: fixed;
   inset: 0;
   z-index: -1;
   overflow: hidden;
+  background: var(--bg-base);
 }
 
 .app-bg::before {
   content: "";
   position: absolute;
-  inset: -20%;
-  background: linear-gradient(125deg, var(--bg-a), var(--bg-b), var(--bg-c), var(--bg-d));
-  background-size: 300% 300%;
-  animation: bgShift 26s ease-in-out infinite;
+  inset: 0;
+  background:
+    radial-gradient(1200px 820px at 12% -12%, var(--glow-1), transparent 55%),
+    radial-gradient(1000px 720px at 100% 6%, var(--glow-2), transparent 52%);
+}
+
+.app-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 46px 46px;
+  -webkit-mask-image: radial-gradient(ellipse 120% 90% at 50% -8%, #000 35%, transparent 85%);
+  mask-image: radial-gradient(ellipse 120% 90% at 50% -8%, #000 35%, transparent 85%);
 }
 
 .orb {
   position: absolute;
+  width: 46vmax;
+  height: 46vmax;
+  left: 6vw;
+  top: -16vh;
   border-radius: 50%;
-  filter: blur(72px);
-  opacity: 0.55;
+  background: radial-gradient(circle at 40% 40%, var(--orb), transparent 62%);
+  filter: blur(24px);
   will-change: transform;
-  animation: orbFloat 30s ease-in-out infinite alternate;
+  animation: orbDrift 36s ease-in-out infinite alternate;
 }
 
-.v-theme--dark .orb {
-  mix-blend-mode: screen;
-}
-
-.orb-1 {
-  width: 44vmax;
-  height: 44vmax;
-  left: -12vw;
-  top: -18vh;
-  background: radial-gradient(circle at 30% 30%, var(--orb-1), transparent 62%);
-}
-
-.orb-2 {
-  width: 40vmax;
-  height: 40vmax;
-  right: -14vw;
-  top: 6vh;
-  background: radial-gradient(circle at 30% 30%, var(--orb-2), transparent 62%);
-  animation-delay: -10s;
-}
-
+/* single subtle glow is enough for a premium look */
+.orb-2,
 .orb-3 {
-  width: 34vmax;
-  height: 34vmax;
-  left: 22vw;
-  bottom: -22vh;
-  background: radial-gradient(circle at 30% 30%, var(--orb-3), transparent 62%);
-  animation-delay: -18s;
+  display: none;
 }
 
-@keyframes bgShift {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-@keyframes orbFloat {
+@keyframes orbDrift {
   0% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(6vw, -4vh) scale(1.12);
+    transform: translate(0, 0);
   }
   100% {
-    transform: translate(-5vw, 5vh) scale(0.95);
+    transform: translate(11vw, 9vh);
   }
 }
 
-/* ---- glassy surfaces ---- */
+@media (prefers-reduced-motion: reduce) {
+  .orb {
+    animation: none;
+  }
+}
+
+/* ---- glass surfaces ---- */
 .v-card {
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border-radius: 16px !important;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .v-theme--dark .v-card {
-  background: rgba(18, 24, 44, 0.62) !important;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(16, 21, 38, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .v-theme--light .v-card {
-  background: rgba(255, 255, 255, 0.74) !important;
-  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: rgba(255, 255, 255, 0.78) !important;
+  border: 1px solid rgba(15, 23, 42, 0.07);
 }
 
-/* action cards lift slightly on hover for a touch of life */
 .v-theme--dark .v-card:hover {
-  border-color: rgba(124, 156, 255, 0.35);
+  border-color: rgba(124, 140, 255, 0.4);
 }
+
 .v-theme--light .v-card:hover {
-  border-color: rgba(79, 70, 229, 0.35);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+/* let card interiors breathe — no boxy nested surfaces */
+.v-card .v-list,
+.v-card .v-list-item {
+  background: transparent !important;
 }
 
 /* glassy top bar */
 .v-app-bar.v-toolbar {
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
 }
+
 .v-theme--dark .v-app-bar.v-toolbar {
-  background: rgba(9, 13, 27, 0.55) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(7, 10, 20, 0.6) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
+
 .v-theme--light .v-app-bar.v-toolbar {
-  background: rgba(255, 255, 255, 0.6) !important;
+  background: rgba(255, 255, 255, 0.62) !important;
   border-bottom: 1px solid rgba(15, 23, 42, 0.06);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .app-bg::before,
-  .orb {
-    animation: none;
-  }
+/* ---- buttons: modern, confident, not shouty ---- */
+.v-btn {
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-weight: 600;
+}
+
+.v-btn:not(.v-btn--icon) {
+  border-radius: 10px;
+}
+
+/* filled primary → rich gradient with real contrast + depth */
+.v-btn--variant-flat.bg-primary,
+.v-btn--variant-elevated.bg-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.32);
+}
+
+.v-btn--variant-flat.bg-primary:hover,
+.v-btn--variant-elevated.bg-primary:hover {
+  box-shadow: 0 10px 26px rgba(99, 102, 241, 0.46);
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+/* outlined buttons: quiet until hovered */
+.v-theme--dark .v-btn--variant-outlined {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.v-theme--dark .v-btn--variant-outlined:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(124, 140, 255, 0.5);
+}
+
+.v-theme--light .v-btn--variant-outlined:hover {
+  background: rgba(99, 102, 241, 0.06);
+  border-color: rgba(99, 102, 241, 0.5);
 }

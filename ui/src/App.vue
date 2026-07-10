@@ -77,11 +77,15 @@
         </v-container>
       </v-main>
     </template>
+
+    <v-snackbar v-model="snackbar" :timeout="5000" :color="snackbarColor" location="top">
+      {{ snackbarText }}
+    </v-snackbar>
   </v-app>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useTheme } from 'vuetify'
 import { useAuthStore } from './stores/auth'
 import { useInboxStore } from './stores/inbox'
@@ -103,4 +107,28 @@ function toggleTheme() {
   theme.global.name.value = next
   localStorage.setItem('impri-theme', next)
 }
+
+// Return trip from Stripe Checkout / portal: land on the Billing tab and
+// confirm the outcome, then clean the query so a refresh doesn't repeat it.
+const snackbar = ref(false)
+const snackbarText = ref('')
+const snackbarColor = ref<'success' | 'info'>('success')
+
+onMounted(() => {
+  const checkout = new URLSearchParams(window.location.search).get('checkout')
+  if (checkout === 'success') {
+    activeTab.value = 'billing'
+    snackbarColor.value = 'success'
+    snackbarText.value = 'Subscription active — thanks! Your plan is now live.'
+    snackbar.value = true
+  } else if (checkout === 'canceled') {
+    activeTab.value = 'billing'
+    snackbarColor.value = 'info'
+    snackbarText.value = 'Checkout canceled — no charge was made.'
+    snackbar.value = true
+  }
+  if (checkout) {
+    window.history.replaceState({}, '', window.location.pathname)
+  }
+})
 </script>

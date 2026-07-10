@@ -71,14 +71,17 @@ export function registerBillingRoutes(app: FastifyInstance, db: Db): void {
       db.prepare('UPDATE projects SET stripe_customer_id = ? WHERE id = ?').run(customerId, key.projectId);
     }
 
-    const base = process.env.BASE_URL ?? 'http://localhost:8484';
+    // Redirect back to the web UI, which may live on a different origin than
+    // the API (e.g. app.impri.dev vs api.impri.dev). Falls back to BASE_URL
+    // for same-origin self-hosting.
+    const appUrl = process.env.APP_URL ?? process.env.BASE_URL ?? 'http://localhost:8484';
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
       client_reference_id: key.projectId,
-      success_url: `${base}/billing?checkout=success`,
-      cancel_url: `${base}/billing?checkout=canceled`,
+      success_url: `${appUrl}/?checkout=success`,
+      cancel_url: `${appUrl}/?checkout=canceled`,
     });
     return { url: session.url };
   });
@@ -97,8 +100,8 @@ export function registerBillingRoutes(app: FastifyInstance, db: Db): void {
     if (!customerId) {
       return reply.status(400).send({ error: 'Bad Request', message: 'No billing customer yet — start a subscription first' });
     }
-    const base = process.env.BASE_URL ?? 'http://localhost:8484';
-    const session = await stripe.billingPortal.sessions.create({ customer: customerId, return_url: `${base}/billing` });
+    const appUrl = process.env.APP_URL ?? process.env.BASE_URL ?? 'http://localhost:8484';
+    const session = await stripe.billingPortal.sessions.create({ customer: customerId, return_url: `${appUrl}/?checkout=success` });
     return { url: session.url };
   });
 

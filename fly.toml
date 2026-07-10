@@ -12,6 +12,7 @@ primary_region = "fra"
   HOST = "0.0.0.0"
   PORT = "8484"
   BASE_URL = "https://api.impri.dev"
+  APP_URL = "https://app.impri.dev"
   CORS_ORIGIN = "https://app.impri.dev"
 
 [http_service]
