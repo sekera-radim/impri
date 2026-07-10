@@ -11,7 +11,8 @@ primary_region = "fra"
   DB_PATH = "/data/impri.db"
   HOST = "0.0.0.0"
   PORT = "8484"
-  BASE_URL = "https://impri-api.fly.dev"
+  BASE_URL = "https://api.impri.dev"
+  CORS_ORIGIN = "https://app.impri.dev"
 
 [http_service]
   internal_port = 8484

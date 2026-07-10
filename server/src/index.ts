@@ -1,5 +1,6 @@
 import './types.js';
 import Fastify from 'fastify';
+import cors from '@fastify/cors';
 import { createDb } from './db.js';
 import { verifyApiKey, bootstrapAdminKey } from './auth.js';
 import { registerActionRoutes } from './routes/actions.js';
@@ -27,6 +28,18 @@ export async function createApp(db: Db) {
       redact: ['req.headers.authorization', 'req.headers.cookie'],
     },
   });
+
+  // CORS only when a hosted web inbox on another origin needs to reach this API
+  // (e.g. app.impri.dev → api.impri.dev). Restricted to the configured origins;
+  // unset = same-origin only. Bearer auth, no cookies.
+  const corsOrigins = (process.env.CORS_ORIGIN ?? '').split(',').map(s => s.trim()).filter(Boolean);
+  if (corsOrigins.length > 0) {
+    await app.register(cors, {
+      origin: corsOrigins,
+      methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+      allowedHeaders: ['Authorization', 'Content-Type'],
+    });
+  }
 
   // Keep the raw body on every JSON request (Stripe webhook signature needs
   // the exact bytes) while still exposing the parsed object to routes.

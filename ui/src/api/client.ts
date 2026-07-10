@@ -32,7 +32,9 @@ export class ApiClient {
 
   constructor(
     private readonly apiKey: string,
-    baseUrl = '/v1',
+    // Same-origin '/v1' by default (dev proxy / nginx). A hosted UI on a
+    // different origin sets VITE_API_BASE (e.g. https://api.impri.dev/v1).
+    baseUrl: string = (import.meta.env.VITE_API_BASE as string | undefined) ?? '/v1',
   ) {
     this.baseUrl = baseUrl
   }
