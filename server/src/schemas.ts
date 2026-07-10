@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { isIP } from 'node:net';
 import { isPrivateIp } from './net-guard.js';
+import safeRegex from 'safe-regex';
 
 // Only http/https — z.string().url() also accepts javascript:/data:/file:,
 // which would become an XSS sink when rendered as an "Open" link in the UI.
@@ -75,8 +76,20 @@ export type CreateKeyBody = z.infer<typeof CreateKeyBody>;
 
 // --- Watcher schemas ---
 
+// Reject ReDoS-prone regex patterns at the boundary. Patterns that don't parse
+// as a regex are matched literally at runtime (scheduler matchesPattern), so
+// they're safe to allow.
+function isSafePattern(p: string): boolean {
+  try {
+    return safeRegex(p);
+  } catch {
+    return true;
+  }
+}
+const keywordPattern = z.string().min(1).max(500).refine(isSafePattern, 'Pattern is too complex (possible ReDoS)');
+
 export const ScoringRule = z.object({
-  pattern: z.string().min(1).max(500),
+  pattern: keywordPattern,
   points: z.number().int().min(1).max(100),
 });
 export type ScoringRule = z.infer<typeof ScoringRule>;
@@ -98,7 +111,16 @@ export const WatcherSchedule = z.object({
 export type WatcherSchedule = z.infer<typeof WatcherSchedule>;
 
 const WatcherConfig = z.object({
-  url: z.string().url().optional(),
+  url: z.string().url().refine(v => {
+    try {
+      const u = new URL(v);
+      if (!['http:', 'https:'].includes(u.protocol)) return false;
+      const host = u.hostname.replace(/^\[|\]$/g, '');
+      return !(isIP(host) && isPrivateIp(host));
+    } catch {
+      return false;
+    }
+  }, 'Only http/https URLs to non-private addresses are allowed').optional(),
   query: z.string().min(1).max(500).optional(),
   subreddit: z.string().min(1).max(100).optional(),
 });
@@ -111,7 +133,7 @@ export const CreateWatcherBody = z.object({
   kind: WatcherKind,
   config: WatcherConfig,
   keywords: z.array(ScoringRule).default([]),
-  keywords_none: z.array(z.string().min(1).max(500)).default([]),
+  keywords_none: z.array(keywordPattern).default([]),
   min_score: z.number().int().min(0).default(1),
   schedule: WatcherSchedule,
 }).superRefine((data, ctx) => {
@@ -172,7 +194,7 @@ export const UpdateWatcherBody = z.object({
   name: z.string().min(1).max(200).optional(),
   config: WatcherConfig.optional(),
   keywords: z.array(ScoringRule).optional(),
-  keywords_none: z.array(z.string().min(1).max(500)).optional(),
+  keywords_none: z.array(keywordPattern).optional(),
   min_score: z.number().int().min(0).optional(),
   schedule: WatcherSchedule.optional(),
   // Only active/paused allowed via API; degraded is set by the scheduler

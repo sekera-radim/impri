@@ -1,6 +1,7 @@
 // robots-parser is CJS with an ESM-style `export default` type that NodeNext
 // won't treat as callable via import; load it through require with a local type.
 import { createRequire } from 'node:module';
+import { fetchGuarded } from './net-guard.js';
 
 interface RobotsChecker {
   isAllowed(url: string, ua?: string): boolean | undefined;
@@ -48,7 +49,7 @@ export async function isFetchAllowed(targetUrl: string, userAgent: string, timeo
   }
 
   try {
-    const res = await fetch(robotsUrl, {
+    const res = await fetchGuarded(robotsUrl, {
       headers: { 'User-Agent': userAgent },
       signal: AbortSignal.timeout(timeoutMs),
     });

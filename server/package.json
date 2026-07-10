@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^10.1.0",
+    "@types/safe-regex": "^1.1.6",
     "argon2": "^0.41.1",
     "better-sqlite3": "^11.10.0",
     "fast-xml-parser": "^5.9.3",
@@ -19,6 +20,7 @@
     "ioredis": "^5.11.1",
     "nodemailer": "^9.0.3",
     "robots-parser": "^3.0.1",
+    "safe-regex": "^2.1.1",
     "stripe": "^17.7.0",
     "undici": "^6.27.0",
     "web-push": "^3.6.7",
