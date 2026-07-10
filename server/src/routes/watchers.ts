@@ -3,6 +3,7 @@ import type { Db } from '../db.js';
 import { genId, nowSec } from '../db.js';
 import { hasScope, checkRateLimit } from '../auth.js';
 import { computeNextRunAt } from '../scheduler.js';
+import { watcherLimitReached, getProjectBilling, TIER_LIMITS } from '../billing.js';
 import { CreateWatcherBody, UpdateWatcherBody, ListWatchersQuery } from '../schemas.js';
 
 function serializeWatcher(row: Record<string, unknown>) {
@@ -37,6 +38,17 @@ export function registerWatcherRoutes(app: FastifyInstance, db: Db): void {
 
     if (!checkRateLimit(db, key.keyId, 'watchers:create', 30)) {
       return reply.status(429).send({ error: 'Too Many Requests', message: 'Rate limit: 30 requests/min per key' });
+    }
+
+    // Tier limit: watcher count (no-op when billing is disabled / self-host)
+    if (watcherLimitReached(db, key.projectId)) {
+      const tier = getProjectBilling(db, key.projectId).tier;
+      return reply.status(402).send({
+        error: 'Payment Required',
+        message: `Watcher limit reached for the ${tier} plan (${TIER_LIMITS[tier].watchers}). Upgrade to add more.`,
+        limit: TIER_LIMITS[tier].watchers,
+        tier,
+      });
     }
 
     const parsed = CreateWatcherBody.safeParse(request.body);

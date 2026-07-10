@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Db } from '../db.js';
 import { genId, hashContent, nowSec } from '../db.js';
 import { hasScope, checkRateLimit } from '../auth.js';
+import { approvalsLimitReached, getProjectBilling, TIER_LIMITS } from '../billing.js';
 import { scheduleWebhookDelivery } from '../webhooks.js';
 import { notifyAll } from '../notify.js';
 import {
@@ -70,6 +71,18 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
     // Rate limit: 60/min per key
     if (!checkRateLimit(db, key.keyId, 'actions:create', 60)) {
       return reply.status(429).send({ error: 'Too Many Requests', message: 'Rate limit: 60 requests/min per key' });
+    }
+
+    // Tier limit: monthly approvals quota gates NEW actions only — deciding on
+    // already-pending actions is never blocked (safety). No-op when self-host.
+    if (approvalsLimitReached(db, key.projectId)) {
+      const tier = getProjectBilling(db, key.projectId).tier;
+      return reply.status(402).send({
+        error: 'Payment Required',
+        message: `Monthly approvals limit reached for the ${tier} plan (${TIER_LIMITS[tier].approvalsPerMonth}). Pending actions can still be decided; upgrade to push more.`,
+        limit: TIER_LIMITS[tier].approvalsPerMonth,
+        tier,
+      });
     }
 
     const parsed = CreateActionBody.safeParse(request.body);

@@ -219,6 +219,37 @@ export function buildOpenApiDocument(baseUrl = 'http://localhost:8484'): unknown
           responses: { 200: { description: 'Erased with counts' } },
         },
       },
+      '/billing': {
+        get: {
+          operationId: 'getBilling',
+          summary: 'Current tier, subscription status and usage (admin scope)',
+          responses: { 200: { description: 'Billing state incl. usage and billing_enabled flag' } },
+        },
+      },
+      '/billing/checkout': {
+        post: {
+          operationId: 'createCheckout',
+          summary: 'Create a Stripe Checkout session for a plan (admin scope; billing must be enabled)',
+          responses: {
+            200: { description: 'Checkout URL' },
+            400: { description: 'Billing disabled or plan not configured' },
+          },
+        },
+      },
+      '/billing/portal': {
+        post: {
+          operationId: 'createBillingPortal',
+          summary: 'Create a Stripe customer portal session (admin scope)',
+          responses: { 200: { description: 'Portal URL' }, 400: { description: 'No customer / billing disabled' } },
+        },
+      },
+      '/billing/webhook': {
+        post: {
+          operationId: 'stripeWebhook',
+          summary: 'Stripe webhook (public; verified by Stripe signature, not API key)',
+          responses: { 200: { description: 'Event processed' }, 400: { description: 'Bad signature' } },
+        },
+      },
     },
   };
 }

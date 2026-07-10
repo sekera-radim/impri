@@ -8,11 +8,16 @@ PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS projects (
-  id             TEXT PRIMARY KEY,
-  name           TEXT NOT NULL,
-  webhook_secret TEXT,
-  timezone       TEXT NOT NULL DEFAULT 'UTC',
-  created_at     INTEGER NOT NULL
+  id                     TEXT PRIMARY KEY,
+  name                   TEXT NOT NULL,
+  webhook_secret         TEXT,
+  timezone               TEXT NOT NULL DEFAULT 'UTC',
+  tier                   TEXT NOT NULL DEFAULT 'free',
+  stripe_customer_id     TEXT,
+  stripe_subscription_id TEXT,
+  subscription_status    TEXT,
+  current_period_end     INTEGER,
+  created_at             INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS api_keys (
@@ -170,6 +175,11 @@ function migrate(db: Db): void {
   const project = columns('projects');
   if (!project.has('webhook_secret')) db.exec('ALTER TABLE projects ADD COLUMN webhook_secret TEXT');
   if (!project.has('timezone')) db.exec("ALTER TABLE projects ADD COLUMN timezone TEXT NOT NULL DEFAULT 'UTC'");
+  if (!project.has('tier')) db.exec("ALTER TABLE projects ADD COLUMN tier TEXT NOT NULL DEFAULT 'free'");
+  if (!project.has('stripe_customer_id')) db.exec('ALTER TABLE projects ADD COLUMN stripe_customer_id TEXT');
+  if (!project.has('stripe_subscription_id')) db.exec('ALTER TABLE projects ADD COLUMN stripe_subscription_id TEXT');
+  if (!project.has('subscription_status')) db.exec('ALTER TABLE projects ADD COLUMN subscription_status TEXT');
+  if (!project.has('current_period_end')) db.exec('ALTER TABLE projects ADD COLUMN current_period_end INTEGER');
 
   if (!columns('watcher_items').has('size_bytes')) {
     db.exec('ALTER TABLE watcher_items ADD COLUMN size_bytes INTEGER');

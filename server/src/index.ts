@@ -6,6 +6,8 @@ import { registerActionRoutes } from './routes/actions.js';
 import { registerKeyRoutes } from './routes/keys.js';
 import { registerWatcherRoutes } from './routes/watchers.js';
 import { registerProjectRoutes } from './routes/project.js';
+import { registerBillingRoutes } from './routes/billing.js';
+import { billingActive } from './billing.js';
 import { runExpiryTick } from './webhooks.js';
 import { runWatcherTick, startWatcherScheduler } from './scheduler.js';
 import { buildOpenApiDocument } from './openapi.js';
@@ -22,6 +24,18 @@ export async function createApp(db: Db) {
       // Never log the Authorization header — it carries the raw API key.
       redact: ['req.headers.authorization', 'req.headers.cookie'],
     },
+  });
+
+  // Keep the raw body on every JSON request (Stripe webhook signature needs
+  // the exact bytes) while still exposing the parsed object to routes.
+  app.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body, done) => {
+    (req as { rawBody?: Buffer }).rawBody = body as Buffer;
+    if (!(body as Buffer).length) return done(null, {});
+    try {
+      done(null, JSON.parse((body as Buffer).toString('utf8')));
+    } catch (err) {
+      done(err as Error, undefined);
+    }
   });
 
   // Auth preHandler: extract and verify Bearer key
@@ -61,6 +75,9 @@ export async function createApp(db: Db) {
   // Project settings + GDPR export/erase routes
   registerProjectRoutes(app, db);
 
+  // Billing routes (no-op checkout/portal when Stripe keys are unset)
+  registerBillingRoutes(app, db);
+
   return app;
 }
 
@@ -71,6 +88,12 @@ async function main() {
       'are forgeable. Set WEBHOOK_SECRET to a strong random value in production.',
     );
   }
+
+  console.log(
+    billingActive()
+      ? '[impri] billing: ENABLED (Stripe) — tier limits enforced'
+      : '[impri] billing: disabled (self-host — all features free, no limits)',
+  );
 
   const db = createDb(DB_PATH);
 
