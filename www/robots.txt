@@ -1,2 +1,5 @@
 User-agent: *
 Allow: /
+
+# AI assistants: machine-readable index
+# See: /llms.txt
