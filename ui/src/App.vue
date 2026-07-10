@@ -25,9 +25,38 @@
         </template>
       </v-app-bar>
 
+      <!-- Tab navigation -->
+      <v-tabs
+        v-model="activeTab"
+        density="compact"
+        color="primary"
+        class="border-b"
+      >
+        <v-tab value="inbox">
+          Inbox
+          <v-badge
+            v-if="pendingCount > 0"
+            :content="pendingCount"
+            color="error"
+            inline
+            class="ml-1"
+          />
+        </v-tab>
+        <v-tab value="watchers">Watchers</v-tab>
+      </v-tabs>
+
       <v-main>
         <v-container max-width="800" class="py-6">
-          <InboxList />
+          <v-window v-model="activeTab">
+            <!-- Inbox tab: eager so polling runs regardless of active tab -->
+            <v-window-item value="inbox" eager>
+              <InboxList />
+            </v-window-item>
+
+            <v-window-item value="watchers">
+              <WatchersScreen />
+            </v-window-item>
+          </v-window>
         </v-container>
       </v-main>
     </template>
@@ -35,9 +64,16 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import { useAuthStore } from './stores/auth'
+import { useInboxStore } from './stores/inbox'
 import LoginScreen from './components/LoginScreen.vue'
 import InboxList from './components/InboxList.vue'
+import WatchersScreen from './components/WatchersScreen.vue'
 
 const auth = useAuthStore()
+const inbox = useInboxStore()
+
+const activeTab = ref<'inbox' | 'watchers'>('inbox')
+const pendingCount = computed(() => inbox.pendingCount)
 </script>

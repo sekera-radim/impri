@@ -13,6 +13,16 @@
             <v-chip size="x-small" variant="tonal" color="secondary" label>
               {{ action.kind }}
             </v-chip>
+            <v-chip
+              v-if="isUntrusted"
+              size="x-small"
+              variant="tonal"
+              color="warning"
+              label
+              prepend-icon="mdi-alert-outline"
+            >
+              External content
+            </v-chip>
             <span class="text-body-2 font-weight-medium text-truncate">
               {{ action.title }}
             </span>
@@ -52,9 +62,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Action } from '../types'
+import { isUntrustedPayload } from '../utils/untrusted'
 
 const props = defineProps<{ action: Action }>()
 defineEmits<{ click: [] }>()
+
+const isUntrusted = computed(() => isUntrustedPayload(props.action.payload))
 
 const previewExcerpt = computed(() => {
   const body = props.action.preview.body

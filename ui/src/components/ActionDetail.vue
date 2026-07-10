@@ -4,9 +4,19 @@
       <v-card-title class="d-flex align-center pa-4 pb-2">
         <div class="flex-grow-1 min-width-0">
           <div class="text-h6 text-truncate">{{ action.title }}</div>
-          <div class="d-flex align-center gap-2 mt-1">
+          <div class="d-flex align-center flex-wrap gap-2 mt-1">
             <v-chip size="x-small" variant="tonal" color="secondary" label>{{ action.kind }}</v-chip>
             <v-chip :color="statusColor" size="x-small" variant="tonal">{{ action.status }}</v-chip>
+            <v-chip
+              v-if="isUntrusted"
+              size="x-small"
+              variant="tonal"
+              color="warning"
+              label
+              prepend-icon="mdi-alert-outline"
+            >
+              External content
+            </v-chip>
           </div>
         </div>
         <v-btn icon="mdi-close" variant="text" size="small" class="ml-2" @click="$emit('update:modelValue', false)" />
@@ -43,14 +53,24 @@
         </div>
 
         <!-- Preview section -->
-        <v-card variant="tonal" color="surface-variant" class="mb-4">
+        <!-- When untrusted, always render as plain text (never trust external markdown) -->
+        <v-card
+          variant="tonal"
+          :color="isUntrusted ? 'warning' : 'surface-variant'"
+          class="mb-4"
+        >
           <v-card-title class="text-body-2 font-weight-medium d-flex align-center">
             <v-icon size="16" class="mr-1">mdi-text-box-outline</v-icon>
             Preview
-            <v-chip size="x-small" variant="text" class="ml-2 text-medium-emphasis">{{ action.preview.format }}</v-chip>
+            <v-chip size="x-small" variant="text" class="ml-2 text-medium-emphasis">
+              {{ isUntrusted ? 'plain (external)' : action.preview.format }}
+            </v-chip>
           </v-card-title>
           <v-card-text class="pt-0">
-            <MarkdownPreview :format="action.preview.format" :body="action.preview.body" />
+            <MarkdownPreview
+              :format="isUntrusted ? 'plain' : action.preview.format"
+              :body="action.preview.body"
+            />
           </v-card-text>
         </v-card>
 
@@ -77,6 +97,37 @@
                 <p class="text-caption text-medium-emphasis mb-1">Edits applied:</p>
                 <MarkdownPreview format="diff" :body="action.decision.diff" />
               </template>
+            </v-card-text>
+          </v-card>
+        </template>
+
+        <!-- Webhook delivery status -->
+        <template v-if="action.webhook_delivery">
+          <v-card variant="tonal" color="surface-variant" class="mb-4">
+            <v-card-title class="text-body-2 font-weight-medium d-flex align-center">
+              <v-icon size="16" class="mr-1">mdi-webhook</v-icon>
+              Webhook Delivery
+            </v-card-title>
+            <v-card-text class="pt-0">
+              <div class="d-flex flex-wrap gap-4 text-body-2">
+                <div>
+                  <span class="text-medium-emphasis">Status: </span>
+                  <v-chip :color="webhookStatusColor" size="x-small" variant="tonal">
+                    {{ action.webhook_delivery.status }}
+                  </v-chip>
+                </div>
+                <div>
+                  <span class="text-medium-emphasis">Attempt: </span>
+                  {{ action.webhook_delivery.attempt }}
+                </div>
+                <div v-if="action.webhook_delivery.last_status_code">
+                  <span class="text-medium-emphasis">HTTP: </span>
+                  {{ action.webhook_delivery.last_status_code }}
+                </div>
+              </div>
+              <p v-if="action.webhook_delivery.last_error" class="text-caption text-error mt-2 mb-0">
+                {{ action.webhook_delivery.last_error }}
+              </p>
             </v-card-text>
           </v-card>
         </template>
@@ -142,6 +193,7 @@ import type { Action } from '../types'
 import MarkdownPreview from './MarkdownPreview.vue'
 import PayloadViewer from './PayloadViewer.vue'
 import DecisionDialog from './DecisionDialog.vue'
+import { isUntrustedPayload } from '../utils/untrusted'
 
 const props = defineProps<{
   modelValue: boolean
@@ -155,6 +207,8 @@ const emit = defineEmits<{
 
 const showDecisionDialog = ref(false)
 const decisionAction = ref<Action | null>(null)
+
+const isUntrusted = computed(() => isUntrustedPayload(props.action?.payload))
 
 function openDecision(_verdict: 'approve' | 'reject'): void {
   decisionAction.value = props.action
@@ -212,6 +266,15 @@ const targetPath = computed(() => {
     return rest.length > 60 ? rest.slice(0, 60) + '…' : rest
   } catch {
     return ''
+  }
+})
+
+const webhookStatusColor = computed(() => {
+  switch (props.action?.webhook_delivery?.status) {
+    case 'delivered': return 'success'
+    case 'failed': return 'error'
+    case 'pending': return 'warning'
+    default: return 'grey'
   }
 })
 

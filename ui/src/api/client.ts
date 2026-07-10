@@ -6,6 +6,12 @@ import type {
   DecisionRequest,
   DecisionResponse,
   ListActionsResponse,
+  Watcher,
+  WatcherStatus,
+  WatcherKind,
+  ListWatchersResponse,
+  CreateWatcherRequest,
+  UpdateWatcherRequest,
 } from '../types'
 
 export class ApiClientError extends Error {
@@ -82,5 +88,32 @@ export class ApiClient {
 
   async revokeKey(keyId: string): Promise<void> {
     return this.request<void>('DELETE', `/keys/${keyId}`)
+  }
+
+  async listWatchers(params: {
+    status?: WatcherStatus
+    kind?: WatcherKind
+    limit?: number
+    cursor?: string
+  } = {}): Promise<ListWatchersResponse> {
+    const query = new URLSearchParams()
+    if (params.status) query.set('status', params.status)
+    if (params.kind) query.set('kind', params.kind)
+    if (params.limit !== undefined) query.set('limit', String(params.limit))
+    if (params.cursor) query.set('cursor', params.cursor)
+    const qs = query.toString()
+    return this.request<ListWatchersResponse>('GET', `/watchers${qs ? `?${qs}` : ''}`)
+  }
+
+  async createWatcher(req: CreateWatcherRequest): Promise<Watcher> {
+    return this.request<Watcher>('POST', '/watchers', req)
+  }
+
+  async updateWatcher(id: string, req: UpdateWatcherRequest): Promise<Watcher> {
+    return this.request<Watcher>('PATCH', `/watchers/${id}`, req)
+  }
+
+  async deleteWatcher(id: string): Promise<void> {
+    return this.request<void>('DELETE', `/watchers/${id}`)
   }
 }

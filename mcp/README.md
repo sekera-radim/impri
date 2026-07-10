@@ -124,6 +124,92 @@ You are a Reddit engagement agent. Before posting any comment or reply:
    If expired: log a note and skip this reply.
 ```
 
+## Verifying webhooks
+
+When Impri delivers a webhook to your `callback_url`, every request is signed with HMAC-SHA256 to prevent replay attacks and forgery. The `@impri/mcp` package exports a ready-made helper:
+
+```typescript
+import { verifyWebhookSignature } from "@impri/mcp/webhook";
+```
+
+Three headers carry the signing material:
+
+| Header | Example | Description |
+|---|---|---|
+| `X-Impri-Signature` | `sha256=abc123…` | HMAC-SHA256 over `${timestamp}.${nonce}.${rawBody}` |
+| `X-Impri-Timestamp` | `1752134400` | Unix epoch seconds (used to reject stale replays) |
+| `X-Impri-Nonce` | `a1b2c3d4…` | Random hex string — unique per delivery |
+
+### Express middleware
+
+```typescript
+import express from "express";
+import { verifyWebhookSignature } from "@impri/mcp/webhook";
+
+const app = express();
+
+app.post(
+  "/impri/webhook",
+  express.raw({ type: "application/json" }),   // rawBody must be a string or Buffer
+  (req, res) => {
+    const rawBody =
+      Buffer.isBuffer(req.body) ? req.body.toString("utf8") : String(req.body);
+
+    const ok = verifyWebhookSignature({
+      secret: process.env.IMPRI_WEBHOOK_SECRET!,
+      rawBody,
+      signatureHeader: req.headers["x-impri-signature"] as string,
+      timestampHeader: req.headers["x-impri-timestamp"] as string,
+      nonceHeader:     req.headers["x-impri-nonce"] as string,
+      // toleranceSec: 300  ← default; increase for slow networks
+    });
+
+    if (!ok) {
+      return res.status(401).json({ error: "Invalid signature" });
+    }
+
+    const event = JSON.parse(rawBody);
+    console.log("Impri event:", event.event, event.action_id, event.status);
+    res.sendStatus(200);
+  },
+);
+```
+
+### Fastify middleware
+
+```typescript
+import Fastify from "fastify";
+import { verifyWebhookSignature } from "@impri/mcp/webhook";
+
+const app = Fastify();
+
+app.addContentTypeParser("application/json", { parseAs: "string" }, (req, body, done) => {
+  done(null, body);
+});
+
+app.post("/impri/webhook", (request, reply) => {
+  const rawBody = request.body as string;
+
+  const ok = verifyWebhookSignature({
+    secret: process.env.IMPRI_WEBHOOK_SECRET!,
+    rawBody,
+    signatureHeader: request.headers["x-impri-signature"] as string,
+    timestampHeader: request.headers["x-impri-timestamp"] as string,
+    nonceHeader:     request.headers["x-impri-nonce"] as string,
+  });
+
+  if (!ok) {
+    return reply.status(401).send({ error: "Invalid signature" });
+  }
+
+  const event = JSON.parse(rawBody);
+  console.log("Impri event:", event.event, event.action_id);
+  reply.send({ ok: true });
+});
+```
+
+> **Important:** parse the body as a raw string **before** passing it to the helper. JSON-parsing and re-stringifying the body will change whitespace and field ordering, causing the HMAC to not match.
+
 ## Development
 
 ```bash

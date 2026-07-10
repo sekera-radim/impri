@@ -6,6 +6,10 @@
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./webhook": "./dist/webhook.js"
+  },
   "bin": {
     "impri-mcp": "./dist/index.js"
   },

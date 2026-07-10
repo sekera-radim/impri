@@ -184,16 +184,29 @@ Returns the pending count and a brief list of pending action titles. Call this b
   },
   {
     name: "impri_create_watcher",
-    description: `[Phase 2 — not yet available] Create a watcher that monitors external sources (RSS feeds, Reddit, URL diffs) and delivers matching items to the approval inbox or a webhook.
+    description: `Create a watcher that monitors external sources (RSS feeds, Reddit, URL diffs) and delivers matching items to the approval inbox or a webhook.
 
-This tool is declared now so integrations can reference it without API changes when watchers ship in phase 2. Calling it currently returns an error.`,
+The watcher runs on the schedule you specify, deduplicates items by URL/content-hash, and delivers only new matches. The first run establishes a baseline and does not generate alerts.
+
+Example — watch an RSS feed for AI-related news:
+  spec: {
+    name: "AI launches radar",
+    kind: "rss",
+    config: { url: "https://openai.com/news/rss.xml" },
+    keywords: ["launch", "gpt-", "voice"],
+    keywords_none: ["funding", "benchmark"],
+    min_score: 1,
+    schedule: { every: "8h", jitter: "4h" }
+  }
+
+Returns { watcher_id, name, kind, status, next_run_at }.`,
     inputSchema: {
       type: "object" as const,
       properties: {
         spec: {
           type: "object",
           description:
-            "Watcher specification (name, sources, schedule, filter, deliver). See SPEC.md §3.2 for the full schema.",
+            "Watcher specification (name, kind, config, keywords, keywords_none, min_score, schedule). See SPEC.md §3.2 for the full schema.",
         },
       },
       required: ["spec"],
@@ -201,12 +214,19 @@ This tool is declared now so integrations can reference it without API changes w
   },
   {
     name: "impri_list_watchers",
-    description: `[Phase 2 — not yet available] List all configured watchers.
+    description: `List all configured watchers, optionally filtered by status.
 
-This tool is declared now so integrations can reference it without API changes when watchers ship in phase 2. Calling it currently returns an error.`,
+Returns the watcher count and a summary line per watcher (id, name, kind, status). Use this to audit what is being monitored, check for degraded watchers, or find a watcher_id for further operations.`,
     inputSchema: {
       type: "object" as const,
-      properties: {},
+      properties: {
+        status: {
+          type: "string",
+          enum: ["active", "paused", "degraded"],
+          description:
+            "Filter watchers by status. Omit to return all watchers regardless of status.",
+        },
+      },
       required: [],
     },
   },
@@ -278,18 +298,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "impri_create_watcher": {
-        const result = createWatcher();
+        const result = await createWatcher(config, {
+          spec: args["spec"],
+        });
         return {
           content: [{ type: "text" as const, text: result.text }],
-          isError: true,
+          ...(result.isError ? { isError: true } : {}),
         };
       }
 
       case "impri_list_watchers": {
-        const result = listWatchers();
+        const result = await listWatchers(config, {
+          status: args["status"] as string | undefined,
+        });
         return {
           content: [{ type: "text" as const, text: result.text }],
-          isError: true,
+          ...(result.isError ? { isError: true } : {}),
         };
       }
 

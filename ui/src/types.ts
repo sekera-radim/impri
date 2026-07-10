@@ -84,3 +84,70 @@ export interface ApiError {
   editable?: string[]
   current_status?: ActionStatus
 }
+
+// --- Watchers ---
+
+export type WatcherStatus = 'active' | 'paused' | 'degraded'
+export type WatcherKind = 'rss' | 'reddit_search' | 'url_diff'
+
+export interface ScoringRule {
+  pattern: string
+  points: number
+}
+
+export interface WatcherSchedule {
+  every: string
+  jitter?: string
+  window?: string
+}
+
+export interface WatcherConfig {
+  url?: string
+  query?: string
+  subreddit?: string
+}
+
+export interface Watcher {
+  id: string
+  name: string
+  kind: WatcherKind
+  config: WatcherConfig
+  keywords: ScoringRule[]
+  keywords_none: string[]
+  min_score: number
+  schedule: WatcherSchedule
+  status: WatcherStatus
+  fail_count: number
+  first_run_done: boolean
+  last_run_at?: number
+  next_run_at: number
+  last_error?: string
+  created_at: number
+  updated_at: number
+}
+
+export interface ListWatchersResponse {
+  items: Watcher[]
+  has_more: boolean
+  next_cursor?: string
+}
+
+export interface CreateWatcherRequest {
+  name: string
+  kind: WatcherKind
+  config: WatcherConfig
+  keywords?: ScoringRule[]
+  keywords_none?: string[]
+  min_score?: number
+  schedule: WatcherSchedule
+}
+
+export interface UpdateWatcherRequest {
+  status?: 'active' | 'paused'
+  name?: string
+  config?: WatcherConfig
+  keywords?: ScoringRule[]
+  keywords_none?: string[]
+  min_score?: number
+  schedule?: WatcherSchedule
+}
