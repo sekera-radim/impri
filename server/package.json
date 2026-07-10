@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.json && node --input-type=module < scripts/gen-openapi.js",
+    "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src test",
     "test": "vitest run"
@@ -13,6 +13,7 @@
   "dependencies": {
     "argon2": "^0.41.1",
     "better-sqlite3": "^11.10.0",
+    "fast-xml-parser": "^5.9.3",
     "fastify": "^5.3.2",
     "nodemailer": "^7.0.3",
     "zod": "^3.24.2",

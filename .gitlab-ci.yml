@@ -1,0 +1,55 @@
+stages:
+  - test
+
+default:
+  image: node:22-alpine
+
+# server lives in the root npm workspace; mcp and ui are standalone
+# packages with their own lockfiles.
+
+server:
+  stage: test
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
+  before_script:
+    - npm ci --cache .npm --prefer-offline
+  script:
+    - npm run typecheck --workspace=@impri/server
+    - npm run lint --workspace=@impri/server
+    - npm test --workspace=@impri/server
+    - npm run build --workspace=@impri/server
+
+mcp:
+  stage: test
+  cache:
+    key:
+      files:
+        - mcp/package-lock.json
+    paths:
+      - .npm/
+  before_script:
+    - cd mcp && npm ci --cache ../.npm --prefer-offline
+  script:
+    - npm run typecheck
+    - npm run lint
+    - npm test
+
+ui:
+  stage: test
+  cache:
+    key:
+      files:
+        - ui/package-lock.json
+    paths:
+      - .npm/
+  before_script:
+    - cd ui && npm ci --cache ../.npm --prefer-offline
+  script:
+    - npm run typecheck
+    - npm run lint
+    - npm test
+    - npm run build

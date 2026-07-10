@@ -94,6 +94,44 @@ CREATE TABLE IF NOT EXISTS audit_log (
   data       TEXT,
   created_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS watchers (
+  id             TEXT PRIMARY KEY,
+  project_id     TEXT NOT NULL,
+  name           TEXT NOT NULL,
+  kind           TEXT NOT NULL,
+  config         TEXT NOT NULL,
+  keywords       TEXT NOT NULL DEFAULT '[]',
+  keywords_none  TEXT NOT NULL DEFAULT '[]',
+  min_score      INTEGER NOT NULL DEFAULT 1,
+  schedule       TEXT NOT NULL,
+  status         TEXT NOT NULL DEFAULT 'active',
+  fail_count     INTEGER NOT NULL DEFAULT 0,
+  degraded_since INTEGER,
+  last_error     TEXT,
+  first_run_done INTEGER NOT NULL DEFAULT 0,
+  last_run_at    INTEGER,
+  next_run_at    INTEGER NOT NULL,
+  created_at     INTEGER NOT NULL,
+  updated_at     INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_watchers_project ON watchers(project_id);
+CREATE INDEX IF NOT EXISTS idx_watchers_due
+  ON watchers(next_run_at, status)
+  WHERE status IN ('active', 'degraded');
+
+CREATE TABLE IF NOT EXISTS watcher_items (
+  id          TEXT PRIMARY KEY,
+  watcher_id  TEXT NOT NULL REFERENCES watchers(id),
+  item_hash   TEXT NOT NULL,
+  url         TEXT,
+  title       TEXT,
+  first_seen  INTEGER NOT NULL,
+  UNIQUE(watcher_id, item_hash)
+);
+
+CREATE INDEX IF NOT EXISTS idx_watcher_items_watcher ON watcher_items(watcher_id, first_seen);
 `;
 
 export function createDb(path: string): Db {

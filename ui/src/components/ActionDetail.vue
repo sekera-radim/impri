@@ -1,0 +1,242 @@
+<template>
+  <v-dialog :model-value="modelValue" max-width="720" scrollable @update:model-value="$emit('update:modelValue', $event)">
+    <v-card v-if="action">
+      <v-card-title class="d-flex align-center pa-4 pb-2">
+        <div class="flex-grow-1 min-width-0">
+          <div class="text-h6 text-truncate">{{ action.title }}</div>
+          <div class="d-flex align-center gap-2 mt-1">
+            <v-chip size="x-small" variant="tonal" color="secondary" label>{{ action.kind }}</v-chip>
+            <v-chip :color="statusColor" size="x-small" variant="tonal">{{ action.status }}</v-chip>
+          </div>
+        </div>
+        <v-btn icon="mdi-close" variant="text" size="small" class="ml-2" @click="$emit('update:modelValue', false)" />
+      </v-card-title>
+
+      <v-divider />
+
+      <v-card-text class="pa-4" style="max-height: 70vh; overflow-y: auto">
+        <!-- Meta info -->
+        <div class="d-flex flex-wrap gap-4 mb-4 text-body-2">
+          <div v-if="action.target_url">
+            <span class="text-medium-emphasis">Target: </span>
+            <a
+              :href="action.target_url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-primary"
+            >
+              <strong>{{ targetDomain }}</strong>{{ targetPath }}
+            </a>
+          </div>
+
+          <div v-if="action.expires_at">
+            <span class="text-medium-emphasis">Expires: </span>
+            <span :class="isExpiringSoon ? 'text-error font-weight-medium' : ''">
+              {{ expiresLabel }}
+            </span>
+          </div>
+
+          <div>
+            <span class="text-medium-emphasis">Created: </span>
+            {{ createdLabel }}
+          </div>
+        </div>
+
+        <!-- Preview section -->
+        <v-card variant="tonal" color="surface-variant" class="mb-4">
+          <v-card-title class="text-body-2 font-weight-medium d-flex align-center">
+            <v-icon size="16" class="mr-1">mdi-text-box-outline</v-icon>
+            Preview
+            <v-chip size="x-small" variant="text" class="ml-2 text-medium-emphasis">{{ action.preview.format }}</v-chip>
+          </v-card-title>
+          <v-card-text class="pt-0">
+            <MarkdownPreview :format="action.preview.format" :body="action.preview.body" />
+          </v-card-text>
+        </v-card>
+
+        <!-- Decision info (if decided) -->
+        <template v-if="action.decision">
+          <v-card
+            variant="tonal"
+            :color="action.decision.verdict === 'approve' ? 'success' : 'error'"
+            class="mb-4"
+          >
+            <v-card-text class="py-2">
+              <div class="d-flex align-center gap-2 text-body-2">
+                <v-icon size="16">
+                  {{ action.decision.verdict === 'approve' ? 'mdi-check-circle' : 'mdi-close-circle' }}
+                </v-icon>
+                <strong class="text-capitalize">{{ action.decision.verdict }}d</strong>
+                <span class="text-medium-emphasis">via {{ action.decision.channel ?? 'api' }}</span>
+                <span class="text-medium-emphasis">· {{ decisionLabel }}</span>
+              </div>
+
+              <!-- Show diff if any edits were made -->
+              <template v-if="action.decision.diff">
+                <v-divider class="my-2" />
+                <p class="text-caption text-medium-emphasis mb-1">Edits applied:</p>
+                <MarkdownPreview format="diff" :body="action.decision.diff" />
+              </template>
+            </v-card-text>
+          </v-card>
+        </template>
+
+        <!-- Payload section (collapsible) -->
+        <template v-if="action.payload !== undefined">
+          <PayloadViewer :payload="action.payload" />
+        </template>
+      </v-card-text>
+
+      <v-divider />
+
+      <v-card-actions class="pa-3">
+        <v-btn
+          v-if="action.target_url"
+          variant="text"
+          size="small"
+          :href="action.target_url"
+          target="_blank"
+          rel="noopener noreferrer"
+          prepend-icon="mdi-open-in-new"
+        >
+          Open target
+        </v-btn>
+        <v-spacer />
+
+        <template v-if="action.status === 'pending'">
+          <v-btn
+            color="error"
+            variant="tonal"
+            size="small"
+            prepend-icon="mdi-close"
+            @click="openDecision('reject')"
+          >
+            Reject
+          </v-btn>
+          <v-btn
+            color="success"
+            variant="flat"
+            size="small"
+            prepend-icon="mdi-check"
+            class="ml-2"
+            @click="openDecision('approve')"
+          >
+            Approve
+          </v-btn>
+        </template>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <DecisionDialog
+    v-if="action"
+    v-model="showDecisionDialog"
+    :action="decisionAction"
+    @decided="handleDecided"
+  />
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import type { Action } from '../types'
+import MarkdownPreview from './MarkdownPreview.vue'
+import PayloadViewer from './PayloadViewer.vue'
+import DecisionDialog from './DecisionDialog.vue'
+
+const props = defineProps<{
+  modelValue: boolean
+  action: Action | null
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean]
+  'decided': [actionId: string]
+}>()
+
+const showDecisionDialog = ref(false)
+const decisionAction = ref<Action | null>(null)
+
+function openDecision(_verdict: 'approve' | 'reject'): void {
+  decisionAction.value = props.action
+  showDecisionDialog.value = true
+}
+
+function handleDecided(actionId: string): void {
+  showDecisionDialog.value = false
+  emit('decided', actionId)
+  emit('update:modelValue', false)
+}
+
+const nowSec = Math.floor(Date.now() / 1000)
+
+const isExpiringSoon = computed(() => {
+  if (!props.action?.expires_at) return false
+  return props.action.expires_at - nowSec < 3600
+})
+
+const expiresLabel = computed(() => {
+  if (!props.action?.expires_at) return ''
+  const diffSec = props.action.expires_at - nowSec
+  if (diffSec <= 0) return 'Expired'
+  const d = new Date(props.action.expires_at * 1000)
+  const rel = formatRelative(diffSec)
+  return `${d.toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} (${rel})`
+})
+
+const createdLabel = computed(() => {
+  if (!props.action) return ''
+  const d = new Date(props.action.created_at * 1000)
+  return d.toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+})
+
+const decisionLabel = computed(() => {
+  if (!props.action?.decision) return ''
+  const d = new Date(props.action.decision.decided_at * 1000)
+  return d.toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+})
+
+const targetDomain = computed(() => {
+  if (!props.action?.target_url) return ''
+  try {
+    return new URL(props.action.target_url).hostname
+  } catch {
+    return props.action.target_url
+  }
+})
+
+const targetPath = computed(() => {
+  if (!props.action?.target_url) return ''
+  try {
+    const u = new URL(props.action.target_url)
+    const rest = u.pathname + u.search
+    return rest.length > 60 ? rest.slice(0, 60) + '…' : rest
+  } catch {
+    return ''
+  }
+})
+
+const statusColor = computed(() => {
+  switch (props.action?.status) {
+    case 'pending': return 'warning'
+    case 'approved': return 'success'
+    case 'rejected': return 'error'
+    case 'expired': return 'grey'
+    case 'executed': return 'info'
+    case 'execute_failed': return 'deep-orange'
+    default: return 'grey'
+  }
+})
+
+function formatRelative(sec: number): string {
+  if (sec < 60) return `${sec}s`
+  if (sec < 3600) return `${Math.floor(sec / 60)}m`
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h`
+  return `${Math.floor(sec / 86400)}d`
+}
+</script>
+
+<style scoped>
+.min-width-0 { min-width: 0; }
+.gap-2 { gap: 8px; }
+.gap-4 { gap: 16px; }
+</style>

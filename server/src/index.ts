@@ -4,7 +4,9 @@ import { createDb } from './db.js';
 import { verifyApiKey, bootstrapAdminKey } from './auth.js';
 import { registerActionRoutes } from './routes/actions.js';
 import { registerKeyRoutes } from './routes/keys.js';
+import { registerWatcherRoutes } from './routes/watchers.js';
 import { runExpiryTick } from './webhooks.js';
+import { runWatcherTick, startWatcherScheduler } from './scheduler.js';
 import { buildOpenApiDocument } from './openapi.js';
 import type { Db } from './db.js';
 
@@ -47,6 +49,9 @@ export async function createApp(db: Db) {
   // Key management routes
   registerKeyRoutes(app, db);
 
+  // Watcher CRUD routes
+  registerWatcherRoutes(app, db);
+
   return app;
 }
 
@@ -74,11 +79,23 @@ async function main() {
     );
   }, 60_000);
 
+  // Watcher scheduler tick every 60s (no-op when DISABLE_WATCHER_SCHEDULER=1)
+  startWatcherScheduler(db);
+
+  // Also run one watcher tick immediately on startup (handles missed runs — PLAYBOOK B3)
+  runWatcherTick(db).catch(err =>
+    console.error('[tick] initial watcher tick failed', err),
+  );
+
   await app.listen({ port: PORT, host: HOST });
   console.log(`Impri server running on http://${HOST}:${PORT}`);
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+// Don't run in vitest worker threads — each thread imports index.ts and would
+// try to bind port 8484, causing EADDRINUSE in the second worker.
+if (!process.env.VITEST) {
+  main().catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
+}
