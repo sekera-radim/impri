@@ -217,3 +217,15 @@ export function genId(prefix: string): string {
 export function hashContent(...parts: string[]): string {
   return createHash('sha256').update(parts.join('|')).digest('hex').slice(0, 32);
 }
+
+// Opaque keyset pagination cursor: "<created_at>.<id>" base64url-encoded.
+// Composite so two rows in the same second are never skipped or duplicated.
+export function encodeCursor(createdAt: number, id: string): string {
+  return Buffer.from(`${createdAt}.${id}`, 'utf-8').toString('base64url');
+}
+export function decodeCursor(cursor: string): [number, string] {
+  const raw = Buffer.from(cursor, 'base64url').toString('utf-8');
+  const dot = raw.indexOf('.');
+  if (dot === -1) return [Number(raw) || 0, '￿']; // tolerate legacy ts-only cursor
+  return [Number(raw.slice(0, dot)) || 0, raw.slice(dot + 1)];
+}

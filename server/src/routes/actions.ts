@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { Db } from '../db.js';
-import { genId, hashContent, nowSec } from '../db.js';
+import { genId, hashContent, nowSec, encodeCursor, decodeCursor } from '../db.js';
 import { hasScope, checkRateLimit } from '../auth.js';
 import { approvalsLimitReached, getProjectBilling, TIER_LIMITS } from '../billing.js';
 import { scheduleWebhookDelivery } from '../webhooks.js';
@@ -12,17 +12,6 @@ import {
   ResultBody,
   ListActionsQuery,
 } from '../schemas.js';
-
-// Opaque pagination cursor: "<created_at>.<id>" base64url-encoded.
-function encodeCursor(createdAt: number, id: string): string {
-  return Buffer.from(`${createdAt}.${id}`, 'utf-8').toString('base64url');
-}
-function decodeCursor(cursor: string): [number, string] {
-  const raw = Buffer.from(cursor, 'base64url').toString('utf-8');
-  const dot = raw.indexOf('.');
-  if (dot === -1) return [Number(raw) || 0, '￿']; // tolerate legacy ts-only cursor
-  return [Number(raw.slice(0, dot)) || 0, raw.slice(dot + 1)];
-}
 
 function serializeAction(row: Record<string, unknown>) {
   return {

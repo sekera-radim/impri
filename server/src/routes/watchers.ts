@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { Db } from '../db.js';
-import { genId, nowSec } from '../db.js';
+import { genId, nowSec, encodeCursor, decodeCursor } from '../db.js';
 import { hasScope, checkRateLimit } from '../auth.js';
 import { computeNextRunAt } from '../scheduler.js';
 import { watcherLimitReached, getProjectBilling, TIER_LIMITS } from '../billing.js';
@@ -105,19 +105,24 @@ export function registerWatcherRoutes(app: FastifyInstance, db: Db): void {
 
     if (q.status) { sql += ' AND status = ?'; params.push(q.status); }
     if (q.kind) { sql += ' AND kind = ?'; params.push(q.kind); }
-    if (q.cursor) { sql += ' AND created_at < ?'; params.push(Number(q.cursor)); }
+    if (q.cursor) {
+      const [cTs, cId] = decodeCursor(q.cursor);
+      sql += ' AND (created_at < ? OR (created_at = ? AND id < ?))';
+      params.push(cTs, cTs, cId);
+    }
 
-    sql += ' ORDER BY created_at DESC LIMIT ?';
+    sql += ' ORDER BY created_at DESC, id DESC LIMIT ?';
     params.push(q.limit + 1);
 
     const rows = db.prepare(sql).all(...params) as Array<Record<string, unknown>>;
     const hasMore = rows.length > q.limit;
     const items = hasMore ? rows.slice(0, q.limit) : rows;
+    const last = items[items.length - 1];
 
     return {
       items: items.map(r => serializeWatcher(r)),
       has_more: hasMore,
-      next_cursor: hasMore ? String(items[items.length - 1].created_at) : undefined,
+      next_cursor: hasMore ? encodeCursor(last.created_at as number, last.id as string) : undefined,
     };
   });
 

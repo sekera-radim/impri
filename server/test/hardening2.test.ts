@@ -109,6 +109,29 @@ describe('watcher serialization surfaces degraded diagnostics', () => {
   });
 });
 
+describe('watchers list composite cursor', () => {
+  it('walks all watchers with no dupes even within the same second', async () => {
+    const { app, adminKey } = await setup();
+    for (let i = 0; i < 3; i++) {
+      await app.inject({
+        method: 'POST', url: '/v1/watchers', headers: auth(adminKey),
+        payload: { name: `w${i}`, kind: 'rss', config: { url: 'https://example.com/f.xml' }, schedule: { every: '30m' } },
+      });
+    }
+    const seen = new Set<string>();
+    let cursor: string | undefined;
+    for (let page = 0; page < 5; page++) {
+      const url = `/v1/watchers?limit=1${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`;
+      const res = await app.inject({ method: 'GET', url, headers: auth(adminKey) });
+      const body = res.json();
+      for (const item of body.items) seen.add(item.id);
+      if (!body.has_more) break;
+      cursor = body.next_cursor;
+    }
+    expect(seen.size).toBe(3);
+  });
+});
+
 describe('composite cursor pagination', () => {
   it('walks all actions with no dupes even within the same second', async () => {
     const { app, adminKey } = await setup();
