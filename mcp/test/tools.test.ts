@@ -64,10 +64,11 @@ describe("pushAction", () => {
       preview: { format: "markdown", body: "The advice conflicts because..." },
     });
 
-    const parsed = JSON.parse(result) as { action_id: string; status: string; inbox_url: string };
+    const parsed = JSON.parse(result.text) as { action_id: string; status: string; inbox_url: string };
     expect(parsed.action_id).toBe("act_001");
     expect(parsed.status).toBe("pending");
     expect(parsed.inbox_url).toContain("act_001");
+    expect(result.isError).toBeFalsy();
 
     expect(mockFetch).toHaveBeenCalledOnce();
     const [url, init] = mockFetch.mock.calls[0]!;
@@ -82,7 +83,7 @@ describe("pushAction", () => {
 // ─── awaitDecision ────────────────────────────────────────────────────────────
 
 describe("awaitDecision", () => {
-  it("returns immediately when action is already approved", async () => {
+  it("returns immediately when action is already approved (no edits)", async () => {
     mockFetch.mockResolvedValue(
       mockOk({
         id: "act_002",
@@ -90,19 +91,70 @@ describe("awaitDecision", () => {
         title: "Reply: Test",
         status: "approved",
         inbox_url: "https://signoff.dev/inbox/act_002",
-        decision_at: "2026-07-10T08:00:00Z",
-        preview: { format: "markdown", body: "Approved body" },
+        preview: { format: "markdown", body: "Original body" },
         payload: { post_id: "abc123" },
+        decision: {
+          verdict: "approve",
+          decided_at: 1752134400,
+          channel: "api",
+          final_preview: { format: "markdown", body: "Original body" },
+        },
       }),
     );
 
     const result = await awaitDecision(config, { action_id: "act_002" }, 0);
 
     expect(result.isError).toBeFalsy();
-    const parsed = JSON.parse(result.text) as { action_id: string; status: string };
+    const parsed = JSON.parse(result.text) as {
+      action_id: string;
+      status: string;
+      preview: { body: string };
+      edited_by_human: boolean;
+    };
     expect(parsed.action_id).toBe("act_002");
     expect(parsed.status).toBe("approved");
+    expect(parsed.edited_by_human).toBe(false);
     expect(mockFetch).toHaveBeenCalledOnce();
+  });
+
+  it("surfaces human-edited final_preview with edited_by_human=true", async () => {
+    // This is the key regression test: agent must execute the EDITED text, not the original draft.
+    mockFetch.mockResolvedValue(
+      mockOk({
+        id: "act_002b",
+        kind: "reddit.comment",
+        title: "Reply: Resume advice",
+        status: "approved",
+        inbox_url: "https://signoff.dev/inbox/act_002b",
+        preview: { format: "markdown", body: "mcp draft — original agent text" },
+        payload: { post_id: "xyz789" },
+        decision: {
+          verdict: "approve",
+          decided_at: 1752134500,
+          channel: "web",
+          final_preview: { format: "markdown", body: "human tweaked via mcp test" },
+          diff: "--- original\n+++ edited\n@@ preview.body @@\n-mcp draft — original agent text\n+human tweaked via mcp test",
+        },
+      }),
+    );
+
+    const result = await awaitDecision(config, { action_id: "act_002b" }, 0);
+
+    expect(result.isError).toBeFalsy();
+    const parsed = JSON.parse(result.text) as {
+      action_id: string;
+      status: string;
+      preview: { body: string };
+      edited_by_human: boolean;
+      diff: string;
+    };
+    expect(parsed.action_id).toBe("act_002b");
+    expect(parsed.status).toBe("approved");
+    // Must carry the human-edited text, not the original draft
+    expect(parsed.preview.body).toBe("human tweaked via mcp test");
+    expect(parsed.preview.body).not.toContain("mcp draft");
+    expect(parsed.edited_by_human).toBe(true);
+    expect(parsed.diff).toContain("human tweaked via mcp test");
   });
 
   it("polls pending → approved transition with two fetches", async () => {
@@ -113,7 +165,11 @@ describe("awaitDecision", () => {
       status: "pending",
       inbox_url: "https://signoff.dev/inbox/act_003",
     };
-    const approved = { ...pending, status: "approved", decision_at: "2026-07-10T08:01:00Z" };
+    const approved = {
+      ...pending,
+      status: "approved",
+      decision: { verdict: "approve", decided_at: 1752134401, final_preview: undefined },
+    };
 
     mockFetch
       .mockResolvedValueOnce(mockOk(pending))
@@ -128,7 +184,7 @@ describe("awaitDecision", () => {
   });
 
   it("returns isError and timeout message when deadline is exceeded", async () => {
-    // timeout_s = 0 means deadline = now, so after the first poll we exit
+    // timeout_s = 0 means deadline = now; after the first poll showing pending, we exit
     mockFetch.mockResolvedValue(
       mockOk({ id: "act_004", status: "pending", inbox_url: "https://signoff.dev/inbox/act_004" }),
     );
@@ -148,13 +204,13 @@ describe("awaitDecision", () => {
         title: "Email: Follow-up",
         status: "rejected",
         inbox_url: "https://signoff.dev/inbox/act_005",
-        decision_at: "2026-07-10T08:02:00Z",
+        decision: { verdict: "reject", decided_at: 1752134402, channel: "web" },
       }),
     );
 
     const result = await awaitDecision(config, { action_id: "act_005" }, 0);
 
-    // rejected is a valid decision: the agent should read the status, not treat it as a system error
+    // rejected is a valid decision: agent reads the status and aborts — not a system error
     const parsed = JSON.parse(result.text) as { status: string };
     expect(parsed.status).toBe("rejected");
     expect(result.isError).toBeFalsy();
@@ -184,8 +240,9 @@ describe("reportResult", () => {
       status: "executed",
     });
 
-    expect(result).toContain("act_007");
-    expect(result).toContain("executed");
+    expect(result.text).toContain("act_007");
+    expect(result.text).toContain("executed");
+    expect(result.isError).toBeFalsy();
     expect(mockFetch).toHaveBeenCalledOnce();
     const [url] = mockFetch.mock.calls[0]!;
     expect(url).toBe("http://localhost:8484/v1/actions/act_007/result");
@@ -200,9 +257,9 @@ describe("reportResult", () => {
       detail: "Network timeout when posting to Reddit",
     });
 
-    expect(result).toContain("act_008");
-    expect(result).toContain("execute_failed");
-    expect(result).toContain("Network timeout");
+    expect(result.text).toContain("act_008");
+    expect(result.text).toContain("execute_failed");
+    expect(result.text).toContain("Network timeout");
   });
 });
 
@@ -210,11 +267,12 @@ describe("reportResult", () => {
 
 describe("inboxStatus", () => {
   it("reports empty inbox clearly", async () => {
-    mockFetch.mockResolvedValue(mockOk([]));
+    mockFetch.mockResolvedValue(mockOk({ items: [], has_more: false }));
 
     const result = await inboxStatus(config);
 
-    expect(result).toMatch(/0 pending/i);
+    expect(result.text).toMatch(/0 pending/i);
+    expect(result.isError).toBeFalsy();
     expect(mockFetch).toHaveBeenCalledOnce();
     const [url] = mockFetch.mock.calls[0]!;
     expect(url).toBe("http://localhost:8484/v1/actions?status=pending");
@@ -222,18 +280,21 @@ describe("inboxStatus", () => {
 
   it("lists pending action count and titles", async () => {
     mockFetch.mockResolvedValue(
-      mockOk([
-        { id: "act_009", kind: "reddit.comment", title: "Reply: First post", status: "pending" },
-        { id: "act_010", kind: "email.send", title: "Email: Follow-up to John", status: "pending" },
-      ]),
+      mockOk({
+        items: [
+          { id: "act_009", kind: "reddit.comment", title: "Reply: First post", status: "pending" },
+          { id: "act_010", kind: "email.send", title: "Email: Follow-up to John", status: "pending" },
+        ],
+        has_more: false,
+      }),
     );
 
     const result = await inboxStatus(config);
 
-    expect(result).toContain("2 pending");
-    expect(result).toContain("act_009");
-    expect(result).toContain("Reply: First post");
-    expect(result).toContain("act_010");
+    expect(result.text).toContain("2 pending");
+    expect(result.text).toContain("act_009");
+    expect(result.text).toContain("Reply: First post");
+    expect(result.text).toContain("act_010");
   });
 });
 

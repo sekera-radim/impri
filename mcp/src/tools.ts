@@ -21,17 +21,19 @@ export interface PushActionArgs {
 export async function pushAction(
   config: SignoffConfig,
   args: PushActionArgs,
-): Promise<string> {
+): Promise<ToolResult> {
   const result = await apiRequest<ActionCreated>(config, "POST", "/actions", args);
-  return JSON.stringify(
-    {
-      action_id: result.id,
-      status: result.status,
-      inbox_url: result.inbox_url,
-    },
-    null,
-    2,
-  );
+  return {
+    text: JSON.stringify(
+      {
+        action_id: result.id,
+        status: result.status,
+        inbox_url: result.inbox_url,
+      },
+      null,
+      2,
+    ),
+  };
 }
 
 // ─── signoff_await_decision ───────────────────────────────────────────────────
@@ -78,13 +80,21 @@ function formatDecision(action: Action): ToolResult {
     };
   }
 
+  const decision = action.decision;
+  // When the reviewer used edit-before-approve, final_preview carries the human-edited
+  // text; diff is only present when a change was actually made.
+  const effectivePreview = decision?.final_preview ?? action.preview;
+  const editedByHuman = !!decision?.diff;
+
   return {
     text: JSON.stringify(
       {
         action_id: action.id,
         status: action.status,
-        decision_at: action.decision_at,
-        preview: action.preview,
+        decision_at: decision?.decided_at,
+        preview: effectivePreview,
+        edited_by_human: editedByHuman,
+        ...(decision?.diff ? { diff: decision.diff } : {}),
         payload: action.payload,
       },
       null,
@@ -104,50 +114,48 @@ export interface ReportResultArgs {
 export async function reportResult(
   config: SignoffConfig,
   args: ReportResultArgs,
-): Promise<string> {
+): Promise<ToolResult> {
   await apiRequest(config, "POST", `/actions/${args.action_id}/result`, {
     status: args.status,
     ...(args.detail !== undefined && { detail: args.detail }),
   });
 
   const suffix = args.detail ? ` (${args.detail})` : "";
-  return `Result reported: action ${args.action_id} → ${args.status}${suffix}.`;
+  return { text: `Result reported: action ${args.action_id} → ${args.status}${suffix}.` };
 }
 
 // ─── signoff_inbox_status ─────────────────────────────────────────────────────
 
-export async function inboxStatus(config: SignoffConfig): Promise<string> {
+export async function inboxStatus(config: SignoffConfig): Promise<ToolResult> {
+  // Server returns { items, has_more, next_cursor } — we fetch one page (default 50)
   const raw = await apiRequest<unknown>(config, "GET", "/actions?status=pending");
 
   let items: Action[];
-  let total: number;
 
   if (Array.isArray(raw)) {
     items = raw as Action[];
-    total = items.length;
   } else {
-    const resp = raw as { items?: Action[]; total?: number };
+    const resp = raw as { items?: Action[] };
     items = resp.items ?? [];
-    total = resp.total ?? items.length;
   }
 
-  if (total === 0) {
-    return "Signoff inbox: 0 pending actions. The inbox is clear — safe to start new tasks.";
+  if (items.length === 0) {
+    return { text: "Signoff inbox: 0 pending actions. The inbox is clear — safe to start new tasks." };
   }
 
   const lines: string[] = [
-    `Signoff inbox: ${total} pending action${total === 1 ? "" : "s"} awaiting decision`,
+    `Signoff inbox: ${items.length} pending action${items.length === 1 ? "" : "s"} awaiting decision`,
   ];
 
   for (const item of items.slice(0, 10)) {
     lines.push(`  - ${item.id}: "${item.title}" (${item.kind})`);
   }
 
-  if (total > 10) {
-    lines.push(`  … and ${total - 10} more`);
+  if (items.length > 10) {
+    lines.push(`  … and ${items.length - 10} more`);
   }
 
-  return lines.join("\n");
+  return { text: lines.join("\n") };
 }
 
 // ─── Phase 2 stubs ────────────────────────────────────────────────────────────

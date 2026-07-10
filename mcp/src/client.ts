@@ -17,6 +17,16 @@ export type ActionStatus =
   | "executed"
   | "execute_failed";
 
+export interface ActionDecision {
+  verdict: "approve" | "reject";
+  decided_at: number;
+  channel?: string;
+  /** Human-edited preview — present only when the reviewer used edit-before-approve. */
+  final_preview?: { format: string; body: string };
+  /** Unified-style diff against the original; present when final_preview differs. */
+  diff?: string;
+}
+
 export interface Action {
   id: string;
   kind: string;
@@ -25,8 +35,9 @@ export interface Action {
   inbox_url: string;
   preview?: { format: string; body: string };
   payload?: unknown;
-  decision_at?: string;
   editable?: string[];
+  /** Populated by GET /v1/actions/:id once a human decision has been recorded. */
+  decision?: ActionDecision;
 }
 
 export async function apiRequest<T>(

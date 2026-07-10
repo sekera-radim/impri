@@ -230,7 +230,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case "signoff_push_action": {
-        const text = await pushAction(config, {
+        const result = await pushAction(config, {
           kind: args["kind"] as string,
           title: args["title"] as string,
           preview: args["preview"] as { format: string; body: string },
@@ -240,7 +240,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           idempotency_key: args["idempotency_key"] as string | undefined,
           editable: args["editable"] as string[] | undefined,
         });
-        return { content: [{ type: "text" as const, text }] };
+        return {
+          content: [{ type: "text" as const, text: result.text }],
+          ...(result.isError ? { isError: true } : {}),
+        };
       }
 
       case "signoff_await_decision": {
@@ -255,17 +258,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "signoff_report_result": {
-        const text = await reportResult(config, {
+        const result = await reportResult(config, {
           action_id: args["action_id"] as string,
           status: args["status"] as "executed" | "execute_failed",
           detail: args["detail"] as string | undefined,
         });
-        return { content: [{ type: "text" as const, text }] };
+        return {
+          content: [{ type: "text" as const, text: result.text }],
+          ...(result.isError ? { isError: true } : {}),
+        };
       }
 
       case "signoff_inbox_status": {
-        const text = await inboxStatus(config);
-        return { content: [{ type: "text" as const, text }] };
+        const result = await inboxStatus(config);
+        return {
+          content: [{ type: "text" as const, text: result.text }],
+          ...(result.isError ? { isError: true } : {}),
+        };
       }
 
       case "signoff_create_watcher": {
