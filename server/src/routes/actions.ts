@@ -235,32 +235,35 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
       });
     }
 
-    // Editable whitelist validation
+    // Editable whitelist validation — fail-closed: any unknown key is rejected (PLAYBOOK A3)
     const editableList = JSON.parse(action.editable as string) as string[];
-    const edits = body.edits ?? {};
-    const invalidEdits = Object.keys(edits).filter(k => !editableList.includes(k));
-    if (invalidEdits.length > 0) {
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Field(s) not in editable whitelist: ${invalidEdits.join(', ')}`,
+    const edited = body.edited ?? {};
+    const invalidKeys = Object.keys(edited).filter(k => !editableList.includes(k));
+    if (invalidKeys.length > 0) {
+      return reply.status(422).send({
+        error: 'Unprocessable Entity',
+        message: `Field(s) not in editable whitelist: ${invalidKeys.join(', ')}`,
+        invalid_keys: invalidKeys,
+        editable: editableList,
       });
     }
 
     const now = nowSec();
 
-    // Build final preview with edits applied
+    // Apply edits to produce final preview (only for approve; reject ignores edits)
     const originalPreview = JSON.parse(action.preview as string) as { format: string; body: string };
     let finalPreview = { ...originalPreview };
     let diff: string | null = null;
 
-    if (body.decision === 'approve' && Object.keys(edits).length > 0) {
+    if (body.decision === 'approve' && Object.keys(edited).length > 0) {
       const editedPreview = { ...originalPreview };
-      for (const [field, value] of Object.entries(edits)) {
+      for (const [field, value] of Object.entries(edited)) {
+        // Apply dot-path fields we know how to set on the preview object
         if (field === 'preview.body') editedPreview.body = value as string;
       }
       finalPreview = editedPreview;
 
-      // Generate a simple unified diff for the body if it changed
+      // Simple unified-style diff for the preview body when it changed
       if (editedPreview.body !== originalPreview.body) {
         diff = `--- original\n+++ edited\n@@ preview.body @@\n-${originalPreview.body}\n+${editedPreview.body}`;
       }

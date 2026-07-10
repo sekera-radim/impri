@@ -244,7 +244,7 @@ describe('Decision flow', () => {
     expect(second.statusCode).toBe(409);
   });
 
-  it('rejects edits to fields not in editable whitelist', async () => {
+  it('rejects edited keys not in editable whitelist with 422', async () => {
     const { app, adminKey } = await setup();
     const create = await app.inject({
       method: 'POST',
@@ -263,13 +263,15 @@ describe('Decision flow', () => {
       method: 'POST',
       url: `/v1/actions/${id}/decision`,
       headers: { Authorization: `Bearer ${adminKey}` },
-      payload: { decision: 'approve', edits: { 'payload.secret': 'injected' } },
+      // 'payload.secret' is not in editable whitelist → must be rejected
+      payload: { decision: 'approve', edited: { 'payload.secret': 'injected' } },
     });
-    expect(res.statusCode).toBe(400);
+    expect(res.statusCode).toBe(422);
     expect(res.json().message).toContain('not in editable whitelist');
+    expect(res.json().invalid_keys).toContain('payload.secret');
   });
 
-  it('allows editing a whitelisted field on approve', async () => {
+  it('applies whitelisted edited field to final_preview on approve', async () => {
     const { app, adminKey } = await setup();
     const create = await app.inject({
       method: 'POST',
@@ -288,11 +290,49 @@ describe('Decision flow', () => {
       method: 'POST',
       url: `/v1/actions/${id}/decision`,
       headers: { Authorization: `Bearer ${adminKey}` },
-      payload: { decision: 'approve', edits: { 'preview.body': 'Edited body' } },
+      payload: { decision: 'approve', edited: { 'preview.body': 'Edited body' } },
     });
     expect(res.statusCode).toBe(200);
-    expect(res.json().final_preview.body).toBe('Edited body');
-    expect(res.json().diff).toContain('Edited body');
+    const body = res.json();
+    // Edit must actually propagate — not silently ignored (PLAYBOOK A3)
+    expect(body.final_preview.body).toBe('Edited body');
+    expect(body.diff).toContain('Edited body');
+    expect(body.diff).toContain('Original body');
+  });
+
+  it('GET /v1/actions/:id returns final_preview and diff from decision', async () => {
+    const { app, adminKey } = await setup();
+    const create = await app.inject({
+      method: 'POST',
+      url: '/v1/actions',
+      headers: { Authorization: `Bearer ${adminKey}` },
+      payload: {
+        kind: 'edit.get',
+        title: 'Edit GET test',
+        preview: { format: 'plain', body: 'Before edit' },
+        editable: ['preview.body'],
+      },
+    });
+    const { id } = create.json();
+
+    await app.inject({
+      method: 'POST',
+      url: `/v1/actions/${id}/decision`,
+      headers: { Authorization: `Bearer ${adminKey}` },
+      payload: { decision: 'approve', edited: { 'preview.body': 'After human edit' } },
+    });
+
+    const get = await app.inject({
+      method: 'GET',
+      url: `/v1/actions/${id}`,
+      headers: { Authorization: `Bearer ${adminKey}` },
+    });
+    expect(get.statusCode).toBe(200);
+    const action = get.json();
+    expect(action.status).toBe('approved');
+    expect(action.decision).toBeTruthy();
+    expect(action.decision.final_preview.body).toBe('After human edit');
+    expect(action.decision.diff).toContain('After human edit');
   });
 });
 

@@ -26,7 +26,8 @@ export type ActionStatus = z.infer<typeof ActionStatus>;
 
 export const DecisionBody = z.object({
   decision: z.enum(['approve', 'reject']),
-  edits: z.record(z.unknown()).optional(),
+  // dot-path keys matching the action's `editable` whitelist (e.g. "preview.body")
+  edited: z.record(z.unknown()).optional(),
   channel: z.string().optional(),
 });
 export type DecisionBody = z.infer<typeof DecisionBody>;
