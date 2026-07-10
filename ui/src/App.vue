@@ -1,5 +1,12 @@
 <template>
   <v-app>
+    <!-- Animated aurora backdrop, behind everything, works in both themes -->
+    <div class="app-bg" aria-hidden="true">
+      <span class="orb orb-1"></span>
+      <span class="orb orb-2"></span>
+      <span class="orb orb-3"></span>
+    </div>
+
     <!-- Login screen (not authenticated) -->
     <template v-if="!auth.isLoggedIn">
       <LoginScreen />
@@ -7,13 +14,20 @@
 
     <!-- Main app (authenticated) -->
     <template v-else>
-      <v-app-bar elevation="1" density="compact">
+      <v-app-bar elevation="0" density="compact">
         <v-app-bar-title>
           <span class="font-weight-bold">Impri</span>
           <span class="text-medium-emphasis text-body-2 ml-2">Approval Inbox</span>
         </v-app-bar-title>
 
         <template #append>
+          <v-btn
+            :icon="isDark ? 'mdi-weather-sunny' : 'mdi-weather-night'"
+            :title="isDark ? 'Light mode' : 'Dark mode'"
+            variant="text"
+            size="small"
+            @click="toggleTheme"
+          />
           <v-btn
             variant="text"
             size="small"
@@ -23,28 +37,26 @@
             Sign out
           </v-btn>
         </template>
-      </v-app-bar>
 
-      <!-- Tab navigation -->
-      <v-tabs
-        v-model="activeTab"
-        density="compact"
-        color="primary"
-        class="border-b"
-      >
-        <v-tab value="inbox">
-          Inbox
-          <v-badge
-            v-if="pendingCount > 0"
-            :content="pendingCount"
-            color="error"
-            inline
-            class="ml-1"
-          />
-        </v-tab>
-        <v-tab value="watchers">Watchers</v-tab>
-        <v-tab value="billing">Billing</v-tab>
-      </v-tabs>
+        <!-- Primary nav lives in the app-bar extension so it renders below the
+             title row, not behind the fixed bar. -->
+        <template #extension>
+          <v-tabs v-model="activeTab" density="compact" color="primary" align-tabs="start">
+            <v-tab value="inbox">
+              Inbox
+              <v-badge
+                v-if="pendingCount > 0"
+                :content="pendingCount"
+                color="error"
+                inline
+                class="ml-1"
+              />
+            </v-tab>
+            <v-tab value="watchers">Watchers</v-tab>
+            <v-tab value="billing">Billing</v-tab>
+          </v-tabs>
+        </template>
+      </v-app-bar>
 
       <v-main>
         <v-container max-width="800" class="py-6">
@@ -70,6 +82,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useTheme } from 'vuetify'
 import { useAuthStore } from './stores/auth'
 import { useInboxStore } from './stores/inbox'
 import LoginScreen from './components/LoginScreen.vue'
@@ -82,4 +95,12 @@ const inbox = useInboxStore()
 
 const activeTab = ref<'inbox' | 'watchers' | 'billing'>('inbox')
 const pendingCount = computed(() => inbox.pendingCount)
+
+const theme = useTheme()
+const isDark = computed(() => theme.global.current.value.dark)
+function toggleTheme() {
+  const next = isDark.value ? 'light' : 'dark'
+  theme.global.name.value = next
+  localStorage.setItem('impri-theme', next)
+}
 </script>
