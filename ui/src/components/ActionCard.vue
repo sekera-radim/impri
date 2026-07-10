@@ -52,7 +52,7 @@
 
         <!-- Status chip -->
         <v-chip :color="statusColor" size="small" variant="tonal" class="flex-shrink-0">
-          {{ action.status }}
+          {{ statusLabel }}
         </v-chip>
       </div>
     </v-card-text>
@@ -60,14 +60,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { Action } from '../types'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import type { Action, ActionStatus } from '../types'
 import { isUntrustedPayload } from '../utils/untrusted'
 
 const props = defineProps<{ action: Action }>()
 defineEmits<{ click: [] }>()
 
 const isUntrusted = computed(() => isUntrustedPayload(props.action.payload))
+
+const statusLabels: Record<ActionStatus, string> = {
+  pending: 'Pending',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  expired: 'Expired',
+  executed: 'Executed',
+  execute_failed: 'Failed',
+}
+
+const statusLabel = computed(() => statusLabels[props.action.status] ?? props.action.status)
 
 const previewExcerpt = computed(() => {
   const body = props.action.preview.body
@@ -83,16 +94,21 @@ const targetDomain = computed(() => {
   }
 })
 
-const nowSec = Math.floor(Date.now() / 1000)
+// Reactive second counter so expiry labels update in real time
+const now = ref(Date.now())
+let nowTimer: ReturnType<typeof setInterval> | null = null
+onMounted(() => { nowTimer = setInterval(() => { now.value = Date.now() }, 1_000) })
+onUnmounted(() => { if (nowTimer) { clearInterval(nowTimer); nowTimer = null } })
+const nowSec = computed(() => Math.floor(now.value / 1_000))
 
 const isExpiringSoon = computed(() => {
   if (!props.action.expires_at) return false
-  return props.action.expires_at - nowSec < 3600
+  return props.action.expires_at - nowSec.value < 3600
 })
 
 const expiresLabel = computed(() => {
   if (!props.action.expires_at) return ''
-  const diffSec = props.action.expires_at - nowSec
+  const diffSec = props.action.expires_at - nowSec.value
   if (diffSec <= 0) return 'expired'
   if (diffSec < 60) return `${diffSec}s`
   if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m`

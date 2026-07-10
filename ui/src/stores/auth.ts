@@ -35,7 +35,11 @@ export const useAuthStore = defineStore('auth', () => {
           loginError.value = `Server error (${err.status}): ${err.message}`
         }
       } else {
-        loginError.value = 'Could not reach the Impri server. Make sure it is running on port 8484.'
+        const rawBase = (import.meta.env.VITE_API_BASE as string | undefined) ?? '/v1'
+        const isRemote = rawBase.startsWith('http')
+        loginError.value = isRemote
+          ? 'Could not reach the Impri server.'
+          : 'Could not reach the Impri server. Make sure it is running on port 8484.'
       }
       return false
     } finally {

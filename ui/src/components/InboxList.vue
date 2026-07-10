@@ -2,31 +2,33 @@
   <div>
     <!-- Toolbar: status filter tabs + refresh badge -->
     <div class="d-flex align-center mb-4 flex-wrap gap-2">
-      <v-btn-toggle
-        v-model="selectedStatus"
-        mandatory
-        density="compact"
-        variant="outlined"
-        color="primary"
-        divided
-        @update:model-value="onFilterChange"
-      >
-        <v-btn
-          v-for="s in statusOptions"
-          :key="s.value"
-          :value="s.value"
-          size="small"
+      <div class="filter-scroll">
+        <v-btn-toggle
+          v-model="selectedStatus"
+          mandatory
+          density="compact"
+          variant="outlined"
+          color="primary"
+          divided
+          @update:model-value="onFilterChange"
         >
-          {{ s.label }}
-          <v-badge
-            v-if="s.value === 'pending' && pendingCount > 0"
-            :content="pendingCount"
-            color="error"
-            inline
-            class="ml-1"
-          />
-        </v-btn>
-      </v-btn-toggle>
+          <v-btn
+            v-for="s in statusOptions"
+            :key="s.value"
+            :value="s.value"
+            size="small"
+          >
+            {{ s.label }}
+            <v-badge
+              v-if="s.value === 'pending' && pendingTotal > 0"
+              :content="pendingTotal"
+              color="error"
+              inline
+              class="ml-1"
+            />
+          </v-btn>
+        </v-btn-toggle>
+      </div>
 
       <v-spacer />
 
@@ -38,6 +40,8 @@
         icon="mdi-refresh"
         variant="text"
         size="small"
+        title="Refresh"
+        aria-label="Refresh"
         :loading="inbox.loading"
         @click="inbox.fetchActions()"
       />
@@ -74,10 +78,12 @@
     >
       <v-icon size="48" color="grey-lighten-1" class="mb-3">mdi-inbox-outline</v-icon>
       <div class="text-body-1 text-medium-emphasis">
-        No {{ selectedStatus }} actions
-      </div>
-      <div class="text-caption text-medium-emphasis mt-1">
-        Agents push actions via <code>POST /v1/actions</code>
+        <template v-if="selectedStatus === 'pending'">
+          Nothing to review right now — your watchers and agents will surface items here.
+        </template>
+        <template v-else>
+          No {{ emptyStateLabel }} actions yet.
+        </template>
       </div>
     </v-card>
 
@@ -121,7 +127,13 @@ const statusOptions: { value: ActionStatus; label: string }[] = [
   { value: 'execute_failed', label: 'Failed' },
 ]
 
-const pendingCount = computed(() => inbox.pendingCount)
+const pendingTotal = computed(() => inbox.pendingTotal)
+
+// Human-readable label for the current filter used in the empty-state message
+const emptyStateLabel = computed(() => {
+  const opt = statusOptions.find((o) => o.value === selectedStatus.value)
+  return opt ? opt.label.toLowerCase() : selectedStatus.value
+})
 
 const lastFetchedLabel = computed(() => {
   if (!inbox.lastFetchedAt) return ''
@@ -151,4 +163,10 @@ onUnmounted(() => {
 
 <style scoped>
 .gap-2 { gap: 8px; }
+
+/* Prevent filter button-group from overflowing on narrow viewports */
+.filter-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}
 </style>

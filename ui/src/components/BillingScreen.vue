@@ -8,6 +8,8 @@
         icon="mdi-refresh"
         variant="text"
         size="small"
+        title="Refresh"
+        aria-label="Refresh billing"
         :loading="store.loading"
         @click="store.fetchBilling()"
       />
@@ -153,7 +155,7 @@
               :loading="pushLoading"
               @click="handleUnsubscribe"
             >
-              Disable
+              Disable notifications
             </v-btn>
           </div>
           <v-alert

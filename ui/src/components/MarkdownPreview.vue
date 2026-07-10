@@ -73,6 +73,10 @@ const safeHtml = computed(() => {
   border-radius: 3px;
 }
 
+.v-theme--dark .preview-markdown :deep(code) {
+  background: rgba(128, 128, 128, 0.15);
+}
+
 .preview-markdown :deep(pre > code) {
   background: none;
   padding: 0;
@@ -85,6 +89,10 @@ const safeHtml = computed(() => {
   overflow-x: auto;
 }
 
+.v-theme--dark .preview-markdown :deep(pre) {
+  background: rgba(128, 128, 128, 0.15);
+}
+
 .preview-markdown :deep(blockquote) {
   border-left: 3px solid rgba(0, 0, 0, 0.2);
   margin: 0;
@@ -92,6 +100,12 @@ const safeHtml = computed(() => {
   color: rgba(0, 0, 0, 0.6);
 }
 
+.v-theme--dark .preview-markdown :deep(blockquote) {
+  border-left: 3px solid rgba(128, 128, 128, 0.4);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Light-mode diff colors */
 .diff-add {
   color: #2e7d32;
   background: rgba(46, 125, 50, 0.08);
@@ -107,5 +121,20 @@ const safeHtml = computed(() => {
 .diff-hunk {
   color: #1565c0;
   display: block;
+}
+
+/* Dark-mode diff colors — lighter shades for readability */
+.v-theme--dark .diff-add {
+  color: #81c784;
+  background: rgba(129, 199, 132, 0.1);
+}
+
+.v-theme--dark .diff-remove {
+  color: #ef9a9a;
+  background: rgba(239, 154, 154, 0.1);
+}
+
+.v-theme--dark .diff-hunk {
+  color: #90caf9;
 }
 </style>

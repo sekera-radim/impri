@@ -35,8 +35,8 @@ const formatted = computed(() => JSON.stringify(props.payload, null, 2))
   font-size: 0.78rem;
   white-space: pre-wrap;
   word-break: break-all;
-  background: rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(128, 128, 128, 0.1);
+  border: 1px solid rgba(128, 128, 128, 0.2);
   border-radius: 4px;
   padding: 0.75rem;
   max-height: 300px;

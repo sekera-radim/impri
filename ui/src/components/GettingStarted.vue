@@ -5,7 +5,7 @@
         <v-icon color="primary">mdi-rocket-launch-outline</v-icon>
         <span class="text-subtitle-1 font-weight-bold">Welcome to Impri</span>
         <v-spacer />
-        <v-btn icon="mdi-close" size="x-small" variant="text" title="Dismiss" @click="dismiss" />
+        <v-btn icon="mdi-close" size="x-small" variant="text" title="Dismiss" aria-label="Dismiss" @click="dismiss" />
       </div>
 
       <p class="text-body-2 text-medium-emphasis mb-4">
@@ -60,7 +60,15 @@
         <div v-if="showQuickstart" class="mt-4">
           <p class="text-body-2 font-weight-medium mb-1">Send an approval from anything — curl:</p>
           <div class="code-wrap">
-            <v-btn class="code-copy" icon="mdi-content-copy" size="x-small" variant="text" title="Copy" @click="copy(curlSnippet)" />
+            <v-btn
+              class="code-copy"
+              :icon="copyFeedback === 'curl' ? 'mdi-check' : 'mdi-content-copy'"
+              size="x-small"
+              variant="text"
+              title="Copy"
+              aria-label="Copy curl snippet"
+              @click="copy(curlSnippet, 'curl')"
+            />
             <pre class="code-block">{{ curlSnippet }}</pre>
           </div>
 
@@ -68,7 +76,15 @@
             Or let an AI agent (Claude &amp; others) ask for approval — MCP config:
           </p>
           <div class="code-wrap">
-            <v-btn class="code-copy" icon="mdi-content-copy" size="x-small" variant="text" title="Copy" @click="copy(mcpSnippet)" />
+            <v-btn
+              class="code-copy"
+              :icon="copyFeedback === 'mcp' ? 'mdi-check' : 'mdi-content-copy'"
+              size="x-small"
+              variant="text"
+              title="Copy"
+              aria-label="Copy MCP config snippet"
+              @click="copy(mcpSnippet, 'mcp')"
+            />
             <pre class="code-block">{{ mcpSnippet }}</pre>
           </div>
 
@@ -96,6 +112,7 @@ const auth = useAuthStore()
 const sending = ref(false)
 const error = ref<string | null>(null)
 const showQuickstart = ref(false)
+const copyFeedback = ref<string | null>(null)
 
 const steps = [
   { title: 'Something asks', body: 'A watcher or your agent creates an approval request.' },
@@ -157,8 +174,10 @@ async function sendTest(): Promise<void> {
   }
 }
 
-function copy(text: string): void {
+function copy(text: string, key: string): void {
   void navigator.clipboard?.writeText(text)
+  copyFeedback.value = key
+  setTimeout(() => { copyFeedback.value = null }, 1_500)
 }
 
 function dismiss(): void {
@@ -197,13 +216,19 @@ function dismiss(): void {
   margin: 0;
   padding: 12px 14px;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  /* Light-mode defaults */
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
   line-height: 1.5;
   white-space: pre;
   overflow-x: auto;
+}
+
+.v-theme--dark .code-block {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .gap-2 {

@@ -22,7 +22,7 @@
                 type="password"
                 variant="outlined"
                 density="comfortable"
-                autocomplete="current-password"
+                autocomplete="off"
                 :error-messages="auth.loginError ?? undefined"
                 :disabled="auth.loggingIn"
                 prepend-inner-icon="mdi-key-outline"
@@ -81,7 +81,14 @@
           </p>
           <div class="d-flex align-center gap-2">
             <code class="key-box">{{ newKey }}</code>
-            <v-btn icon="mdi-content-copy" variant="text" size="small" title="Copy" @click="copyKey" />
+            <v-btn
+              :icon="copyFeedback ? 'mdi-check' : 'mdi-content-copy'"
+              variant="text"
+              size="small"
+              title="Copy API key"
+              aria-label="Copy API key"
+              @click="copyKey"
+            />
           </div>
         </v-card-text>
         <v-card-actions class="pa-4 pt-0">
@@ -109,6 +116,7 @@ const creating = ref(false)
 const signupError = ref<string | null>(null)
 const newKey = ref('')
 const showKeyDialog = ref(false)
+const copyFeedback = ref(false)
 
 async function handleSubmit(): Promise<void> {
   const key = keyInput.value.trim()
@@ -150,6 +158,8 @@ async function createKey(): Promise<void> {
 
 function copyKey(): void {
   void navigator.clipboard?.writeText(newKey.value)
+  copyFeedback.value = true
+  setTimeout(() => { copyFeedback.value = false }, 1_500)
 }
 
 async function continueWithKey(): Promise<void> {
@@ -165,10 +175,16 @@ async function continueWithKey(): Promise<void> {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
   word-break: break-all;
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  /* Light-mode defaults */
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 8px;
   padding: 8px 10px;
+}
+
+.v-theme--dark .key-box {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .gap-2 {

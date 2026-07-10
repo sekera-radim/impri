@@ -24,13 +24,15 @@
           <v-btn
             icon="mdi-help-circle-outline"
             title="How Impri works"
+            aria-label="How Impri works"
             variant="text"
             size="small"
             @click="openHelp"
           />
           <v-btn
             :icon="isDark ? 'mdi-weather-sunny' : 'mdi-weather-night'"
-            :title="isDark ? 'Light mode' : 'Dark mode'"
+            :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+            :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
             variant="text"
             size="small"
             @click="toggleTheme"
@@ -52,8 +54,8 @@
             <v-tab value="inbox">
               Inbox
               <v-badge
-                v-if="pendingCount > 0"
-                :content="pendingCount"
+                v-if="pendingTotal > 0"
+                :content="pendingTotal"
                 color="error"
                 inline
                 class="ml-1"
@@ -112,7 +114,7 @@ const auth = useAuthStore()
 const inbox = useInboxStore()
 
 const activeTab = ref<'inbox' | 'watchers' | 'billing'>('inbox')
-const pendingCount = computed(() => inbox.pendingCount)
+const pendingTotal = computed(() => inbox.pendingTotal)
 
 // First-run onboarding (dismissible, re-openable via the app-bar help button).
 const showOnboarding = ref(localStorage.getItem('impri-onboarding-dismissed') !== '1')

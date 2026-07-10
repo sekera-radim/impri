@@ -7,6 +7,8 @@
       icon="mdi-refresh"
       variant="text"
       size="small"
+      title="Refresh"
+      aria-label="Refresh watchers"
       :loading="store.loading"
       @click="store.fetchWatchers()"
     />
@@ -112,15 +114,28 @@
               variant="text"
               color="success"
               title="Activate"
+              aria-label="Activate watcher"
               :loading="toggling.has(w.id)"
               @click="toggleStatus(w, 'active')"
             />
             <v-btn
-              v-else-if="w.status !== 'degraded'"
+              v-else-if="w.status === 'degraded'"
+              icon="mdi-refresh"
+              size="x-small"
+              variant="text"
+              color="warning"
+              title="Retry"
+              aria-label="Retry watcher"
+              :loading="toggling.has(w.id)"
+              @click="toggleStatus(w, 'active')"
+            />
+            <v-btn
+              v-else
               icon="mdi-pause"
               size="x-small"
               variant="text"
               title="Pause"
+              aria-label="Pause watcher"
               :loading="toggling.has(w.id)"
               @click="toggleStatus(w, 'paused')"
             />
@@ -130,6 +145,7 @@
               variant="text"
               color="error"
               title="Delete"
+              aria-label="Delete watcher"
               @click="openDeleteConfirm(w)"
             />
           </div>

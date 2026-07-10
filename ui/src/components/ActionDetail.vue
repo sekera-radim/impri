@@ -6,7 +6,7 @@
           <div class="text-h6 text-truncate">{{ action.title }}</div>
           <div class="d-flex align-center flex-wrap gap-2 mt-1">
             <v-chip size="x-small" variant="tonal" color="secondary" label>{{ action.kind }}</v-chip>
-            <v-chip :color="statusColor" size="x-small" variant="tonal">{{ action.status }}</v-chip>
+            <v-chip :color="statusColor" size="x-small" variant="tonal">{{ statusLabel }}</v-chip>
             <v-chip
               v-if="isUntrusted"
               size="x-small"
@@ -19,7 +19,7 @@
             </v-chip>
           </div>
         </div>
-        <v-btn icon="mdi-close" variant="text" size="small" class="ml-2" @click="$emit('update:modelValue', false)" />
+        <v-btn icon="mdi-close" variant="text" size="small" class="ml-2" title="Close" aria-label="Close" @click="$emit('update:modelValue', false)" />
       </v-card-title>
 
       <v-divider />
@@ -175,6 +175,35 @@
             Approve
           </v-btn>
         </template>
+        <v-alert
+          v-else-if="action.status === 'expired'"
+          type="warning"
+          variant="tonal"
+          density="compact"
+          class="my-0 text-body-2"
+          icon="mdi-clock-alert-outline"
+        >
+          This action expired before a decision was made.
+        </v-alert>
+        <v-alert
+          v-else-if="action.status === 'approved' || action.status === 'rejected'"
+          :type="action.status === 'approved' ? 'success' : 'error'"
+          variant="tonal"
+          density="compact"
+          class="my-0 text-body-2"
+        >
+          This action was already {{ action.status }}.
+        </v-alert>
+        <v-alert
+          v-else-if="action.status === 'execute_failed'"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="my-0 text-body-2"
+          icon="mdi-alert-circle-outline"
+        >
+          Execution failed — see details above.
+        </v-alert>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -183,13 +212,14 @@
     v-if="action"
     v-model="showDecisionDialog"
     :action="decisionAction"
+    :initial-verdict="pendingVerdictForDialog"
     @decided="handleDecided"
   />
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import type { Action } from '../types'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import type { Action, ActionStatus } from '../types'
 import MarkdownPreview from './MarkdownPreview.vue'
 import PayloadViewer from './PayloadViewer.vue'
 import DecisionDialog from './DecisionDialog.vue'
@@ -207,11 +237,26 @@ const emit = defineEmits<{
 
 const showDecisionDialog = ref(false)
 const decisionAction = ref<Action | null>(null)
+const pendingVerdictForDialog = ref<'approve' | 'reject' | undefined>(undefined)
 
 const isUntrusted = computed(() => isUntrustedPayload(props.action?.payload))
 
-function openDecision(_verdict: 'approve' | 'reject'): void {
+const statusLabels: Record<ActionStatus, string> = {
+  pending: 'Pending',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  expired: 'Expired',
+  executed: 'Executed',
+  execute_failed: 'Failed',
+}
+
+const statusLabel = computed(() =>
+  props.action ? (statusLabels[props.action.status] ?? props.action.status) : '',
+)
+
+function openDecision(verdict: 'approve' | 'reject'): void {
   decisionAction.value = props.action
+  pendingVerdictForDialog.value = verdict
   showDecisionDialog.value = true
 }
 
@@ -221,16 +266,21 @@ function handleDecided(actionId: string): void {
   emit('update:modelValue', false)
 }
 
-const nowSec = Math.floor(Date.now() / 1000)
+// Reactive second counter so expiry labels update in real time
+const now = ref(Date.now())
+let nowTimer: ReturnType<typeof setInterval> | null = null
+onMounted(() => { nowTimer = setInterval(() => { now.value = Date.now() }, 1_000) })
+onUnmounted(() => { if (nowTimer) { clearInterval(nowTimer); nowTimer = null } })
+const nowSec = computed(() => Math.floor(now.value / 1_000))
 
 const isExpiringSoon = computed(() => {
   if (!props.action?.expires_at) return false
-  return props.action.expires_at - nowSec < 3600
+  return props.action.expires_at - nowSec.value < 3600
 })
 
 const expiresLabel = computed(() => {
   if (!props.action?.expires_at) return ''
-  const diffSec = props.action.expires_at - nowSec
+  const diffSec = props.action.expires_at - nowSec.value
   if (diffSec <= 0) return 'Expired'
   const d = new Date(props.action.expires_at * 1000)
   const rel = formatRelative(diffSec)

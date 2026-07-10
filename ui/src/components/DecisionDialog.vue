@@ -72,7 +72,7 @@
             variant="tonal"
             :disabled="submitting"
             prepend-icon="mdi-close"
-            @click="choosVerdict('reject')"
+            @click="chooseVerdict('reject')"
           >
             Reject
           </v-btn>
@@ -82,7 +82,7 @@
             :disabled="submitting"
             prepend-icon="mdi-check"
             class="ml-2"
-            @click="choosVerdict('approve')"
+            @click="chooseVerdict('approve')"
           >
             Approve
           </v-btn>
@@ -99,7 +99,7 @@
             class="ml-2"
             @click="confirm"
           >
-            Confirm {{ pendingVerdict }}
+            {{ pendingVerdict === 'approve' ? 'Confirm approval' : 'Confirm rejection' }}
           </v-btn>
         </template>
       </v-card-actions>
@@ -119,6 +119,7 @@ import { getByDotPath } from '../utils/dotPath'
 const props = defineProps<{
   modelValue: boolean
   action: Action | null
+  initialVerdict?: 'approve' | 'reject'
 }>()
 
 const emit = defineEmits<{
@@ -158,19 +159,25 @@ watch(
   { immediate: true },
 )
 
-// Reset dialog state when it opens
+// Reset dialog state when it opens; skip to confirm step if a verdict was
+// pre-selected by the caller (e.g. clicking Approve/Reject in ActionDetail).
 watch(
   () => props.modelValue,
   (open) => {
     if (open) {
-      step.value = 'choose'
       errorMessage.value = null
       submitting.value = false
+      if (props.initialVerdict) {
+        pendingVerdict.value = props.initialVerdict
+        step.value = 'confirm'
+      } else {
+        step.value = 'choose'
+      }
     }
   },
 )
 
-function choosVerdict(verdict: 'approve' | 'reject'): void {
+function chooseVerdict(verdict: 'approve' | 'reject'): void {
   pendingVerdict.value = verdict
   step.value = 'confirm'
 }

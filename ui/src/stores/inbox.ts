@@ -21,6 +21,10 @@ export const useInboxStore = defineStore('inbox', () => {
     actions.value.filter((a) => a.status === 'pending').length,
   )
 
+  // Tracks the real pending total regardless of which filter is active.
+  // Used for the badge in the nav bar and filter toolbar.
+  const pendingTotal = ref(0)
+
   async function fetchActions(): Promise<void> {
     const client = auth.client
     if (!client) return
@@ -30,6 +34,10 @@ export const useInboxStore = defineStore('inbox', () => {
       const res = await client.listActions({ status: statusFilter.value, limit: 50 })
       actions.value = res.items
       lastFetchedAt.value = Date.now()
+      // When viewing the pending filter the result IS the pending total
+      if (statusFilter.value === 'pending') {
+        pendingTotal.value = res.items.length
+      }
     } catch (err) {
       if (err instanceof ApiClientError && (err.status === 401 || err.status === 403)) {
         auth.logout()
@@ -45,23 +53,39 @@ export const useInboxStore = defineStore('inbox', () => {
     const client = auth.client
     if (!client) return 0
     try {
-      const res = await client.listActions({ status: 'pending', limit: 1 })
-      // We only care about count; items gives us rough idea for badge
+      const res = await client.listActions({ status: 'pending', limit: 50 })
       return res.items.length + (res.has_more ? 1 : 0)
     } catch {
       return 0
     }
   }
 
+  async function refreshPendingTotal(): Promise<void> {
+    const n = await fetchPendingCount()
+    pendingTotal.value = n
+  }
+
   function setFilter(status: ActionStatus): void {
+    // Clear old items immediately so the skeleton shows instead of stale data
+    actions.value = []
     statusFilter.value = status
     void fetchActions()
+    // Keep badge accurate when switching to a non-pending filter
+    if (status !== 'pending') {
+      void refreshPendingTotal()
+    }
   }
 
   function startPolling(): void {
     void fetchActions()
+    // Seed the badge immediately in case we start on a non-pending filter
+    void refreshPendingTotal()
     pollTimer = setInterval(() => {
       void fetchActions()
+      // Fetch pending total separately when not viewing the pending filter
+      if (statusFilter.value !== 'pending') {
+        void refreshPendingTotal()
+      }
     }, POLL_INTERVAL_MS)
   }
 
@@ -91,6 +115,7 @@ export const useInboxStore = defineStore('inbox', () => {
     error,
     lastFetchedAt,
     pendingCount,
+    pendingTotal,
     fetchActions,
     fetchPendingCount,
     setFilter,
