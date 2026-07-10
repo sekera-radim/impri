@@ -95,6 +95,32 @@ NTFY_TOPIC=my-secret-topic-abc123
 
 Install the ntfy app on your phone, subscribe to the topic, and you will receive a push notification for every pending action.
 
+### Web push (VAPID) — optional
+
+Browser push notifications for the web inbox. Generate a keypair once and set it
+in the environment; without these keys the web-push channel is simply off
+(email / ntfy still work).
+
+```bash
+npx web-push generate-vapid-keys   # prints a public + private key
+```
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VAPID_PUBLIC_KEY` | unset | VAPID public key. Also served at `GET /v1/push/vapid-public-key` for the browser to subscribe. |
+| `VAPID_PRIVATE_KEY` | unset | VAPID private key. Keep secret. |
+| `VAPID_SUBJECT` | `mailto:admin@impri.dev` | Contact `mailto:` or URL, per the web-push spec. |
+
+Once enabled, open the web inbox and use **Enable push notifications** in the
+Notifications section — the browser subscribes and you get a push for every new
+pending action.
+
+### Redis (rate limiter) — optional, multi-instance only
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `REDIS_URL` | unset | Only needed when running **more than one** server instance behind a load balancer: it makes the rate limiter a shared window across instances. A single instance uses SQLite and does not need Redis. |
+
 ### Security
 
 | Variable | Default | Description |
