@@ -22,6 +22,13 @@
 
         <template #append>
           <v-btn
+            icon="mdi-help-circle-outline"
+            title="How Impri works"
+            variant="text"
+            size="small"
+            @click="openHelp"
+          />
+          <v-btn
             :icon="isDark ? 'mdi-weather-sunny' : 'mdi-weather-night'"
             :title="isDark ? 'Light mode' : 'Dark mode'"
             variant="text"
@@ -63,6 +70,12 @@
           <v-window v-model="activeTab">
             <!-- Inbox tab: eager so polling runs regardless of active tab -->
             <v-window-item value="inbox" eager>
+              <GettingStarted
+                v-if="showOnboarding"
+                @go-watchers="activeTab = 'watchers'"
+                @created="inbox.fetchActions()"
+                @dismiss="showOnboarding = false"
+              />
               <InboxList />
             </v-window-item>
 
@@ -93,12 +106,20 @@ import LoginScreen from './components/LoginScreen.vue'
 import InboxList from './components/InboxList.vue'
 import WatchersScreen from './components/WatchersScreen.vue'
 import BillingScreen from './components/BillingScreen.vue'
+import GettingStarted from './components/GettingStarted.vue'
 
 const auth = useAuthStore()
 const inbox = useInboxStore()
 
 const activeTab = ref<'inbox' | 'watchers' | 'billing'>('inbox')
 const pendingCount = computed(() => inbox.pendingCount)
+
+// First-run onboarding (dismissible, re-openable via the app-bar help button).
+const showOnboarding = ref(localStorage.getItem('impri-onboarding-dismissed') !== '1')
+function openHelp(): void {
+  activeTab.value = 'inbox'
+  showOnboarding.value = true
+}
 
 const theme = useTheme()
 const isDark = computed(() => theme.global.current.value.dark)

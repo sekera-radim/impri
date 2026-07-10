@@ -15,7 +15,7 @@
       variant="flat"
       size="small"
       prepend-icon="mdi-plus"
-      @click="openCreate"
+      @click="openCreate()"
     >
       Create
     </v-btn>
@@ -48,12 +48,25 @@
   <v-card
     v-else-if="!store.loading && store.watchers.length === 0"
     variant="outlined"
-    class="text-center py-12"
+    class="text-center py-10 px-4"
   >
-    <v-icon size="48" color="grey-lighten-1" class="mb-3">mdi-eye-off-outline</v-icon>
-    <div class="text-body-1 text-medium-emphasis">No watchers yet</div>
-    <div class="text-caption text-medium-emphasis mt-1">
-      Create a watcher to monitor RSS feeds, Reddit searches, or URL changes.
+    <v-icon size="44" color="grey-lighten-1" class="mb-3">mdi-eye-plus-outline</v-icon>
+    <div class="text-body-1 font-weight-medium">No watchers yet</div>
+    <div class="text-body-2 text-medium-emphasis mt-1 mb-5 mx-auto" style="max-width: 470px">
+      A watcher checks a source on a schedule — a subreddit, an RSS feed, or any web
+      page — and drops matching items into your inbox to review. No code needed.
+      Pick one to start:
+    </div>
+    <div class="d-flex flex-wrap justify-center gap-2">
+      <v-btn variant="outlined" prepend-icon="mdi-reddit" @click="openCreate('reddit_search')">
+        Monitor a subreddit
+      </v-btn>
+      <v-btn variant="outlined" prepend-icon="mdi-rss" @click="openCreate('rss')">
+        Watch an RSS feed
+      </v-btn>
+      <v-btn variant="outlined" prepend-icon="mdi-file-compare" @click="openCreate('url_diff')">
+        Watch a page for changes
+      </v-btn>
     </div>
   </v-card>
 
@@ -480,8 +493,22 @@ const form = reactive<FormState>(emptyForm())
 const formError = ref<string | null>(null)
 const creating = ref(false)
 
-function openCreate(): void {
+function openCreate(preset?: WatcherKind): void {
   Object.assign(form, emptyForm())
+  // Preset buttons pass a kind + sensible defaults; the header button passes none.
+  if (preset && typeof preset === 'string') {
+    form.kind = preset
+    if (preset === 'reddit_search') {
+      form.name = 'Reddit — my topic'
+      form.scheduleEvery = '2h'
+    } else if (preset === 'rss') {
+      form.name = 'RSS feed'
+      form.scheduleEvery = '1h'
+    } else if (preset === 'url_diff') {
+      form.name = 'Page changes'
+      form.scheduleEvery = '6h'
+    }
+  }
   formError.value = null
   showCreate.value = true
 }

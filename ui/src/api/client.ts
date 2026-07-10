@@ -87,6 +87,17 @@ export class ApiClient {
     return this.request<DecisionResponse>('POST', `/actions/${id}/decision`, req)
   }
 
+  // Create an approval request. Normally agents call POST /v1/actions directly,
+  // but the UI uses this for the "send a test approval" onboarding action.
+  async createAction(body: {
+    kind: string
+    title: string
+    preview: { format?: 'markdown' | 'plain' | 'diff'; body: string }
+    target_url?: string
+  }): Promise<Action> {
+    return this.request<Action>('POST', '/actions', body)
+  }
+
   async listKeys(): Promise<{ items: ApiKey[] }> {
     return this.request<{ items: ApiKey[] }>('GET', '/keys')
   }
