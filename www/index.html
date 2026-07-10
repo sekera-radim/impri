@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Impri — The Imprimatur for Your AI Agents</title>
+<meta name="description" content="Watchers + approval inbox for AI agents. Monitor RSS, Reddit, and URL changes. Hold every agent action until a human says yes. MCP + REST, free tier, self-hostable open-core.">
+
+<style>
+/* ── Variables ───────────────────────────────────────────────── */
+:root {
+  --bg:          #ffffff;
+  --bg-alt:      #f8fafc;
+  --surface:     #f1f5f9;
+  --text:        #0f172a;
+  --muted:       #64748b;
+  --xmuted:      #94a3b8;
+  --primary:     #2563eb;
+  --primary-dk:  #1d4ed8;
+  --primary-lt:  #eff6ff;
+  --primary-tx:  #1e40af;
+  --border:      #e2e8f0;
+  --border-str:  #cbd5e1;
+  --code-bg:     #1e293b;
+  --code-fg:     #e2e8f0;
+  --badge-bg:    #dbeafe;
+  --badge-fg:    #1e40af;
+  --pend-bg:     #fef3c7;
+  --pend-fg:     #92400e;
+  --pend-bd:     #fde68a;
+  --appr-bg:     #d1fae5;
+  --appr-fg:     #065f46;
+  --appr-bd:     #6ee7b7;
+  --exec-bg:     #dbeafe;
+  --exec-fg:     #1e40af;
+  --exec-bd:     #93c5fd;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:          #0a1628;
+    --bg-alt:      #0f1e33;
+    --surface:     #132035;
+    --text:        #e2e8f0;
+    --muted:       #94a3b8;
+    --xmuted:      #64748b;
+    --primary:     #3b82f6;
+    --primary-dk:  #2563eb;
+    --primary-lt:  #1e3a5f;
+    --primary-tx:  #60a5fa;
+    --border:      #1e3a5f;
+    --border-str:  #2d4f7c;
+    --code-bg:     #0c1829;
+    --code-fg:     #e2e8f0;
+    --badge-bg:    #1e3a5f;
+    --badge-fg:    #60a5fa;
+    --pend-bg:     #451a03;
+    --pend-fg:     #fcd34d;
+    --pend-bd:     #78350f;
+    --appr-bg:     #052e16;
+    --appr-fg:     #4ade80;
+    --appr-bd:     #14532d;
+    --exec-bg:     #1e3a5f;
+    --exec-fg:     #93c5fd;
+    --exec-bd:     #2d4f7c;
+  }
+}
+
+:root[data-theme="light"] {
+  --bg:          #ffffff;
+  --bg-alt:      #f8fafc;
+  --surface:     #f1f5f9;
+  --text:        #0f172a;
+  --muted:       #64748b;
+  --xmuted:      #94a3b8;
+  --primary:     #2563eb;
+  --primary-dk:  #1d4ed8;
+  --primary-lt:  #eff6ff;
+  --primary-tx:  #1e40af;
+  --border:      #e2e8f0;
+  --border-str:  #cbd5e1;
+  --code-bg:     #1e293b;
+  --code-fg:     #e2e8f0;
+  --badge-bg:    #dbeafe;
+  --badge-fg:    #1e40af;
+  --pend-bg:     #fef3c7;
+  --pend-fg:     #92400e;
+  --pend-bd:     #fde68a;
+  --appr-bg:     #d1fae5;
+  --appr-fg:     #065f46;
+  --appr-bd:     #6ee7b7;
+  --exec-bg:     #dbeafe;
+  --exec-fg:     #1e40af;
+  --exec-bd:     #93c5fd;
+}
+
+:root[data-theme="dark"] {
+  --bg:          #0a1628;
+  --bg-alt:      #0f1e33;
+  --surface:     #132035;
+  --text:        #e2e8f0;
+  --muted:       #94a3b8;
+  --xmuted:      #64748b;
+  --primary:     #3b82f6;
+  --primary-dk:  #2563eb;
+  --primary-lt:  #1e3a5f;
+  --primary-tx:  #60a5fa;
+  --border:      #1e3a5f;
+  --border-str:  #2d4f7c;
+  --code-bg:     #0c1829;
+  --code-fg:     #e2e8f0;
+  --badge-bg:    #1e3a5f;
+  --badge-fg:    #60a5fa;
+  --pend-bg:     #451a03;
+  --pend-fg:     #fcd34d;
+  --pend-bd:     #78350f;
+  --appr-bg:     #052e16;
+  --appr-fg:     #4ade80;
+  --appr-bd:     #14532d;
+  --exec-bg:     #1e3a5f;
+  --exec-fg:     #93c5fd;
+  --exec-bd:     #2d4f7c;
+}
+
+/* ── Reset ───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--primary); }
+img, svg { display: block; max-width: 100%; }
+
+/* Inline code */
+code {
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas,
+               "Liberation Mono", monospace;
+  font-size: 0.84em;
+  background: var(--surface);
+  color: var(--text);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+/* ── Layout ──────────────────────────────────────────────────── */
+.container {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+/* ── Nav ─────────────────────────────────────────────────────── */
+.nav-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 0;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+.logo-icon {
+  width: 30px;
+  height: 30px;
+  background: var(--primary);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+.nav-link {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+.nav-link:hover { color: var(--text); }
+@media (max-width: 480px) {
+  .nav-link { display: none; }
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem;
+  border-radius: 7px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.btn-primary:hover { background: var(--primary-dk); border-color: var(--primary-dk); }
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border-str);
+}
+.btn-ghost:hover { border-color: var(--muted); }
+
+/* ── Hero ────────────────────────────────────────────────────── */
+.hero-wrap {
+  position: relative;
+  overflow: hidden;
+  padding: 5.5rem 0 4rem;
+  text-align: center;
+}
+.hero-glow {
+  position: absolute;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 600px;
+  background: radial-gradient(ellipse at center,
+    rgba(37,99,235,0.09) 0%, transparent 65%);
+  pointer-events: none;
+}
+@media (prefers-color-scheme: dark) {
+  .hero-glow {
+    background: radial-gradient(ellipse at center,
+      rgba(59,130,246,0.13) 0%, transparent 65%);
+  }
+}
+:root[data-theme="dark"] .hero-glow {
+  background: radial-gradient(ellipse at center,
+    rgba(59,130,246,0.13) 0%, transparent 65%);
+}
+:root[data-theme="light"] .hero-glow {
+  background: radial-gradient(ellipse at center,
+    rgba(37,99,235,0.09) 0%, transparent 65%);
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--badge-bg);
+  color: var(--badge-fg);
+  border-radius: 99px;
+  padding: 0.3rem 0.875rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin-bottom: 1.75rem;
+}
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+.hero h1 {
+  font-size: clamp(2.1rem, 5.5vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.12;
+  max-width: 700px;
+  margin: 0 auto 1.25rem;
+}
+.hero h1 em {
+  font-style: normal;
+  color: var(--primary);
+}
+.hero-sub {
+  font-size: clamp(1rem, 2vw, 1.175rem);
+  color: var(--muted);
+  max-width: 520px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.65;
+}
+.cta-row {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.cta-row .btn {
+  padding: 0.7rem 1.5rem;
+  font-size: 0.95rem;
+}
+.hero-note {
+  margin-top: 1rem;
+  font-size: 0.78rem;
+  color: var(--xmuted);
+}
+
+/* Action state flow demo */
+.flow-demo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 2.5rem;
+  flex-wrap: wrap;
+}
+.flow-arrow {
+  color: var(--xmuted);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.state-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 5px;
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid;
+}
+.state-pill.pending { background: var(--pend-bg); color: var(--pend-fg); border-color: var(--pend-bd); }
+.state-pill.approved { background: var(--appr-bg); color: var(--appr-fg); border-color: var(--appr-bd); }
+.state-pill.executed { background: var(--exec-bg); color: var(--exec-fg); border-color: var(--exec-bd); }
+.state-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* ── Section base ────────────────────────────────────────────── */
+.section { padding: 4.5rem 0; }
+.section-alt { background: var(--bg-alt); }
+.section-eyebrow {
+  font-size: 0.73rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--primary);
+  margin-bottom: 0.6rem;
+}
+.section-title {
+  font-size: clamp(1.6rem, 3vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  margin-bottom: 0.75rem;
+}
+.section-body {
+  color: var(--muted);
+  max-width: 500px;
+  margin-bottom: 2.5rem;
+  line-height: 1.6;
+}
+
+/* ── Steps (How it works) ────────────────────────────────────── */
+.steps-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@media (min-width: 560px) {
+  .steps-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 900px) {
+  .steps-grid { grid-template-columns: repeat(4, 1fr); gap: 0; }
+}
+
+.step {
+  padding: 1.5rem;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+@media (min-width: 900px) {
+  .step {
+    border-radius: 0;
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--border);
+  }
+  .step:last-child { border-right: none; }
+}
+
+.step-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--badge-bg);
+  color: var(--badge-fg);
+  font-size: 0.78rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.step-icon { color: var(--primary); }
+.step-title { font-size: 1rem; font-weight: 700; }
+.step-desc { font-size: 0.875rem; color: var(--muted); line-height: 1.55; }
+
+/* ── Feature cards ───────────────────────────────────────────── */
+.features-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@media (min-width: 500px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 900px) { .features-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.feature-card {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.feat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  background: var(--primary-lt);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+  flex-shrink: 0;
+}
+.feature-card h3 { font-size: 0.95rem; font-weight: 700; }
+.feature-card p { font-size: 0.855rem; color: var(--muted); line-height: 1.6; }
+
+/* ── Code block ──────────────────────────────────────────────── */
+.code-wrap {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: var(--code-bg);
+}
+.code-bar {
+  display: flex;
+  align-items: center;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: rgba(0,0,0,0.25);
+}
+.traffic-lights { display: flex; gap: 6px; }
+.tl {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+.tl-r { background: #ff5f57; }
+.tl-y { background: #febc2e; }
+.tl-g { background: #28c840; }
+.code-bar-label {
+  margin-left: auto;
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  font-size: 0.72rem;
+  color: #4a6174;
+}
+
+pre.code-body {
+  padding: 1.25rem 1.25rem 1.5rem;
+  overflow-x: auto;
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  font-size: 0.8rem;
+  line-height: 1.7;
+  color: var(--code-fg);
+  tab-size: 2;
+  -webkit-overflow-scrolling: touch;
+  /* prevent body horizontal scroll */
+  max-width: 100%;
+}
+pre.code-body code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Syntax highlight colours */
+.c-comment { color: #4a5f73; }
+.c-str     { color: #86efac; }
+.c-cmd     { color: #fb923c; }
+.c-url     { color: #a5b4fc; }
+.c-dim     { color: #4a5f73; }
+.c-key     { color: #93c5fd; }
+
+.code-note {
+  margin-top: 1rem;
+  font-size: 0.855rem;
+  color: var(--muted);
+}
+.code-note a { color: var(--primary); text-decoration: none; }
+.code-note a:hover { text-decoration: underline; }
+
+/* ── Pricing ─────────────────────────────────────────────────── */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@media (min-width: 560px) { .pricing-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 900px) { .pricing-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.pricing-card {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.5rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.pricing-card.featured {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+.popular-badge {
+  display: inline-block;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0.15rem 0.55rem;
+  border-radius: 99px;
+  margin-bottom: 0.75rem;
+  width: fit-content;
+}
+.plan-name { font-size: 1rem; font-weight: 700; margin-bottom: 0.3rem; }
+.plan-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.1rem;
+  margin-bottom: 0.5rem;
+  line-height: 1;
+}
+.plan-price-sup { font-size: 1.1rem; font-weight: 700; }
+.plan-price-num { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.045em; }
+.plan-price-per { font-size: 0.85rem; color: var(--muted); font-weight: 400; margin-left: 0.1rem; }
+.plan-desc { font-size: 0.8rem; color: var(--muted); margin-bottom: 1.1rem; line-height: 1.5; flex-grow: 1; }
+.plan-features { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+.plan-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.825rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.plan-features li::before {
+  content: '✓';
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+.pricing-note {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--xmuted);
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+.footer-wrap {
+  border-top: 1px solid var(--border);
+  padding: 2rem 0;
+}
+.footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+.footer-links a {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.footer-links a:hover { color: var(--text); }
+.footer-copy { font-size: 0.8rem; color: var(--xmuted); }
+</style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══════════════════════════════════════════════════════ -->
+<div class="nav-wrap">
+  <div class="container">
+    <div class="nav-inner">
+      <a class="logo" href="/">
+        <div class="logo-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+               stroke="white" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="2.5 8.5 6.5 12 13.5 4.5"/>
+          </svg>
+        </div>
+        Impri
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/docs/quickstart.md"
+           class="nav-link">Docs</a>
+        <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/docs/self-hosting.md"
+           class="nav-link">Self-host</a>
+        <a href="https://gitlab.com/sekera.radim/impri" class="btn btn-primary">
+          Get started
+        </a>
+      </nav>
+    </div>
+  </div>
+</div>
+
+<main>
+
+<!-- ═══ HERO ═══════════════════════════════════════════════════════ -->
+<section class="hero-wrap" aria-labelledby="hero-heading">
+  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="container">
+
+    <div class="hero-badge" aria-label="Open-source, MIT licence, free tier with no credit card required">
+      <span class="badge-dot" aria-hidden="true"></span>
+      Open-source &middot; MIT &middot; Free tier, no card required
+    </div>
+
+    <h1 id="hero-heading">
+      The <em>imprimatur</em><br>for your AI agents.
+    </h1>
+
+    <p class="hero-sub">
+      Watchers monitor RSS feeds, Reddit threads, and URL changes so your agents
+      can focus on what matters. The Approval Inbox holds every consequential
+      action until you say yes — your agent never executes without your decision.
+    </p>
+
+    <div class="cta-row">
+      <a href="https://gitlab.com/sekera.radim/impri" class="btn btn-primary">
+        Get started
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+          <polyline points="12 5 19 12 12 19"/>
+        </svg>
+      </a>
+      <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/docs/quickstart.md"
+         class="btn btn-ghost">Read the docs</a>
+    </div>
+
+    <p class="hero-note">Quickstart in under 5 minutes &middot; <code>docker compose up</code></p>
+
+    <!-- Action lifecycle illustration -->
+    <div class="flow-demo" role="img"
+         aria-label="Action lifecycle: pending, then approved, then executed">
+      <span class="state-pill pending">
+        <span class="state-dot" aria-hidden="true"></span>
+        pending
+      </span>
+      <span class="flow-arrow" aria-hidden="true">&rarr;</span>
+      <span class="state-pill approved">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="3"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        approved
+      </span>
+      <span class="flow-arrow" aria-hidden="true">&rarr;</span>
+      <span class="state-pill executed">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="3"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        executed
+      </span>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ HOW IT WORKS ═══════════════════════════════════════════════ -->
+<section class="section section-alt" aria-labelledby="how-heading">
+  <div class="container">
+    <p class="section-eyebrow">How it works</p>
+    <h2 class="section-title" id="how-heading">Watch, propose, approve, execute.</h2>
+    <p class="section-body">
+      A four-step loop that keeps you in control without slowing your agents down.
+    </p>
+    <div class="steps-grid">
+
+      <div class="step">
+        <div class="step-num" aria-hidden="true">1</div>
+        <div class="step-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </div>
+        <div class="step-title">Watch</div>
+        <p class="step-desc">
+          Watchers poll RSS feeds, Reddit threads, and URL changes on a schedule.
+          Keyword scoring strips noise so only real signals reach your agent.
+          Built-in dedup means no more <code>seen.json</code> files.
+        </p>
+      </div>
+
+      <div class="step">
+        <div class="step-num" aria-hidden="true">2</div>
+        <div class="step-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"/>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+          </svg>
+        </div>
+        <div class="step-title">Propose</div>
+        <p class="step-desc">
+          The agent drafts an action and pushes it to Impri via MCP tool or a
+          single <code>curl</code> call. Impri stores it, notifies you on your
+          chosen channel, and holds the queue.
+        </p>
+      </div>
+
+      <div class="step">
+        <div class="step-num" aria-hidden="true">3</div>
+        <div class="step-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+        </div>
+        <div class="step-title">Approve</div>
+        <p class="step-desc">
+          You review the action card in your inbox, optionally edit the draft,
+          then approve or reject with one tap from web or mobile. The agent waits
+          — it cannot proceed until you decide.
+        </p>
+      </div>
+
+      <div class="step">
+        <div class="step-num" aria-hidden="true">4</div>
+        <div class="step-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+        </div>
+        <div class="step-title">Execute</div>
+        <p class="step-desc">
+          Only after your approval does the agent run the action — with the exact
+          content you reviewed and possibly edited. It reports the outcome back to
+          close the audit trail.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══ WHY IMPRI ══════════════════════════════════════════════════ -->
+<section class="section" aria-labelledby="why-heading">
+  <div class="container">
+    <p class="section-eyebrow">Why Impri</p>
+    <h2 class="section-title" id="why-heading">Built for agents, trusted by humans.</h2>
+    <p class="section-body">
+      Focused on one thing: holding the queue until you say yes.
+    </p>
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <div class="feat-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <h3>Human-in-the-loop safety</h3>
+        <p>
+          Impri never executes anything itself — it holds the queue and
+          signatures; your agent executes after your explicit yes. The gate is
+          in the data, not a prompt. No injection bypasses it: the agent only
+          proceeds after seeing <code>status: "approved"</code> from the API.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feat-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+          </svg>
+        </div>
+        <h3>Agent-first API</h3>
+        <p>
+          MCP server for Claude Code and any MCP-compatible client.
+          Clean REST API with curl examples, OpenAPI spec, and
+          <code>llms.txt</code>. Idempotent, versioned, no breaking changes
+          in v1. Supports both webhook delivery and polling — agents without
+          a public URL work too.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feat-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="4" rx="1"/>
+            <rect x="2" y="10" width="20" height="4" rx="1"/>
+            <rect x="2" y="17" width="20" height="4" rx="1"/>
+            <circle cx="6" cy="5" r="1.2" fill="currentColor" stroke="none"/>
+            <circle cx="6" cy="12" r="1.2" fill="currentColor" stroke="none"/>
+            <circle cx="6" cy="19" r="1.2" fill="currentColor" stroke="none"/>
+          </svg>
+        </div>
+        <h3>Open-core, self-hostable</h3>
+        <p>
+          Full inbox + watchers + MCP server under MIT. One
+          <code>docker compose up</code> gives you a running instance with
+          SQLite in under five minutes. No licence required to self-host.
+          Cloud is optional convenience, not a requirement.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feat-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+            <line x1="7" y1="7" x2="7.01" y2="7"/>
+          </svg>
+        </div>
+        <h3>Fair pricing</h3>
+        <p>
+          Free tier with 100 approvals per month, no card required. Indie
+          at $9/month. HMAC webhook signing and the base audit log are
+          included on every tier — security features are never paywalled.
+          No charge per agent, no data held hostage.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CODE EXAMPLE ═══════════════════════════════════════════════ -->
+<section class="section section-alt" aria-labelledby="code-heading">
+  <div class="container">
+    <p class="section-eyebrow">Quick integration</p>
+    <h2 class="section-title" id="code-heading">One call to propose. One decision to execute.</h2>
+    <p class="section-body">
+      Push the action, poll for the human's decision, execute only on approval.
+      Three curl calls, or three MCP tool calls if you prefer.
+    </p>
+
+    <div class="code-wrap">
+      <div class="code-bar" aria-hidden="true">
+        <div class="traffic-lights">
+          <div class="tl tl-r"></div>
+          <div class="tl tl-y"></div>
+          <div class="tl tl-g"></div>
+        </div>
+        <span class="code-bar-label">REST &middot; https://api.impri.dev/v1</span>
+      </div>
+<pre class="code-body" role="region" aria-label="REST API example"><span class="c-comment"># 1 — Push an action for approval</span>
+<span class="c-cmd">curl</span> -X POST <span class="c-url">https://api.impri.dev/v1/actions</span> \
+  -H <span class="c-str">"Authorization: Bearer $IMPRI_API_KEY"</span> \
+  -H <span class="c-str">"Content-Type: application/json"</span> \
+  -d <span class="c-str">'{
+    "kind": "reddit.comment",
+    "title": "Reply: Why is resume advice so conflicting?",
+    "preview": {
+      "format": "markdown",
+      "body": "The advice conflicts because different advisors optimise for different audiences..."
+    },
+    "expires_in": 86400,
+    "editable": ["preview.body"]
+  }'</span>
+<span class="c-dim"># → 201  { "id": "act_abc123", "status": "pending", "inbox_url": "..." }</span>
+
+<span class="c-comment"># 2 — Poll until the human decides (approve/reject from web or mobile)</span>
+<span class="c-cmd">curl</span> <span class="c-url">https://api.impri.dev/v1/actions/act_abc123</span> \
+  -H <span class="c-str">"Authorization: Bearer $IMPRI_API_KEY"</span>
+<span class="c-dim"># → { "status": "approved", "decision": { "final_preview": { ... } } }</span>
+
+<span class="c-comment"># 3 — Execute with final_preview (may contain human edits), then close the loop</span>
+<span class="c-cmd">curl</span> -X POST <span class="c-url">https://api.impri.dev/v1/actions/act_abc123/result</span> \
+  -H <span class="c-str">"Authorization: Bearer $IMPRI_API_KEY"</span> \
+  -d <span class="c-str">'{"status": "executed"}'</span></pre>
+    </div>
+
+    <p class="code-note">
+      Using Claude Code or another MCP client?
+      <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/docs/quickstart.md">See the MCP quickstart &rarr;</a>
+    </p>
+  </div>
+</section>
+
+<!-- ═══ PRICING ════════════════════════════════════════════════════ -->
+<section class="section" aria-labelledby="pricing-heading">
+  <div class="container">
+    <p class="section-eyebrow">Pricing</p>
+    <h2 class="section-title" id="pricing-heading">A price you can recommend with a clear conscience.</h2>
+    <p class="section-body">
+      Self-host free forever. Cloud tiers cost less than the time they save
+      each month. Overage is a soft limit with an email — never a hard cut
+      mid-pipeline.
+    </p>
+
+    <div class="pricing-grid">
+
+      <div class="pricing-card">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">
+          <span class="plan-price-sup">$</span>
+          <span class="plan-price-num">0</span>
+          <span class="plan-price-per">/mo</span>
+        </div>
+        <p class="plan-desc">No credit card. Real limits, genuinely useful for solo agents.</p>
+        <ul class="plan-features">
+          <li>1 project</li>
+          <li>3 watchers</li>
+          <li>100 approvals / month</li>
+          <li>7 days history</li>
+          <li>Email + ntfy notifications</li>
+        </ul>
+      </div>
+
+      <div class="pricing-card featured">
+        <div class="popular-badge">Most popular</div>
+        <div class="plan-name">Indie</div>
+        <div class="plan-price">
+          <span class="plan-price-sup">$</span>
+          <span class="plan-price-num">9</span>
+          <span class="plan-price-per">/mo</span>
+        </div>
+        <p class="plan-desc">For builders running multiple agents and projects.</p>
+        <ul class="plan-features">
+          <li>10 projects</li>
+          <li>20 watchers</li>
+          <li>2 000 approvals / month</li>
+          <li>90 days history</li>
+          <li>Push notifications</li>
+          <li>Priority webhooks</li>
+        </ul>
+      </div>
+
+      <div class="pricing-card">
+        <div class="plan-name">Team</div>
+        <div class="plan-price">
+          <span class="plan-price-sup">$</span>
+          <span class="plan-price-num">29</span>
+          <span class="plan-price-per">/mo</span>
+        </div>
+        <p class="plan-desc">For small teams sharing an approval inbox.</p>
+        <ul class="plan-features">
+          <li>Everything in Indie</li>
+          <li>5 team members</li>
+          <li>Approver / viewer roles</li>
+          <li>Audit log export</li>
+          <li>1 year history</li>
+        </ul>
+      </div>
+
+      <div class="pricing-card">
+        <div class="plan-name">Self-host</div>
+        <div class="plan-price">
+          <span class="plan-price-sup">$</span>
+          <span class="plan-price-num">0</span>
+        </div>
+        <p class="plan-desc">MIT core. Full inbox + watchers + MCP on your own infrastructure.</p>
+        <ul class="plan-features">
+          <li>Unlimited everything</li>
+          <li>SQLite, Docker Compose</li>
+          <li>No licence required</li>
+          <li>Community support</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <p class="pricing-note">
+      HMAC webhook signing and the base audit log are included on every tier.
+      Security features are never paywalled.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<!-- ═══ FOOTER ═════════════════════════════════════════════════════ -->
+<footer class="footer-wrap">
+  <div class="container">
+    <div class="footer-inner">
+      <a class="logo" href="/" style="text-decoration: none; color: var(--text);">
+        <div class="logo-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+               stroke="white" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="2.5 8.5 6.5 12 13.5 4.5"/>
+          </svg>
+        </div>
+        Impri
+      </a>
+
+      <nav class="footer-links" aria-label="Footer">
+        <a href="https://gitlab.com/sekera.radim/impri">GitLab repository</a>
+        <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/docs/quickstart.md">Quickstart</a>
+        <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/docs/self-hosting.md">Self-hosting</a>
+        <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/docs/how-to-add-human-approval-to-an-ai-agent.md">Integration guide</a>
+        <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+      </nav>
+
+      <p class="footer-copy">&copy; 2026 Impri &middot; MIT open-core</p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
