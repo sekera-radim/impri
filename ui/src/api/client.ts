@@ -3,6 +3,7 @@ import type {
   ActionStatus,
   ApiError,
   ApiKey,
+  Billing,
   DecisionRequest,
   DecisionResponse,
   ListActionsResponse,
@@ -115,5 +116,17 @@ export class ApiClient {
 
   async deleteWatcher(id: string): Promise<void> {
     return this.request<void>('DELETE', `/watchers/${id}`)
+  }
+
+  async getBilling(): Promise<Billing> {
+    return this.request<Billing>('GET', '/billing')
+  }
+
+  async createCheckout(plan: 'indie' | 'team', period: 'monthly' | 'yearly'): Promise<{ url: string }> {
+    return this.request<{ url: string }>('POST', '/billing/checkout', { plan, period })
+  }
+
+  async openPortal(): Promise<{ url: string }> {
+    return this.request<{ url: string }>('POST', '/billing/portal')
   }
 }

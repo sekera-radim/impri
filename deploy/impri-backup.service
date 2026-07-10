@@ -1,0 +1,17 @@
+[Unit]
+Description=Impri SQLite daily backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+# Adjust WorkingDirectory to wherever you cloned the repo on the VPS.
+WorkingDirectory=/opt/impri
+ExecStart=/opt/impri/deploy/backup.sh
+# Route stdout/stderr into the journal so you can check with:
+#   journalctl -u impri-backup.service -n 50
+StandardOutput=journal
+StandardError=journal
+# Run as root (required to exec into the Docker container).
+# If you run Docker rootless, change User= to your deploy user.
+User=root

@@ -1,0 +1,13 @@
+[Unit]
+Description=Run Impri SQLite backup daily at 03:00 UTC
+Requires=impri-backup.service
+
+[Timer]
+# Fire at 03:00 UTC every day.
+OnCalendar=*-*-* 03:00:00 UTC
+# If the system was down at fire time, run the backup as soon as it comes back up.
+Persistent=true
+Unit=impri-backup.service
+
+[Install]
+WantedBy=timers.target

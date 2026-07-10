@@ -43,6 +43,7 @@
           />
         </v-tab>
         <v-tab value="watchers">Watchers</v-tab>
+        <v-tab value="billing">Billing</v-tab>
       </v-tabs>
 
       <v-main>
@@ -55,6 +56,10 @@
 
             <v-window-item value="watchers">
               <WatchersScreen />
+            </v-window-item>
+
+            <v-window-item value="billing">
+              <BillingScreen />
             </v-window-item>
           </v-window>
         </v-container>
@@ -70,10 +75,11 @@ import { useInboxStore } from './stores/inbox'
 import LoginScreen from './components/LoginScreen.vue'
 import InboxList from './components/InboxList.vue'
 import WatchersScreen from './components/WatchersScreen.vue'
+import BillingScreen from './components/BillingScreen.vue'
 
 const auth = useAuthStore()
 const inbox = useInboxStore()
 
-const activeTab = ref<'inbox' | 'watchers'>('inbox')
+const activeTab = ref<'inbox' | 'watchers' | 'billing'>('inbox')
 const pendingCount = computed(() => inbox.pendingCount)
 </script>

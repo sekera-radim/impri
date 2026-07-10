@@ -1,0 +1,65 @@
+# Impri production Caddy configuration
+#
+# Caddy obtains and auto-renews TLS certificates from Let's Encrypt.
+# Both domains must have DNS A records pointing to this server's public IP
+# with Cloudflare proxy (orange cloud) DISABLED — see deploy/README.md.
+#
+# api.impri.dev  → Fastify server (port 8484 inside Docker network)
+# app.impri.dev  → nginx/Vue SPA inbox (port 8080 inside Docker network)
+
+# Global options — email for Let's Encrypt account registration/expiry notices.
+{
+	email {$CADDY_ACME_EMAIL:admin@impri.dev}
+}
+
+api.impri.dev {
+	# Security headers for the API
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(), camera=(), microphone=()"
+		# Hide Caddy version
+		-Server
+	}
+
+	# Stripe webhook: raw body must reach the server unchanged so HMAC verification works.
+	# Caddy streams the request body to the upstream without buffering or modification —
+	# no special config is required; this comment is here to explain why none is needed.
+	#
+	# Stripe will POST to https://api.impri.dev/v1/billing/webhook
+	# and the Stripe-Signature header + raw body are forwarded as-is.
+
+	reverse_proxy server:8484 {
+		# Surface the real client IP to Fastify logs.
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+
+		# Health-based load balancer (single upstream, but this enables retry on fail).
+		health_uri /healthz
+		health_interval 15s
+		health_timeout 5s
+	}
+}
+
+app.impri.dev {
+	# Security headers for the SPA inbox
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(), camera=(), microphone=()"
+		# Content-Security-Policy — tighten per your actual asset sources.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.impri.dev; frame-ancestors 'none'"
+		-Server
+	}
+
+	reverse_proxy ui:8080 {
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+}

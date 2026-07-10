@@ -151,3 +151,21 @@ export interface UpdateWatcherRequest {
   min_score?: number
   schedule?: WatcherSchedule
 }
+
+// --- Billing ---
+
+export type Tier = 'free' | 'indie' | 'team'
+export type BillingStatus = 'active' | 'past_due' | 'canceled' | 'none'
+
+export interface BillingUsage {
+  watchers: { used: number; limit: number | null }
+  approvals: { used: number; limit: number | null }
+}
+
+export interface Billing {
+  tier: Tier
+  status: BillingStatus
+  current_period_end?: number
+  usage: BillingUsage
+  billing_enabled: boolean
+}
