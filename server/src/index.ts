@@ -9,6 +9,7 @@ import { registerWatcherRoutes } from './routes/watchers.js';
 import { registerProjectRoutes } from './routes/project.js';
 import { registerBillingRoutes } from './routes/billing.js';
 import { registerPushRoutes } from './routes/push.js';
+import { registerSignupRoutes } from './routes/signup.js';
 import { billingActive } from './billing.js';
 import { pushEnabled } from './push.js';
 import { runExpiryTick } from './webhooks.js';
@@ -95,6 +96,9 @@ export async function createApp(db: Db) {
 
   // Web-push subscription routes (no-op when VAPID keys are unset)
   registerPushRoutes(app, db);
+
+  // Public self-serve signup — creates a project + admin key (gated on ALLOW_SIGNUP)
+  registerSignupRoutes(app, db);
 
   return app;
 }

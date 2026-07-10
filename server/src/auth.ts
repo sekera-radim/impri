@@ -111,21 +111,18 @@ export interface BootstrapResult {
   projectId: string;
 }
 
-export async function bootstrapAdminKey(db: Db): Promise<BootstrapResult | null> {
-  const existing = db.prepare('SELECT COUNT(*) as cnt FROM api_keys').get() as { cnt: number };
-  if (existing.cnt > 0) return null;
-
-  // Create default project with its own webhook signing secret
+// Create a fresh project with its own webhook secret and a single admin key.
+// Shared by first-run bootstrap and self-serve signup.
+export async function createProjectWithAdminKey(db: Db, projectName: string): Promise<BootstrapResult> {
   const projectId = genId('proj_');
   const webhookSecret = randomBytes(32).toString('base64url');
   db.prepare('INSERT INTO projects (id, name, webhook_secret, created_at) VALUES (?, ?, ?, ?)').run(
     projectId,
-    'Default Project',
+    projectName,
     webhookSecret,
     nowSec(),
   );
 
-  // Generate admin key
   const secret = randomBytes(32).toString('base64url');
   const key = `im_${secret}`;
   const prefix = key.slice(0, 16);
@@ -137,4 +134,10 @@ export async function bootstrapAdminKey(db: Db): Promise<BootstrapResult | null>
   ).run(keyId, projectId, hash, prefix, 'Admin Key', JSON.stringify(['admin']), nowSec());
 
   return { key, projectId };
+}
+
+export async function bootstrapAdminKey(db: Db): Promise<BootstrapResult | null> {
+  const existing = db.prepare('SELECT COUNT(*) as cnt FROM api_keys').get() as { cnt: number };
+  if (existing.cnt > 0) return null;
+  return createProjectWithAdminKey(db, 'Default Project');
 }
