@@ -117,6 +117,59 @@
         </v-card-text>
       </v-card>
 
+      <!-- Notifications section (only when push is enabled on the server) -->
+      <v-card
+        v-if="pushEnabled"
+        variant="outlined"
+        class="mb-6"
+      >
+        <v-card-title class="text-body-1 font-weight-semibold pb-0">Notifications</v-card-title>
+        <v-card-text>
+          <div v-if="!pushSupportedInBrowser" class="text-body-2 text-medium-emphasis">
+            Push notifications are not supported in this browser.
+          </div>
+          <div v-else-if="pushPermissionDenied" class="text-body-2 text-medium-emphasis">
+            Notification permission was denied. To enable push notifications, allow notifications for this site in your browser settings.
+          </div>
+          <div v-else class="d-flex align-center gap-2 flex-wrap">
+            <div class="text-body-2 flex-grow-1">
+              <span v-if="pushSubscribed">Push notifications are enabled.</span>
+              <span v-else>Get browser push notifications for new approval requests.</span>
+            </div>
+            <v-btn
+              v-if="!pushSubscribed"
+              color="primary"
+              variant="flat"
+              size="small"
+              :loading="pushLoading"
+              @click="handleSubscribe"
+            >
+              Enable push notifications
+            </v-btn>
+            <v-btn
+              v-else
+              variant="outlined"
+              size="small"
+              :loading="pushLoading"
+              @click="handleUnsubscribe"
+            >
+              Disable
+            </v-btn>
+          </div>
+          <v-alert
+            v-if="pushError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mt-3"
+            closable
+            @click:close="pushError = null"
+          >
+            {{ pushError }}
+          </v-alert>
+        </v-card-text>
+      </v-card>
+
       <!-- Plan cards (only when billing is enabled) -->
       <template v-if="store.billing.billing_enabled">
         <!-- Period toggle -->
@@ -212,9 +265,83 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useBillingStore } from '../stores/billing'
+import { useAuthStore } from '../stores/auth'
 import { usagePercent, usageColor } from '../utils/billing'
+import {
+  isPushSupported,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from '../utils/push'
 
 const store = useBillingStore()
+const auth = useAuthStore()
+
+// ─── Push notifications ───────────────────────────────────────────────────────
+
+const pushEnabled = ref(false)
+const pushSupportedInBrowser = ref(isPushSupported())
+const pushPermissionDenied = ref(
+  'Notification' in window && Notification.permission === 'denied',
+)
+const pushSubscribed = ref(false)
+const pushLoading = ref(false)
+const pushError = ref<string | null>(null)
+
+async function checkPushEnabled(): Promise<void> {
+  const client = auth.client
+  if (!client) return
+  try {
+    const res = await client.getVapidPublicKey()
+    pushEnabled.value = res.enabled
+  } catch {
+    // Push endpoint unavailable — silently hide the section
+    pushEnabled.value = false
+  }
+}
+
+async function checkPushSubscribed(): Promise<void> {
+  if (!isPushSupported()) return
+  const registration = await navigator.serviceWorker.getRegistration('/sw.js')
+  if (!registration) {
+    pushSubscribed.value = false
+    return
+  }
+  const sub = await registration.pushManager.getSubscription()
+  pushSubscribed.value = sub !== null
+}
+
+async function handleSubscribe(): Promise<void> {
+  const client = auth.client
+  if (!client) return
+  pushLoading.value = true
+  pushError.value = null
+  try {
+    await subscribeToPush(client)
+    pushSubscribed.value = true
+    // Re-read permission state after the request
+    pushPermissionDenied.value = Notification.permission === 'denied'
+  } catch (err) {
+    pushPermissionDenied.value = Notification.permission === 'denied'
+    pushError.value = err instanceof Error ? err.message : 'Failed to enable push notifications'
+  } finally {
+    pushLoading.value = false
+  }
+}
+
+async function handleUnsubscribe(): Promise<void> {
+  const client = auth.client
+  if (!client) return
+  pushLoading.value = true
+  pushError.value = null
+  try {
+    await unsubscribeFromPush(client)
+    pushSubscribed.value = false
+  } catch (err) {
+    pushError.value = err instanceof Error ? err.message : 'Failed to disable push notifications'
+  } finally {
+    pushLoading.value = false
+  }
+}
 
 // ─── Status helpers ────────────────────────────────────────────────────────────
 
@@ -316,6 +443,8 @@ async function openPortal(): Promise<void> {
 
 onMounted(() => {
   void store.fetchBilling()
+  void checkPushEnabled()
+  void checkPushSubscribed()
 })
 </script>
 

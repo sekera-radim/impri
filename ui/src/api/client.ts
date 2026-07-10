@@ -13,6 +13,8 @@ import type {
   ListWatchersResponse,
   CreateWatcherRequest,
   UpdateWatcherRequest,
+  VapidPublicKeyResponse,
+  PushSubscriptionBody,
 } from '../types'
 
 export class ApiClientError extends Error {
@@ -120,6 +122,24 @@ export class ApiClient {
 
   async getBilling(): Promise<Billing> {
     return this.request<Billing>('GET', '/billing')
+  }
+
+  // Push notification endpoints — public_key fetch has no auth requirement on the server
+  async getVapidPublicKey(): Promise<VapidPublicKeyResponse> {
+    const response = await fetch(`${this.baseUrl}/push/vapid-public-key`)
+    if (!response.ok) {
+      const json = await response.json() as ApiError
+      throw new ApiClientError(response.status, json)
+    }
+    return response.json() as Promise<VapidPublicKeyResponse>
+  }
+
+  async pushSubscribe(subscription: PushSubscriptionBody): Promise<void> {
+    return this.request<void>('POST', '/push/subscribe', subscription)
+  }
+
+  async pushUnsubscribe(endpoint: string): Promise<void> {
+    return this.request<void>('DELETE', '/push/subscribe', { endpoint })
   }
 
   async createCheckout(plan: 'indie' | 'team', period: 'monthly' | 'yearly'): Promise<{ url: string }> {
