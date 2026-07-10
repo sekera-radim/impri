@@ -1,0 +1,37 @@
+# Fly.io deploy for the Impri API server (Fastify + SQLite).
+# Scale-to-zero: the machine sleeps when idle (near-zero cost pre-launch) and
+# wakes on the first request — including Stripe webhooks.
+app = "impri-api"
+primary_region = "fra"
+
+[build]
+  dockerfile = "docker/server.Dockerfile"
+
+[env]
+  DB_PATH = "/data/impri.db"
+  HOST = "0.0.0.0"
+  PORT = "8484"
+  BASE_URL = "https://impri-api.fly.dev"
+
+[http_service]
+  internal_port = 8484
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "15s"
+    method = "GET"
+    path = "/healthz"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+[mounts]
+  source = "impri_data"
+  destination = "/data"
