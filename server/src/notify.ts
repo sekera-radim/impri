@@ -21,7 +21,7 @@ export async function notifyNtfy(payload: NotifyPayload): Promise<void> {
       headers: {
         'Title': payload.title,
         'Priority': 'default',
-        'Tags': `signoff,${payload.kind}`,
+        'Tags': `impri,${payload.kind}`,
         'Click': payload.inboxUrl,
         'Content-Type': 'text/plain',
       },
@@ -57,9 +57,9 @@ export async function notifyEmail(payload: NotifyPayload): Promise<void> {
 
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_FROM ?? 'signoff@localhost',
+      from: process.env.SMTP_FROM ?? 'impri@localhost',
       to,
-      subject: `[Signoff] ${payload.title}`,
+      subject: `[Impri] ${payload.title}`,
       text: `A new action requires your decision.\n\nTitle: ${payload.title}\nKind: ${payload.kind}\n\nReview: ${payload.inboxUrl}`,
     });
   } catch (err) {

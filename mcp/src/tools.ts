@@ -1,11 +1,11 @@
-import { apiRequest, type Action, type ActionCreated, type SignoffConfig } from "./client.js";
+import { apiRequest, type Action, type ActionCreated, type ImpriConfig } from "./client.js";
 
 export interface ToolResult {
   text: string;
   isError?: boolean;
 }
 
-// ─── signoff_push_action ──────────────────────────────────────────────────────
+// ─── impri_push_action ────────────────────────────────────────────────────────
 
 export interface PushActionArgs {
   kind: string;
@@ -19,7 +19,7 @@ export interface PushActionArgs {
 }
 
 export async function pushAction(
-  config: SignoffConfig,
+  config: ImpriConfig,
   args: PushActionArgs,
 ): Promise<ToolResult> {
   const result = await apiRequest<ActionCreated>(config, "POST", "/actions", args);
@@ -36,7 +36,7 @@ export async function pushAction(
   };
 }
 
-// ─── signoff_await_decision ───────────────────────────────────────────────────
+// ─── impri_await_decision ─────────────────────────────────────────────────────
 
 export interface AwaitDecisionArgs {
   action_id: string;
@@ -44,7 +44,7 @@ export interface AwaitDecisionArgs {
 }
 
 export async function awaitDecision(
-  config: SignoffConfig,
+  config: ImpriConfig,
   args: AwaitDecisionArgs,
   pollIntervalMs = 5_000,
 ): Promise<ToolResult> {
@@ -61,7 +61,7 @@ export async function awaitDecision(
     const remaining = deadline - Date.now();
     if (remaining <= 0) {
       return {
-        text: `Timed out after ${timeoutS}s waiting for action ${args.action_id}. It is still pending — use signoff_inbox_status to check queue depth or open the inbox at https://signoff.dev/inbox.`,
+        text: `Timed out after ${timeoutS}s waiting for action ${args.action_id}. It is still pending — use impri_inbox_status to check queue depth or open the inbox at https://impri.dev/inbox.`,
         isError: true,
       };
     }
@@ -75,7 +75,7 @@ export async function awaitDecision(
 function formatDecision(action: Action): ToolResult {
   if (action.status === "expired") {
     return {
-      text: `Action ${action.id} has expired — the approval window closed. Create a new action with signoff_push_action if the task is still relevant.`,
+      text: `Action ${action.id} has expired — the approval window closed. Create a new action with impri_push_action if the task is still relevant.`,
       isError: true,
     };
   }
@@ -103,7 +103,7 @@ function formatDecision(action: Action): ToolResult {
   };
 }
 
-// ─── signoff_report_result ────────────────────────────────────────────────────
+// ─── impri_report_result ──────────────────────────────────────────────────────
 
 export interface ReportResultArgs {
   action_id: string;
@@ -112,7 +112,7 @@ export interface ReportResultArgs {
 }
 
 export async function reportResult(
-  config: SignoffConfig,
+  config: ImpriConfig,
   args: ReportResultArgs,
 ): Promise<ToolResult> {
   await apiRequest(config, "POST", `/actions/${args.action_id}/result`, {
@@ -124,9 +124,9 @@ export async function reportResult(
   return { text: `Result reported: action ${args.action_id} → ${args.status}${suffix}.` };
 }
 
-// ─── signoff_inbox_status ─────────────────────────────────────────────────────
+// ─── impri_inbox_status ───────────────────────────────────────────────────────
 
-export async function inboxStatus(config: SignoffConfig): Promise<ToolResult> {
+export async function inboxStatus(config: ImpriConfig): Promise<ToolResult> {
   // Server returns { items, has_more, next_cursor } — we fetch one page (default 50)
   const raw = await apiRequest<unknown>(config, "GET", "/actions?status=pending");
 
@@ -140,11 +140,11 @@ export async function inboxStatus(config: SignoffConfig): Promise<ToolResult> {
   }
 
   if (items.length === 0) {
-    return { text: "Signoff inbox: 0 pending actions. The inbox is clear — safe to start new tasks." };
+    return { text: "Impri inbox: 0 pending actions. The inbox is clear — safe to start new tasks." };
   }
 
   const lines: string[] = [
-    `Signoff inbox: ${items.length} pending action${items.length === 1 ? "" : "s"} awaiting decision`,
+    `Impri inbox: ${items.length} pending action${items.length === 1 ? "" : "s"} awaiting decision`,
   ];
 
   for (const item of items.slice(0, 10)) {
@@ -162,14 +162,14 @@ export async function inboxStatus(config: SignoffConfig): Promise<ToolResult> {
 
 export function createWatcher(): ToolResult {
   return {
-    text: "Watchers are not yet available — they arrive in Signoff phase 2. This tool exists so integrations can reference it without API changes when watchers ship. Use RSS/webhook integrations directly in the meantime.",
+    text: "Watchers are not yet available — they arrive in Impri phase 2. This tool exists so integrations can reference it without API changes when watchers ship. Use RSS/webhook integrations directly in the meantime.",
     isError: true,
   };
 }
 
 export function listWatchers(): ToolResult {
   return {
-    text: "Watchers are not yet available — they arrive in Signoff phase 2. This tool exists so integrations can reference it without API changes when watchers ship.",
+    text: "Watchers are not yet available — they arrive in Impri phase 2. This tool exists so integrations can reference it without API changes when watchers ship.",
     isError: true,
   };
 }

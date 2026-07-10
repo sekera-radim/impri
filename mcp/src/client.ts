@@ -1,4 +1,4 @@
-export interface SignoffConfig {
+export interface ImpriConfig {
   apiKey: string;
   baseUrl: string;
 }
@@ -41,7 +41,7 @@ export interface Action {
 }
 
 export async function apiRequest<T>(
-  config: SignoffConfig,
+  config: ImpriConfig,
   method: string,
   path: string,
   body?: unknown,
@@ -85,7 +85,7 @@ async function throwApiError(res: Response): Promise<never> {
     case 401:
     case 403:
       throw new Error(
-        "Authentication failed — verify your SIGNOFF_API_KEY is correct and has the required scope.",
+        "Authentication failed — verify your IMPRI_API_KEY is correct and has the required scope.",
       );
     case 404:
       throw new Error(
@@ -93,11 +93,11 @@ async function throwApiError(res: Response): Promise<never> {
       );
     case 409:
       throw new Error(
-        "Conflict — an action with this idempotency_key already exists; use signoff_await_decision to check its status.",
+        "Conflict — an action with this idempotency_key already exists; use impri_await_decision to check its status.",
       );
     case 410:
       throw new Error(
-        "Action expired — the approval window has closed. Create a new action with signoff_push_action if the task is still relevant.",
+        "Action expired — the approval window has closed. Create a new action with impri_push_action if the task is still relevant.",
       );
     case 422:
       throw new Error(
@@ -109,7 +109,7 @@ async function throwApiError(res: Response): Promise<never> {
       );
     default:
       throw new Error(
-        `Signoff API error ${res.status}: ${detail || res.statusText}`,
+        `Impri API error ${res.status}: ${detail || res.statusText}`,
       );
   }
 }

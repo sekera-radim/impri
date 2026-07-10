@@ -23,7 +23,7 @@ export function registerKeyRoutes(app: FastifyInstance, db: Db): void {
     const projectId = body.project_id ?? key.projectId;
 
     const secret = randomBytes(32).toString('base64url');
-    const rawKey = `so_${secret}`;
+    const rawKey = `im_${secret}`;
     const prefix = rawKey.slice(0, 16);
     const hash = await argon2.hash(rawKey);
 

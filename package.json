@@ -1,5 +1,5 @@
 {
-  "name": "signoff",
+  "name": "impri",
   "private": true,
   "workspaces": ["server"],
   "scripts": {

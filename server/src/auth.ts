@@ -26,7 +26,7 @@ export function checkRateLimit(keyId: string, limitPerMin = 60): boolean {
 }
 
 export async function verifyApiKey(db: Db, rawKey: string): Promise<ApiKeyRecord | null> {
-  if (!rawKey.startsWith('so_')) return null;
+  if (!rawKey.startsWith('im_')) return null;
   const prefix = rawKey.slice(0, 16);
   const row = db.prepare(
     'SELECT * FROM api_keys WHERE key_prefix = ? AND revoked_at IS NULL',
@@ -72,7 +72,7 @@ export async function bootstrapAdminKey(db: Db): Promise<BootstrapResult | null>
 
   // Generate admin key
   const secret = randomBytes(32).toString('base64url');
-  const key = `so_${secret}`;
+  const key = `im_${secret}`;
   const prefix = key.slice(0, 16);
   const hash = await argon2.hash(key);
 

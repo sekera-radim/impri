@@ -447,7 +447,7 @@ describe('Authentication', () => {
     const res = await app.inject({
       method: 'GET',
       url: '/v1/actions',
-      headers: { Authorization: 'Bearer so_invalidkeyxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' },
+      headers: { Authorization: 'Bearer im_invalidkeyxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' },
     });
     expect(res.statusCode).toBe(401);
   });

@@ -40,9 +40,9 @@ export async function deliverWebhook(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Signoff-Signature': `sha256=${signature}`,
-        'X-Signoff-Timestamp': String(timestamp),
-        'X-Signoff-Nonce': nonce,
+        'X-Impri-Signature': `sha256=${signature}`,
+        'X-Impri-Timestamp': String(timestamp),
+        'X-Impri-Nonce': nonce,
       },
       body,
       signal: AbortSignal.timeout(10_000),

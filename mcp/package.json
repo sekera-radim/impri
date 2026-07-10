@@ -1,13 +1,13 @@
 {
-  "name": "@signoff/mcp",
+  "name": "@impri/mcp",
   "version": "0.1.0",
-  "description": "Signoff MCP server — human-in-the-loop approval inbox for AI agents",
-  "keywords": ["mcp", "signoff", "human-in-the-loop", "approval", "ai-agent"],
+  "description": "Impri MCP server — human-in-the-loop approval inbox for AI agents",
+  "keywords": ["mcp", "impri", "human-in-the-loop", "approval", "ai-agent"],
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
-    "signoff-mcp": "./dist/index.js"
+    "impri-mcp": "./dist/index.js"
   },
   "files": ["dist", "README.md"],
   "engines": {

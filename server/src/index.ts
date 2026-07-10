@@ -8,7 +8,7 @@ import { runExpiryTick } from './webhooks.js';
 import { buildOpenApiDocument } from './openapi.js';
 import type { Db } from './db.js';
 
-const DB_PATH = process.env.DB_PATH ?? 'signoff.db';
+const DB_PATH = process.env.DB_PATH ?? 'impri.db';
 const PORT = Number(process.env.PORT ?? 8484);
 const HOST = process.env.HOST ?? '0.0.0.0';
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET ?? 'change-me-in-production';
@@ -19,7 +19,7 @@ export async function createApp(db: Db) {
   // Auth preHandler: extract and verify Bearer key
   app.addHook('preHandler', async (request, reply) => {
     const auth = request.headers.authorization;
-    if (!auth?.startsWith('Bearer so_')) {
+    if (!auth?.startsWith('Bearer im_')) {
       // Public endpoints don't need auth
       return;
     }
@@ -57,7 +57,7 @@ async function main() {
   const bootstrap = await bootstrapAdminKey(db);
   if (bootstrap) {
     console.log('\n╔══════════════════════════════════════════════════════╗');
-    console.log('║           SIGNOFF — FIRST RUN BOOTSTRAP              ║');
+    console.log('║            IMPRI — FIRST RUN BOOTSTRAP               ║');
     console.log('╠══════════════════════════════════════════════════════╣');
     console.log(`║  Admin API Key: ${bootstrap.key}`);
     console.log(`║  Project ID:    ${bootstrap.projectId}`);
@@ -75,7 +75,7 @@ async function main() {
   }, 60_000);
 
   await app.listen({ port: PORT, host: HOST });
-  console.log(`Signoff server running on http://${HOST}:${PORT}`);
+  console.log(`Impri server running on http://${HOST}:${PORT}`);
 }
 
 main().catch(err => {

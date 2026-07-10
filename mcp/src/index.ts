@@ -5,7 +5,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { type SignoffConfig } from "./client.js";
+import { type ImpriConfig } from "./client.js";
 import {
   awaitDecision,
   createWatcher,
@@ -17,31 +17,31 @@ import {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const apiKey = process.env["SIGNOFF_API_KEY"];
+const apiKey = process.env["IMPRI_API_KEY"];
 if (!apiKey) {
   process.stderr.write(
     [
-      "Error: SIGNOFF_API_KEY is not set.",
-      "Obtain an API key at https://signoff.dev and pass it via environment variable.",
-      "Example: SIGNOFF_API_KEY=so_... npx @signoff/mcp",
+      "Error: IMPRI_API_KEY is not set.",
+      "Obtain an API key at https://impri.dev and pass it via environment variable.",
+      "Example: IMPRI_API_KEY=im_... npx @impri/mcp",
     ].join("\n") + "\n",
   );
   process.exit(1);
 }
 
-const config: SignoffConfig = {
+const config: ImpriConfig = {
   apiKey,
-  baseUrl: process.env["SIGNOFF_BASE_URL"] ?? "http://localhost:8484",
+  baseUrl: process.env["IMPRI_BASE_URL"] ?? "http://localhost:8484",
 };
 
 // ─── Tool definitions ─────────────────────────────────────────────────────────
 
 const TOOLS = [
   {
-    name: "signoff_push_action",
-    description: `Submit an action to the Signoff human-approval inbox.
+    name: "impri_push_action",
+    description: `Submit an action to the Impri human-approval inbox.
 
-The action appears in the operator's web and mobile inbox as a card with a title, formatted preview, and optional tap-to-edit fields. The operator approves or rejects with one tap; you poll for the decision with signoff_await_decision.
+The action appears in the operator's web and mobile inbox as a card with a title, formatted preview, and optional tap-to-edit fields. The operator approves or rejects with one tap; you poll for the decision with impri_await_decision.
 
 Returns { action_id, status: "pending", inbox_url }. Save action_id — you need it for all follow-up calls.
 
@@ -109,7 +109,7 @@ Example — send a draft Reddit reply for review:
     },
   },
   {
-    name: "signoff_await_decision",
+    name: "impri_await_decision",
     description: `Poll until the human approves, rejects, or the timeout elapses.
 
 Checks GET /actions/:id every 5 seconds and returns as soon as the action leaves the pending state.
@@ -119,30 +119,30 @@ Decision meanings:
   "rejected"  — abort; respect the decision and do not proceed
   "expired"   — the approval window closed; create a new action if the task is still relevant
 
-On timeout the action stays pending in the inbox. Call signoff_inbox_status to check queue depth and consider pausing further submissions.
+On timeout the action stays pending in the inbox. Call impri_inbox_status to check queue depth and consider pausing further submissions.
 
 Typical usage:
-  1. signoff_push_action → get action_id
-  2. signoff_await_decision(action_id) → wait for human decision
-  3. If approved: execute the action, then signoff_report_result(action_id, "executed")`,
+  1. impri_push_action → get action_id
+  2. impri_await_decision(action_id) → wait for human decision
+  3. If approved: execute the action, then impri_report_result(action_id, "executed")`,
     inputSchema: {
       type: "object" as const,
       properties: {
         action_id: {
           type: "string",
-          description: "The id returned by signoff_push_action.",
+          description: "The id returned by impri_push_action.",
         },
         timeout_s: {
           type: "number",
           description:
-            "Maximum seconds to wait before returning (default 300 — 5 minutes). After timeout the action is still pending; retry or call signoff_inbox_status.",
+            "Maximum seconds to wait before returning (default 300 — 5 minutes). After timeout the action is still pending; retry or call impri_inbox_status.",
         },
       },
       required: ["action_id"],
     },
   },
   {
-    name: "signoff_report_result",
+    name: "impri_report_result",
     description: `Report whether you successfully executed an approved action.
 
 Closes the audit loop — the operator sees 'executed' or 'execute_failed' in the inbox alongside the original action and decision. Always call this after attempting an approved action, even on failure.
@@ -155,7 +155,7 @@ Statuses:
       properties: {
         action_id: {
           type: "string",
-          description: "The id returned by signoff_push_action.",
+          description: "The id returned by impri_push_action.",
         },
         status: {
           type: "string",
@@ -172,7 +172,7 @@ Statuses:
     },
   },
   {
-    name: "signoff_inbox_status",
+    name: "impri_inbox_status",
     description: `Check how many actions are waiting for human decisions.
 
 Returns the pending count and a brief list of pending action titles. Call this before starting a large batch of tasks — if the inbox is backed up, pause and let the operator catch up to avoid actions expiring before they are reviewed.`,
@@ -183,7 +183,7 @@ Returns the pending count and a brief list of pending action titles. Call this b
     },
   },
   {
-    name: "signoff_create_watcher",
+    name: "impri_create_watcher",
     description: `[Phase 2 — not yet available] Create a watcher that monitors external sources (RSS feeds, Reddit, URL diffs) and delivers matching items to the approval inbox or a webhook.
 
 This tool is declared now so integrations can reference it without API changes when watchers ship in phase 2. Calling it currently returns an error.`,
@@ -200,7 +200,7 @@ This tool is declared now so integrations can reference it without API changes w
     },
   },
   {
-    name: "signoff_list_watchers",
+    name: "impri_list_watchers",
     description: `[Phase 2 — not yet available] List all configured watchers.
 
 This tool is declared now so integrations can reference it without API changes when watchers ship in phase 2. Calling it currently returns an error.`,
@@ -215,7 +215,7 @@ This tool is declared now so integrations can reference it without API changes w
 // ─── MCP server ───────────────────────────────────────────────────────────────
 
 const server = new Server(
-  { name: "@signoff/mcp", version: "0.1.0" },
+  { name: "@impri/mcp", version: "0.1.0" },
   { capabilities: { tools: {} } },
 );
 
@@ -229,7 +229,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   try {
     switch (name) {
-      case "signoff_push_action": {
+      case "impri_push_action": {
         const result = await pushAction(config, {
           kind: args["kind"] as string,
           title: args["title"] as string,
@@ -246,7 +246,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "signoff_await_decision": {
+      case "impri_await_decision": {
         const result = await awaitDecision(config, {
           action_id: args["action_id"] as string,
           timeout_s: args["timeout_s"] as number | undefined,
@@ -257,7 +257,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "signoff_report_result": {
+      case "impri_report_result": {
         const result = await reportResult(config, {
           action_id: args["action_id"] as string,
           status: args["status"] as "executed" | "execute_failed",
@@ -269,7 +269,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "signoff_inbox_status": {
+      case "impri_inbox_status": {
         const result = await inboxStatus(config);
         return {
           content: [{ type: "text" as const, text: result.text }],
@@ -277,7 +277,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "signoff_create_watcher": {
+      case "impri_create_watcher": {
         const result = createWatcher();
         return {
           content: [{ type: "text" as const, text: result.text }],
@@ -285,7 +285,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "signoff_list_watchers": {
+      case "impri_list_watchers": {
         const result = listWatchers();
         return {
           content: [{ type: "text" as const, text: result.text }],
