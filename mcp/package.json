@@ -4,6 +4,16 @@
   "description": "Impri MCP server — human-in-the-loop approval inbox for AI agents",
   "keywords": ["mcp", "impri", "human-in-the-loop", "approval", "ai-agent"],
   "license": "MIT",
+  "author": "Radim Sekera",
+  "homepage": "https://impri.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/sekera.radim/impri.git",
+    "directory": "mcp"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "exports": {
@@ -22,7 +32,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "eslint src test",
-    "check": "npm run typecheck && npm run lint && npm run test"
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"

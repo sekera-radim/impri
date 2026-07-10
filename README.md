@@ -100,8 +100,21 @@ docker/   Dockerfiles (server.Dockerfile)
 docs/     Research, ADRs
 ```
 
+## Documentation
+
+- [Quickstart](docs/quickstart.md) — signup → first approved action in < 5 min
+- [How to add human approval to an AI agent](docs/how-to-add-human-approval-to-an-ai-agent.md)
+- [Self-hosting](docs/self-hosting.md) — Docker, env vars, backups, reverse proxy
+- [Webhooks](docs/webhooks.md) — HMAC verification, retries, polling fallback
+- [`llms.txt`](docs/llms.txt) — machine-readable index for AI assistants
+
 ## Self-hosting notes
 
 - SQLite data is persisted in a Docker volume (`impri-data`).
 - Set `WEBHOOK_SECRET` env var to a random string for HMAC webhook signing.
 - `BASE_URL` should match the public URL of your deployment (used in inbox_url links).
+
+## License
+
+MIT — see [LICENSE](LICENSE). Self-host the full core freely; the hosted cloud
+and team features are the paid offering (see `MONETIZATION.md`).
