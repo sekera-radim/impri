@@ -95,7 +95,7 @@ export const ScoringRule = z.object({
 export type ScoringRule = z.infer<typeof ScoringRule>;
 
 const DURATION_UNIT_SEC: Record<string, number> = { m: 60, h: 3600, d: 86_400 };
-function durationToSec(s: string): number {
+export function durationToSec(s: string): number {
   const unit = s.slice(-1);
   return parseInt(s.slice(0, -1), 10) * (DURATION_UNIT_SEC[unit] ?? 0);
 }
@@ -209,3 +209,100 @@ export const ListWatchersQuery = z.object({
   cursor: z.string().optional(),
 });
 export type ListWatchersQuery = z.infer<typeof ListWatchersQuery>;
+
+// --- Rules engine schemas ---
+
+export const PayloadCondition = z.object({
+  path:  z.string().min(1).max(200),
+  op:    z.enum(['eq', 'lt', 'lte', 'gt', 'gte', 'contains', 'in', 'not_in']),
+  value: z.unknown(),
+});
+export type PayloadCondition = z.infer<typeof PayloadCondition>;
+
+export const RuleAction = z.enum([
+  'auto_approve', 'auto_reject', 'require_n_approvers', 'set_expiry', 'escalate',
+]);
+export type RuleAction = z.infer<typeof RuleAction>;
+
+// Shared validation for rule outcome_params and kind_pattern — applied to both
+// CreateRuleBody and UpdateRuleBody so a malformed PATCH cannot bypass the
+// guards that CREATE enforces. Parameters are typed loosely to accept both the
+// required-field shape (Create) and the optional-field shape (Update).
+function applyRuleOutcomeValidation(
+  data: {
+    rule_action?: string;
+    outcome_params?: Record<string, unknown>;
+    kind_pattern?: string;
+  },
+  ctx: z.RefinementCtx,
+): void {
+  // Validate outcome_params shape per action type
+  if (data.rule_action === 'require_n_approvers') {
+    const n = data.outcome_params?.n;
+    if (typeof n !== 'number' || !Number.isInteger(n) || n < 2 || n > 100) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['outcome_params', 'n'],
+        message: '"n" must be an integer 2–100 for require_n_approvers',
+      });
+    }
+  }
+  if (data.rule_action === 'set_expiry') {
+    const ei = data.outcome_params?.expires_in;
+    if (typeof ei !== 'number' || !Number.isInteger(ei) || ei < 300 || ei > 30 * 24 * 3600) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['outcome_params', 'expires_in'],
+        message: '"expires_in" must be an integer 300–2592000 for set_expiry',
+      });
+    }
+  }
+  if (data.rule_action === 'escalate') {
+    const channel = data.outcome_params?.channel;
+    // Channel is interpolated directly into the ntfy topic URL path; restrict to
+    // safe characters to prevent path traversal / URL injection.
+    if (typeof channel !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(channel)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['outcome_params', 'channel'],
+        message: '"channel" must be 1–64 alphanumeric, underscore, or hyphen characters',
+      });
+    }
+  }
+  // kind_pattern glob safety: reject characters that become dangerous regex metacharacters
+  // (. is allowed — it's literal in globs and becomes \. after escaping, which is safe).
+  if (data.kind_pattern !== undefined && /[+^${}()|[\]\\]/.test(data.kind_pattern.replace(/[*?]/g, ''))) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['kind_pattern'],
+      message: 'kind_pattern supports only * and ? wildcards; unsafe characters rejected',
+    });
+  }
+}
+
+export const CreateRuleBody = z.object({
+  name:               z.string().min(1).max(200),
+  priority:           z.number().int().min(1).max(9999).default(100),
+  enabled:            z.boolean().default(true),
+  // kind_pattern: glob with * and ? wildcards only. Dots are allowed (common in
+  // kind names like "email.send") but characters that would become dangerous regex
+  // metacharacters (+, ^, $, {, }, (, ), |, [, ], \) are rejected to prevent ReDoS.
+  kind_pattern:       z.string().min(1).max(100).default('*'),
+  payload_conditions: z.array(PayloadCondition).max(20).default([]),
+  target_url_hosts:   z.array(z.string().min(1).max(253)).max(50).default([]),
+  rule_action:        RuleAction,
+  outcome_params:     z.record(z.unknown()).default({}),
+}).superRefine(applyRuleOutcomeValidation);
+export type CreateRuleBody = z.infer<typeof CreateRuleBody>;
+
+export const UpdateRuleBody = z.object({
+  name:               z.string().min(1).max(200).optional(),
+  priority:           z.number().int().min(1).max(9999).optional(),
+  enabled:            z.boolean().optional(),
+  kind_pattern:       z.string().min(1).max(100).optional(),
+  payload_conditions: z.array(PayloadCondition).max(20).optional(),
+  target_url_hosts:   z.array(z.string().min(1).max(253)).max(50).optional(),
+  rule_action:        RuleAction.optional(),
+  outcome_params:     z.record(z.unknown()).optional(),
+}).superRefine(applyRuleOutcomeValidation);
+export type UpdateRuleBody = z.infer<typeof UpdateRuleBody>;

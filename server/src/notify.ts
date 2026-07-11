@@ -6,12 +6,15 @@ export interface NotifyPayload {
   kind: string;
   inboxUrl: string;
   verdict?: string;
+  /** Optional override for the ntfy topic (used by escalate rules). */
+  escalateChannel?: string;
 }
 
 // ntfy adapter: POST to topic URL
 export async function notifyNtfy(payload: NotifyPayload): Promise<void> {
   const ntfyUrl = process.env.NTFY_URL;
-  const ntfyTopic = process.env.NTFY_TOPIC;
+  // escalateChannel overrides the default topic when an escalate rule fired.
+  const ntfyTopic = payload.escalateChannel ?? process.env.NTFY_TOPIC;
   if (!ntfyUrl || !ntfyTopic) return;
 
   const url = `${ntfyUrl.replace(/\/$/, '')}/${ntfyTopic}`;

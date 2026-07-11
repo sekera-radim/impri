@@ -3,8 +3,8 @@ import type { Db } from '../db.js';
 import { genId, nowSec, encodeCursor, decodeCursor } from '../db.js';
 import { hasScope, checkRateLimit } from '../auth.js';
 import { computeNextRunAt } from '../scheduler.js';
-import { watcherLimitReached, getProjectBilling, TIER_LIMITS } from '../billing.js';
-import { CreateWatcherBody, UpdateWatcherBody, ListWatchersQuery } from '../schemas.js';
+import { billingActive, watcherLimitReached, getProjectBilling, TIER_LIMITS } from '../billing.js';
+import { CreateWatcherBody, UpdateWatcherBody, ListWatchersQuery, durationToSec } from '../schemas.js';
 
 function serializeWatcher(row: Record<string, unknown>) {
   return {
@@ -56,6 +56,19 @@ export function registerWatcherRoutes(app: FastifyInstance, db: Db): void {
       return reply.status(400).send({ error: 'Bad Request', issues: parsed.error.issues });
     }
     const body = parsed.data;
+
+    // Tier limit: minimum watcher poll interval (no-op when billing is disabled / self-host)
+    if (billingActive()) {
+      const { tier } = getProjectBilling(db, key.projectId);
+      const intervalSec = durationToSec(body.schedule.every);
+      if (intervalSec < TIER_LIMITS[tier].minWatcherIntervalSec) {
+        return reply.code(402).send({
+          error: 'schedule_too_frequent',
+          tier,
+          min_interval_sec: TIER_LIMITS[tier].minWatcherIntervalSec,
+        });
+      }
+    }
 
     const now = nowSec();
     const id = genId('wat_');
@@ -168,6 +181,30 @@ export function registerWatcherRoutes(app: FastifyInstance, db: Db): void {
     ) as Record<string, unknown> | undefined;
 
     if (!existing) return reply.status(404).send({ error: 'Not Found' });
+
+    // Tier limit: minimum watcher poll interval on schedule change (no-op when billing is disabled / self-host)
+    if (billingActive() && body.schedule) {
+      const { tier } = getProjectBilling(db, key.projectId);
+      const intervalSec = durationToSec(body.schedule.every);
+      if (intervalSec < TIER_LIMITS[tier].minWatcherIntervalSec) {
+        return reply.code(402).send({
+          error: 'schedule_too_frequent',
+          tier,
+          min_interval_sec: TIER_LIMITS[tier].minWatcherIntervalSec,
+        });
+      }
+    }
+
+    // Tier limit: watcher count on reactivation (no-op when billing is disabled / self-host)
+    if (body.status === 'active' && watcherLimitReached(db, key.projectId)) {
+      const { tier } = getProjectBilling(db, key.projectId);
+      return reply.status(402).send({
+        error: 'Payment Required',
+        message: `Watcher limit reached for the ${tier} plan (${TIER_LIMITS[tier].watchers}). Upgrade to add more.`,
+        limit: TIER_LIMITS[tier].watchers,
+        tier,
+      });
+    }
 
     const now = nowSec();
     const currentSchedule = JSON.parse(existing.schedule as string) as {

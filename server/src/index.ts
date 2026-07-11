@@ -11,6 +11,7 @@ import { registerBillingRoutes } from './routes/billing.js';
 import { registerPushRoutes } from './routes/push.js';
 import { registerSignupRoutes } from './routes/signup.js';
 import { registerAdminRoutes } from './routes/admin.js';
+import { registerRuleRoutes } from './routes/rules.js';
 import { billingActive } from './billing.js';
 import { pushEnabled } from './push.js';
 import { runExpiryTick } from './webhooks.js';
@@ -103,6 +104,9 @@ export async function createApp(db: Db) {
 
   // Operator-only platform stats (gated on OPERATOR_PROJECT_ID)
   registerAdminRoutes(app, db);
+
+  // Rules engine CRUD (admin scope)
+  registerRuleRoutes(app, db);
 
   return app;
 }

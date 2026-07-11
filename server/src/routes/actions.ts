@@ -6,6 +6,7 @@ import { approvalsLimitReached, getProjectBilling, TIER_LIMITS } from '../billin
 import { scheduleWebhookDelivery } from '../webhooks.js';
 import { notifyAll } from '../notify.js';
 import { notifyPush } from '../push.js';
+import { evaluateRules } from '../rules.js';
 import {
   CreateActionBody,
   DecisionBody,
@@ -88,7 +89,6 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
     }
 
     const now = nowSec();
-    const expiresAt = now + body.expires_in;
     const previewHash = hashContent(body.kind, body.title, body.preview.body);
 
     // Idempotency check
@@ -116,12 +116,30 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
     const actionId = genId('act_');
     const inboxUrl = `${process.env.BASE_URL ?? 'http://localhost:8484'}/inbox/${actionId}`;
 
-    try {
+    // Evaluate rules AFTER idempotency/dedup and BEFORE INSERT so we can
+    // override expires_in or short-circuit to auto_approve / auto_reject.
+    // Zero-rule guarantee: when a project has no rules, evaluateRules returns
+    // null and the handler behaves byte-for-byte as it did before.
+    const rule = evaluateRules(db, key.projectId, body);
+
+    const effectiveExpiresIn = rule?.action === 'set_expiry' ? rule.expiresIn : body.expires_in;
+    const expiresAt = now + effectiveExpiresIn;
+
+    const initialStatus =
+      rule?.action === 'auto_approve' ? 'approved' :
+      rule?.action === 'auto_reject'  ? 'rejected'  :
+      'pending';
+
+    // Wrap INSERT + optional auto-decision row + audit in one transaction so a
+    // crash between them cannot leave a half-applied state. The UNIQUE constraint
+    // on (project_id, idempotency_key) still governs concurrent races — the
+    // losing thread catches UNIQUE, reads back the winning row, and returns 200.
+    const insertAndLog = db.transaction(() => {
       db.prepare(`
         INSERT INTO actions
           (id, project_id, kind, title, preview, payload, target_url, callback_url,
            expires_at, idempotency_key, editable, status, preview_hash, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         actionId,
         key.projectId,
@@ -134,10 +152,48 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
         expiresAt,
         body.idempotency_key ?? null,
         JSON.stringify(body.editable),
+        initialStatus,
         previewHash,
         now,
         now,
       );
+
+      // For auto-decisions, insert a synthetic decision row so GET /v1/actions/:id
+      // shows the verdict and final_preview, and webhook delivery carries the verdict.
+      if (rule?.action === 'auto_approve' || rule?.action === 'auto_reject') {
+        const verdict = rule.action === 'auto_approve' ? 'approve' : 'reject';
+        db.prepare(`
+          INSERT INTO decisions
+            (id, action_id, verdict, decided_by, decided_at, channel, final_preview, diff)
+          VALUES (?, ?, ?, ?, ?, 'auto', ?, NULL)
+        `).run(
+          genId('dec_'),
+          actionId,
+          verdict,
+          `rule:${rule.ruleId}`,
+          now,
+          JSON.stringify(body.preview),
+        );
+      }
+
+      db.prepare(
+        "INSERT INTO audit_log (project_id, action_id, event, created_at) VALUES (?, ?, 'action.created', ?)",
+      ).run(key.projectId, actionId, now);
+
+      if (rule) {
+        db.prepare(
+          "INSERT INTO audit_log (project_id, action_id, event, data, created_at) VALUES (?, ?, 'action.rule_applied', ?, ?)",
+        ).run(
+          key.projectId,
+          actionId,
+          JSON.stringify({ rule_id: rule.ruleId, rule_name: rule.ruleName, outcome: rule.action }),
+          now,
+        );
+      }
+    });
+
+    try {
+      insertAndLog();
     } catch (err) {
       // Concurrent request with the same idempotency_key won the INSERT race —
       // return the existing action (200) instead of a 500. PLAYBOOK A5.
@@ -153,21 +209,34 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
       throw err;
     }
 
-    db.prepare(
-      "INSERT INTO audit_log (project_id, action_id, event, created_at) VALUES (?, ?, 'action.created', ?)",
-    ).run(key.projectId, actionId, now);
+    // Always schedule webhook delivery when a callback_url is provided, including
+    // for auto-decided actions — the agent's callback must receive the verdict.
+    if (body.callback_url) {
+      scheduleWebhookDelivery(db, actionId, body.callback_url);
+    }
 
-    // Send notifications asynchronously (don't await to keep response fast)
-    notifyAll({ actionId, title: body.title, kind: body.kind, inboxUrl }).catch(() => {});
-    notifyPush(db, key.projectId, { title: body.title, body: 'New action pending your approval', url: inboxUrl }).catch(() => {});
+    // Skip human-facing notifications for actions already resolved by a rule.
+    // Sending a push for an auto-approved action would confuse the reviewer.
+    if (initialStatus === 'pending') {
+      const escalateChannel = rule?.action === 'escalate' ? rule.channel : undefined;
+      notifyAll({
+        actionId,
+        title: body.title,
+        kind: body.kind,
+        inboxUrl,
+        ...(escalateChannel ? { escalateChannel } : {}),
+      }).catch(() => {});
+      notifyPush(db, key.projectId, { title: body.title, body: 'New action pending your approval', url: inboxUrl }).catch(() => {});
+    }
 
     reply.status(201);
     return {
       id: actionId,
-      status: 'pending',
+      status: initialStatus,
       inbox_url: inboxUrl,
       expires_at: expiresAt,
       created_at: now,
+      ...(rule ? { rule_id: rule.ruleId } : {}),
     };
   });
 
@@ -300,18 +369,45 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
     const originalPreview = JSON.parse(action.preview as string) as { format: string; body: string };
     let finalPreview = { ...originalPreview };
     let diff: string | null = null;
+    // Tracks the serialized payload when payload.* fields were edited, so the
+    // UPDATE in the transaction below can persist the new value atomically.
+    let updatedPayloadStr: string | null = null;
 
     if (body.decision === 'approve' && Object.keys(edited).length > 0) {
       const editedPreview = { ...originalPreview };
+      // Deep-clone the stored payload so we can mutate it for payload.* edits.
+      const payloadClone: Record<string, unknown> = action.payload
+        ? JSON.parse(JSON.stringify(JSON.parse(action.payload as string)))
+        : {};
+      let payloadChanged = false;
+
       for (const [field, value] of Object.entries(edited)) {
-        // Apply dot-path fields we know how to set on the preview object
-        if (field === 'preview.body') editedPreview.body = value as string;
+        if (field === 'preview.body') {
+          editedPreview.body = value as string;
+        } else if (field.startsWith('payload.')) {
+          // Walk the dot-path inside the payload object and assign the new value.
+          // The editable whitelist already confirmed this path is allowed (PLAYBOOK A3).
+          const parts = field.split('.').slice(1); // strip the leading 'payload' segment
+          let node: Record<string, unknown> = payloadClone;
+          for (let i = 0; i < parts.length - 1; i++) {
+            if (typeof node[parts[i]] !== 'object' || node[parts[i]] === null) {
+              node[parts[i]] = {};
+            }
+            node = node[parts[i]] as Record<string, unknown>;
+          }
+          node[parts[parts.length - 1]] = value;
+          payloadChanged = true;
+        }
       }
       finalPreview = editedPreview;
 
       // Simple unified-style diff for the preview body when it changed
       if (editedPreview.body !== originalPreview.body) {
         diff = `--- original\n+++ edited\n@@ preview.body @@\n-${originalPreview.body}\n+${editedPreview.body}`;
+      }
+
+      if (payloadChanged) {
+        updatedPayloadStr = JSON.stringify(payloadClone);
       }
     }
 
@@ -337,6 +433,11 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
         diff,
       );
       db.prepare("UPDATE actions SET status = ?, updated_at = ? WHERE id = ?").run(newStatus, now, action.id);
+      // Persist payload edits atomically with the decision so a subsequent GET
+      // returns the human-edited value in payload (PLAYBOOK A3).
+      if (updatedPayloadStr !== null) {
+        db.prepare("UPDATE actions SET payload = ? WHERE id = ?").run(updatedPayloadStr, action.id);
+      }
       db.prepare(
         "INSERT INTO audit_log (project_id, action_id, event, actor, channel, created_at) VALUES (?, ?, ?, ?, ?, ?)",
       ).run(key.projectId, action.id, `action.${body.decision}d`, key.keyId, body.channel ?? 'api', now);

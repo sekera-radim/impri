@@ -176,6 +176,30 @@ CREATE TABLE IF NOT EXISTS watcher_items (
 );
 
 CREATE INDEX IF NOT EXISTS idx_watcher_items_watcher ON watcher_items(watcher_id, first_seen);
+
+CREATE TABLE IF NOT EXISTS approval_rules (
+  id               TEXT    PRIMARY KEY,
+  project_id       TEXT    NOT NULL REFERENCES projects(id),
+  name             TEXT    NOT NULL,
+  priority         INTEGER NOT NULL DEFAULT 100,
+  enabled          INTEGER NOT NULL DEFAULT 1,
+
+  -- Conditions (all AND-combined; empty/default = wildcard)
+  kind_pattern          TEXT NOT NULL DEFAULT '*',
+  payload_conditions    TEXT NOT NULL DEFAULT '[]',   -- JSON array of {path,op,value}
+  target_url_hosts      TEXT NOT NULL DEFAULT '[]',   -- JSON array of exact hostnames
+
+  -- Outcome
+  rule_action      TEXT    NOT NULL,    -- auto_approve | auto_reject | require_n_approvers | set_expiry | escalate
+  outcome_params   TEXT    NOT NULL DEFAULT '{}',     -- JSON, action-specific
+
+  created_at       INTEGER NOT NULL,
+  updated_at       INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_approval_rules_project_priority
+  ON approval_rules(project_id, priority)
+  WHERE enabled = 1;
 `;
 
 // Idempotent column adds for DBs created before these columns existed.
@@ -196,6 +220,33 @@ function migrate(db: Db): void {
 
   if (!columns('watcher_items').has('size_bytes')) {
     db.exec('ALTER TABLE watcher_items ADD COLUMN size_bytes INTEGER');
+  }
+
+  // approval_rules — rules engine (additive; CREATE TABLE IF NOT EXISTS in SCHEMA_SQL
+  // handles new DBs; this guard handles existing DBs that predate this table).
+  const hasRulesTable = db.prepare(
+    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='approval_rules'",
+  ).get();
+  if (!hasRulesTable) {
+    db.exec(`
+      CREATE TABLE approval_rules (
+        id               TEXT    PRIMARY KEY,
+        project_id       TEXT    NOT NULL REFERENCES projects(id),
+        name             TEXT    NOT NULL,
+        priority         INTEGER NOT NULL DEFAULT 100,
+        enabled          INTEGER NOT NULL DEFAULT 1,
+        kind_pattern          TEXT NOT NULL DEFAULT '*',
+        payload_conditions    TEXT NOT NULL DEFAULT '[]',
+        target_url_hosts      TEXT NOT NULL DEFAULT '[]',
+        rule_action      TEXT    NOT NULL,
+        outcome_params   TEXT    NOT NULL DEFAULT '{}',
+        created_at       INTEGER NOT NULL,
+        updated_at       INTEGER NOT NULL
+      );
+      CREATE INDEX idx_approval_rules_project_priority
+        ON approval_rules(project_id, priority)
+        WHERE enabled = 1;
+    `);
   }
 }
 
