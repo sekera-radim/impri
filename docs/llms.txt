@@ -335,6 +335,34 @@ Key is never logged or printed in full; debug output shows `im_XXXX****` only.
 
 Full reference: docs/cli.md
 
+## Audit log
+
+Impri writes an append-only `audit_log` table (SQLite) covering the full
+action lifecycle, key management, watcher operations, rule changes,
+notification channel changes, and GDPR operations.
+
+Recorded events: `action.created`, `action.rule_applied`, `action.approved`,
+`action.rejected`, `action.expired`, `action.executed`, `action.execute_failed`,
+`watcher.hit`, `rule.created`, `rule.updated`, `rule.deleted`,
+`channel.created`, `channel.updated`, `channel.deleted`.
+
+Planned (not yet recorded): `key.created`, `key.revoked`, `watcher.created`,
+`watcher.updated`, `watcher.deleted`, `channel.tested`, `project.updated`,
+`project.secret_rotated`, `gdpr.export`, `gdpr.erase`.
+
+Planned query API: `GET /v1/audit` (admin scope; filters: type, actor,
+entity_id, since, until, limit, cursor). Export: `GET /v1/audit/export`
+(same filters; format=json|csv; streamed via better-sqlite3 .iterate()).
+
+Request IPs are kept in a separate `pii_log` table (erasable under GDPR
+Art. 17 without rewriting the immutable audit trail). Audit rows never
+contain secrets (no key material, webhook URLs, or bot tokens).
+
+Retention: opt-in via `AUDIT_RETENTION_DAYS` env var (unset = unlimited).
+GDPR erase (`DELETE /v1/project/data`) is the only per-project wipe path.
+
+Full reference: docs/audit-log.md
+
 ## Documentation
 
 - CLI reference (install, onboarding, every command, examples): docs/cli.md
