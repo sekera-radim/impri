@@ -2,6 +2,7 @@ import { createHmac, randomBytes } from 'node:crypto';
 import type { Db } from './db.js';
 import { genId, nowSec } from './db.js';
 import { assertPublicUrl, fetchGuarded } from './net-guard.js';
+import { incCounter, obsHistogram, noopLogger, type Logger } from './metrics.js';
 
 // Retry schedule in seconds after first attempt
 const RETRY_DELAYS = [60, 300, 1500, 7200, 43200]; // 1m, 5m, 25m, 2h, 12h
@@ -27,6 +28,7 @@ export async function deliverWebhook(
   callbackUrl: string,
   event: WebhookEvent,
   webhookSecret: string,
+  log: Logger = noopLogger,
 ): Promise<boolean> {
   const body = JSON.stringify(event);
   const timestamp = nowSec();
@@ -42,11 +44,15 @@ export async function deliverWebhook(
     db.prepare(
       "UPDATE webhook_deliveries SET status = 'dlq', last_attempt_at = ?, last_error = ? WHERE id = ?",
     ).run(nowSec(), `SSRF blocked: ${msg}`, deliveryId);
+    incCounter('impri_webhook_deliveries_total', { result: 'ssrf_blocked' });
+    log.warn({ event: 'webhook.dlq', delivery_id: deliveryId, action_id: event.action_id, attempt: 0 },
+      'webhook delivery SSRF blocked → dlq');
     return false;
   }
 
   let statusCode: number | undefined;
   let error: string | undefined;
+  const startMs = Date.now();
 
   try {
     const res = await fetchGuarded(callbackUrl, {
@@ -60,6 +66,7 @@ export async function deliverWebhook(
       body,
       signal: AbortSignal.timeout(10_000),
     });
+    const durationSec = (Date.now() - startMs) / 1000;
     statusCode = res.status;
 
     if (res.status === 410) {
@@ -70,6 +77,9 @@ export async function deliverWebhook(
       db.prepare(
         "UPDATE actions SET callback_url = NULL WHERE id = (SELECT action_id FROM webhook_deliveries WHERE id = ?)",
       ).run(deliveryId);
+      incCounter('impri_webhook_deliveries_total', { result: 'gone' });
+      obsHistogram('impri_webhook_delivery_duration_seconds', {}, durationSec);
+      log.info({ event: 'webhook.delivery', delivery_id: deliveryId, action_id: event.action_id, attempt: 0, result: 'gone', status_code: 410, duration_ms: Math.round(durationSec * 1000) });
       return false;
     }
 
@@ -77,13 +87,18 @@ export async function deliverWebhook(
       db.prepare(
         "UPDATE webhook_deliveries SET status = 'delivered', last_status_code = ?, last_attempt_at = ? WHERE id = ?",
       ).run(statusCode, nowSec(), deliveryId);
+      incCounter('impri_webhook_deliveries_total', { result: 'delivered' });
+      obsHistogram('impri_webhook_delivery_duration_seconds', {}, durationSec);
+      log.info({ event: 'webhook.delivery', delivery_id: deliveryId, action_id: event.action_id, attempt: 0, result: 'delivered', status_code: statusCode, duration_ms: Math.round(durationSec * 1000) });
       return true;
     }
 
     // Non-2xx — schedule retry
     error = `HTTP ${statusCode}`;
+    obsHistogram('impri_webhook_delivery_duration_seconds', {}, durationSec);
   } catch (err) {
     error = err instanceof Error ? err.message : String(err);
+    obsHistogram('impri_webhook_delivery_duration_seconds', {}, (Date.now() - startMs) / 1000);
   }
 
   // Determine current attempt number
@@ -97,6 +112,8 @@ export async function deliverWebhook(
     db.prepare(
       "UPDATE webhook_deliveries SET status = 'dlq', attempt = ?, last_attempt_at = ?, last_error = ?, last_status_code = ? WHERE id = ?",
     ).run(attempt, nowSec(), error, statusCode ?? null, deliveryId);
+    incCounter('impri_webhook_deliveries_total', { result: 'dlq' });
+    log.error({ event: 'webhook.dlq', delivery_id: deliveryId, action_id: event.action_id, attempt });
     return false;
   }
 
@@ -104,6 +121,8 @@ export async function deliverWebhook(
   db.prepare(
     "UPDATE webhook_deliveries SET status = 'retry', attempt = ?, next_attempt_at = ?, last_attempt_at = ?, last_error = ?, last_status_code = ? WHERE id = ?",
   ).run(attempt, nextAt, nowSec(), error, statusCode ?? null, deliveryId);
+  incCounter('impri_webhook_deliveries_total', { result: 'retry' });
+  log.warn({ event: 'webhook.delivery', delivery_id: deliveryId, action_id: event.action_id, attempt, result: 'retry', status_code: statusCode ?? null, duration_ms: Math.round((Date.now() - startMs) / 1000 * 1000) });
   return false;
 }
 
@@ -114,7 +133,7 @@ export function scheduleWebhookDelivery(db: Db, actionId: string, callbackUrl: s
   ).run(id, actionId, callbackUrl, 'pending', 0, nowSec(), nowSec());
 }
 
-export async function runWebhookTick(db: Db, webhookSecret: string): Promise<void> {
+export async function runWebhookTick(db: Db, webhookSecret: string, log: Logger = noopLogger): Promise<void> {
   const now = nowSec();
   const due = db.prepare(
     "SELECT * FROM webhook_deliveries WHERE status IN ('pending', 'retry') AND (next_attempt_at IS NULL OR next_attempt_at <= ?)",
@@ -153,7 +172,7 @@ export async function runWebhookTick(db: Db, webhookSecret: string): Promise<voi
       }),
     };
 
-    await deliverWebhook(db, delivery.id, delivery.callback_url, event, secret);
+    await deliverWebhook(db, delivery.id, delivery.callback_url, event, secret, log);
   }
 }
 
@@ -182,7 +201,7 @@ export function pruneAuditLogs(db: Db): void {
   }
 }
 
-export async function runExpiryTick(db: Db, webhookSecret: string): Promise<void> {
+export async function runExpiryTick(db: Db, webhookSecret: string, log: Logger = noopLogger): Promise<void> {
   const now = nowSec();
   const expired = db.prepare(
     "SELECT * FROM actions WHERE status = 'pending' AND expires_at IS NOT NULL AND expires_at <= ?",
@@ -205,13 +224,17 @@ export async function runExpiryTick(db: Db, webhookSecret: string): Promise<void
 
   for (const action of expired) {
     const didExpire = expireOne(action);
-    if (didExpire && action.callback_url) {
-      scheduleWebhookDelivery(db, action.id, action.callback_url);
+    if (didExpire) {
+      incCounter('impri_actions_expired_total');
+      log.info({ event: 'action.expired', action_id: action.id, project_id: action.project_id });
+      if (action.callback_url) {
+        scheduleWebhookDelivery(db, action.id, action.callback_url);
+      }
     }
   }
 
   // Also run webhook tick
-  await runWebhookTick(db, webhookSecret);
+  await runWebhookTick(db, webhookSecret, log);
 
   // Prune old audit/PII rows (opt-in — no-op when retention env vars are unset).
   pruneAuditLogs(db);

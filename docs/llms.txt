@@ -23,7 +23,7 @@ Open-core (MIT), self-hostable. Source: https://gitlab.com/sekera.radim/impri  D
 
 ## Authentication
 
-All API endpoints (except /healthz, /v1/openapi.json, /v1/push/vapid-public-key, /v1/billing/webhook, and /v1/integrations/telegram/webhook/:id) require:
+All API endpoints (except /healthz, /v1/openapi.json, /v1/push/vapid-public-key, /v1/billing/webhook, /v1/integrations/telegram/webhook/:id, /v1/integrations/slack/interactions/:id, and /v1/integrations/discord/interactions/:id) require:
 
   Authorization: Bearer im_<key>
 
@@ -161,8 +161,8 @@ POST   /v1/notification-channels/:id/setup-webhook  Re-register Telegram setWebh
 ```
 
 Channel types and required config fields:
-- `slack`:    `{"url"}` — Incoming Webhook URL
-- `discord`:  `{"url"}` — Discord Webhook URL
+- `slack`:    `{"url"}` — Incoming Webhook URL; approval_mode adds bot_token + channel_id + signing_secret + allowed_approver_slack_user_ids
+- `discord`:  `{"url"}` — Discord Webhook URL; approval_mode adds bot_token + application_id + public_key + channel_id + allowed_approver_discord_user_ids + hmac_secret (auto-gen)
 - `telegram`: `{"bot_token", "chat_id"}` — approval_mode adds allowed_approver_user_ids + hmac_secret
 - `ntfy`:     `{"url", "topic"}` — ntfy server root + topic name
 - `email`:    `{"address"}` — requires SMTP env vars
@@ -181,6 +181,33 @@ Config secrets masked to `****{last4}` in all responses.
 Telegram callback receiver (public):
   `POST /v1/integrations/telegram/webhook/:channelId`
   4-layer security: HMAC header (timingSafeEqual) + callback_data HMAC + user-id allowlist + UNIQUE constraint.
+
+### Slack approval bot
+
+`approval_mode: true` on a slack channel enables inline Approve/Reject buttons via Slack's Interactivity API.
+Required config fields: `bot_token` (xoxb-...), `channel_id` (C... or G...), `signing_secret`, `allowed_approver_slack_user_ids` (string[] of U... IDs, max 50).
+`url` (plain Incoming Webhook) is required only when `approval_mode: false`.
+
+Slack interaction receiver (public):
+  `POST /v1/integrations/slack/interactions/:channelId`
+  5-layer security: Slack HMAC-SHA256 v0 signature with 5-min timestamp window (timingSafeEqual) + button value HMAC sl: prefix + user-id allowlist + project_id binding + UNIQUE constraint.
+  Set this URL in Slack app → Interactivity & Shortcuts → Request URL.
+  `decided_by` stored as `sl:{slack_user_id}` in audit_log.
+
+### Discord approval bot
+
+`approval_mode: true` on a discord channel enables Approve/Reject buttons via Discord's Interactions API.
+Required config fields: `bot_token`, `application_id`, `public_key` (64-char hex Ed25519 public key), `channel_id`, `allowed_approver_discord_user_ids` (string[] of snowflake IDs, max 50).
+`hmac_secret` — auto-generated (32 random bytes hex) if omitted at creation; signs button custom_id values.
+`url` (plain Incoming Webhook) is required only when `approval_mode: false`.
+
+Discord interaction receiver (public):
+  `POST /v1/integrations/discord/interactions/:channelId`
+  5-layer security: Ed25519 asymmetric signature (webcrypto.subtle.verify) + button custom_id HMAC dc: prefix + user-id allowlist + project_id binding + UNIQUE constraint.
+  Set this URL in Discord Developer Portal → General Information → Interactions Endpoint URL.
+  Discord sends a PING (type 1) on save; Impri verifies the Ed25519 signature and returns {"type":1}.
+  Interaction responses use type 7 (UPDATE_MESSAGE) — replaces the message within 3 seconds; no deferred response needed.
+  `decided_by` stored as `dc:{discord_user_id}` in audit_log.
 
 ### Project & GDPR
 
@@ -253,10 +280,15 @@ Returns: `{signups: {total, last_24h, last_7d, last_30d}, by_tier: {free, indie,
 ### System
 
 ```
-GET    /healthz          Health check (public; no auth)
+GET    /healthz          Liveness probe (public; no auth; returns {"status":"ok","ts":<unix>})
+GET    /readyz           Readiness probe (public; no auth; checks DB reachable + schema + writable + Redis advisory)
+GET    /metrics          Prometheus text metrics (opt-in: METRICS_ENABLED=1; optional bearer METRICS_TOKEN)
+GET    /v1/usage         Per-project usage snapshot (admin scope; 60/min)
 GET    /v1/openapi.json  Live OpenAPI 3.1 specification (public; no auth)
 POST   /v1/signup        Create project + admin key (public; gated on ALLOW_SIGNUP env var)
 ```
+
+/metrics env vars: METRICS_ENABLED=1 (required to activate), METRICS_TOKEN (bearer token; omit to skip token check but restrict at network layer), METRICS_HOST (bind address for separate listener), METRICS_PORT (separate port — if set, a second Fastify instance on METRICS_HOST:METRICS_PORT serves /metrics only).
 
 ## Webhook delivery
 
@@ -495,6 +527,8 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Key storage: argon2-hashed; only prefix stored in plain text; raw value shown once at creation.
 - Audit log: IP in separate erasable pii_log; no secrets (key material, URLs, tokens) in audit rows.
 - Telegram approval: 4-layer security (HMAC header + callback_data HMAC + user-id allowlist + UNIQUE constraint).
+- Slack approval: 5-layer security (HMAC-SHA256 v0 signature + button HMAC sl: + user-id allowlist + project_id binding + UNIQUE constraint). response_url validated against ^https://hooks\.slack\.com/ before use.
+- Discord approval: 5-layer security (Ed25519 signature + button HMAC dc: + user-id allowlist + project_id binding + UNIQUE constraint). Ed25519 is asymmetric — Impri holds only public_key.
 
 ## Documentation
 
@@ -510,6 +544,8 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Webhooks (delivery, signature, retry):               https://impri.dev/docs/webhooks.html
 - Notification channels (Slack, Discord, Telegram, ntfy, email, webhook): https://impri.dev/docs/notifications.html
 - Telegram approval mode:                              https://impri.dev/docs/telegram-approval.html
+- Slack approval mode:                                 https://impri.dev/docs/slack-approval.html
+- Discord approval mode:                               https://impri.dev/docs/discord-approval.html
 - Rules engine:                                        https://impri.dev/docs/rules.html
 - Watcher presets (18 presets with params):            https://impri.dev/docs/watcher-presets.html
 - Audit log (events, query, export, retention):        https://impri.dev/docs/audit-log.html
@@ -519,5 +555,6 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Web push notifications (VAPID setup):                https://impri.dev/docs/web-push.html
 - Operator / multi-tenant stats:                       https://impri.dev/docs/operator.html
 - Self-hosting (docker compose, env vars, HTTPS):      https://impri.dev/docs/self-hosting.html
+- Observability (/metrics Prometheus, /readyz, /healthz, structured logs, GET /v1/usage): https://impri.dev/docs/observability.html
 - Cookbook (email, SQL, social, idempotent batches):   https://impri.dev/docs/cookbook.html
 - OpenAPI spec (live):                                 https://api.impri.dev/v1/openapi.json

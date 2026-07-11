@@ -493,9 +493,6 @@ describe('POST /v1/integrations/slack/interactions/:channelId', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body).toBe('');
 
-    // action must remain pending
-    const { db } = await setup();
-    // Use a fresh db since app has a separate one - check via action endpoint instead
   });
 
   it('FORGED button HMAC (8-char but wrong) is rejected silently', async () => {

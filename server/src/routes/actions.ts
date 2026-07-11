@@ -7,6 +7,7 @@ import { scheduleWebhookDelivery } from '../webhooks.js';
 import { notifyAll, notifyChannels } from '../notify.js';
 import { notifyPush } from '../push.js';
 import { evaluateRules } from '../rules.js';
+import { incCounter, obsHistogram } from '../metrics.js';
 import {
   CreateActionBody,
   DecisionBody,
@@ -210,6 +211,17 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
       throw err;
     }
 
+    // Structured log: action created — no title/preview/PII in log fields.
+    request.log.info({
+      event: 'action.created',
+      action_id: actionId,
+      kind: body.kind,
+      project_id: key.projectId,
+      key_id: key.keyId,
+      rule_applied: rule?.ruleId ?? null,
+      initial_status: initialStatus,
+    });
+
     // Always schedule webhook delivery when a callback_url is provided, including
     // for auto-decided actions — the agent's callback must receive the verdict.
     if (body.callback_url) {
@@ -395,6 +407,10 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
 
       try {
         commitBulkItem();
+
+        incCounter('impri_action_decisions_total', { verdict: body.verdict, channel });
+        const latencySec = now - (action.created_at as number);
+        obsHistogram('impri_action_decision_latency_seconds', { verdict: body.verdict }, latencySec);
 
         // Schedule webhook delivery per item — identical to single-decision.
         if (action.callback_url) {
@@ -600,6 +616,19 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
       throw err;
     }
 
+    const channel = body.channel ?? 'api';
+    incCounter('impri_action_decisions_total', { verdict: body.decision, channel });
+    const latencySec = now - (action.created_at as number);
+    obsHistogram('impri_action_decision_latency_seconds', { verdict: body.decision }, latencySec);
+    request.log.info({
+      event: 'action.decided',
+      action_id: action.id,
+      verdict: body.decision,
+      channel,
+      key_id: key.keyId,
+      latency_ms: latencySec * 1000,
+    });
+
     // Schedule webhook delivery if callback_url set
     if (action.callback_url) {
       scheduleWebhookDelivery(db, action.id as string, action.callback_url as string);
@@ -649,6 +678,8 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
     db.prepare(
       "INSERT INTO audit_log (project_id, action_id, event, data, created_at) VALUES (?, ?, ?, ?, ?)",
     ).run(key.projectId, action.id, `action.${body.status}`, JSON.stringify({ detail: body.detail }), now);
+
+    request.log.info({ event: 'action.result', action_id: action.id, status: body.status });
 
     return { id: action.id, status: body.status, updated_at: now };
   });

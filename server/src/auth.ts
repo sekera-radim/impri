@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { Redis } from 'ioredis';
 import type { Db } from './db.js';
 import { nowSec, genId } from './db.js';
+import { incCounter } from './metrics.js';
 
 // Optional Redis backend for the rate limiter — enables a SHARED window across
 // multiple instances (horizontal scale-out). Without REDIS_URL we use the
@@ -53,13 +54,19 @@ export async function checkRateLimit(db: Db, keyId: string, route: string, limit
       const rkey = `rl:${keyId}:${route}:${windowStart}`;
       const count = await r.incr(rkey);
       if (count === 1) await r.expire(rkey, 120);
-      return count <= limitPerMin;
+      if (count > limitPerMin) {
+        incCounter('impri_rate_limited_total', { bucket: route });
+        return false;
+      }
+      return true;
     } catch {
       // Redis unavailable → fall through to SQLite (fail to a working limiter).
     }
   }
 
-  return checkRateLimitSqlite(db, keyId, route, windowStart, limitPerMin);
+  const allowed = checkRateLimitSqlite(db, keyId, route, windowStart, limitPerMin);
+  if (!allowed) incCounter('impri_rate_limited_total', { bucket: route });
+  return allowed;
 }
 
 function checkRateLimitSqlite(db: Db, keyId: string, route: string, windowStart: number, limitPerMin: number): boolean {

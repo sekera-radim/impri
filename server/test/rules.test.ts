@@ -1010,7 +1010,7 @@ describe('Idempotency interaction with rules', () => {
 
 describe('Audit log entries', () => {
   it('action.created and action.rule_applied events are both written', async () => {
-    const { app, db, adminKey, projectId } = await setup();
+    const { app, db, adminKey } = await setup();
 
     await createRule(app, adminKey, {
       name: 'Audit test rule',
@@ -1042,7 +1042,7 @@ describe('Audit log entries', () => {
   });
 
   it('no action.rule_applied event when no rule matches', async () => {
-    const { app, db, adminKey, projectId } = await setup();
+    const { app, db, adminKey } = await setup();
 
     // Rule only matches 'email.*', action is 'other.kind'
     await createRule(app, adminKey, {

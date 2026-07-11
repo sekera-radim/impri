@@ -64,6 +64,7 @@
             <v-tab value="watchers">Watchers</v-tab>
             <v-tab value="notifications">Notifications</v-tab>
             <v-tab value="billing">Billing</v-tab>
+            <v-tab value="usage">Usage</v-tab>
             <v-tab value="audit">Audit</v-tab>
           </v-tabs>
         </template>
@@ -95,6 +96,10 @@
               <BillingScreen />
             </v-window-item>
 
+            <v-window-item value="usage">
+              <UsageScreen />
+            </v-window-item>
+
             <v-window-item value="audit">
               <AuditScreen />
             </v-window-item>
@@ -119,13 +124,14 @@ import InboxList from './components/InboxList.vue'
 import WatchersScreen from './components/WatchersScreen.vue'
 import NotificationsScreen from './components/NotificationsScreen.vue'
 import BillingScreen from './components/BillingScreen.vue'
+import UsageScreen from './components/UsageScreen.vue'
 import GettingStarted from './components/GettingStarted.vue'
 import AuditScreen from './components/AuditScreen.vue'
 
 const auth = useAuthStore()
 const inbox = useInboxStore()
 
-const activeTab = ref<'inbox' | 'watchers' | 'notifications' | 'billing' | 'audit'>('inbox')
+const activeTab = ref<'inbox' | 'watchers' | 'notifications' | 'billing' | 'usage' | 'audit'>('inbox')
 const pendingTotal = computed(() => inbox.pendingTotal)
 
 // First-run onboarding (dismissible, re-openable via the app-bar help button).

@@ -462,7 +462,7 @@ export const NtfyConfig = z.object({
   url: httpUrlPublic('ntfy server URL'),
   // Topic validated against /^[A-Za-z0-9_/-]{1,64}$/ — same constraint as the
   // existing notifyNtfy — to prevent path traversal when assembling {url}/{topic}.
-  topic: z.string().regex(/^[A-Za-z0-9_\/-]{1,64}$/, 'Topic must be 1–64 alphanumeric/underscore/hyphen/slash chars'),
+  topic: z.string().regex(/^[A-Za-z0-9_/-]{1,64}$/, 'Topic must be 1–64 alphanumeric/underscore/hyphen/slash chars'),
 });
 export type NtfyConfig = z.infer<typeof NtfyConfig>;
 

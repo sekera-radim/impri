@@ -6,6 +6,7 @@ import type { Db } from './db.js';
 import { nowSec } from './db.js';
 import { fetchGuarded, isPrivateIp } from './net-guard.js';
 import { signWebhookBody } from './webhooks.js';
+import { incCounter, noopLogger, type Logger } from './metrics.js';
 
 export interface NotifyPayload {
   actionId: string;
@@ -772,19 +773,15 @@ function onChannelSuccess(db: Db, channelId: string, now: number): void {
   ).run(now, '[]', now, channelId);
 }
 
-function onChannelFailure(db: Db, channel: ChannelRow, msg: string, now: number): void {
+function onChannelFailure(db: Db, channel: ChannelRow, msg: string, now: number, log: Logger = noopLogger): void {
   const newFailCount = channel.fail_count + 1;
   if (newFailCount >= channelMaxFails()) {
     db.prepare(
       'UPDATE notification_channels SET fail_count = ?, last_error = ?, enabled = 0, updated_at = ? WHERE id = ?',
     ).run(newFailCount, msg, now, channel.id);
-    // Structured warning — no secrets in this log line.
-    console.warn('[notify-channel] auto-disabled after repeated failures', {
-      channelId: channel.id,
-      type: channel.type,
-      projectId: channel.project_id,
-      failCount: newFailCount,
-    });
+    incCounter('impri_channel_auto_disabled_total', { channel_type: channel.type });
+    // Structured warning — no secrets (no config/token/URL) in this log line.
+    log.warn({ event: 'channel.auto_disabled', channel_id: channel.id, channel_type: channel.type, project_id: channel.project_id, fail_count: newFailCount });
   } else {
     db.prepare(
       'UPDATE notification_channels SET fail_count = ?, last_error = ?, updated_at = ? WHERE id = ?',
@@ -800,7 +797,7 @@ function onChannelFailure(db: Db, channel: ChannelRow, msg: string, now: number)
 async function fireChannel(db: Db, channel: ChannelRow, payload: ChannelPayload): Promise<void> {
   const now = nowSec();
   const config = JSON.parse(channel.config) as Record<string, unknown>;
-  let queue = JSON.parse(channel.digest_queue) as QueueItem[];
+  const queue = JSON.parse(channel.digest_queue) as QueueItem[];
 
   // Layer 2 digest window check (Layer 1 = action-level soft-dedup in POST /v1/actions).
   if (channel.last_fired_at !== null && (now - channel.last_fired_at) < channel.digest_window_sec) {
@@ -831,6 +828,7 @@ async function fireChannel(db: Db, channel: ChannelRow, payload: ChannelPayload)
   try {
     await dispatchChannelType(channel.type, config, title, kind, inboxUrl, primaryActionId, payload.escalate, isDigest);
     onChannelSuccess(db, channel.id, now);
+    incCounter('impri_notifications_total', { channel_type: channel.type, result: 'ok' });
   } catch (err) {
     // Sanitize before storing AND before re-throwing so no secret can reach
     // the notifyChannels log site via err.message (tokens appear in URLs for
@@ -838,6 +836,7 @@ async function fireChannel(db: Db, channel: ChannelRow, payload: ChannelPayload)
     const raw = err instanceof Error ? err.message : String(err);
     const msg = sanitizeError(raw, config);
     onChannelFailure(db, channel, msg, now);
+    incCounter('impri_notifications_total', { channel_type: channel.type, result: 'error' });
     throw new Error(msg);
   }
 }
@@ -847,7 +846,7 @@ async function fireChannel(db: Db, channel: ChannelRow, payload: ChannelPayload)
 // Called when the digest window has expired and items are waiting.
 // ---------------------------------------------------------------------------
 
-async function flushChannelQueue(db: Db, channel: ChannelRow): Promise<void> {
+async function flushChannelQueue(db: Db, channel: ChannelRow, log: Logger = noopLogger): Promise<void> {
   const now = nowSec();
   const config = JSON.parse(channel.config) as Record<string, unknown>;
   const queue = JSON.parse(channel.digest_queue) as QueueItem[];
@@ -856,18 +855,19 @@ async function flushChannelQueue(db: Db, channel: ChannelRow): Promise<void> {
   const { title, kind, inboxUrl, primaryActionId } = buildDigestMessage(queue);
   const isDigest = queue.length > 1;
 
+  incCounter('impri_notification_digest_flushes_total', { channel_type: channel.type });
+
   try {
     await dispatchChannelType(channel.type, config, title, kind, inboxUrl, primaryActionId, undefined, isDigest);
     onChannelSuccess(db, channel.id, now);
+    incCounter('impri_notifications_total', { channel_type: channel.type, result: 'ok' });
   } catch (err) {
     const raw = err instanceof Error ? err.message : String(err);
     const msg = sanitizeError(raw, config);
-    onChannelFailure(db, channel, msg, now);
+    onChannelFailure(db, channel, msg, now, log);
+    incCounter('impri_notifications_total', { channel_type: channel.type, result: 'error' });
     // Log but don't re-throw: one channel failure must not stop the tick.
-    console.error('[notify-channel] digest flush failed', {
-      channelId: channel.id,
-      type: channel.type,
-    });
+    log.error({ event: 'channel.notification', channel_id: channel.id, channel_type: channel.type, result: 'error', action_id: primaryActionId });
   }
 }
 
@@ -880,21 +880,17 @@ async function flushChannelQueue(db: Db, channel: ChannelRow): Promise<void> {
  * becomes pending. Fire-and-forget from the caller (.catch(() => {})).
  * One channel failing never blocks the others (Promise.allSettled pattern).
  */
-export async function notifyChannels(db: Db, projectId: string, payload: ChannelPayload): Promise<void> {
+export async function notifyChannels(db: Db, projectId: string, payload: ChannelPayload, log: Logger = noopLogger): Promise<void> {
   const channels = db.prepare(
     'SELECT * FROM notification_channels WHERE project_id = ? AND enabled = 1',
   ).all(projectId) as ChannelRow[];
 
   await Promise.allSettled(
     channels.map(channel =>
-      fireChannel(db, channel, payload).catch(err => {
+      fireChannel(db, channel, payload).catch(() => {
         // Error already logged inside fireChannel/onChannelFailure.
-        // Log channelId and type only — no secrets.
-        console.error('[notify-channel] delivery failed', {
-          channelId: channel.id,
-          type: channel.type,
-          error: err instanceof Error ? err.message : String(err),
-        });
+        // Log channel_id and channel_type only — no secrets/config.
+        log.error({ event: 'channel.notification', channel_id: channel.id, channel_type: channel.type, result: 'error', action_id: payload.actionId });
       }),
     ),
   );
@@ -906,7 +902,7 @@ export async function notifyChannels(db: Db, projectId: string, payload: Channel
  * flushes them. Items with last_fired_at IS NULL are handled by fireChannel()
  * on the next action creation (explicit retry path).
  */
-export async function runChannelDigestTick(db: Db): Promise<void> {
+export async function runChannelDigestTick(db: Db, log: Logger = noopLogger): Promise<void> {
   const now = nowSec();
   const due = db.prepare(`
     SELECT * FROM notification_channels
@@ -917,6 +913,6 @@ export async function runChannelDigestTick(db: Db): Promise<void> {
   `).all(now) as ChannelRow[];
 
   for (const channel of due) {
-    await flushChannelQueue(db, channel);
+    await flushChannelQueue(db, channel, log);
   }
 }

@@ -27,7 +27,7 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest';
-import { createDb, nowSec } from '../src/db.js';
+import { createDb } from '../src/db.js';
 import { bootstrapAdminKey } from '../src/auth.js';
 import { createApp } from '../src/index.js';
 

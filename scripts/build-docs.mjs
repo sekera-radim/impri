@@ -32,6 +32,7 @@ const NAV = [
       { slug: 'quickstart',                              title: 'Quickstart' },
       { slug: 'how-to-add-human-approval-to-an-ai-agent', title: 'Human approval pattern' },
       { slug: 'self-hosting',                            title: 'Self-hosting' },
+      { slug: 'observability',                           title: 'Observability' },
     ],
   },
   {
@@ -43,6 +44,8 @@ const NAV = [
       { slug: 'watcher-presets',   title: 'Watcher presets' },
       { slug: 'notifications',     title: 'Notification channels' },
       { slug: 'telegram-approval', title: 'Telegram approval' },
+      { slug: 'slack-approval',    title: 'Slack approval' },
+      { slug: 'discord-approval',  title: 'Discord approval' },
       { slug: 'audit-log',         title: 'Audit log' },
       { slug: 'billing',           title: 'Billing & tiers' },
       { slug: 'gdpr',              title: 'GDPR & data export' },

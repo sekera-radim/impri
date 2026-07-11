@@ -280,10 +280,15 @@ Returns: `{signups: {total, last_24h, last_7d, last_30d}, by_tier: {free, indie,
 ### System
 
 ```
-GET    /healthz          Health check (public; no auth)
+GET    /healthz          Liveness probe (public; no auth; returns {"status":"ok","ts":<unix>})
+GET    /readyz           Readiness probe (public; no auth; checks DB reachable + schema + writable + Redis advisory)
+GET    /metrics          Prometheus text metrics (opt-in: METRICS_ENABLED=1; optional bearer METRICS_TOKEN)
+GET    /v1/usage         Per-project usage snapshot (admin scope; 60/min)
 GET    /v1/openapi.json  Live OpenAPI 3.1 specification (public; no auth)
 POST   /v1/signup        Create project + admin key (public; gated on ALLOW_SIGNUP env var)
 ```
+
+/metrics env vars: METRICS_ENABLED=1 (required to activate), METRICS_TOKEN (bearer token; omit to skip token check but restrict at network layer), METRICS_HOST (bind address for separate listener), METRICS_PORT (separate port — if set, a second Fastify instance on METRICS_HOST:METRICS_PORT serves /metrics only).
 
 ## Webhook delivery
 
@@ -550,5 +555,6 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Web push notifications (VAPID setup):                https://impri.dev/docs/web-push.html
 - Operator / multi-tenant stats:                       https://impri.dev/docs/operator.html
 - Self-hosting (docker compose, env vars, HTTPS):      https://impri.dev/docs/self-hosting.html
+- Observability (/metrics Prometheus, /readyz, /healthz, structured logs, GET /v1/usage): https://impri.dev/docs/observability.html
 - Cookbook (email, SQL, social, idempotent batches):   https://impri.dev/docs/cookbook.html
 - OpenAPI spec (live):                                 https://api.impri.dev/v1/openapi.json

@@ -599,10 +599,7 @@ describe('Admin stats endpoint (GET /v1/admin/stats)', () => {
     const project2 = await createProjectWithAdminKey(db, 'Project 2');
     process.env.OPERATOR_PROJECT_ID = project2.projectId;
 
-    // The bootstrap project's admin key must not see the endpoint
-    const bootstrap2 = await bootstrapAdminKey(createDb(':memory:')); // unrelated — get fresh bootstrap
-    // Use project2's key — but query with a THIRD project's key (neither is operator... wait)
-    // Simpler: create project3, set project2 as operator, use project3's key
+    // project2 is operator; query with a THIRD project's key (not operator) — must be denied
     const project3 = await createProjectWithAdminKey(db, 'Project 3');
     const res = await app.inject({
       method: 'GET', url: '/v1/admin/stats',

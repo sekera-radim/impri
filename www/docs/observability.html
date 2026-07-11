@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Observability — Impri Docs</title>
+<meta name="description" content="Impri exposes three observability surfaces for self-hosters and operators:">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Observability — Impri Docs">
+<meta property="og:description" content="Impri exposes three observability surfaces for self-hosters and operators:">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+<a href="../docs/observability.html" class="sl active">Observability</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval.html" class="sl">Slack approval</a>
+<a href="../docs/discord-approval.html" class="sl">Discord approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Getting started</span>
+      <span class="bc-sep">/</span>
+      <span>Observability</span>
+    </nav>
+    <h1>Observability</h1>
+<p>Impri exposes three observability surfaces for self-hosters and operators:</p>
+<ul>
+<li><strong><code>/metrics</code></strong> — Prometheus text-format endpoint (opt-in)</li>
+<li><strong><code>/readyz</code></strong> — readiness probe (always available, no auth)</li>
+<li><strong><code>/healthz</code></strong> — liveness probe (existing, always available)</li>
+<li><strong><code>GET /v1/usage</code></strong> — per-project usage snapshot (admin scope)</li>
+<li><strong>Structured logging</strong> — JSON via pino with request-ID correlation</li>
+</ul>
+<hr>
+<h2 id="prometheus-metrics-metrics">Prometheus metrics (<code>/metrics</code>)</h2>
+<h3 id="enabling">Enabling</h3>
+<p>The <code>/metrics</code> endpoint does <strong>not exist by default</strong>. It is registered only when <code>METRICS_ENABLED=1</code>. Without this env var, any request to <code>/metrics</code> returns 404.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">METRICS_ENABLED=1</code></pre></div>
+<h3 id="protecting-access">Protecting access</h3>
+<p><strong>Option A — bearer token (recommended when <code>/metrics</code> is on the public port):</strong></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">METRICS_ENABLED=1
+METRICS_TOKEN=&lt;random-string&gt;</code></pre></div>
+<p>When <code>METRICS_TOKEN</code> is set, the endpoint requires:</p>
+<div class="code-block"><pre><code class="hljs">Authorization: Bearer &lt;METRICS_TOKEN&gt;</code></pre></div>
+<p>Requests with a missing or mismatched token receive <code>401 Unauthorized</code>. The comparison uses constant-time (<code>timingSafeEqual</code>) to prevent timing attacks.</p>
+<p><strong>Option B — private port (recommended for bare-metal / VM self-hosters):</strong></p>
+<p>Bind a second listener on a non-public interface so the metrics endpoint is never reachable over the internet at all.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">METRICS_ENABLED=1
+METRICS_HOST=127.0.0.1
+METRICS_PORT=9090</code></pre></div>
+<p>With <code>METRICS_PORT</code> set to a different value than <code>PORT</code>, the server starts a separate Fastify instance (metrics-only, no auth preHandler, no CORS) on <code>METRICS_HOST:METRICS_PORT</code>. The main listener on <code>PORT</code> receives no <code>/metrics</code> traffic.</p>
+<p><strong>Option C — no token, public port (development only):</strong></p>
+<p><code>METRICS_ENABLED=1</code> without <code>METRICS_TOKEN</code> is valid but you <strong>must</strong> restrict access at the network layer: firewall rule, reverse proxy IP allowlist, or <code>METRICS_HOST=127.0.0.1</code>. Never expose an unprotected <code>/metrics</code> to the internet — it leaks operational statistics.</p>
+<h3 id="content-type">Content type</h3>
+<div class="code-block"><pre><code class="hljs">Content-Type: text/plain; version=0.0.4</code></pre></div>
+<p>Standard Prometheus text exposition format. Prometheus, Grafana Agent, VictoriaMetrics, and any compatible scraper will ingest it without configuration.</p>
+<h3 id="prometheus-scrapeconfig-examples">Prometheus <code>scrape_config</code> examples</h3>
+<p><strong>With bearer token:</strong></p>
+<div class="code-block"><span class="code-lang">yaml</span><pre><code class="hljs"><span class="hljs-attr">scrape_configs:</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">job_name:</span> <span class="hljs-string">impri</span>
+    <span class="hljs-attr">static_configs:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">targets:</span> [<span class="hljs-string">&#x27;your-impri-host:8484&#x27;</span>]
+    <span class="hljs-attr">authorization:</span>
+      <span class="hljs-attr">type:</span> <span class="hljs-string">Bearer</span>
+      <span class="hljs-attr">credentials:</span> <span class="hljs-string">&lt;METRICS_TOKEN&gt;</span></code></pre></div>
+<p><strong>Private port, no token:</strong></p>
+<div class="code-block"><span class="code-lang">yaml</span><pre><code class="hljs"><span class="hljs-attr">scrape_configs:</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">job_name:</span> <span class="hljs-string">impri</span>
+    <span class="hljs-attr">static_configs:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">targets:</span> [<span class="hljs-string">&#x27;127.0.0.1:9090&#x27;</span>]</code></pre></div>
+<hr>
+<h2 id="metric-reference">Metric reference</h2>
+<p>All metrics are prefixed with <code>impri_</code>. Labels never contain raw API keys, webhook secrets, bot tokens, action content, email addresses, callback URLs, or any other user-supplied data — only enum values and route patterns.</p>
+<h3 id="build-and-runtime">Build and runtime</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>impri_build_info{version, node_version}</code></td>
+<td>Gauge (always 1)</td>
+<td>Identifies the running build. <code>version</code> from package.json, <code>node_version</code> from <code>process.version</code>. Emitted once per scrape.</td>
+</tr>
+<tr>
+<td><code>impri_uptime_seconds</code></td>
+<td>Gauge</td>
+<td><code>process.uptime()</code> at scrape time. Detects unexpected restarts in dashboards.</td>
+</tr>
+<tr>
+<td><code>impri_db_size_bytes</code></td>
+<td>Gauge</td>
+<td><code>fs.statSync(DB_PATH).size</code>. SQLite growth indicator — useful for disk-space alerting without external DB monitoring.</td>
+</tr>
+</tbody></table>
+</div>
+<h3 id="http-traffic">HTTP traffic</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>impri_http_requests_total{route, method, status_class}</code></td>
+<td>Counter</td>
+<td>Request count by route pattern, HTTP method, and status class (<code>2xx</code> / <code>4xx</code> / <code>5xx</code>). <code>route</code> is Fastify&#39;s route pattern (e.g. <code>/v1/actions/:id</code>), never the real URL with actual IDs or tokens.</td>
+</tr>
+<tr>
+<td><code>impri_http_request_duration_seconds{route, method}</code></td>
+<td>Histogram</td>
+<td>Latency from request start to response send. Buckets: 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10 s.</td>
+</tr>
+</tbody></table>
+</div>
+<p>The <code>/metrics</code> route itself is excluded from HTTP counters to avoid noise.</p>
+<h3 id="rate-limiting">Rate limiting</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>impri_rate_limited_total{bucket}</code></td>
+<td>Counter</td>
+<td>Incremented when a request is rejected by the rate limiter. <code>bucket</code> is the route string used in <code>checkRateLimit()</code> (e.g. <code>actions:create</code>, <code>actions:decide</code>, <code>watchers:create</code>). Labels identify the bucket, not the caller.</td>
+</tr>
+</tbody></table>
+</div>
+<h3 id="actions">Actions</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>impri_actions_total{status}</code></td>
+<td>Gauge</td>
+<td><code>COUNT(*) FROM actions GROUP BY status</code> at scrape time. Labels: <code>pending</code>, <code>approved</code>, <code>rejected</code>, <code>expired</code>, <code>succeeded</code>, <code>failed</code>.</td>
+</tr>
+<tr>
+<td><code>impri_pending_actions</code></td>
+<td>Gauge</td>
+<td><code>COUNT(*) WHERE status = &#39;pending&#39;</code>. Convenience alias; useful as an alert trigger.</td>
+</tr>
+<tr>
+<td><code>impri_action_decisions_total{verdict, channel}</code></td>
+<td>Counter</td>
+<td>Incremented each time a decision is committed. <code>verdict</code> = <code>approve</code> or <code>reject</code>. <code>channel</code> = <code>api</code> / <code>bulk-api</code> / <code>bulk-web</code> / <code>telegram</code> / <code>slack</code> / <code>discord</code> / <code>auto</code> (rules engine).</td>
+</tr>
+<tr>
+<td><code>impri_action_decision_latency_seconds{verdict}</code></td>
+<td>Histogram</td>
+<td>Time from action creation to decision (human response time distribution). Value = <code>decided_at − created_at</code>. Buckets: 1, 10, 60, 300, 1800, 7200, 86400 s.</td>
+</tr>
+<tr>
+<td><code>impri_actions_expired_total</code></td>
+<td>Counter</td>
+<td>Incremented once per action that transitions to <code>expired</code>. No PII labels.</td>
+</tr>
+</tbody></table>
+</div>
+<h3 id="watchers">Watchers</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>impri_active_watchers</code></td>
+<td>Gauge</td>
+<td><code>COUNT(*) WHERE status = &#39;active&#39;</code> at scrape time.</td>
+</tr>
+<tr>
+<td><code>impri_degraded_watchers</code></td>
+<td>Gauge</td>
+<td><code>COUNT(*) WHERE status = &#39;degraded&#39;</code> at scrape time. Alert when non-zero.</td>
+</tr>
+<tr>
+<td><code>impri_watcher_runs_total{kind, result}</code></td>
+<td>Counter</td>
+<td><code>kind</code> = <code>rss</code> / <code>reddit_search</code> / <code>url_diff</code>. <code>result</code> = <code>ok</code> / <code>error</code> / <code>window_skipped</code> (outside schedule window) / <code>baseline</code> (first run, no actions created).</td>
+</tr>
+<tr>
+<td><code>impri_watcher_items_fetched_total{kind}</code></td>
+<td>Counter</td>
+<td>Total items returned by fetch before dedup/scoring.</td>
+</tr>
+<tr>
+<td><code>impri_watcher_hits_total{kind}</code></td>
+<td>Counter</td>
+<td>Actions created by watcher runs (items that passed dedup + score filter).</td>
+</tr>
+<tr>
+<td><code>impri_watcher_burst_truncations_total{kind}</code></td>
+<td>Counter</td>
+<td>Incremented when burst protection triggers. Useful for detecting runaway feeds.</td>
+</tr>
+</tbody></table>
+</div>
+<h3 id="webhooks">Webhooks</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>impri_webhook_deliveries_total{result}</code></td>
+<td>Counter</td>
+<td><code>result</code> = <code>delivered</code> / <code>retry</code> / <code>dlq</code> / <code>gone</code> / <code>ssrf_blocked</code>.</td>
+</tr>
+<tr>
+<td><code>impri_webhook_delivery_duration_seconds</code></td>
+<td>Histogram</td>
+<td>Wall-clock time of the HTTP POST to the callback URL. Buckets: 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 15 s. Helps identify slow receivers.</td>
+</tr>
+<tr>
+<td><code>impri_webhook_dlq_size</code></td>
+<td>Gauge</td>
+<td><code>COUNT(*) WHERE status = &#39;dlq&#39;</code> at scrape time. Alert when this grows.</td>
+</tr>
+</tbody></table>
+</div>
+<h3 id="notification-channels">Notification channels</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>impri_notifications_total{channel_type, result}</code></td>
+<td>Counter</td>
+<td><code>channel_type</code> = <code>slack</code> / <code>discord</code> / <code>telegram</code> / <code>ntfy</code> / <code>email</code> / <code>webhook</code>. <code>result</code> = <code>ok</code> / <code>error</code>. No URL, token, or project ID in labels.</td>
+</tr>
+<tr>
+<td><code>impri_notification_digest_flushes_total{channel_type}</code></td>
+<td>Counter</td>
+<td>Incremented on each digest queue flush.</td>
+</tr>
+<tr>
+<td><code>impri_channel_auto_disabled_total{channel_type}</code></td>
+<td>Counter</td>
+<td>Incremented when a channel is auto-disabled after consecutive failures. Alert trigger for broken channels.</td>
+</tr>
+</tbody></table>
+</div>
+<hr>
+<h2 id="health-and-readiness-probes">Health and readiness probes</h2>
+<h3 id="get-healthz-liveness"><code>GET /healthz</code> — liveness</h3>
+<p><strong>Always available. No auth. Never blocks.</strong></p>
+<p>Returns <code>200 OK</code> immediately with <code>{&quot;status&quot;:&quot;ok&quot;,&quot;ts&quot;:&lt;unix&gt;}</code>. Use this as your container liveness probe or uptime-check endpoint. Its only question is: &quot;is the process alive?&quot; — it performs no DB check.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl http://localhost:8484/healthz
+<span class="hljs-comment"># {&quot;status&quot;:&quot;ok&quot;,&quot;ts&quot;:1720000000}</span></code></pre></div>
+<h3 id="get-readyz-readiness"><code>GET /readyz</code> — readiness</h3>
+<p><strong>Always available. No auth. Returns sensitive-free pass/fail only.</strong></p>
+<p>Use this as your Kubernetes readiness probe or load-balancer health check. It answers: &quot;is the server ready to serve traffic?&quot; Kubernetes probes cannot carry tokens; the endpoint deliberately returns no sensitive data — only pass/fail per named check.</p>
+<p>Checks (in order):</p>
+<ol>
+<li><strong><code>db_reachable</code></strong> — <code>SELECT 1</code> confirms the SQLite file is open and WAL is accessible.</li>
+<li><strong><code>schema_applied</code></strong> — verifies the <code>api_keys</code> table exists (confirms migrations ran).</li>
+<li><strong><code>db_writable</code></strong> — inserts and immediately deletes a sentinel row in <code>rate_limits</code> within a single transaction (confirms writes are not blocked by disk-full or a read-only mount).</li>
+<li><strong><code>redis</code></strong> <em>(advisory, only when <code>REDIS_URL</code> is set)</em> — <code>PING</code> with a 1 s timeout. Failure sets <code>status: &#39;degraded&#39;</code> in the response but does <strong>not</strong> cause a 503 — Redis is a non-fatal fallback path.</li>
+</ol>
+<p><strong>Success response (HTTP 200):</strong></p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;ok&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;checks&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;db_reachable&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;ok&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;schema_applied&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;ok&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;db_writable&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;ok&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;redis&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;ok&quot;</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;ts&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1720000000</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p><strong>Failure response (HTTP 503):</strong></p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;error&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;checks&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;db_reachable&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;ok&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;schema_applied&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;error&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;db_writable&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;skipped&quot;</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;error&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;schema_applied: expected table api_keys not found&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;ts&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1720000000</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>Error messages contain only the check name and a fixed-string reason — never raw SQL, row data, or secrets.</p>
+<p><strong>Kubernetes example:</strong></p>
+<div class="code-block"><span class="code-lang">yaml</span><pre><code class="hljs"><span class="hljs-attr">livenessProbe:</span>
+  <span class="hljs-attr">httpGet:</span>
+    <span class="hljs-attr">path:</span> <span class="hljs-string">/healthz</span>
+    <span class="hljs-attr">port:</span> <span class="hljs-number">8484</span>
+  <span class="hljs-attr">initialDelaySeconds:</span> <span class="hljs-number">5</span>
+  <span class="hljs-attr">periodSeconds:</span> <span class="hljs-number">10</span>
+
+<span class="hljs-attr">readinessProbe:</span>
+  <span class="hljs-attr">httpGet:</span>
+    <span class="hljs-attr">path:</span> <span class="hljs-string">/readyz</span>
+    <span class="hljs-attr">port:</span> <span class="hljs-number">8484</span>
+  <span class="hljs-attr">initialDelaySeconds:</span> <span class="hljs-number">5</span>
+  <span class="hljs-attr">periodSeconds:</span> <span class="hljs-number">10</span>
+  <span class="hljs-attr">failureThreshold:</span> <span class="hljs-number">3</span></code></pre></div>
+<hr>
+<h2 id="structured-logging">Structured logging</h2>
+<p>Impri uses <strong>pino</strong> with JSON output. All logs include <code>level</code>, <code>time</code>, <code>msg</code>, and Fastify&#39;s request fields. The logger redacts <code>Authorization</code> and <code>cookie</code> headers in HTTP logs.</p>
+<h3 id="request-id-correlation">Request-ID correlation</h3>
+<p>Every response includes an <code>X-Request-Id</code> header matching the <code>reqId</code> field in the server log. This lets you correlate a <code>429</code> or <code>403</code> in an agent&#39;s log with the exact server log line:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -sI https://api.impri.dev/v1/actions | grep x-request-id
+<span class="hljs-comment"># x-request-id: req-abc123</span></code></pre></div>
+<p>Search for that ID in your log aggregator to find the full structured log entry.</p>
+<h3 id="background-tick-logging">Background tick logging</h3>
+<p>All background tick functions (<code>runExpiryTick</code>, <code>runWebhookTick</code>, <code>runWatcherTick</code>, <code>runChannelDigestTick</code>) receive a pino logger instance so their output flows through pino&#39;s redaction pipeline. No background output is written to raw stderr.</p>
+<h3 id="structured-lifecycle-events">Structured lifecycle events</h3>
+<p>Key lifecycle events are logged as structured JSON with the fields listed below. None of these fields ever contain raw API keys, tokens, passwords, callback URLs (which may carry auth in query params), watcher config (which may contain embedded credentials), action content, or email addresses.</p>
+<h4>Action lifecycle</h4>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;event&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;action.created&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_...&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;kind&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;email.send&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;project_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;proj_...&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;key_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">42</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;rule_applied&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">null</span></span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;initial_status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;pending&quot;</span> <span class="hljs-punctuation">}</span>
+
+<span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;event&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;action.decided&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_...&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;verdict&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;approve&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;channel&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;telegram&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;key_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">42</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;latency_ms&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">47213</span> <span class="hljs-punctuation">}</span>
+
+<span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;event&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;action.expired&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_...&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;project_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;proj_...&quot;</span> <span class="hljs-punctuation">}</span>
+
+<span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;event&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;action.result&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_...&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;executed&quot;</span> <span class="hljs-punctuation">}</span></code></pre></div>
+<h4>Webhook delivery</h4>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;event&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;webhook.delivery&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;delivery_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;wdl_...&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_...&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;attempt&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">2</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;result&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;retry&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;status_code&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">503</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;duration_ms&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1240</span> <span class="hljs-punctuation">}</span>
+
+<span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;event&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;webhook.dlq&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;delivery_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;wdl_...&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_...&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;attempt&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">7</span> <span class="hljs-punctuation">}</span></code></pre></div>
+<p><code>callback_url</code> is never logged (may contain tokens in query params).</p>
+<h4>Watcher runs</h4>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;event&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;watcher.run&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;watcher_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;wat_...&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;kind&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;rss&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;result&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;ok&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;items_fetched&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">12</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;items_new&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">3</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;items_published&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">3</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;duration_ms&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">890</span> <span class="hljs-punctuation">}</span>
+
+<span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;event&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;watcher.degraded&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;watcher_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;wat_...&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;kind&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;rss&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;fail_count&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">3</span> <span class="hljs-punctuation">}</span>
+
+<span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;event&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;watcher.paused&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;watcher_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;wat_...&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;kind&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;rss&quot;</span> <span class="hljs-punctuation">}</span></code></pre></div>
+<p>Watcher config (which may contain RSS URLs with embedded auth or API keys) is never logged.</p>
+<h4>Rate limiting</h4>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;event&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;rate_limit_hit&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;key_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">42</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;route&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;actions:create&quot;</span> <span class="hljs-punctuation">}</span></code></pre></div>
+<p><code>key_id</code> is the database row ID — not the raw <code>im_...</code> token value.</p>
+<h4>Notification channels</h4>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;event&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;channel.notification&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;channel_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;ch_...&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;channel_type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;slack&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;result&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;ok&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_...&quot;</span> <span class="hljs-punctuation">}</span>
+
+<span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;event&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;channel.auto_disabled&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;channel_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;ch_...&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;channel_type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;slack&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;project_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;proj_...&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;fail_count&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">5</span> <span class="hljs-punctuation">}</span></code></pre></div>
+<p>Channel config (containing bot tokens and webhook URLs) is never logged.</p>
+<h3 id="log-levels">Log levels</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Level</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Action lifecycle (created / decided / result)</td>
+<td><code>info</code></td>
+</tr>
+<tr>
+<td>Watcher run (success)</td>
+<td><code>info</code></td>
+</tr>
+<tr>
+<td>Webhook delivery (success)</td>
+<td><code>info</code></td>
+</tr>
+<tr>
+<td>Watcher run (retry/degraded)</td>
+<td><code>warn</code></td>
+</tr>
+<tr>
+<td>Webhook delivery (retry)</td>
+<td><code>warn</code></td>
+</tr>
+<tr>
+<td>Rate limit hit</td>
+<td><code>warn</code></td>
+</tr>
+<tr>
+<td>Channel auto-disabled</td>
+<td><code>warn</code></td>
+</tr>
+<tr>
+<td>Webhook DLQ / SSRF blocked</td>
+<td><code>error</code></td>
+</tr>
+<tr>
+<td>Unexpected exception in tick</td>
+<td><code>error</code> (with full <code>err</code> object; pino serializes <code>Error.stack</code> safely)</td>
+</tr>
+</tbody></table>
+</div>
+<hr>
+<h2 id="usage-endpoint-get-v1usage">Usage endpoint (<code>GET /v1/usage</code>)</h2>
+<p>Returns a per-project usage snapshot. Useful for building dashboards, quota warnings, or self-service billing pages in your own tooling.</p>
+<p><strong>Auth:</strong> requires <code>admin</code> scope. Project is derived exclusively from the verified API key — never from a client-supplied parameter.</p>
+<p><strong>Rate limit:</strong> 60 requests per minute per key.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -H <span class="hljs-string">&quot;Authorization: Bearer im_...&quot;</span> https://api.impri.dev/v1/usage</code></pre></div>
+<p><strong>Response (HTTP 200):</strong></p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;project_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;proj_...&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;billing_active&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;tier&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;free&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;subscription_status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">null</span></span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;current_period_end&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">null</span></span><span class="hljs-punctuation">,</span>
+
+  <span class="hljs-attr">&quot;period&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;start&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1719792000</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;end&quot;</span><span class="hljs-punctuation">:</span>   <span class="hljs-number">1722470400</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+
+  <span class="hljs-attr">&quot;actions&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;created_this_period&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">42</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;pending&quot;</span><span class="hljs-punctuation">:</span>  <span class="hljs-number">5</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;approved&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">30</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;rejected&quot;</span><span class="hljs-punctuation">:</span>  <span class="hljs-number">4</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;expired&quot;</span><span class="hljs-punctuation">:</span>   <span class="hljs-number">3</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+
+  <span class="hljs-attr">&quot;approvals&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;used&quot;</span><span class="hljs-punctuation">:</span>      <span class="hljs-number">34</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;limit&quot;</span><span class="hljs-punctuation">:</span>    <span class="hljs-number">100</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;remaining&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">66</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+
+  <span class="hljs-attr">&quot;watchers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;active&quot;</span><span class="hljs-punctuation">:</span>    <span class="hljs-number">2</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;degraded&quot;</span><span class="hljs-punctuation">:</span>  <span class="hljs-number">1</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;paused&quot;</span><span class="hljs-punctuation">:</span>    <span class="hljs-number">0</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;total&quot;</span><span class="hljs-punctuation">:</span>     <span class="hljs-number">3</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;limit&quot;</span><span class="hljs-punctuation">:</span>     <span class="hljs-number">3</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;remaining&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">0</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+
+  <span class="hljs-attr">&quot;limits&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;approvals_per_month&quot;</span><span class="hljs-punctuation">:</span>      <span class="hljs-number">100</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;watchers&quot;</span><span class="hljs-punctuation">:</span>                   <span class="hljs-number">3</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;min_watcher_interval_sec&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">900</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+
+  <span class="hljs-attr">&quot;webhook_delivery&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;dlq_size&quot;</span><span class="hljs-punctuation">:</span>  <span class="hljs-number">0</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;pending&quot;</span><span class="hljs-punctuation">:</span>   <span class="hljs-number">1</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;in_retry&quot;</span><span class="hljs-punctuation">:</span>  <span class="hljs-number">0</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+
+  <span class="hljs-attr">&quot;ts&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1720000000</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p><strong>Field notes:</strong></p>
+<ul>
+<li><code>approvals.limit</code> and <code>watchers.limit</code> are <code>null</code> on unlimited tiers (indie annual, team).</li>
+<li><code>approvals.remaining</code> and <code>watchers.remaining</code> are <code>null</code> when the limit is <code>null</code>.</li>
+<li><code>period.start</code> / <code>period.end</code> are Unix seconds for the first second of the current and next UTC calendar months.</li>
+<li><code>billing_active: false</code> on self-hosted instances without <code>STRIPE_SECRET_KEY</code> — no usage limits are enforced in that case.</li>
+<li>All counts are scoped to the project that owns the API key; no cross-project data is accessible.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>401</td>
+<td>Missing or invalid API key</td>
+</tr>
+<tr>
+<td>403</td>
+<td>Key does not have <code>admin</code> scope</td>
+</tr>
+<tr>
+<td>429</td>
+<td>Rate limit exceeded</td>
+</tr>
+</tbody></table>
+</div>
+<hr>
+<h2 id="security-notes">Security notes</h2>
+<ul>
+<li><code>/metrics</code> is absent unless <code>METRICS_ENABLED=1</code>. When the token option is not used, restrict at the network layer.</li>
+<li><code>/readyz</code> is intentionally public. It returns only pass/fail per named check and fixed-string error reasons — never query content, row data, DB paths, or secrets. The write canary uses a sentinel value and is deleted within the same transaction.</li>
+<li><code>GET /v1/usage</code> enforces <code>admin</code> scope and derives <code>project_id</code> from the verified key only. Returns 403 (not 404) on missing scope.</li>
+<li>All metric labels are enum values or Fastify route patterns — never user-supplied data, URLs, tokens, or action content.</li>
+<li>Pino&#39;s redaction pipeline covers all HTTP logs (<code>Authorization</code>, <code>cookie</code>). Background ticks use the same logger instance, so nothing flows to raw stderr unredacted.</li>
+</ul>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#prometheus-metrics-metrics">Prometheus metrics (/metrics)</a></li>
+<li class="ptoc-h3"><a href="#enabling">Enabling</a></li>
+<li class="ptoc-h3"><a href="#protecting-access">Protecting access</a></li>
+<li class="ptoc-h3"><a href="#content-type">Content type</a></li>
+<li class="ptoc-h3"><a href="#prometheus-scrapeconfig-examples">Prometheus scrape_config examples</a></li>
+<li class="ptoc-h2"><a href="#metric-reference">Metric reference</a></li>
+<li class="ptoc-h3"><a href="#build-and-runtime">Build and runtime</a></li>
+<li class="ptoc-h3"><a href="#http-traffic">HTTP traffic</a></li>
+<li class="ptoc-h3"><a href="#rate-limiting">Rate limiting</a></li>
+<li class="ptoc-h3"><a href="#actions">Actions</a></li>
+<li class="ptoc-h3"><a href="#watchers">Watchers</a></li>
+<li class="ptoc-h3"><a href="#webhooks">Webhooks</a></li>
+<li class="ptoc-h3"><a href="#notification-channels">Notification channels</a></li>
+<li class="ptoc-h2"><a href="#health-and-readiness-probes">Health and readiness probes</a></li>
+<li class="ptoc-h3"><a href="#get-healthz-liveness">GET /healthz — liveness</a></li>
+<li class="ptoc-h3"><a href="#get-readyz-readiness">GET /readyz — readiness</a></li>
+<li class="ptoc-h2"><a href="#structured-logging">Structured logging</a></li>
+<li class="ptoc-h3"><a href="#request-id-correlation">Request-ID correlation</a></li>
+<li class="ptoc-h3"><a href="#background-tick-logging">Background tick logging</a></li>
+<li class="ptoc-h3"><a href="#structured-lifecycle-events">Structured lifecycle events</a></li>
+<li class="ptoc-h3"><a href="#log-levels">Log levels</a></li>
+<li class="ptoc-h2"><a href="#usage-endpoint-get-v1usage">Usage endpoint (GET /v1/usage)</a></li>
+<li class="ptoc-h2"><a href="#security-notes">Security notes</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents.</span></div>
+</footer>
+</body>
+</html>

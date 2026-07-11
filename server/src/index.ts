@@ -18,18 +18,29 @@ import { registerTelegramWebhookRoutes } from './routes/telegram-webhook.js';
 import { registerSlackInteractionRoutes } from './routes/slack-interactions.js';
 import { registerDiscordInteractionRoutes } from './routes/discord-interactions.js';
 import { registerAuditRoutes } from './routes/audit.js';
+import { registerUsageRoutes } from './routes/usage.js';
 import { billingActive } from './billing.js';
 import { pushEnabled } from './push.js';
 import { runExpiryTick } from './webhooks.js';
 import { runChannelDigestTick } from './notify.js';
 import { runWatcherTick, startWatcherScheduler } from './scheduler.js';
 import { buildOpenApiDocument } from './openapi.js';
+import { initMetrics, renderMetrics, incCounter, obsHistogram } from './metrics.js';
+import { safeEqual } from './notify.js';
 import type { Db } from './db.js';
+
+// Read package version once at startup (no dynamic import needed — we embed it).
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
+const PKG_VERSION: string = (_require('../package.json') as { version: string }).version;
 
 const DB_PATH = process.env.DB_PATH ?? 'impri.db';
 const PORT = Number(process.env.PORT ?? 8484);
 const HOST = process.env.HOST ?? '0.0.0.0';
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET ?? 'change-me-in-production';
+
+// Initialize metrics definitions once at module load — idempotent.
+initMetrics();
 
 export async function createApp(db: Db) {
   const app = Fastify({
@@ -70,6 +81,128 @@ export async function createApp(db: Db) {
     req.rawSlackBody = body as string;
     // Return empty object — the route handler parses the payload field itself.
     done(null, {});
+  });
+
+  // ---------------------------------------------------------------------------
+  // /metrics — Prometheus text exposition format.
+  // Opt-in: only registered when METRICS_ENABLED=1.
+  // Auth: optional METRICS_TOKEN bearer (timing-safe comparison).
+  // Registered BEFORE the global auth preHandler so it handles auth itself.
+  // ---------------------------------------------------------------------------
+  if (process.env.METRICS_ENABLED === '1') {
+    app.get('/metrics', async (request, reply) => {
+      const token = process.env.METRICS_TOKEN;
+      if (token) {
+        const auth = (request.headers.authorization ?? '') as string;
+        const bearer = auth.startsWith('Bearer ') ? auth.slice('Bearer '.length) : '';
+        if (!safeEqual(bearer, token)) {
+          return reply.status(401).header('Content-Type', 'text/plain').send('Unauthorized\n');
+        }
+      }
+      const body = renderMetrics(db, PKG_VERSION, DB_PATH);
+      return reply
+        .status(200)
+        .header('Content-Type', 'text/plain; version=0.0.4; charset=utf-8')
+        .send(body);
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // /readyz — readiness probe (distinct from /healthz liveness probe).
+  // Public: no auth. Returns pass/fail per named check; no query content or
+  // secrets in any field.
+  // ---------------------------------------------------------------------------
+  app.get('/readyz', async (_, reply) => {
+    const checks: Record<string, string> = {};
+    let hasError = false;
+    let errorMsg: string | undefined;
+
+    // 1. DB reachable — verifies the file is open and WAL is not corrupted.
+    try {
+      db.prepare('SELECT 1').get();
+      checks.db_reachable = 'ok';
+    } catch {
+      checks.db_reachable = 'error';
+      hasError = true;
+      errorMsg = 'db_reachable: SELECT 1 failed';
+    }
+
+    // 2. Schema applied — confirms migrations ran and the DB file is correct.
+    if (!hasError) {
+      try {
+        const row = db.prepare(
+          "SELECT 1 FROM sqlite_master WHERE type='table' AND name='api_keys'",
+        ).get();
+        if (row) {
+          checks.schema_applied = 'ok';
+        } else {
+          checks.schema_applied = 'error';
+          hasError = true;
+          errorMsg = 'schema_applied: expected table api_keys not found';
+        }
+      } catch {
+        checks.schema_applied = 'error';
+        hasError = true;
+        errorMsg = 'schema_applied: check failed';
+      }
+    } else {
+      checks.schema_applied = 'skipped';
+    }
+
+    // 3. Write canary — confirms writes are not blocked (disk full, WAL lock,
+    //    read-only mount). Uses rate_limits (no schema change needed); sentinel
+    //    key is inserted and deleted inside the same transaction.
+    if (!hasError) {
+      try {
+        db.transaction(() => {
+          db.prepare(
+            'INSERT INTO rate_limits (key_id, route, window_start, count) VALUES (?, ?, ?, ?)',
+          ).run('__readyz__', '__readyz__', 0, 0);
+          db.prepare("DELETE FROM rate_limits WHERE key_id = '__readyz__'").run();
+        })();
+        checks.db_writable = 'ok';
+      } catch {
+        checks.db_writable = 'error';
+        hasError = true;
+        errorMsg = 'db_writable: write canary failed';
+      }
+    } else {
+      checks.db_writable = 'skipped';
+    }
+
+    const ts = Math.floor(Date.now() / 1000);
+
+    if (hasError) {
+      return reply.status(503).send({ status: 'error', checks, error: errorMsg, ts });
+    }
+    return { status: 'ok', checks, ts };
+  });
+
+  // ---------------------------------------------------------------------------
+  // Request-ID correlation — assign/propagate X-Request-Id on every response.
+  // Lets agents and operators match a 429/403 in their logs to a server log line.
+  // ---------------------------------------------------------------------------
+  app.addHook('onSend', async (request, reply) => {
+    reply.header('X-Request-Id', String(request.id));
+  });
+
+  // ---------------------------------------------------------------------------
+  // HTTP metrics — onResponse hook populates impri_http_requests_total and
+  // impri_http_request_duration_seconds. Excludes /metrics itself to avoid noise.
+  // ---------------------------------------------------------------------------
+  app.addHook('onResponse', (request, reply, done) => {
+    // req.routeOptions.url is the pattern (/v1/actions/:id), never the real URL.
+    const route = (request.routeOptions as { url?: string }).url ?? 'unknown';
+    if (route === '/metrics') { done(); return; }
+
+    const method = request.method;
+    const statusCode = reply.statusCode;
+    const statusClass = statusCode >= 500 ? '5xx' : statusCode >= 400 ? '4xx' : '2xx';
+    const durationSec = reply.elapsedTime / 1000;
+
+    incCounter('impri_http_requests_total', { route, method, status_class: statusClass });
+    obsHistogram('impri_http_request_duration_seconds', { route, method }, durationSec);
+    done();
   });
 
   // Auth preHandler: extract and verify Bearer key
@@ -142,6 +275,9 @@ export async function createApp(db: Db) {
   // Audit log query + export (admin scope)
   registerAuditRoutes(app, db);
 
+  // Usage snapshot — current period actions/approvals, watchers, tier limits
+  registerUsageRoutes(app, db);
+
   return app;
 }
 
@@ -175,23 +311,24 @@ async function main() {
   }
 
   const app = await createApp(db);
+  const log = app.log;
 
   // Expiry + webhook + channel digest tick every 60 s.
   setInterval(() => {
-    runExpiryTick(db, WEBHOOK_SECRET).catch(err =>
-      console.error('[tick] expiry/webhook tick failed', err),
+    runExpiryTick(db, WEBHOOK_SECRET, log).catch(err =>
+      log.error({ err: err instanceof Error ? err.message : String(err) }, 'expiry/webhook tick failed'),
     );
-    runChannelDigestTick(db).catch(err =>
-      console.error('[tick] channel digest tick failed', err),
+    runChannelDigestTick(db, log).catch(err =>
+      log.error({ err: err instanceof Error ? err.message : String(err) }, 'channel digest tick failed'),
     );
   }, 60_000);
 
   // Watcher scheduler tick every 60s (no-op when DISABLE_WATCHER_SCHEDULER=1)
-  startWatcherScheduler(db);
+  startWatcherScheduler(db, log);
 
   // Also run one watcher tick immediately on startup (handles missed runs — PLAYBOOK B3)
-  runWatcherTick(db).catch(err =>
-    console.error('[tick] initial watcher tick failed', err),
+  runWatcherTick(db, log).catch(err =>
+    log.error({ err: err instanceof Error ? err.message : String(err) }, 'initial watcher tick failed'),
   );
 
   await app.listen({ port: PORT, host: HOST });

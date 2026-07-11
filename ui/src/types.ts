@@ -288,6 +288,63 @@ export interface ListAuditResponse {
   next_cursor?: string
 }
 
+// --- Usage ---
+
+export interface UsagePeriod {
+  start: number
+  end: number
+}
+
+export interface UsageActions {
+  created_this_period: number
+  pending: number
+  approved: number
+  rejected: number
+  expired: number
+}
+
+export interface UsageApprovals {
+  used: number
+  limit: number | null
+  remaining: number | null
+}
+
+export interface UsageWatchers {
+  active: number
+  degraded: number
+  paused: number
+  total: number
+  limit: number | null
+  remaining: number | null
+}
+
+export interface UsageLimits {
+  approvals_per_month: number | null
+  watchers: number | null
+  min_watcher_interval_sec: number
+}
+
+export interface UsageWebhookDelivery {
+  dlq_size: number
+  pending: number
+  in_retry: number
+}
+
+export interface UsageResponse {
+  project_id: string
+  billing_active: boolean
+  tier: string
+  subscription_status: string | null
+  current_period_end: number | null
+  period: UsagePeriod
+  actions: UsageActions
+  approvals: UsageApprovals
+  watchers: UsageWatchers
+  limits: UsageLimits
+  webhook_delivery: UsageWebhookDelivery
+  ts: number
+}
+
 // --- Billing ---
 
 export type Tier = 'free' | 'indie' | 'team'

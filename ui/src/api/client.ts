@@ -25,6 +25,7 @@ import type {
   CreateChannelRequest,
   UpdateChannelRequest,
   TestChannelResponse,
+  UsageResponse,
 } from '../types'
 
 export class ApiClientError extends Error {
@@ -159,6 +160,10 @@ export class ApiClient {
 
   async getBilling(): Promise<Billing> {
     return this.request<Billing>('GET', '/billing')
+  }
+
+  async getUsage(): Promise<UsageResponse> {
+    return this.request<UsageResponse>('GET', '/usage')
   }
 
   // Push notification endpoints — public_key fetch has no auth requirement on the server

@@ -1,7 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeAny } from 'zod';
 import { randomBytes } from 'node:crypto';
-import { isIP } from 'node:net';
 import type { Db } from '../db.js';
 import { genId, nowSec } from '../db.js';
 import { hasScope, checkRateLimit } from '../auth.js';
@@ -11,7 +10,7 @@ import {
   deriveWebhookSecret,
   isPublicBaseUrl,
 } from '../notify.js';
-import { fetchGuarded, isPrivateIp } from '../net-guard.js';
+import { fetchGuarded } from '../net-guard.js';
 import {
   SlackConfig,
   DiscordConfig,

@@ -4,6 +4,7 @@ import type { Db } from './db.js';
 import { genId, nowSec, hashContent } from './db.js';
 import { fetchGuarded } from './net-guard.js';
 import { isFetchAllowed } from './robots.js';
+import { incCounter, noopLogger, type Logger } from './metrics.js';
 
 const WATCHER_USER_AGENT = 'Impri-Watcher/1.0 (+https://impri.dev/bot)';
 const FETCH_TIMEOUT_MS = 15_000;
@@ -455,7 +456,7 @@ function createWatcherAction(
  * Process a single watcher: fetch, score, dedup, publish to inbox.
  * Exported for direct testing.
  */
-export async function processWatcher(db: Db, watcher: WatcherRow): Promise<void> {
+export async function processWatcher(db: Db, watcher: WatcherRow, log: Logger = noopLogger): Promise<void> {
   const now = nowSec();
   const schedule = JSON.parse(watcher.schedule) as {
     every: string;
@@ -537,7 +538,13 @@ export async function processWatcher(db: Db, watcher: WatcherRow): Promise<void>
       WHERE id = ?
     `).run(newFailCount, newStatus, degradedSince, lastError, now, nextRun, now, watcher.id);
 
-    console.error(`[scheduler] watcher ${watcher.id} (${watcher.kind}) failed (${newFailCount}/${FAIL_THRESHOLD}): ${lastError}`);
+    incCounter('impri_watcher_runs_total', { kind: watcher.kind, result: 'error' });
+    log.error({ event: 'watcher.run', watcher_id: watcher.id, kind: watcher.kind, result: 'error', items_fetched: 0, items_new: 0, items_published: 0, duration_ms: Date.now() - now * 1000 });
+    if (newStatus === 'degraded' && watcher.status !== 'degraded') {
+      log.warn({ event: 'watcher.degraded', watcher_id: watcher.id, kind: watcher.kind, fail_count: newFailCount });
+    } else if (newStatus === 'paused') {
+      log.warn({ event: 'watcher.paused', watcher_id: watcher.id, kind: watcher.kind });
+    }
     return;
   }
 
@@ -567,6 +574,9 @@ export async function processWatcher(db: Db, watcher: WatcherRow): Promise<void>
     'INSERT OR IGNORE INTO watcher_items (id, watcher_id, item_hash, url, title, size_bytes, first_seen) VALUES (?, ?, ?, ?, ?, ?, ?)',
   );
 
+  // Track items fetched (after successful fetch)
+  incCounter('impri_watcher_items_fetched_total', { kind: watcher.kind });
+
   // Baseline run: store all fetched items but publish nothing (PLAYBOOK B2)
   if (isBaseline) {
     const storeAll = db.transaction((items: FetchedItem[]) => {
@@ -579,6 +589,8 @@ export async function processWatcher(db: Db, watcher: WatcherRow): Promise<void>
     db.prepare(`
       UPDATE watchers SET first_run_done = 1, next_run_at = ?, updated_at = ? WHERE id = ?
     `).run(computeNextRunAt(schedule.every, schedule.jitter, now), now, watcher.id);
+    incCounter('impri_watcher_runs_total', { kind: watcher.kind, result: 'baseline' });
+    log.info({ event: 'watcher.run', watcher_id: watcher.id, kind: watcher.kind, result: 'baseline', items_fetched: fetchedItems.length, items_new: fetchedItems.length, items_published: 0, duration_ms: Date.now() - now * 1000 });
     return;
   }
 
@@ -596,6 +608,10 @@ export async function processWatcher(db: Db, watcher: WatcherRow): Promise<void>
   const isBurst = scored.length > BURST_THRESHOLD;
   const toPublish = isBurst ? scored.slice(0, BURST_TOP_N) : scored;
   const overflowCount = isBurst ? scored.length - BURST_TOP_N : 0;
+
+  if (isBurst) {
+    incCounter('impri_watcher_burst_truncations_total', { kind: watcher.kind });
+  }
 
   // For url_diff, look up the previously stored page size BEFORE inserting the
   // new item, so the preview can show the delta.
@@ -634,6 +650,7 @@ export async function processWatcher(db: Db, watcher: WatcherRow): Promise<void>
       isUrlDiff,
       prevSizeBytes,
     );
+    incCounter('impri_watcher_hits_total', { kind: watcher.kind });
   }
 
   // Cleanup: 90-day retention
@@ -663,13 +680,16 @@ export async function processWatcher(db: Db, watcher: WatcherRow): Promise<void>
     now,
     watcher.id,
   );
+
+  incCounter('impri_watcher_runs_total', { kind: watcher.kind, result: 'ok' });
+  log.info({ event: 'watcher.run', watcher_id: watcher.id, kind: watcher.kind, result: 'ok', items_fetched: fetchedItems.length, items_new: newItems.length, items_published: toPublish.length, duration_ms: Date.now() - now * 1000 });
 }
 
 /**
  * Scheduler tick: finds all due watchers and processes them.
  * Called every 60 s from main(); can also be called directly in tests.
  */
-export async function runWatcherTick(db: Db): Promise<void> {
+export async function runWatcherTick(db: Db, log: Logger = noopLogger): Promise<void> {
   const now = nowSec();
   const due = db.prepare(`
     SELECT * FROM watchers
@@ -678,10 +698,11 @@ export async function runWatcherTick(db: Db): Promise<void> {
 
   for (const watcher of due) {
     try {
-      await processWatcher(db, watcher);
+      await processWatcher(db, watcher, log);
     } catch (err) {
       // Unexpected error — log but continue processing other watchers
-      console.error(`[scheduler] unexpected error for watcher ${watcher.id}:`, err);
+      log.error({ err: err instanceof Error ? err.message : String(err), watcher_id: watcher.id },
+        'unexpected error in watcher tick');
     }
   }
 }
@@ -691,14 +712,14 @@ export async function runWatcherTick(db: Db): Promise<void> {
  * Set DISABLE_WATCHER_SCHEDULER=1 to disable (used in tests).
  * Uses unref() so it doesn't hold the event loop (ARCHITECTURE.md).
  */
-export function startWatcherScheduler(db: Db): ReturnType<typeof setInterval> | null {
+export function startWatcherScheduler(db: Db, log: Logger = noopLogger): ReturnType<typeof setInterval> | null {
   if (process.env.DISABLE_WATCHER_SCHEDULER === '1') {
     return null;
   }
 
   const interval = setInterval(() => {
-    runWatcherTick(db).catch(err =>
-      console.error('[scheduler] watcher tick failed:', err),
+    runWatcherTick(db, log).catch(err =>
+      log.error({ err: err instanceof Error ? err.message : String(err) }, 'watcher tick failed'),
     );
   }, 60_000);
 
