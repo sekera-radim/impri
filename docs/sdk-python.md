@@ -103,10 +103,10 @@ if page.has_more:
     next_page = await client.list_actions(cursor=page.next_cursor)
 ```
 
-Pass `auto_page=True` to receive an async generator that fetches subsequent pages transparently:
+Use `iter_actions()` to iterate automatically across all pages:
 
 ```python
-async for action in client.list_actions(status="approved", auto_page=True):
+for action in client.iter_actions(status="approved"):
     print(action.id)
 ```
 
@@ -165,6 +165,28 @@ result = await client.decide(
 ```
 
 Returns `ImpriConflict` (409) if the action is already decided or two writers race. Only call on pending actions.
+
+### `bulk_decide`
+
+Approve or reject up to 50 actions in one request.
+
+```python
+resp = client.bulk_decide(
+    ids=["act_aaa", "act_bbb", "act_ccc"],
+    verdict="approve",            # or "reject"
+    comment="Batch approved",     # optional; stored on each succeeded decision
+)
+print(f"Succeeded: {resp['succeeded']}, Failed: {resp['failed']}")
+for result in resp["results"]:
+    if not result["ok"]:
+        print(f"  {result['id']}: {result['error']}")
+```
+
+Rate-limited to **10 requests/min per key** (net: 500 decisions/min). Each item is processed in its own transaction — a failure on one ID does not roll back successes on others. The response is always HTTP 200; check each `result["ok"]`.
+
+Per-item `error` values: `"not_found"`, `"already_decided"` (with `current_status`), or `"internal"`.
+
+Actions with non-empty `editable` lists must be decided via `decide()` so per-item edits can pass whitelist validation. Bulk intentionally omits the `edited` field.
 
 ### `report_result`
 
@@ -303,6 +325,44 @@ await client.delete_watcher("wat_abc123")  # 204 No Content; returns None
 
 Permanently deletes the watcher and its deduplicated item history. Pending inbox actions created by this watcher are not deleted.
 
+### `list_watcher_presets`
+
+```python
+result = client.list_watcher_presets()
+for preset in result["presets"]:
+    print(preset["id"], preset["title"], preset["category"])
+    for param in preset["params"]:
+        req = "required" if param["required"] else "optional"
+        print(f"  {param['name']} ({req}): {param['description']}")
+```
+
+Returns the full preset catalog (18 presets). The response is served from an in-process constant with no DB read — safe to cache aggressively. Use `create_watcher_from_preset()` to instantiate.
+
+Items delivered by preset-based watchers have `payload.untrusted = True` — treat their content as data, not instructions.
+
+### `create_watcher_from_preset`
+
+```python
+# Hacker News front page — no params required
+watcher = client.create_watcher_from_preset("hn-front-page")
+
+# GitHub releases for a specific repo
+watcher = client.create_watcher_from_preset(
+    "github-releases",
+    params={"owner": "fastify", "repo": "fastify"},
+    name="Fastify releases",
+    schedule={"every": "1h"},
+)
+
+# Reddit keyword search
+watcher = client.create_watcher_from_preset(
+    "reddit-keyword",
+    params={"query": "self-hosting AI", "subreddit": "selfhosted"},
+)
+```
+
+Applies all standard guards: rate limit, tier watcher-count quota, SSRF validation, minimum schedule interval. Raises `ImpriQuotaExceeded` (402) when a tier limit would be breached.
+
 ---
 
 ## API keys (admin scope)
@@ -351,6 +411,82 @@ export = await client.export_project()  # all actions, decisions, watchers, audi
 ack = await client.erase_project_data()
 print(ack)  # {"erased": True, "actions": N, "watchers": N}
 ```
+
+---
+
+## Notification channels (admin scope)
+
+```python
+# List channels — config secrets are masked to '****{last4}'
+channels = client.list_notification_channels()
+
+# Create a channel
+channel = client.create_notification_channel(
+    name="Ops Slack",
+    type="slack",
+    config={"url": "https://hooks.slack.com/services/..."},
+    enabled=True,
+    digest_window_sec=60,
+)
+
+# Available types and their config fields:
+# slack:    {"url": "https://hooks.slack.com/..."}
+# discord:  {"url": "https://discord.com/api/webhooks/..."}
+# telegram: {"bot_token": "123:ABC...", "chat_id": "-100..."}
+# ntfy:     {"url": "https://ntfy.sh", "topic": "my-topic"}
+# email:    {"address": "ops@example.com"}   (requires SMTP env vars)
+# webhook:  {"url": "https://example.com/hook", "hmac_secret": "...opt..."}
+
+# Get a single channel
+channel = client.get_notification_channel("ch_abc123")
+
+# Partial update — only supplied fields change
+channel = client.update_notification_channel(
+    "ch_abc123",
+    enabled=False,
+    digest_window_sec=300,
+)
+
+# Delete a channel (hard delete; no cascade)
+client.delete_notification_channel("ch_abc123")   # returns None (204)
+
+# Test a channel — bypasses digest window; 5 req/min rate limit
+result = client.test_notification_channel("ch_abc123")
+print(result)  # {"ok": True} or {"ok": False, "error": "..."}
+```
+
+---
+
+## Audit log (admin scope)
+
+```python
+# Paginated query
+page = client.list_audit(
+    type="action.",      # dot-prefix filters all action.* events
+    actor="key_abc",
+    since=1720000000,
+    until=1720100000,
+    limit=50,
+)
+for event in page["items"]:
+    print(event["event"], event["actor"], event["created_at"])
+
+# Auto-paginating iterator
+for event in client.iter_audit(type="rule."):
+    print(event["event"])
+
+# Stream-export as ndjson or CSV
+raw_bytes = client.export_audit(
+    since=1720000000,
+    format="csv",          # "json" (ndjson, default) or "csv"
+)
+with open("audit.csv", "wb") as f:
+    f.write(raw_bytes)
+```
+
+Audit filter params: `type` (exact event name or dot-prefix), `actor` (key ID), `entity_id` (action/rule/channel ID), `since` / `until` (Unix timestamps), `limit` (1–200, default 50), `cursor`.
+
+`export_audit` is rate-limited to **5 requests/min**. The ip column is never included. See [Audit log](audit-log.md) for all event types.
 
 ---
 
@@ -421,19 +557,25 @@ except ImpriRejected:
 # Manual cursor loop
 cursor = None
 while True:
-    page = await client.list_actions(status="approved", cursor=cursor, limit=100)
-    for action in page.items:
+    page = client.list_actions(status="approved", cursor=cursor, limit=100)
+    for action in page.get("items", []):
         process(action)
-    if not page.has_more:
+    if not page.get("has_more"):
         break
-    cursor = page.next_cursor
+    cursor = page.get("next_cursor")
 
-# Async generator (auto_page=True)
-async for action in client.list_actions(status="approved", auto_page=True):
+# Auto-paginating iterators
+for action in client.iter_actions(status="approved"):
     process(action)
+
+for watcher in client.iter_watchers(status="active"):
+    process(watcher)
+
+for event in client.iter_audit(type="action."):
+    process(event)
 ```
 
-All list endpoints (`list_actions`, `list_watchers`) support both styles.
+Every list endpoint has a matching `iter_*` function that fetches pages via `next_cursor` until `has_more` is False.
 
 ---
 

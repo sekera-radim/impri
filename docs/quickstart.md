@@ -245,5 +245,5 @@ impri_report_result(action_id="act_abc123", status="executed")
 ## What's next
 
 - **Webhook delivery** instead of polling: see [webhooks.md](webhooks.md)
-- **Watchers** (monitor RSS, Reddit, URL changes): REST API via `POST /v1/watchers`; see [SPEC.md](../SPEC.md) for the schema
+- **Watchers** (monitor RSS, Reddit, URL changes): REST API via `POST /v1/watchers`; see [SPEC.md](https://github.com/sekera-radim/impri/blob/main/SPEC.md) for the schema
 - **Self-hosting configuration** (SMTP, ntfy, backups): see [self-hosting.md](self-hosting.md)
