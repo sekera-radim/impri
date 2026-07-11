@@ -285,6 +285,50 @@ IMPRI_ALLOW_PRIVATE_TARGETS=1 disables the guard for intranet deployments.
 
 Full reference: docs/notifications.md
 
+## Telegram approval bot
+
+The `telegram` channel type supports an optional **approval_mode** that upgrades
+plain notifications to in-chat Approve / Reject buttons. Team members tap a button
+in the Telegram chat; Impri records the decision with the same guarantees as a
+web-inbox decision. No browser required.
+
+Three extra config fields (all optional, default to off):
+- `approval_mode: boolean` (default false) — enables inline-keyboard sends for
+  single actions. Digest batches always fall back to plain text.
+- `allowed_approver_user_ids: number[]` (default []) — Telegram numeric user IDs
+  permitted to tap the buttons. Max 50. Must be non-empty when approval_mode is true.
+- `hmac_secret: string` (optional) — per-channel secret used to sign button payloads
+  and derive the webhook verification token. Auto-generated (32 random bytes, hex) if
+  omitted. Masked (****{last4}) in all API responses.
+
+Webhook endpoint (public, Telegram calls this):
+  POST /v1/integrations/telegram/webhook/:channelId
+  Authentication: X-Telegram-Bot-Api-Secret-Token header (derived from hmac_secret),
+  verified with timingSafeEqual before the body is parsed (403 on mismatch).
+
+Manual webhook registration (when BASE_URL is private or absent):
+  POST /v1/notification-channels/:id/setup-webhook  (admin scope)
+  Returns { ok: true, url: "..." }
+
+Security model — four independent layers all required:
+  1. X-Telegram-Bot-Api-Secret-Token header: derived from hmac_secret, compared with
+     timingSafeEqual. Forgers without hmac_secret cannot reach body parsing.
+  2. callback_data HMAC: sig = HMAC-SHA256(hmac_secret, "tg:"+v+":"+actionId).slice(0,6)
+     as base64url (8 chars). Invalid sig = "Invalid approval link", no DB read.
+  3. Authorized-user check: callback_query.from.id (Telegram-set, not user-forgeable)
+     must be in allowed_approver_user_ids. Unauthorized = "Not authorized", no action info leaked.
+  4. UNIQUE constraint on decisions(action_id): first writer wins; concurrent taps answered
+     with "Already decided" — no double-approvals.
+
+After recording a decision: Impri edits the original Telegram message to remove the inline
+keyboard and append the outcome ("Approved by {firstName}" / "Rejected by {firstName}"),
+preventing further taps.
+
+decided_by in audit_log: "tg:{telegram_user_id}" (no names stored).
+First name used only in the ephemeral in-chat confirmation, never persisted.
+
+Full reference: docs/telegram-approval.md
+
 ## CLI (impri command-line tool)
 
 Location: `cli/` in the repository. Not yet published to npm — install from source.

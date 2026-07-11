@@ -153,6 +153,44 @@ hardcoded, but DNS rebinding protection is applied regardless). Title,
 kind, and the inbox URL are HTML-escaped before interpolation to prevent
 markup injection.
 
+#### Telegram approval mode (optional)
+
+Three additional optional fields enable **in-chat Approve / Reject
+buttons** so your team can decide without opening the web inbox:
+
+```json
+{
+  "type": "telegram",
+  "config": {
+    "bot_token": "1234567890:AAF...",
+    "chat_id":   "-1001234567890",
+    "approval_mode": true,
+    "allowed_approver_user_ids": [123456789, 987654321]
+  }
+}
+```
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `approval_mode` | boolean | `false` | When `true`, single-action sends include inline Approve / Reject buttons. Digest batches always fall back to a plain notification with a "View inbox" link. |
+| `allowed_approver_user_ids` | integer[] | `[]` | Telegram numeric user IDs (the integer `from.id`) allowed to tap the buttons. Max 50. Must be non-empty when `approval_mode` is `true` — a validation error is raised otherwise. |
+| `hmac_secret` | string | auto-generated | 16–256 character secret used to sign button payloads and derive the Telegram webhook verification token. Auto-generated on channel creation if omitted. Masked (`****{last4}`) in all responses. Rotate via PATCH. |
+
+When `approval_mode` is `true` and `BASE_URL` is a publicly reachable
+URL, Impri automatically registers a Telegram webhook at:
+
+```
+POST /v1/integrations/telegram/webhook/:channelId
+```
+
+Decisions recorded via this endpoint are equivalent to decisions made
+through the web inbox: they run the same database transaction, fire
+`callback_url` webhooks, and appear in the audit log with
+`decided_by = "tg:{telegram_user_id}"`.
+
+See [docs/telegram-approval.md](telegram-approval.md) for full setup
+instructions, config reference, security model, and troubleshooting.
+
 ---
 
 ### ntfy
@@ -367,6 +405,9 @@ creation. Masking rules:
 | `discord` | `url` | `****{last4}` |
 | `telegram` | `bot_token` | `****{last4}` |
 | `telegram` | `chat_id` | returned as-is |
+| `telegram` | `approval_mode` | returned as-is |
+| `telegram` | `allowed_approver_user_ids` | returned as-is |
+| `telegram` | `hmac_secret` (if set) | `****{last4}` |
 | `ntfy` | `url` | `****{last4}` |
 | `ntfy` | `topic` | returned as-is |
 | `email` | `address` | returned as-is |
@@ -511,3 +552,11 @@ The global `NTFY_URL` / `NTFY_TOPIC` variables configure the
 **instance-wide** ntfy notification that fires for all projects (via
 `notifyAll()` in `notify.ts`). Per-project `ntfy` channels in the
 `notification_channels` table are independent and additive.
+
+---
+
+## See also
+
+- [Telegram Approval Bot](telegram-approval.md) — step-by-step setup
+  for in-chat Approve / Reject buttons, security model, and
+  troubleshooting.
