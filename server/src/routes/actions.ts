@@ -12,6 +12,7 @@ import {
   DecisionBody,
   ResultBody,
   ListActionsQuery,
+  BulkDecisionBody,
 } from '../schemas.js';
 
 function serializeAction(row: Record<string, unknown>) {
@@ -264,6 +265,13 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
     if (q.status) { sql += ' AND status = ?'; params.push(q.status); }
     if (q.since) { sql += ' AND created_at >= ?'; params.push(q.since); }
     if (q.kind) { sql += ' AND kind = ?'; params.push(q.kind); }
+    if (q.q) {
+      // Escape LIKE metacharacters to prevent wildcard injection, then search
+      // the title column and the preview body (via JSON1 json_extract).
+      const pattern = '%' + q.q.replace(/[%_\\]/g, c => '\\' + c) + '%';
+      sql += " AND (title LIKE ? ESCAPE '\\' OR json_extract(preview, '$.body') LIKE ? ESCAPE '\\')";
+      params.push(pattern, pattern);
+    }
     // Composite (created_at, id) cursor so two rows in the same second are
     // never skipped or duplicated across page boundaries.
     if (q.cursor) {
@@ -285,6 +293,126 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
       has_more: hasMore,
       next_cursor: hasMore ? encodeCursor(last.created_at as number, last.id as string) : undefined,
     };
+  });
+
+  // POST /v1/actions/bulk-decision
+  // Registered before /:id routes so the static segment "bulk-decision" is
+  // unambiguous (Fastify would route correctly regardless, but explicit is clearer).
+  app.post('/v1/actions/bulk-decision', async (request, reply) => {
+    const key = request.apiKey;
+    if (!key || !hasScope(key.scopes, 'actions')) {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Scope "actions" required' });
+    }
+
+    // Lower request ceiling than single-decision (10 vs 60) because each
+    // request can touch up to 50 rows. Net throughput = 500 decisions/min.
+    if (!(await checkRateLimit(db, key.keyId, 'actions:bulk-decide', 10))) {
+      return reply.status(429).send({ error: 'Too Many Requests', message: 'Rate limit: 10 requests/min per key' });
+    }
+
+    const parsed = BulkDecisionBody.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Bad Request', issues: parsed.error.issues });
+    }
+    const body = parsed.data;
+
+    // Deduplicate IDs server-side so sending the same ID 50 times = one decision.
+    const uniqueIds = [...new Set(body.ids)];
+    const now = nowSec();
+
+    // Distinguish browser-originated bulk ops from programmatic API calls
+    // for auditability. Both are logged — this tag lets admins filter bulk ops.
+    const ua = ((request.headers as Record<string, string | string[] | undefined>)['user-agent'] ?? '') as string;
+    const channel = /mozilla/i.test(ua) ? 'bulk-web' : 'bulk-api';
+
+    const results: Array<{ id: string; ok: boolean; status?: string; error?: string; current_status?: unknown }> = [];
+    let succeeded = 0;
+    let failed = 0;
+
+    for (const id of uniqueIds) {
+      // PROJECT ISOLATION: always bind project_id from the verified key —
+      // never trust the client. An out-of-project ID returns not_found (same
+      // response as a missing ID) so no information about other projects leaks.
+      const action = db.prepare(
+        'SELECT * FROM actions WHERE id = ? AND project_id = ?',
+      ).get(id, key.projectId) as Record<string, unknown> | undefined;
+
+      if (!action) {
+        results.push({ id, ok: false, error: 'not_found' });
+        failed++;
+        continue;
+      }
+
+      if (action.status !== 'pending') {
+        results.push({ id, ok: false, error: 'already_decided', current_status: action.status });
+        failed++;
+        continue;
+      }
+
+      const newStatus = body.verdict === 'approve' ? 'approved' : 'rejected';
+      const decisionId = genId('dec_');
+      // No edits in bulk — finalPreview is the original stored preview.
+      const finalPreview = JSON.parse(action.preview as string) as object;
+
+      // Each item is decided in its own transaction (per-item atomic,
+      // batch-partial). Failures on item N do NOT roll back items 0..N-1.
+      const commitBulkItem = db.transaction(() => {
+        db.prepare(`
+          INSERT INTO decisions
+            (id, action_id, verdict, decided_by, decided_at, channel, final_preview, diff, comment)
+          VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?)
+        `).run(
+          decisionId,
+          action.id,
+          body.verdict,
+          key.keyId,
+          now,
+          channel,
+          JSON.stringify(finalPreview),
+          body.comment ?? null,
+        );
+        db.prepare(
+          'UPDATE actions SET status = ?, updated_at = ? WHERE id = ?',
+        ).run(newStatus, now, action.id);
+        db.prepare(
+          'INSERT INTO audit_log (project_id, action_id, event, actor, channel, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        ).run(key.projectId, action.id, `action.${body.verdict}d`, key.keyId, channel, now);
+        // PII (request IP) in separate erasable table — identical to single-decision.
+        db.prepare(
+          'INSERT INTO pii_log (project_id, action_id, event, ip, created_at) VALUES (?, ?, ?, ?, ?)',
+        ).run(key.projectId, action.id, `action.${body.verdict}d`, request.ip ?? null, now);
+      });
+
+      try {
+        commitBulkItem();
+
+        // Schedule webhook delivery per item — identical to single-decision.
+        if (action.callback_url) {
+          scheduleWebhookDelivery(db, action.id as string, action.callback_url as string);
+        }
+
+        results.push({ id, ok: true, status: newStatus });
+        succeeded++;
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('UNIQUE')) {
+          // UNIQUE constraint on decisions(action_id) — concurrent decision won
+          const current = db.prepare(
+            'SELECT status FROM actions WHERE id = ?',
+          ).get(id) as { status: string } | undefined;
+          results.push({ id, ok: false, error: 'already_decided', current_status: current?.status });
+        } else {
+          // Unexpected DB error: log server-side but don't surface internals.
+          app.log.error({ err, actionId: id }, 'bulk-decision: unexpected DB error on item');
+          results.push({ id, ok: false, error: 'internal' });
+        }
+        failed++;
+      }
+    }
+
+    // HTTP 200 even on partial failure — the batch was processed; per-item
+    // results carry the outcome. The caller must inspect results[] to know
+    // which items succeeded.
+    return { results, succeeded, failed };
   });
 
   // GET /v1/actions/:id

@@ -61,10 +61,20 @@ export const ListActionsQuery = z.object({
   status: ActionStatus.optional(),
   since: z.coerce.number().int().optional(),
   kind: z.string().optional(),
+  q: z.string().max(200).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   cursor: z.string().optional(),
 });
 export type ListActionsQuery = z.infer<typeof ListActionsQuery>;
+
+// Bulk-decision request body. No "edited" field — per-item edits require the
+// single-decision endpoint where the editable whitelist is enforced (PLAYBOOK A3).
+export const BulkDecisionBody = z.object({
+  ids:     z.array(z.string().min(1)).min(1).max(50),
+  verdict: z.enum(['approve', 'reject']),
+  comment: z.string().max(500).optional(),
+});
+export type BulkDecisionBody = z.infer<typeof BulkDecisionBody>;
 
 export const CreateKeyBody = z.object({
   name: z.string().min(1).max(100),

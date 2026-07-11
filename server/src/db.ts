@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS decisions (
   channel       TEXT,
   final_preview TEXT,
   diff          TEXT,
+  comment       TEXT,
   UNIQUE(action_id)
 );
 
@@ -220,6 +221,10 @@ function migrate(db: Db): void {
 
   if (!columns('watcher_items').has('size_bytes')) {
     db.exec('ALTER TABLE watcher_items ADD COLUMN size_bytes INTEGER');
+  }
+
+  if (!columns('decisions').has('comment')) {
+    db.exec('ALTER TABLE decisions ADD COLUMN comment TEXT');
   }
 
   // approval_rules — rules engine (additive; CREATE TABLE IF NOT EXISTS in SCHEMA_SQL
