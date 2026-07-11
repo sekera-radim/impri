@@ -21,6 +21,16 @@ import { computed } from 'vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 
+// Force rel="noopener noreferrer" on any element that carries a target attribute.
+// Without this, a sanitised <a target="_blank"> gives the opened tab a live
+// window.opener reference back to the inbox session (reverse tabnapping).
+// The hook runs once per sanitize() call, after DOMPurify processes each node.
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node.hasAttribute('target')) {
+    node.setAttribute('rel', 'noopener noreferrer')
+  }
+})
+
 const props = defineProps<{
   format: 'markdown' | 'plain' | 'diff'
   body: string

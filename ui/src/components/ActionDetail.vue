@@ -24,10 +24,11 @@
 
       <v-divider />
 
-      <v-card-text class="pa-4" style="max-height: 70vh; overflow-y: auto">
+      <v-card-text ref="cardBodyRef" class="pa-4" style="max-height: 70vh; overflow-y: auto">
         <!-- Meta info -->
         <div class="d-flex flex-wrap gap-4 mb-4 text-body-2">
-          <div v-if="action.target_url">
+          <!-- Target URL with copy button -->
+          <div v-if="action.target_url" class="d-flex align-center gap-1">
             <span class="text-medium-emphasis">Target: </span>
             <a
               :href="action.target_url"
@@ -37,6 +38,15 @@
             >
               <strong>{{ targetDomain }}</strong>{{ targetPath }}
             </a>
+            <v-btn
+              icon="mdi-content-copy"
+              variant="text"
+              size="x-small"
+              density="compact"
+              title="Copy URL"
+              aria-label="Copy target URL"
+              @click="copyUrl"
+            />
           </div>
 
           <div v-if="action.expires_at">
@@ -53,7 +63,6 @@
         </div>
 
         <!-- Preview section -->
-        <!-- When untrusted, always render as plain text (never trust external markdown) -->
         <v-card
           variant="tonal"
           :color="isUntrusted ? 'warning' : 'surface-variant'"
@@ -74,6 +83,68 @@
           </v-card-text>
         </v-card>
 
+        <!-- Inline editable fields (only for pending actions) -->
+        <template v-if="action.status === 'pending' && editableFields.length > 0">
+          <div ref="editableSectionRef" class="mb-4">
+            <div class="text-body-2 font-weight-medium mb-2 d-flex align-center gap-1">
+              <v-icon size="16">mdi-pencil-outline</v-icon>
+              Editable fields
+            </div>
+            <div
+              v-for="field in editableFields"
+              :key="field"
+              class="mb-3"
+            >
+              <div class="d-flex align-center justify-space-between mb-1">
+                <span class="text-caption text-medium-emphasis font-weight-medium">{{ field }}</span>
+                <v-btn
+                  v-if="!editingFields.has(field)"
+                  variant="text"
+                  size="x-small"
+                  prepend-icon="mdi-pencil"
+                  @click="startEdit(field)"
+                >
+                  Edit
+                </v-btn>
+                <v-btn
+                  v-else
+                  variant="text"
+                  size="x-small"
+                  color="error"
+                  prepend-icon="mdi-close"
+                  @click="cancelEdit(field)"
+                >
+                  Cancel
+                </v-btn>
+              </div>
+
+              <!-- Read-only or editing view -->
+              <template v-if="!editingFields.has(field)">
+                <div class="field-value text-body-2">{{ editValues[field] ?? originalValues[field] }}</div>
+              </template>
+              <template v-else>
+                <v-textarea
+                  v-model="editValues[field]"
+                  variant="outlined"
+                  density="compact"
+                  rows="3"
+                  auto-grow
+                  hide-details
+                  class="mb-2"
+                />
+                <!-- Diff preview if value changed -->
+                <template v-if="fieldHasChanges(field)">
+                  <div class="text-caption text-medium-emphasis mb-1">Preview of changes:</div>
+                  <MarkdownPreview
+                    format="diff"
+                    :body="`- ${originalValues[field] ?? ''}\n+ ${editValues[field] ?? ''}`"
+                  />
+                </template>
+              </template>
+            </div>
+          </div>
+        </template>
+
         <!-- Decision info (if decided) -->
         <template v-if="action.decision">
           <v-card
@@ -91,7 +162,6 @@
                 <span class="text-medium-emphasis">· {{ decisionLabel }}</span>
               </div>
 
-              <!-- Show diff if any edits were made -->
               <template v-if="action.decision.diff">
                 <v-divider class="my-2" />
                 <p class="text-caption text-medium-emphasis mb-1">Edits applied:</p>
@@ -141,6 +211,25 @@
       <v-divider />
 
       <v-card-actions class="pa-3">
+        <!-- Action ID chip with copy button -->
+        <v-chip
+          size="x-small"
+          variant="outlined"
+          class="font-mono mr-2"
+          title="Action ID"
+        >
+          {{ action.id }}
+          <v-btn
+            icon="mdi-content-copy"
+            variant="text"
+            size="x-small"
+            density="compact"
+            class="ml-1"
+            aria-label="Copy action ID"
+            @click.stop="copyId"
+          />
+        </v-chip>
+
         <v-btn
           v-if="action.target_url"
           variant="text"
@@ -165,6 +254,7 @@
             Reject
           </v-btn>
           <v-btn
+            v-if="!hasAnyEdits"
             color="success"
             variant="flat"
             size="small"
@@ -173,6 +263,17 @@
             @click="openDecision('approve')"
           >
             Approve
+          </v-btn>
+          <v-btn
+            v-else
+            color="success"
+            variant="flat"
+            size="small"
+            prepend-icon="mdi-check-all"
+            class="ml-2"
+            @click="openDecisionWithEdits"
+          >
+            Approve with edits
           </v-btn>
         </template>
         <v-alert
@@ -213,21 +314,32 @@
     v-model="showDecisionDialog"
     :action="decisionAction"
     :initial-verdict="pendingVerdictForDialog"
+    :initial-edited="initialEditedForDialog"
     @decided="handleDecided"
   />
+
+  <!-- Copied snackbar -->
+  <v-snackbar v-model="showCopied" :timeout="1800" location="bottom" color="success">
+    {{ copiedMessage }}
+  </v-snackbar>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import type { Action, ActionStatus } from '../types'
 import MarkdownPreview from './MarkdownPreview.vue'
 import PayloadViewer from './PayloadViewer.vue'
 import DecisionDialog from './DecisionDialog.vue'
 import { isUntrustedPayload } from '../utils/untrusted'
+import { getByDotPath } from '../utils/dotPath'
 
 const props = defineProps<{
   modelValue: boolean
   action: Action | null
+  openInEditMode?: boolean
+  /** When set, immediately opens DecisionDialog with this verdict pre-selected.
+   *  Used by keyboard shortcut 'a' for non-editable actions. */
+  autoVerdict?: 'approve' | 'reject'
 }>()
 
 const emit = defineEmits<{
@@ -235,9 +347,162 @@ const emit = defineEmits<{
   'decided': [actionId: string]
 }>()
 
+// ── Dialog state ──────────────────────────────────────────────────────────────
+
 const showDecisionDialog = ref(false)
 const decisionAction = ref<Action | null>(null)
 const pendingVerdictForDialog = ref<'approve' | 'reject' | undefined>(undefined)
+const initialEditedForDialog = ref<Record<string, unknown> | undefined>(undefined)
+
+// ── Refs ──────────────────────────────────────────────────────────────────────
+
+const cardBodyRef = ref<HTMLElement | null>(null)
+const editableSectionRef = ref<HTMLElement | null>(null)
+
+// ── Copy snackbar ─────────────────────────────────────────────────────────────
+
+const showCopied = ref(false)
+const copiedMessage = ref('')
+
+async function copyToClipboard(text: string, label: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text)
+    copiedMessage.value = label
+    showCopied.value = true
+  } catch {
+    // Fallback for environments without clipboard API
+    copiedMessage.value = 'Copy failed'
+    showCopied.value = true
+  }
+}
+
+function copyUrl(): void {
+  if (props.action?.target_url) {
+    void copyToClipboard(props.action.target_url, 'URL copied!')
+  }
+}
+
+function copyId(): void {
+  if (props.action?.id) {
+    void copyToClipboard(props.action.id, 'ID copied!')
+  }
+}
+
+// ── Inline edit state ─────────────────────────────────────────────────────────
+
+const editableFields = computed(() => props.action?.editable ?? [])
+const editingFields = ref<Set<string>>(new Set())
+const editValues = ref<Record<string, string>>({})
+const originalValues = ref<Record<string, string>>({})
+
+// Re-initialize editable values whenever the action changes
+watch(
+  () => props.action,
+  (action) => {
+    editingFields.value = new Set()
+    editValues.value = {}
+    originalValues.value = {}
+    if (!action) return
+    for (const field of action.editable) {
+      const current = getByDotPath(action as unknown as Record<string, unknown>, field)
+      const strVal = typeof current === 'string' ? current : ''
+      editValues.value[field] = strVal
+      originalValues.value[field] = strVal
+    }
+  },
+  { immediate: true },
+)
+
+// Clear edit state when dialog closes
+watch(
+  () => props.modelValue,
+  (open) => {
+    if (!open) {
+      editingFields.value = new Set()
+    }
+  },
+)
+
+// When openInEditMode changes to true, scroll to editable section
+watch(
+  () => props.openInEditMode,
+  async (val) => {
+    if (val && props.modelValue && editableFields.value.length > 0) {
+      await nextTick()
+      editableSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      // Auto-open editing for the first field
+      const firstField = editableFields.value[0]
+      if (firstField) startEdit(firstField)
+    }
+  },
+)
+
+// Also handle openInEditMode on mount (dialog already open)
+onMounted(async () => {
+  if (props.openInEditMode && props.modelValue && editableFields.value.length > 0) {
+    await nextTick()
+    editableSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const firstField = editableFields.value[0]
+    if (firstField) startEdit(firstField)
+  }
+  if (props.autoVerdict && props.modelValue && props.action?.status === 'pending') {
+    // Immediately fire decision dialog
+    openDecision(props.autoVerdict)
+  }
+})
+
+function startEdit(field: string): void {
+  const next = new Set(editingFields.value)
+  next.add(field)
+  editingFields.value = next
+}
+
+function cancelEdit(field: string): void {
+  // Restore to original value
+  editValues.value[field] = originalValues.value[field] ?? ''
+  const next = new Set(editingFields.value)
+  next.delete(field)
+  editingFields.value = next
+}
+
+function fieldHasChanges(field: string): boolean {
+  return (editValues.value[field] ?? '') !== (originalValues.value[field] ?? '')
+}
+
+const hasAnyEdits = computed(() =>
+  editableFields.value.some((f) => fieldHasChanges(f)),
+)
+
+// ── Decision flow ─────────────────────────────────────────────────────────────
+
+function openDecision(verdict: 'approve' | 'reject'): void {
+  decisionAction.value = props.action
+  pendingVerdictForDialog.value = verdict
+  initialEditedForDialog.value = undefined
+  showDecisionDialog.value = true
+}
+
+function openDecisionWithEdits(): void {
+  // Collect only fields that actually changed
+  const edited: Record<string, unknown> = {}
+  for (const field of editableFields.value) {
+    if (fieldHasChanges(field)) {
+      edited[field] = editValues.value[field]
+    }
+  }
+  decisionAction.value = props.action
+  pendingVerdictForDialog.value = 'approve'
+  initialEditedForDialog.value = Object.keys(edited).length > 0 ? edited : undefined
+  showDecisionDialog.value = true
+}
+
+function handleDecided(actionId: string): void {
+  showDecisionDialog.value = false
+  emit('decided', actionId)
+  emit('update:modelValue', false)
+}
+
+// ── Meta labels ───────────────────────────────────────────────────────────────
 
 const isUntrusted = computed(() => isUntrustedPayload(props.action?.payload))
 
@@ -254,23 +519,22 @@ const statusLabel = computed(() =>
   props.action ? (statusLabels[props.action.status] ?? props.action.status) : '',
 )
 
-function openDecision(verdict: 'approve' | 'reject'): void {
-  decisionAction.value = props.action
-  pendingVerdictForDialog.value = verdict
-  showDecisionDialog.value = true
-}
-
-function handleDecided(actionId: string): void {
-  showDecisionDialog.value = false
-  emit('decided', actionId)
-  emit('update:modelValue', false)
-}
-
-// Reactive second counter so expiry labels update in real time
+// Reactive second counter
 const now = ref(Date.now())
 let nowTimer: ReturnType<typeof setInterval> | null = null
-onMounted(() => { nowTimer = setInterval(() => { now.value = Date.now() }, 1_000) })
-onUnmounted(() => { if (nowTimer) { clearInterval(nowTimer); nowTimer = null } })
+watch(
+  () => props.modelValue,
+  (open) => {
+    if (open && !nowTimer) {
+      nowTimer = setInterval(() => { now.value = Date.now() }, 1_000)
+    } else if (!open && nowTimer) {
+      clearInterval(nowTimer)
+      nowTimer = null
+    }
+  },
+  { immediate: true },
+)
+
 const nowSec = computed(() => Math.floor(now.value / 1_000))
 
 const isExpiringSoon = computed(() => {
@@ -350,6 +614,20 @@ function formatRelative(sec: number): string {
 
 <style scoped>
 .min-width-0 { min-width: 0; }
+.gap-1 { gap: 4px; }
 .gap-2 { gap: 8px; }
 .gap-4 { gap: 16px; }
+
+.font-mono {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.7rem;
+}
+
+.field-value {
+  background: rgba(var(--v-theme-surface-variant), 0.5);
+  border-radius: 4px;
+  padding: 8px 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 </style>

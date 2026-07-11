@@ -186,6 +186,28 @@ export interface CreateWatcherFromPresetRequest {
   }
 }
 
+// --- Bulk decisions ---
+
+export interface BulkDecisionRequest {
+  ids: string[]
+  verdict: 'approve' | 'reject'
+  comment?: string
+}
+
+export interface BulkDecisionResult {
+  id: string
+  ok: boolean
+  status?: ActionStatus
+  error?: string
+  current_status?: ActionStatus
+}
+
+export interface BulkDecisionResponse {
+  results: BulkDecisionResult[]
+  succeeded: number
+  failed: number
+}
+
 // --- Push notifications ---
 
 export interface VapidPublicKeyResponse {

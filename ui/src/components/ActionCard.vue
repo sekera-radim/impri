@@ -1,12 +1,36 @@
 <template>
   <v-card
+    :data-kbd-idx="kbdIdx"
     variant="outlined"
     class="action-card mb-2"
-    :class="{ 'action-card--pending': action.status === 'pending' }"
-    @click="$emit('click')"
+    :class="{
+      'action-card--pending': action.status === 'pending',
+      'action-card--focused': focused,
+      'action-card--selected': selected,
+    }"
+    :tabindex="focused ? 0 : -1"
+    :aria-selected="selected"
+    @click="onCardClick"
   >
     <v-card-text class="py-3 px-4">
       <div class="d-flex align-start gap-3">
+        <!-- Checkbox (bulk mode or hover) -->
+        <div
+          class="card-checkbox-area flex-shrink-0"
+          :class="{ 'card-checkbox-area--always-visible': bulkMode || selected }"
+          @click.stop
+        >
+          <v-checkbox
+            :model-value="selected"
+            :disabled="hasEditable"
+            density="compact"
+            hide-details
+            class="card-checkbox"
+            :title="hasEditable ? 'Cannot bulk-select actions with editable fields' : undefined"
+            @update:model-value="onCheckboxChange"
+          />
+        </div>
+
         <div class="flex-grow-1 min-width-0">
           <!-- Title + kind -->
           <div class="d-flex align-center flex-wrap gap-2 mb-1">
@@ -23,14 +47,36 @@
             >
               External content
             </v-chip>
+            <v-chip
+              v-if="hasEditable && bulkMode"
+              size="x-small"
+              variant="tonal"
+              color="warning"
+              label
+              prepend-icon="mdi-pencil-lock-outline"
+            >
+              Has editable fields
+            </v-chip>
             <span class="text-body-2 font-weight-medium text-truncate">
-              {{ action.title }}
+              <template v-if="highlight && titleParts.length > 1">
+                <template v-for="(part, i) in titleParts" :key="i">
+                  <mark v-if="part.match" class="highlight-mark">{{ part.text }}</mark>
+                  <template v-else>{{ part.text }}</template>
+                </template>
+              </template>
+              <template v-else>{{ action.title }}</template>
             </span>
           </div>
 
-          <!-- Preview excerpt (plain text only — no v-html) -->
+          <!-- Preview excerpt (plain text + highlight) -->
           <p class="text-body-2 text-medium-emphasis preview-excerpt mb-1">
-            {{ previewExcerpt }}
+            <template v-if="highlight && excerptParts.length > 1">
+              <template v-for="(part, i) in excerptParts" :key="i">
+                <mark v-if="part.match" class="highlight-mark">{{ part.text }}</mark>
+                <template v-else>{{ part.text }}</template>
+              </template>
+            </template>
+            <template v-else>{{ previewExcerpt }}</template>
           </p>
 
           <!-- Meta row -->
@@ -64,10 +110,61 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import type { Action, ActionStatus } from '../types'
 import { isUntrustedPayload } from '../utils/untrusted'
 
-const props = defineProps<{ action: Action }>()
-defineEmits<{ click: [] }>()
+const props = defineProps<{
+  action: Action
+  focused?: boolean
+  selected?: boolean
+  bulkMode?: boolean
+  highlight?: string
+  kbdIdx?: number
+}>()
+
+const emit = defineEmits<{
+  click: []
+  'toggle-select': [id: string]
+}>()
 
 const isUntrusted = computed(() => isUntrustedPayload(props.action.payload))
+const hasEditable = computed(() => props.action.editable.length > 0)
+
+function onCardClick(): void {
+  if (!props.bulkMode) {
+    emit('click')
+  } else {
+    // In bulk mode, clicking the card body toggles selection (unless editable)
+    if (!hasEditable.value) {
+      emit('toggle-select', props.action.id)
+    }
+  }
+}
+
+function onCheckboxChange(): void {
+  if (!hasEditable.value) {
+    emit('toggle-select', props.action.id)
+  }
+}
+
+// ── Highlight helpers ─────────────────────────────────────────────────────────
+
+interface TextPart { text: string; match: boolean }
+
+function splitHighlight(text: string, query: string): TextPart[] {
+  if (!query.trim()) return [{ text, match: false }]
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const regex = new RegExp(`(${escaped})`, 'gi')
+  return text.split(regex).map((part, i) => ({ text: part, match: i % 2 === 1 }))
+}
+
+const titleParts = computed(() => splitHighlight(props.action.title, props.highlight ?? ''))
+
+const previewExcerpt = computed(() => {
+  const body = props.action.preview.body
+  return body.length > 120 ? body.slice(0, 120) + '…' : body
+})
+
+const excerptParts = computed(() => splitHighlight(previewExcerpt.value, props.highlight ?? ''))
+
+// ── Labels & formatting ───────────────────────────────────────────────────────
 
 const statusLabels: Record<ActionStatus, string> = {
   pending: 'Pending',
@@ -79,11 +176,6 @@ const statusLabels: Record<ActionStatus, string> = {
 }
 
 const statusLabel = computed(() => statusLabels[props.action.status] ?? props.action.status)
-
-const previewExcerpt = computed(() => {
-  const body = props.action.preview.body
-  return body.length > 120 ? body.slice(0, 120) + '…' : body
-})
 
 const targetDomain = computed(() => {
   if (!props.action.target_url) return ''
@@ -138,6 +230,7 @@ const statusColor = computed(() => {
 .action-card {
   cursor: pointer;
   transition: border-color 0.15s;
+  position: relative;
 }
 
 .action-card:hover {
@@ -146,6 +239,19 @@ const statusColor = computed(() => {
 
 .action-card--pending {
   border-left: 3px solid rgb(var(--v-theme-warning));
+}
+
+/* Keyboard-focused card: strong primary left border + focus ring */
+.action-card--focused {
+  border-left: 3px solid rgb(var(--v-theme-primary));
+  outline: 2px solid rgba(var(--v-theme-primary), 0.5);
+  outline-offset: 1px;
+}
+
+/* Selected card: tonal background tint */
+.action-card--selected {
+  background-color: rgba(var(--v-theme-primary), 0.06);
+  border-color: rgba(var(--v-theme-primary), 0.4);
 }
 
 .preview-excerpt {
@@ -158,6 +264,35 @@ const statusColor = computed(() => {
 
 .min-width-0 {
   min-width: 0;
+}
+
+/* Checkbox gutter */
+.card-checkbox-area {
+  opacity: 0;
+  pointer-events: none;
+  width: 24px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.card-checkbox-area--always-visible,
+.action-card:hover .card-checkbox-area,
+.action-card--focused .card-checkbox-area {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.card-checkbox :deep(.v-selection-control) {
+  min-height: unset;
+}
+
+.highlight-mark {
+  background: rgba(var(--v-theme-warning), 0.35);
+  border-radius: 2px;
+  padding: 0 1px;
+  font-style: normal;
 }
 
 .gap-1 { gap: 4px; }

@@ -4,6 +4,8 @@ import type {
   ApiError,
   ApiKey,
   Billing,
+  BulkDecisionRequest,
+  BulkDecisionResponse,
   DecisionRequest,
   DecisionResponse,
   ListActionsResponse,
@@ -70,6 +72,7 @@ export class ApiClient {
     since?: number
     kind?: string
     cursor?: string
+    q?: string
   } = {}): Promise<ListActionsResponse> {
     const query = new URLSearchParams()
     if (params.status) query.set('status', params.status)
@@ -77,8 +80,13 @@ export class ApiClient {
     if (params.since !== undefined) query.set('since', String(params.since))
     if (params.kind) query.set('kind', params.kind)
     if (params.cursor) query.set('cursor', params.cursor)
+    if (params.q) query.set('q', params.q)
     const qs = query.toString()
     return this.request<ListActionsResponse>('GET', `/actions${qs ? `?${qs}` : ''}`)
+  }
+
+  async bulkDecide(req: BulkDecisionRequest): Promise<BulkDecisionResponse> {
+    return this.request<BulkDecisionResponse>('POST', '/actions/bulk-decision', req)
   }
 
   async getAction(id: string): Promise<Action> {
