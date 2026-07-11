@@ -15,6 +15,8 @@ import { registerRuleRoutes } from './routes/rules.js';
 import { registerWatcherPresetRoutes } from './routes/watcherPresets.js';
 import { registerNotificationChannelRoutes } from './routes/notification-channels.js';
 import { registerTelegramWebhookRoutes } from './routes/telegram-webhook.js';
+import { registerSlackInteractionRoutes } from './routes/slack-interactions.js';
+import { registerDiscordInteractionRoutes } from './routes/discord-interactions.js';
 import { registerAuditRoutes } from './routes/audit.js';
 import { billingActive } from './billing.js';
 import { pushEnabled } from './push.js';
@@ -52,13 +54,22 @@ export async function createApp(db: Db) {
   // Keep the raw body on every JSON request (Stripe webhook signature needs
   // the exact bytes) while still exposing the parsed object to routes.
   app.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body, done) => {
-    (req as { rawBody?: Buffer }).rawBody = body as Buffer;
+    req.rawBody = body as Buffer;
     if (!(body as Buffer).length) return done(null, {});
     try {
       done(null, JSON.parse((body as Buffer).toString('utf8')));
     } catch (err) {
       done(err as Error, undefined);
     }
+  });
+
+  // Slack interaction events arrive as application/x-www-form-urlencoded.
+  // Store the raw string before any parsing so the v0 HMAC signature
+  // verification in the interactions route can cover the exact bytes received.
+  app.addContentTypeParser('application/x-www-form-urlencoded', { parseAs: 'string' }, (req, body, done) => {
+    req.rawSlackBody = body as string;
+    // Return empty object — the route handler parses the payload field itself.
+    done(null, {});
   });
 
   // Auth preHandler: extract and verify Bearer key
@@ -121,6 +132,12 @@ export async function createApp(db: Db) {
 
   // Telegram interactive approval bot webhook (public, authenticated via secret_token header)
   registerTelegramWebhookRoutes(app, db);
+
+  // Slack interactive approval webhook (public, authenticated via v0 HMAC signature)
+  registerSlackInteractionRoutes(app, db);
+
+  // Discord interactive approval webhook (public, authenticated via Ed25519 signature)
+  registerDiscordInteractionRoutes(app, db);
 
   // Audit log query + export (admin scope)
   registerAuditRoutes(app, db);

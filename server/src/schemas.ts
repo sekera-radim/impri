@@ -340,12 +340,93 @@ const httpUrlPublic = (label = 'URL') =>
   }, `Only http/https URLs to non-private addresses are allowed for ${label}`);
 
 export const SlackConfig = z.object({
-  url: httpUrlPublic('Slack webhook URL'),
+  // Incoming-webhook URL — required when approval_mode is false (plain delivery).
+  url: httpUrlPublic('Slack webhook URL').optional(),
+  // Bot User OAuth Token (xoxb-...) — required when approval_mode is true.
+  bot_token: z.string().regex(/^xoxb-/, 'Invalid Slack bot token format (must start with xoxb-)').optional(),
+  // Slack channel or group ID — required when approval_mode is true.
+  channel_id: z.string().regex(/^[CG][A-Z0-9]{6,}$/, 'Invalid Slack channel ID (must start with C or G)').optional(),
+  // Slack app Signing Secret — required when approval_mode is true.
+  signing_secret: z.string().min(16).max(256).optional(),
+  // When true, sends interactive Approve/Reject buttons instead of plain link.
+  approval_mode: z.boolean().default(false),
+  // Slack user IDs allowed to click the approval buttons. Required when
+  // approval_mode is true. Max 50.
+  allowed_approver_slack_user_ids: z.array(
+    z.string().regex(/^U[A-Z0-9]{6,}$/, 'Invalid Slack user ID (must start with U)'),
+  ).max(50).default([]),
+}).superRefine((d, ctx) => {
+  if (d.approval_mode) {
+    if (!d.bot_token) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['bot_token'], message: 'bot_token is required when approval_mode is true' });
+    }
+    if (!d.channel_id) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['channel_id'], message: 'channel_id is required when approval_mode is true' });
+    }
+    if (!d.signing_secret) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['signing_secret'], message: 'signing_secret is required when approval_mode is true' });
+    }
+    if (d.allowed_approver_slack_user_ids.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['allowed_approver_slack_user_ids'],
+        message: 'approval_mode is enabled but allowed_approver_slack_user_ids is empty — no one can approve',
+      });
+    }
+  } else {
+    if (!d.url) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['url'], message: 'url is required when approval_mode is false' });
+    }
+  }
 });
 export type SlackConfig = z.infer<typeof SlackConfig>;
 
 export const DiscordConfig = z.object({
-  url: httpUrlPublic('Discord webhook URL'),
+  // Webhook URL — required when approval_mode is false (plain delivery).
+  url: httpUrlPublic('Discord webhook URL').optional(),
+  // Discord bot token (MT... format) — required when approval_mode is true.
+  bot_token: z.string().min(1).optional(),
+  // Discord snowflake application ID — for documentation/setup only.
+  application_id: z.string().regex(/^\d+$/, 'Invalid Discord application ID (must be numeric snowflake)').optional(),
+  // 64-char hex Ed25519 public key from Discord Developer Portal.
+  // Required when approval_mode is true.
+  public_key: z.string().regex(/^[0-9a-f]{64}$/, 'Invalid Discord public key (must be 64 lowercase hex chars)').optional(),
+  // Discord channel snowflake ID — required when approval_mode is true.
+  channel_id: z.string().regex(/^\d+$/, 'Invalid Discord channel ID (must be numeric snowflake)').optional(),
+  // Per-channel HMAC secret for signing button custom_id values. Auto-generated
+  // (32 random bytes hex) at channel-create time when approval_mode is true
+  // and this field is omitted.
+  hmac_secret: z.string().min(16).max(256).optional(),
+  // When true, sends interactive Approve/Reject buttons instead of plain link.
+  approval_mode: z.boolean().default(false),
+  // Discord user IDs (numeric snowflakes) allowed to click the approval buttons.
+  // Required when approval_mode is true. Max 50.
+  allowed_approver_discord_user_ids: z.array(
+    z.string().regex(/^\d+$/, 'Invalid Discord user ID (must be numeric snowflake)'),
+  ).max(50).default([]),
+}).superRefine((d, ctx) => {
+  if (d.approval_mode) {
+    if (!d.bot_token) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['bot_token'], message: 'bot_token is required when approval_mode is true' });
+    }
+    if (!d.public_key) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['public_key'], message: 'public_key is required when approval_mode is true' });
+    }
+    if (!d.channel_id) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['channel_id'], message: 'channel_id is required when approval_mode is true' });
+    }
+    if (d.allowed_approver_discord_user_ids.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['allowed_approver_discord_user_ids'],
+        message: 'approval_mode is enabled but allowed_approver_discord_user_ids is empty — no one can approve',
+      });
+    }
+  } else {
+    if (!d.url) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['url'], message: 'url is required when approval_mode is false' });
+    }
+  }
 });
 export type DiscordConfig = z.infer<typeof DiscordConfig>;
 

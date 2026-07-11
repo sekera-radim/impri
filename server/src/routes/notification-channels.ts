@@ -190,11 +190,15 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
     }
     const body = parsed.data;
 
-    // For telegram approval-mode channels, auto-generate hmac_secret when
-    // the operator omits it. Inject BEFORE Zod validation so the schema's
+    // For telegram and discord approval-mode channels, auto-generate hmac_secret
+    // when the operator omits it. Inject BEFORE Zod validation so the schema's
     // min(16) constraint is satisfied and the generated secret is stored.
     let channelConfig = body.config as Record<string, unknown>;
-    if (body.type === 'telegram' && channelConfig.approval_mode === true && !channelConfig.hmac_secret) {
+    if (
+      (body.type === 'telegram' || body.type === 'discord') &&
+      channelConfig.approval_mode === true &&
+      !channelConfig.hmac_secret
+    ) {
       channelConfig = { ...channelConfig, hmac_secret: randomBytes(32).toString('hex') };
     }
 

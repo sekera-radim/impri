@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
+import { webcrypto } from 'node:crypto';
 import { isIP } from 'node:net';
 import type { Db } from './db.js';
 import { nowSec } from './db.js';
@@ -52,6 +53,83 @@ export function buildTelegramApprovalSig(hmacSecret: string, v: string, actionId
     .update(`tg:${v}:${actionId}`)
     .digest();
   return mac.subarray(0, 6).toString('base64url');
+}
+
+/**
+ * Build the 8-char base64url signature for a Slack approval button.
+ *   sig = HMAC-SHA256(signingSecret, "sl:" + v + ":" + actionId).slice(0,6).base64url
+ */
+export function buildSlackApprovalSig(signingSecret: string, v: string, actionId: string): string {
+  return createHmac('sha256', signingSecret)
+    .update(`sl:${v}:${actionId}`)
+    .digest()
+    .subarray(0, 6)
+    .toString('base64url');
+}
+
+/**
+ * Build the 8-char base64url signature for a Discord approval button custom_id.
+ *   sig = HMAC-SHA256(hmacSecret, "dc:" + v + ":" + actionId).slice(0,6).base64url
+ */
+export function buildDiscordApprovalSig(hmacSecret: string, v: string, actionId: string): string {
+  return createHmac('sha256', hmacSecret)
+    .update(`dc:${v}:${actionId}`)
+    .digest()
+    .subarray(0, 6)
+    .toString('base64url');
+}
+
+/**
+ * Verify a Slack v0 HMAC-SHA256 request signature.
+ * Returns true only when the signature is valid and the timestamp is within 5 minutes.
+ */
+export function verifySlackSignature(
+  rawBody: string,
+  signingSecret: string,
+  receivedSig: string,
+  receivedTs: string,
+): boolean {
+  if (!receivedSig || !receivedTs) return false;
+  const ts = Number(receivedTs);
+  if (!ts || Math.abs(Math.floor(Date.now() / 1000) - ts) > 300) return false;
+  const base = `v0:${receivedTs}:${rawBody}`;
+  const expected = 'v0=' + createHmac('sha256', signingSecret).update(base).digest('hex');
+  return safeEqual(receivedSig, expected);
+}
+
+/**
+ * Verify a Discord Ed25519 interaction signature.
+ * Returns true only when the signature is cryptographically valid AND the
+ * timestamp is within a 5-minute replay window (mirrors the Slack check).
+ * Async because webcrypto.subtle.verify is Promise-based.
+ */
+export async function verifyDiscordSignature(
+  pubKeyHex: string,
+  sigHex: string,
+  sigTs: string,
+  rawBody: string,
+): Promise<boolean> {
+  try {
+    // Reject stale interactions — 5-min replay window prevents replayed requests.
+    const ts = Number(sigTs);
+    if (!ts || Math.abs(Math.floor(Date.now() / 1000) - ts) > 300) return false;
+
+    const pubKeyBytes = Buffer.from(pubKeyHex, 'hex');
+    const sigBytes = Buffer.from(sigHex, 'hex');
+    const msg = Buffer.concat([Buffer.from(sigTs, 'utf-8'), Buffer.from(rawBody, 'utf-8')]);
+    const key = await webcrypto.subtle.importKey(
+      'raw', pubKeyBytes, { name: 'Ed25519' }, false, ['verify'],
+    );
+    return await webcrypto.subtle.verify('Ed25519', key, sigBytes, msg);
+  } catch {
+    return false;
+  }
+}
+
+// Slack-escape for mrkdwn — prevents markup injection when values are
+// interpolated into the mrkdwn message body.
+export function slackEscape(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 /**
@@ -213,8 +291,24 @@ export function maskConfig(type: string, rawConfig: Record<string, unknown>): Re
 
   switch (type) {
     case 'slack':
+      if (rawConfig.approval_mode === true) return {
+        bot_token: mask(rawConfig.bot_token),
+        channel_id: rawConfig.channel_id,
+        signing_secret: mask(rawConfig.signing_secret),
+        approval_mode: true,
+        allowed_approver_slack_user_ids: rawConfig.allowed_approver_slack_user_ids ?? [],
+      };
       return { url: mask(rawConfig.url) };
     case 'discord':
+      if (rawConfig.approval_mode === true) return {
+        bot_token: mask(rawConfig.bot_token),
+        application_id: rawConfig.application_id,
+        public_key: mask(rawConfig.public_key),
+        channel_id: rawConfig.channel_id,
+        hmac_secret: rawConfig.hmac_secret !== undefined ? mask(rawConfig.hmac_secret) : undefined,
+        approval_mode: true,
+        allowed_approver_discord_user_ids: rawConfig.allowed_approver_discord_user_ids ?? [],
+      };
       return { url: mask(rawConfig.url) };
     case 'telegram': {
       const tgMasked: Record<string, unknown> = {
@@ -402,6 +496,107 @@ async function sendTelegramApproval(
   if (!res.ok) throw new Error(`Telegram HTTP ${res.status}`);
 }
 
+async function sendSlackApproval(
+  config: Record<string, unknown>,
+  title: string,
+  kind: string,
+  actionId: string,
+): Promise<void> {
+  const botToken = String(config.bot_token);
+  const channelId = String(config.channel_id);
+  const signingSecret = String(config.signing_secret);
+
+  const approveVal = `a:${actionId}:${buildSlackApprovalSig(signingSecret, 'a', actionId)}`;
+  const rejectVal  = `r:${actionId}:${buildSlackApprovalSig(signingSecret, 'r', actionId)}`;
+
+  const body = JSON.stringify({
+    channel: channelId,
+    blocks: [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `:bell: *Action Pending*: ${slackEscape(title)}\nKind: \`${slackEscape(kind)}\``,
+        },
+      },
+      {
+        type: 'actions',
+        elements: [
+          {
+            type: 'button',
+            text: { type: 'plain_text', text: '✅ Approve' },
+            action_id: 'approve',
+            value: approveVal,
+            style: 'primary',
+          },
+          {
+            type: 'button',
+            text: { type: 'plain_text', text: '❌ Reject' },
+            action_id: 'reject',
+            value: rejectVal,
+            style: 'danger',
+          },
+        ],
+      },
+    ],
+  });
+
+  const res = await fetchGuarded('https://slack.com/api/chat.postMessage', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${botToken}`,
+    },
+    body,
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) throw new Error(`Slack HTTP ${res.status}`);
+}
+
+async function sendDiscordApproval(
+  config: Record<string, unknown>,
+  title: string,
+  kind: string,
+  actionId: string,
+): Promise<void> {
+  const botToken = String(config.bot_token);
+  const channelId = String(config.channel_id);
+  const hmacSecret = String(config.hmac_secret);
+
+  const approveId = `a:${actionId}:${buildDiscordApprovalSig(hmacSecret, 'a', actionId)}`;
+  const rejectId  = `r:${actionId}:${buildDiscordApprovalSig(hmacSecret, 'r', actionId)}`;
+
+  const body = JSON.stringify({
+    embeds: [
+      {
+        title: `Action Pending: ${title}`,
+        description: `Kind: \`${kind}\``,
+        color: 15899902,
+      },
+    ],
+    components: [
+      {
+        type: 1,
+        components: [
+          { type: 2, style: 3, label: '✅ Approve', custom_id: approveId },
+          { type: 2, style: 4, label: '❌ Reject',  custom_id: rejectId },
+        ],
+      },
+    ],
+  });
+
+  const res = await fetchGuarded(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bot ${botToken}`,
+    },
+    body,
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) throw new Error(`Discord HTTP ${res.status}`);
+}
+
 async function sendNtfyChannel(
   config: Record<string, unknown>,
   title: string,
@@ -516,8 +711,16 @@ export async function dispatchChannelType(
   isDigest = false,
 ): Promise<void> {
   switch (type) {
-    case 'slack':    return sendSlack(config, title, kind, inboxUrl);
-    case 'discord':  return sendDiscord(config, title, kind, inboxUrl);
+    case 'slack':
+      if (config.approval_mode === true && actionId && !isDigest) {
+        return sendSlackApproval(config, title, kind, actionId);
+      }
+      return sendSlack(config, title, kind, inboxUrl);
+    case 'discord':
+      if (config.approval_mode === true && actionId && !isDigest) {
+        return sendDiscordApproval(config, title, kind, actionId);
+      }
+      return sendDiscord(config, title, kind, inboxUrl);
     case 'telegram':
       if (config.approval_mode === true && actionId && !isDigest) {
         return sendTelegramApproval(config, title, kind, inboxUrl, actionId);
