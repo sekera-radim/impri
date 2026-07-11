@@ -38,7 +38,10 @@ export const DecisionBody = z.object({
   decision: z.enum(['approve', 'reject']),
   // dot-path keys matching the action's `editable` whitelist (e.g. "preview.body")
   edited: z.record(z.unknown()).optional(),
-  channel: z.string().optional(),
+  // Channel is stored verbatim in the audit_log.channel column and exported to
+  // CSV; restrict to alphanumeric/underscore/hyphen to prevent formula injection
+  // in downstream spreadsheet tools (defense-in-depth alongside csvField()).
+  channel: z.string().regex(/^[A-Za-z0-9_-]{0,64}$/).optional(),
 });
 export type DecisionBody = z.infer<typeof DecisionBody>;
 
@@ -395,3 +398,32 @@ export const UpdateChannelBody = z.object({
   digest_window_sec: z.number().int().min(10).max(3600).optional(),
 });
 export type UpdateChannelBody = z.infer<typeof UpdateChannelBody>;
+
+// ---------------------------------------------------------------------------
+// Audit log schemas
+// ---------------------------------------------------------------------------
+
+export const AuditListQuery = z.object({
+  // Exact event name (e.g. 'action.approved') or dot-prefix (e.g. 'action.')
+  // to match all events in that namespace.
+  type:      z.string().max(100).optional(),
+  actor:     z.string().max(200).optional(),
+  // Matches action_id, or json_extract(data, '$.rule_id'), '$.channel_id',
+  // '$.watcher_id' — covers all entity types via a single param.
+  entity_id: z.string().max(200).optional(),
+  since:     z.coerce.number().int().optional(),
+  until:     z.coerce.number().int().optional(),
+  limit:     z.coerce.number().int().min(1).max(200).default(50),
+  cursor:    z.string().optional(),
+});
+export type AuditListQuery = z.infer<typeof AuditListQuery>;
+
+export const AuditExportQuery = z.object({
+  type:      z.string().max(100).optional(),
+  actor:     z.string().max(200).optional(),
+  entity_id: z.string().max(200).optional(),
+  since:     z.coerce.number().int().optional(),
+  until:     z.coerce.number().int().optional(),
+  format:    z.enum(['json', 'csv']).default('json'),
+});
+export type AuditExportQuery = z.infer<typeof AuditExportQuery>;

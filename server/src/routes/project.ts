@@ -53,6 +53,17 @@ export function registerProjectRoutes(app: FastifyInstance, db: Db): void {
     if (name !== undefined) db.prepare('UPDATE projects SET name = ? WHERE id = ?').run(name, key.projectId);
     if (timezone !== undefined) db.prepare('UPDATE projects SET timezone = ? WHERE id = ?').run(timezone, key.projectId);
 
+    // Audit: project.updated — record which fields changed; omit values since they
+    // are non-sensitive for name/timezone but the principle holds for future fields.
+    const changedFields = (Object.keys(parsed.data) as string[]).filter(
+      k => (parsed.data as Record<string, unknown>)[k] !== undefined,
+    );
+    if (changedFields.length > 0) {
+      db.prepare(
+        "INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, 'project.updated', ?, ?, ?)",
+      ).run(key.projectId, key.keyId, JSON.stringify({ fields_changed: changedFields }), nowSec());
+    }
+
     const row = db.prepare('SELECT id, name, timezone FROM projects WHERE id = ?').get(key.projectId);
     return row;
   });
@@ -64,7 +75,14 @@ export function registerProjectRoutes(app: FastifyInstance, db: Db): void {
       return reply.status(403).send({ error: 'Forbidden', message: 'Scope "admin" required' });
     }
     const secret = randomBytes(32).toString('base64url');
+    const rotateNow = nowSec();
     db.prepare('UPDATE projects SET webhook_secret = ? WHERE id = ?').run(secret, key.projectId);
+
+    // Audit: project.secret_rotated — do NOT include old or new secret in data.
+    db.prepare(
+      "INSERT INTO audit_log (project_id, event, actor, created_at) VALUES (?, 'project.secret_rotated', ?, ?)",
+    ).run(key.projectId, key.keyId, rotateNow);
+
     return { webhook_secret: secret, note: 'Update your webhook verification with this new secret.' };
   });
 
@@ -75,9 +93,16 @@ export function registerProjectRoutes(app: FastifyInstance, db: Db): void {
       return reply.status(403).send({ error: 'Forbidden', message: 'Scope "admin" required' });
     }
     const pid = key.projectId;
+    const exportNow = nowSec();
+
+    // Audit: gdpr.export — recorded before the response is returned.
+    db.prepare(
+      "INSERT INTO audit_log (project_id, event, actor, created_at) VALUES (?, 'gdpr.export', ?, ?)",
+    ).run(pid, key.keyId, exportNow);
+
     const all = (sql: string) => db.prepare(sql).all(pid);
     return {
-      exported_at: nowSec(),
+      exported_at: exportNow,
       project: db.prepare('SELECT id, name, timezone, created_at FROM projects WHERE id = ?').get(pid),
       actions: all('SELECT * FROM actions WHERE project_id = ?'),
       decisions: all(
@@ -113,6 +138,13 @@ export function registerProjectRoutes(app: FastifyInstance, db: Db): void {
       return { actions, watchers };
     });
     const counts = erase();
+
+    // Audit: gdpr.erase tombstone — written AFTER the transaction so it is not
+    // itself deleted. This leaves exactly one surviving audit row for the project.
+    db.prepare(
+      "INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, 'gdpr.erase', ?, ?, ?)",
+    ).run(pid, key.keyId, JSON.stringify({ erased_actions: counts.actions, erased_watchers: counts.watchers }), nowSec());
+
     return { erased: true, ...counts };
   });
 }

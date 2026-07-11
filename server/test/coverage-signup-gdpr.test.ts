@@ -274,8 +274,12 @@ describe('DELETE /v1/project/data — erasure completeness', () => {
 
     await app.inject({ method: 'DELETE', url: '/v1/project/data', headers: auth(adminKey) });
 
+    // After erase, exactly one tombstone row (gdpr.erase) survives so the event
+    // is traceable even after the bulk DELETE wipes all prior rows. PLAYBOOK F.
     const after = (db.prepare('SELECT COUNT(*) AS c FROM audit_log WHERE project_id = ?').get(projectId) as { c: number }).c;
-    expect(after).toBe(0);
+    expect(after).toBe(1);
+    const tombstone = db.prepare("SELECT event FROM audit_log WHERE project_id = ?").get(projectId) as { event: string };
+    expect(tombstone.event).toBe('gdpr.erase');
   });
 
   it('API keys survive erasure (by design — account must keep working)', async () => {

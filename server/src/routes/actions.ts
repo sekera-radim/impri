@@ -178,8 +178,8 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
       }
 
       db.prepare(
-        "INSERT INTO audit_log (project_id, action_id, event, created_at) VALUES (?, ?, 'action.created', ?)",
-      ).run(key.projectId, actionId, now);
+        "INSERT INTO audit_log (project_id, action_id, event, actor, created_at) VALUES (?, ?, 'action.created', ?, ?)",
+      ).run(key.projectId, actionId, key.keyId, now);
 
       if (rule) {
         db.prepare(

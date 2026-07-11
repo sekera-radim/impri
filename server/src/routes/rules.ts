@@ -87,8 +87,8 @@ export function registerRuleRoutes(app: FastifyInstance, db: Db): void {
     );
 
     db.prepare(
-      "INSERT INTO audit_log (project_id, action_id, event, actor, created_at) VALUES (?, NULL, 'rule.created', ?, ?)",
-    ).run(key.projectId, key.keyId, now);
+      "INSERT INTO audit_log (project_id, action_id, event, actor, data, created_at) VALUES (?, NULL, 'rule.created', ?, ?, ?)",
+    ).run(key.projectId, key.keyId, JSON.stringify({ rule_id: id }), now);
 
     invalidateRuleCache(key.projectId);
 
@@ -175,8 +175,8 @@ export function registerRuleRoutes(app: FastifyInstance, db: Db): void {
     );
 
     db.prepare(
-      "INSERT INTO audit_log (project_id, action_id, event, actor, created_at) VALUES (?, NULL, 'rule.updated', ?, ?)",
-    ).run(key.projectId, key.keyId, now);
+      "INSERT INTO audit_log (project_id, action_id, event, actor, data, created_at) VALUES (?, NULL, 'rule.updated', ?, ?, ?)",
+    ).run(key.projectId, key.keyId, JSON.stringify({ rule_id: request.params.id }), now);
 
     invalidateRuleCache(key.projectId);
 

@@ -157,6 +157,31 @@ export async function runWebhookTick(db: Db, webhookSecret: string): Promise<voi
   }
 }
 
+/**
+ * Prune old audit_log and pii_log rows.
+ *
+ * Opt-in: no-op when AUDIT_RETENTION_DAYS is unset (self-host default = unlimited).
+ * PII_RETENTION_DAYS independently controls pii_log (defaults to AUDIT_RETENTION_DAYS).
+ * Safe to call as often as the expiry tick (60 s) — SQLite DELETE is fast on small
+ * result sets and is a no-op when no rows are older than the cutoff.
+ */
+export function pruneAuditLogs(db: Db): void {
+  const auditDays = parseInt(process.env.AUDIT_RETENTION_DAYS ?? '', 10);
+  if (auditDays > 0) {
+    const cutoff = nowSec() - auditDays * 86400;
+    db.prepare('DELETE FROM audit_log WHERE created_at < ?').run(cutoff);
+  }
+
+  const piiDays = parseInt(
+    process.env.PII_RETENTION_DAYS ?? (auditDays > 0 ? String(auditDays) : ''),
+    10,
+  );
+  if (piiDays > 0) {
+    const piiCutoff = nowSec() - piiDays * 86400;
+    db.prepare('DELETE FROM pii_log WHERE created_at < ?').run(piiCutoff);
+  }
+}
+
 export async function runExpiryTick(db: Db, webhookSecret: string): Promise<void> {
   const now = nowSec();
   const expired = db.prepare(
@@ -187,4 +212,7 @@ export async function runExpiryTick(db: Db, webhookSecret: string): Promise<void
 
   // Also run webhook tick
   await runWebhookTick(db, webhookSecret);
+
+  // Prune old audit/PII rows (opt-in — no-op when retention env vars are unset).
+  pruneAuditLogs(db);
 }

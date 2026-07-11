@@ -6,6 +6,13 @@ import { genId, nowSec } from '../db.js';
 import { hasScope } from '../auth.js';
 import { CreateKeyBody } from '../schemas.js';
 
+// Write an audit row — always returns synchronously (SQLite INSERT is sync).
+function writeAudit(db: Db, projectId: string, event: string, actor: string, data: object | null, now: number): void {
+  db.prepare(
+    'INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, ?, ?, ?, ?)',
+  ).run(projectId, event, actor, data !== null ? JSON.stringify(data) : null, now);
+}
+
 export function registerKeyRoutes(app: FastifyInstance, db: Db): void {
   // POST /v1/keys — create new key (admin scope)
   app.post('/v1/keys', async (request, reply) => {
@@ -34,6 +41,9 @@ export function registerKeyRoutes(app: FastifyInstance, db: Db): void {
     db.prepare(
       'INSERT INTO api_keys (id, project_id, key_hash, key_prefix, name, scopes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
     ).run(keyId, projectId, hash, prefix, body.name, JSON.stringify(body.scopes), now);
+
+    // Audit: key.created — store only id, name, scopes; never raw key material or hash.
+    writeAudit(db, projectId, 'key.created', key.keyId, { new_key_id: keyId, name: body.name, scopes: body.scopes }, now);
 
     reply.status(201);
     return {
@@ -86,7 +96,11 @@ export function registerKeyRoutes(app: FastifyInstance, db: Db): void {
 
     if (!row) return reply.status(404).send({ error: 'Not Found' });
 
-    db.prepare('UPDATE api_keys SET revoked_at = ? WHERE id = ?').run(nowSec(), request.params.id);
+    const now = nowSec();
+    db.prepare('UPDATE api_keys SET revoked_at = ? WHERE id = ?').run(now, request.params.id);
+
+    // Audit: key.revoked — store only the revoked key id; the calling key is the actor.
+    writeAudit(db, key.projectId, 'key.revoked', key.keyId, { revoked_key_id: request.params.id }, now);
 
     reply.status(204);
     return;

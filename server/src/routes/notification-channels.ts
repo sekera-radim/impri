@@ -150,8 +150,8 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
 
     // Audit log records channel identity only — no config content (no secrets).
     db.prepare(
-      "INSERT INTO audit_log (project_id, event, data, created_at) VALUES (?, 'channel.created', ?, ?)",
-    ).run(key.projectId, JSON.stringify({ channel_id: id, type: body.type }), now);
+      "INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, 'channel.created', ?, ?, ?)",
+    ).run(key.projectId, key.keyId, JSON.stringify({ channel_id: id, type: body.type }), now);
 
     const created = db.prepare(
       'SELECT * FROM notification_channels WHERE id = ?',
@@ -243,8 +243,8 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
     }
 
     db.prepare(
-      "INSERT INTO audit_log (project_id, event, data, created_at) VALUES (?, 'channel.updated', ?, ?)",
-    ).run(key.projectId, JSON.stringify({ channel_id: channel.id, type: channel.type }), now);
+      "INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, 'channel.updated', ?, ?, ?)",
+    ).run(key.projectId, key.keyId, JSON.stringify({ channel_id: channel.id, type: channel.type }), now);
 
     const updated = db.prepare(
       'SELECT * FROM notification_channels WHERE id = ?',
@@ -271,11 +271,12 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
 
     if (!channel) return reply.status(404).send({ error: 'Not Found' });
 
+    const now = nowSec();
     db.prepare('DELETE FROM notification_channels WHERE id = ?').run(channel.id);
 
     db.prepare(
-      "INSERT INTO audit_log (project_id, event, data, created_at) VALUES (?, 'channel.deleted', ?, ?)",
-    ).run(key.projectId, JSON.stringify({ channel_id: channel.id }), nowSec());
+      "INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, 'channel.deleted', ?, ?, ?)",
+    ).run(key.projectId, key.keyId, JSON.stringify({ channel_id: channel.id }), now);
 
     reply.status(204);
     return '';
@@ -305,6 +306,8 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
     const rawConfig = JSON.parse(channel.config) as Record<string, unknown>;
     const inboxUrl = `${process.env.BASE_URL ?? 'http://localhost:8484'}/inbox`;
 
+    let ok = false;
+    let errorMsg: string | undefined;
     try {
       await dispatchChannelType(
         channel.type,
@@ -314,11 +317,19 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
         inboxUrl,
         'test_action_id',
       );
-      return { ok: true };
+      ok = true;
     } catch (err) {
       // Sanitize error message — must not echo secrets (URL, token, etc.).
       const raw = err instanceof Error ? err.message : String(err);
-      return { ok: false, error: sanitizeErrorMsg(raw, rawConfig) };
+      errorMsg = sanitizeErrorMsg(raw, rawConfig);
     }
+
+    // Audit: channel.tested — ok boolean only; no config, token, or URL in data.
+    db.prepare(
+      "INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, 'channel.tested', ?, ?, ?)",
+    ).run(key.projectId, key.keyId, JSON.stringify({ channel_id: channel.id, type: channel.type, ok }), nowSec());
+
+    if (ok) return { ok: true };
+    return { ok: false, error: errorMsg };
   });
 }

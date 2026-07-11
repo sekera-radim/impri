@@ -95,6 +95,11 @@ export function registerWatcherRoutes(app: FastifyInstance, db: Db): void {
       now,
     );
 
+    // Audit: watcher.created — id, kind, name only; config may contain URLs.
+    db.prepare(
+      'INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, \'watcher.created\', ?, ?, ?)',
+    ).run(key.projectId, key.keyId, JSON.stringify({ watcher_id: id, kind: body.kind, name: body.name }), now);
+
     reply.status(201);
     const row = db.prepare('SELECT * FROM watchers WHERE id = ?').get(id) as Record<string, unknown>;
     return serializeWatcher(row);
@@ -254,6 +259,11 @@ export function registerWatcherRoutes(app: FastifyInstance, db: Db): void {
       request.params.id,
     );
 
+    // Audit: watcher.updated
+    db.prepare(
+      'INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, \'watcher.updated\', ?, ?, ?)',
+    ).run(key.projectId, key.keyId, JSON.stringify({ watcher_id: request.params.id }), now);
+
     const updated = db.prepare('SELECT * FROM watchers WHERE id = ?').get(
       request.params.id,
     ) as Record<string, unknown>;
@@ -277,6 +287,11 @@ export function registerWatcherRoutes(app: FastifyInstance, db: Db): void {
     // Cascade: delete watcher_items first (no FK cascade in SQLite for this)
     db.prepare('DELETE FROM watcher_items WHERE watcher_id = ?').run(request.params.id);
     db.prepare('DELETE FROM watchers WHERE id = ?').run(request.params.id);
+
+    // Audit: watcher.deleted
+    db.prepare(
+      'INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, \'watcher.deleted\', ?, ?, ?)',
+    ).run(key.projectId, key.keyId, JSON.stringify({ watcher_id: request.params.id }), nowSec());
 
     reply.status(204);
     return;

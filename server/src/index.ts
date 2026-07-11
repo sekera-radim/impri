@@ -14,6 +14,7 @@ import { registerAdminRoutes } from './routes/admin.js';
 import { registerRuleRoutes } from './routes/rules.js';
 import { registerWatcherPresetRoutes } from './routes/watcherPresets.js';
 import { registerNotificationChannelRoutes } from './routes/notification-channels.js';
+import { registerAuditRoutes } from './routes/audit.js';
 import { billingActive } from './billing.js';
 import { pushEnabled } from './push.js';
 import { runExpiryTick } from './webhooks.js';
@@ -116,6 +117,9 @@ export async function createApp(db: Db) {
 
   // Per-project notification channels (Slack, Discord, Telegram, ntfy, email, webhook)
   registerNotificationChannelRoutes(app, db);
+
+  // Audit log query + export (admin scope)
+  registerAuditRoutes(app, db);
 
   return app;
 }
