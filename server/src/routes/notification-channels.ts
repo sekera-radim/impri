@@ -1,12 +1,17 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeAny } from 'zod';
+import { randomBytes } from 'node:crypto';
+import { isIP } from 'node:net';
 import type { Db } from '../db.js';
 import { genId, nowSec } from '../db.js';
 import { hasScope, checkRateLimit } from '../auth.js';
 import {
   maskConfig,
   dispatchChannelType,
+  deriveWebhookSecret,
+  isPublicBaseUrl,
 } from '../notify.js';
+import { fetchGuarded, isPrivateIp } from '../net-guard.js';
 import {
   SlackConfig,
   DiscordConfig,
@@ -82,6 +87,71 @@ function sanitizeErrorMsg(msg: string, config: Record<string, unknown>): string 
   return result;
 }
 
+// ---------------------------------------------------------------------------
+// Telegram webhook registration helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Register (or update) the Telegram webhook for an approval-mode channel.
+ * Skipped when BASE_URL is absent, localhost, or an RFC1918 address — in
+ * those cases the operator must call setup-webhook after configuring a tunnel.
+ * Errors are logged as warnings; the channel CRUD operation is not affected.
+ */
+async function callSetWebhook(
+  botToken: string,
+  channelId: string,
+  hmacSecret: string,
+): Promise<void> {
+  const bUrl = process.env.BASE_URL;
+  if (!isPublicBaseUrl(bUrl)) return;
+
+  const webhookUrl = `${bUrl!}/v1/integrations/telegram/webhook/${channelId}`;
+  const secretToken = deriveWebhookSecret(hmacSecret);
+
+  try {
+    const res = await fetchGuarded(`https://api.telegram.org/bot${botToken}/setWebhook`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url: webhookUrl,
+        secret_token: secretToken,
+        allowed_updates: ['callback_query'],
+        drop_pending_updates: false,
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    const json = await res.json() as { ok?: boolean };
+    console.log('[telegram-approval] setWebhook', { channelId, url: webhookUrl, ok: json.ok ?? false });
+  } catch (err) {
+    // Warn but do not rethrow — channel creation/update must succeed regardless.
+    console.warn('[telegram-approval] setWebhook failed (register manually via setup-webhook)', {
+      channelId,
+      error: err instanceof Error ? err.message.replace(botToken, '[redacted]') : String(err),
+    });
+  }
+}
+
+/**
+ * Deregister the Telegram webhook for the given bot token.
+ * Best-effort — errors only logged.
+ */
+async function callDeleteWebhook(botToken: string, channelId: string): Promise<void> {
+  try {
+    await fetchGuarded(`https://api.telegram.org/bot${botToken}/deleteWebhook`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+      signal: AbortSignal.timeout(10_000),
+    });
+    console.log('[telegram-approval] deleteWebhook', { channelId });
+  } catch (err) {
+    console.warn('[telegram-approval] deleteWebhook failed', {
+      channelId,
+      error: err instanceof Error ? err.message.replace(botToken, '[redacted]') : String(err),
+    });
+  }
+}
+
 export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db): void {
   // GET /v1/notification-channels
   // List all channels for the calling project. Config masked.
@@ -120,7 +190,15 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
     }
     const body = parsed.data;
 
-    const configValidation = validateConfig(body.type, body.config as Record<string, unknown>);
+    // For telegram approval-mode channels, auto-generate hmac_secret when
+    // the operator omits it. Inject BEFORE Zod validation so the schema's
+    // min(16) constraint is satisfied and the generated secret is stored.
+    let channelConfig = body.config as Record<string, unknown>;
+    if (body.type === 'telegram' && channelConfig.approval_mode === true && !channelConfig.hmac_secret) {
+      channelConfig = { ...channelConfig, hmac_secret: randomBytes(32).toString('hex') };
+    }
+
+    const configValidation = validateConfig(body.type, channelConfig);
     if (!configValidation.success) {
       return reply.status(400).send({
         error: 'Bad Request',
@@ -128,6 +206,8 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
         issues: configValidation.error.issues,
       });
     }
+    // Use the Zod-parsed (and defaulted) config so defaults (approval_mode: false etc.) are persisted.
+    channelConfig = configValidation.data as Record<string, unknown>;
 
     const id = genId('nchan_');
     const now = nowSec();
@@ -142,7 +222,7 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
       body.name,
       body.type,
       body.enabled ? 1 : 0,
-      JSON.stringify(body.config),
+      JSON.stringify(channelConfig),
       body.digest_window_sec,
       now,
       now,
@@ -156,6 +236,17 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
     const created = db.prepare(
       'SELECT * FROM notification_channels WHERE id = ?',
     ).get(id) as ChannelRow;
+
+    // Register Telegram webhook when approval_mode is enabled and the channel
+    // is enabled. Fire-and-forget — failure is logged but does not fail the
+    // request. Operator can re-trigger via POST /v1/notification-channels/:id/setup-webhook.
+    if (body.type === 'telegram' && channelConfig.approval_mode === true && body.enabled) {
+      callSetWebhook(
+        String(channelConfig.bot_token),
+        id,
+        String(channelConfig.hmac_secret),
+      ).catch(() => {});
+    }
 
     reply.status(201);
     return serializeChannel(created);
@@ -250,6 +341,22 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
       'SELECT * FROM notification_channels WHERE id = ?',
     ).get(channel.id) as ChannelRow;
 
+    // Manage Telegram webhook when approval_mode or enabled state changes.
+    if (channel.type === 'telegram' && (body.config !== undefined || body.enabled !== undefined)) {
+      const nowApproval = mergedConfig.approval_mode === true;
+      const nowEnabled = newEnabled === 1;
+      if (nowApproval && nowEnabled) {
+        callSetWebhook(
+          String(mergedConfig.bot_token),
+          channel.id,
+          String(mergedConfig.hmac_secret),
+        ).catch(() => {});
+      } else {
+        // approval_mode turned off or channel disabled — deregister webhook.
+        callDeleteWebhook(String(mergedConfig.bot_token), channel.id).catch(() => {});
+      }
+    }
+
     return serializeChannel(updated);
   });
 
@@ -266,10 +373,18 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
     }
 
     const channel = db.prepare(
-      'SELECT id FROM notification_channels WHERE id = ? AND project_id = ?',
-    ).get(request.params.id, key.projectId) as { id: string } | undefined;
+      'SELECT id, type, config FROM notification_channels WHERE id = ? AND project_id = ?',
+    ).get(request.params.id, key.projectId) as { id: string; type: string; config: string } | undefined;
 
     if (!channel) return reply.status(404).send({ error: 'Not Found' });
+
+    // Deregister Telegram webhook before deleting the channel (best-effort).
+    if (channel.type === 'telegram') {
+      const cfg = JSON.parse(channel.config) as Record<string, unknown>;
+      if (cfg.approval_mode === true) {
+        callDeleteWebhook(String(cfg.bot_token), channel.id).catch(() => {});
+      }
+    }
 
     const now = nowSec();
     db.prepare('DELETE FROM notification_channels WHERE id = ?').run(channel.id);
@@ -331,5 +446,68 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
 
     if (ok) return { ok: true };
     return { ok: false, error: errorMsg };
+  });
+
+  // POST /v1/notification-channels/:id/setup-webhook
+  // Re-register the Telegram webhook for an approval-mode channel.
+  // Useful when BASE_URL was missing at channel-create time (local dev tunnel).
+  // Admin scope required.
+  app.post<{ Params: { id: string } }>('/v1/notification-channels/:id/setup-webhook', async (request, reply) => {
+    const key = request.apiKey;
+    if (!key || !hasScope(key.scopes, 'admin')) {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Scope "admin" required' });
+    }
+
+    if (!(await checkRateLimit(db, key.keyId, 'channels:write', 30))) {
+      return reply.status(429).send({ error: 'Too Many Requests', message: 'Rate limit: 30 requests/min per key' });
+    }
+
+    const channel = db.prepare(
+      'SELECT * FROM notification_channels WHERE id = ? AND project_id = ?',
+    ).get(request.params.id, key.projectId) as ChannelRow | undefined;
+
+    if (!channel) return reply.status(404).send({ error: 'Not Found' });
+    if (channel.type !== 'telegram') {
+      return reply.status(400).send({ error: 'Bad Request', message: 'setup-webhook is only supported for telegram channels' });
+    }
+
+    const cfg = JSON.parse(channel.config) as Record<string, unknown>;
+    if (cfg.approval_mode !== true) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'approval_mode must be true to register a webhook' });
+    }
+
+    const bUrl = process.env.BASE_URL;
+    if (!isPublicBaseUrl(bUrl)) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'BASE_URL is not configured to a public URL. Set BASE_URL (e.g. https://your-domain.com) and retry.',
+      });
+    }
+
+    const webhookUrl = `${bUrl!}/v1/integrations/telegram/webhook/${channel.id}`;
+    const secretToken = deriveWebhookSecret(String(cfg.hmac_secret));
+
+    try {
+      const res = await fetchGuarded(`https://api.telegram.org/bot${cfg.bot_token}/setWebhook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: webhookUrl,
+          secret_token: secretToken,
+          allowed_updates: ['callback_query'],
+          drop_pending_updates: false,
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      const json = await res.json() as { ok?: boolean; description?: string };
+      if (!json.ok) {
+        return reply.status(502).send({ error: 'Bad Gateway', message: `Telegram setWebhook returned ok=false: ${json.description ?? 'unknown'}` });
+      }
+      return { ok: true, url: webhookUrl };
+    } catch (err) {
+      const sanitized = (err instanceof Error ? err.message : String(err))
+        .replace(String(cfg.bot_token), '[redacted]');
+      return reply.status(502).send({ error: 'Bad Gateway', message: sanitized });
+    }
   });
 }

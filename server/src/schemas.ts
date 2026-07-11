@@ -355,6 +355,25 @@ export const TelegramConfig = z.object({
   bot_token: z.string().regex(/^\d+:[A-Za-z0-9_-]+$/, 'Invalid Telegram bot token format'),
   // chat_id is not a secret and returned as-is.
   chat_id: z.string().min(1).max(50),
+  // When true, single-action sends include inline Approve/Reject buttons.
+  // Digest batches always fall back to plain notifications.
+  approval_mode: z.boolean().default(false),
+  // Telegram numeric user IDs allowed to tap the buttons. Required when
+  // approval_mode is true (validated in superRefine). Max 50.
+  allowed_approver_user_ids: z.array(z.number().int().positive()).max(50).default([]),
+  // Per-channel secret for HMAC-signing button payloads and deriving the
+  // Telegram webhook secret_token. Auto-generated (32 random bytes) at
+  // channel-create time when approval_mode is true and this field is omitted.
+  // Must be 16–256 chars; treated as a secret in all API responses.
+  hmac_secret: z.string().min(16).max(256).optional(),
+}).superRefine((d, ctx) => {
+  if (d.approval_mode && d.allowed_approver_user_ids.length === 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['allowed_approver_user_ids'],
+      message: 'approval_mode is enabled but allowed_approver_user_ids is empty — no one can approve',
+    });
+  }
 });
 export type TelegramConfig = z.infer<typeof TelegramConfig>;
 

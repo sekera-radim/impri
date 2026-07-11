@@ -1,8 +1,9 @@
 import nodemailer from 'nodemailer';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, createHmac, timingSafeEqual } from 'node:crypto';
+import { isIP } from 'node:net';
 import type { Db } from './db.js';
 import { nowSec } from './db.js';
-import { fetchGuarded } from './net-guard.js';
+import { fetchGuarded, isPrivateIp } from './net-guard.js';
 import { signWebhookBody } from './webhooks.js';
 
 export interface NotifyPayload {
@@ -21,8 +22,66 @@ export const headerSafe = (s: string) => s.replace(/[\r\n]+/g, ' ');
 
 // HTML-escape for Telegram — prevents markup injection when values are
 // interpolated into the HTML parse_mode body.
-function htmlEscape(s: string): string {
+export function htmlEscape(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ---------------------------------------------------------------------------
+// Telegram approval HMAC helpers — exported so telegram-webhook.ts can reuse.
+// ---------------------------------------------------------------------------
+
+/**
+ * Derive the Telegram webhook secret_token from the per-channel hmac_secret.
+ * Output is 64 lowercase hex chars (only [0-9a-f]) — satisfies Telegram's
+ * secret_token character constraint.
+ */
+export function deriveWebhookSecret(hmacSecret: string): string {
+  return createHmac('sha256', hmacSecret)
+    .update('tg-webhook-secret')
+    .digest()
+    .subarray(0, 32)
+    .toString('hex');
+}
+
+/**
+ * Build the 8-char base64url signature for a Telegram approval button.
+ *   sig = HMAC-SHA256(hmacSecret, "tg:" + v + ":" + actionId).slice(0,6).base64url
+ */
+export function buildTelegramApprovalSig(hmacSecret: string, v: string, actionId: string): string {
+  const mac = createHmac('sha256', hmacSecret)
+    .update(`tg:${v}:${actionId}`)
+    .digest();
+  return mac.subarray(0, 6).toString('base64url');
+}
+
+/**
+ * Timing-safe comparison of two strings as UTF-8 buffers.
+ * Returns true if they match.
+ */
+export function safeEqual(a: string, b: string): boolean {
+  const ba = Buffer.from(a, 'utf-8');
+  const bb = Buffer.from(b, 'utf-8');
+  if (ba.length !== bb.length) return false;
+  return timingSafeEqual(ba, bb);
+}
+
+/**
+ * Returns true when BASE_URL is configured to a publicly reachable address
+ * (non-localhost, non-RFC1918). Used to decide whether to register Telegram
+ * webhooks and whether to include a "View in inbox" URL button.
+ */
+export function isPublicBaseUrl(url: string | undefined): boolean {
+  if (!url) return false;
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+    const host = u.hostname.replace(/^\[|\]$/g, '');
+    if (host === 'localhost' || host.endsWith('.localhost')) return false;
+    if (isIP(host)) return !isPrivateIp(host);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ntfy adapter: POST to topic URL (global / escalate path)
@@ -157,8 +216,18 @@ export function maskConfig(type: string, rawConfig: Record<string, unknown>): Re
       return { url: mask(rawConfig.url) };
     case 'discord':
       return { url: mask(rawConfig.url) };
-    case 'telegram':
-      return { bot_token: mask(rawConfig.bot_token), chat_id: rawConfig.chat_id };
+    case 'telegram': {
+      const tgMasked: Record<string, unknown> = {
+        bot_token: mask(rawConfig.bot_token),
+        chat_id: rawConfig.chat_id,
+        approval_mode: rawConfig.approval_mode ?? false,
+        allowed_approver_user_ids: rawConfig.allowed_approver_user_ids ?? [],
+      };
+      if (rawConfig.hmac_secret !== undefined) {
+        tgMasked.hmac_secret = mask(rawConfig.hmac_secret);
+      }
+      return tgMasked;
+    }
     case 'ntfy':
       return { url: mask(rawConfig.url), topic: rawConfig.topic };
     case 'email':
@@ -288,6 +357,51 @@ async function sendTelegram(
   if (!res.ok) throw new Error(`Telegram HTTP ${res.status}`);
 }
 
+async function sendTelegramApproval(
+  config: Record<string, unknown>,
+  title: string,
+  kind: string,
+  inboxUrl: string,
+  actionId: string,
+): Promise<void> {
+  const botToken = String(config.bot_token);
+  const chatId = String(config.chat_id);
+  const hmacSecret = String(config.hmac_secret);
+
+  const approveData = `a:${actionId}:${buildTelegramApprovalSig(hmacSecret, 'a', actionId)}`;
+  const rejectData  = `r:${actionId}:${buildTelegramApprovalSig(hmacSecret, 'r', actionId)}`;
+
+  const inlineKeyboard: Array<Array<{ text: string; callback_data?: string; url?: string }>> = [
+    [
+      { text: '✅ Approve', callback_data: approveData },
+      { text: '❌ Reject',  callback_data: rejectData  },
+    ],
+  ];
+
+  // Include the "View in inbox" URL row only when BASE_URL is a public URL —
+  // a localhost URL would be unreachable from the user's Telegram client.
+  if (isPublicBaseUrl(process.env.BASE_URL)) {
+    inlineKeyboard.push([{ text: '🔗 View in inbox', url: inboxUrl }]);
+  }
+
+  const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+  const body = JSON.stringify({
+    chat_id: chatId,
+    text: `🔔 <b>Action Pending</b>: ${htmlEscape(title)}\nKind: <code>${htmlEscape(kind)}</code>`,
+    parse_mode: 'HTML',
+    disable_web_page_preview: true,
+    reply_markup: { inline_keyboard: inlineKeyboard },
+  });
+
+  const res = await fetchGuarded(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) throw new Error(`Telegram HTTP ${res.status}`);
+}
+
 async function sendNtfyChannel(
   config: Record<string, unknown>,
   title: string,
@@ -396,11 +510,19 @@ export async function dispatchChannelType(
   inboxUrl: string,
   actionId = '',
   escalate?: boolean,
+  // When true, the caller is sending a batched digest (queue.length > 1).
+  // Approval-mode telegram falls back to the plain sendTelegram message for
+  // digests because inline buttons cannot encode multiple action IDs.
+  isDigest = false,
 ): Promise<void> {
   switch (type) {
     case 'slack':    return sendSlack(config, title, kind, inboxUrl);
     case 'discord':  return sendDiscord(config, title, kind, inboxUrl);
-    case 'telegram': return sendTelegram(config, title, kind, inboxUrl);
+    case 'telegram':
+      if (config.approval_mode === true && actionId && !isDigest) {
+        return sendTelegramApproval(config, title, kind, inboxUrl, actionId);
+      }
+      return sendTelegram(config, title, kind, inboxUrl);
     case 'ntfy':     return sendNtfyChannel(config, title, kind, inboxUrl);
     case 'email':    return sendEmailChannel(config, title, kind, inboxUrl);
     case 'webhook':  return sendWebhookChannel(config, title, kind, inboxUrl, actionId, escalate);
@@ -501,9 +623,10 @@ async function fireChannel(db: Db, channel: ChannelRow, payload: ChannelPayload)
   ).run(JSON.stringify(queue), now, channel.id);
 
   const { title, kind, inboxUrl, primaryActionId } = buildDigestMessage(queue);
+  const isDigest = queue.length > 1;
 
   try {
-    await dispatchChannelType(channel.type, config, title, kind, inboxUrl, primaryActionId, payload.escalate);
+    await dispatchChannelType(channel.type, config, title, kind, inboxUrl, primaryActionId, payload.escalate, isDigest);
     onChannelSuccess(db, channel.id, now);
   } catch (err) {
     // Sanitize before storing AND before re-throwing so no secret can reach
@@ -528,9 +651,10 @@ async function flushChannelQueue(db: Db, channel: ChannelRow): Promise<void> {
   if (queue.length === 0) return;
 
   const { title, kind, inboxUrl, primaryActionId } = buildDigestMessage(queue);
+  const isDigest = queue.length > 1;
 
   try {
-    await dispatchChannelType(channel.type, config, title, kind, inboxUrl, primaryActionId);
+    await dispatchChannelType(channel.type, config, title, kind, inboxUrl, primaryActionId, undefined, isDigest);
     onChannelSuccess(db, channel.id, now);
   } catch (err) {
     const raw = err instanceof Error ? err.message : String(err);
