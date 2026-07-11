@@ -28,10 +28,16 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/server/dist ./server/dist
 
+# Litestream: kontinuální SQLite replikace do S3 (aktivní jen s BUCKET_NAME, viz entrypoint)
+COPY --from=litestream/litestream:0.3.13 /usr/local/bin/litestream /usr/local/bin/litestream
+COPY docker/litestream.yml docker/litestream.yml
+COPY docker/entrypoint.sh docker/entrypoint.sh
+RUN chmod +x docker/entrypoint.sh
+
 EXPOSE 8484
 
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=8484
 
-CMD ["node", "server/dist/index.js"]
+CMD ["/app/docker/entrypoint.sh"]
