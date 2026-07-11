@@ -140,6 +140,14 @@
               @click="toggleStatus(w, 'paused')"
             />
             <v-btn
+              icon="mdi-pencil-outline"
+              size="x-small"
+              variant="text"
+              title="Edit"
+              aria-label="Edit watcher"
+              @click="openEdit(w)"
+            />
+            <v-btn
               icon="mdi-delete-outline"
               size="x-small"
               variant="text"
@@ -326,7 +334,7 @@
           :loading="creating"
           @click="submitCreate"
         >
-          Create watcher
+          {{ editingId ? 'Save changes' : 'Create watcher' }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -486,18 +494,24 @@ function emptyForm(): FormState {
 
 const showPresetGallery = ref(false)
 const showCreate = ref(false)
+/** ID watcheru v editaci; null = create režim. Kind existujícího watcheru měnit nejde (API). */
+const editingId = ref<string | null>(null)
 const form = reactive<FormState>(emptyForm())
 const formError = ref<string | null>(null)
 const creating = ref(false)
 const showAdvanced = ref(false)
 const presetLocked = ref(false)
 
-const createTitle = computed(() =>
-  presetLocked.value ? kindOptions.find((k) => k.value === form.kind)?.title ?? 'New watcher' : 'Create watcher',
-)
+const createTitle = computed(() => {
+  if (editingId.value) return 'Edit watcher'
+  return presetLocked.value
+    ? kindOptions.find((k) => k.value === form.kind)?.title ?? 'New watcher'
+    : 'Create watcher'
+})
 const kindHelp = computed(() => kindHelpText[form.kind])
 
 function openCreate(preset?: WatcherKind): void {
+  editingId.value = null
   Object.assign(form, emptyForm())
   showAdvanced.value = false
   presetLocked.value = false
@@ -516,6 +530,30 @@ function openCreate(preset?: WatcherKind): void {
       form.frequency = '6h'
     }
   }
+  formError.value = null
+  showCreate.value = true
+}
+
+function openEdit(w: Watcher): void {
+  Object.assign(form, emptyForm())
+  editingId.value = w.id
+  presetLocked.value = true // skryje výběr typu — kind se u existujícího watcheru změnit nedá
+  form.name = w.name
+  form.kind = w.kind
+  form.configUrl = w.config.url ?? ''
+  form.configSubreddit = w.config.subreddit ?? ''
+  form.configQuery = w.config.query ?? ''
+  if (frequencyOptions.some((o) => o.value === w.schedule.every)) {
+    form.frequency = w.schedule.every
+  } else {
+    form.frequency = 'custom'
+    form.customEvery = w.schedule.every
+  }
+  form.scheduleJitter = w.schedule.jitter ?? ''
+  form.scheduleWindow = w.schedule.window ?? ''
+  form.keywordTags = (w.keywords ?? []).map((k) => k.pattern)
+  form.keywordsNone = [...(w.keywords_none ?? [])]
+  showAdvanced.value = Boolean(w.schedule.jitter || w.schedule.window || form.keywordsNone.length > 0)
   formError.value = null
   showCreate.value = true
 }
@@ -583,16 +621,27 @@ async function submitCreate(): Promise<void> {
       .map((pattern) => ({ pattern, points: 1 }))
     const keywordsNone = form.keywordsNone.map((k) => k.trim()).filter(Boolean)
 
-    await store.createWatcher({
-      name: form.name.trim(),
-      kind: form.kind,
-      config,
-      keywords,
-      keywords_none: keywordsNone,
-      // Require at least one keyword match when keywords are given; otherwise accept everything.
-      min_score: keywords.length > 0 ? 1 : 0,
-      schedule,
-    })
+    if (editingId.value) {
+      await store.editWatcher(editingId.value, {
+        name: form.name.trim(),
+        config,
+        keywords,
+        keywords_none: keywordsNone,
+        min_score: keywords.length > 0 ? 1 : 0,
+        schedule,
+      })
+    } else {
+      await store.createWatcher({
+        name: form.name.trim(),
+        kind: form.kind,
+        config,
+        keywords,
+        keywords_none: keywordsNone,
+        // Require at least one keyword match when keywords are given; otherwise accept everything.
+        min_score: keywords.length > 0 ? 1 : 0,
+        schedule,
+      })
+    }
 
     showCreate.value = false
   } catch (err) {
