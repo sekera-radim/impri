@@ -101,6 +101,46 @@ separate token field is needed.
 to a private IP address. The value is stored as a secret and masked in
 all API responses.
 
+#### Slack approval mode (optional)
+
+Additional fields enable **in-channel Approve / Reject buttons** so
+your team can decide without opening the web inbox:
+
+```json
+{
+  "type": "slack",
+  "config": {
+    "bot_token":    "xoxb-...",
+    "channel_id":   "C0XXXXXXXX",
+    "signing_secret": "...",
+    "approval_mode": true,
+    "allowed_approver_slack_user_ids": ["U0XXXXXXXX"]
+  }
+}
+```
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `bot_token` | string | required | Bot User OAuth Token (`xoxb-...`). Masked (`****{last4}`) in responses. |
+| `channel_id` | string | required | Slack channel or group ID (`C...` or `G...`). |
+| `signing_secret` | string | required | Slack app Signing Secret used to verify the HMAC-SHA256 request signature on every interaction. Masked (`****{last4}`) in responses. |
+| `approval_mode` | boolean | `false` | When `true`, single-action sends include interactive Approve / Reject buttons. Digest batches always fall back to a plain notification. |
+| `allowed_approver_slack_user_ids` | string[] | `[]` | Slack user IDs (`U...`) allowed to click the buttons. Max 50. Must be non-empty when `approval_mode` is `true`. |
+
+When `approval_mode` is `true`, Impri receives interaction payloads at:
+
+```
+POST /v1/integrations/slack/interactions/:channelId
+```
+
+Decisions recorded via this endpoint are equivalent to decisions made
+through the web inbox: they run the same database transaction, fire
+`callback_url` webhooks, and appear in the audit log with
+`decided_by = "sl:{slack_user_id}"`.
+
+See [docs/slack-approval.md](slack-approval.md) for full setup
+instructions, config reference, security model, and troubleshooting.
+
 ---
 
 ### Discord
@@ -119,6 +159,49 @@ are surfaced as delivery failures (and counted toward the auto-disable
 threshold).
 
 **Security:** same URL validation as Slack.
+
+#### Discord approval mode (optional)
+
+Additional fields enable **in-channel Approve / Reject buttons** so
+your team can decide without opening the web inbox:
+
+```json
+{
+  "type": "discord",
+  "config": {
+    "bot_token":       "MT...",
+    "application_id":  "123456789012345678",
+    "public_key":      "aabbccdd...",
+    "channel_id":      "987654321098765432",
+    "approval_mode":   true,
+    "allowed_approver_discord_user_ids": ["123456789012345678"]
+  }
+}
+```
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `bot_token` | string | required | Discord bot token. Masked (`****{last4}`) in responses. |
+| `application_id` | string | required | Discord application snowflake ID. |
+| `public_key` | string | required | 64-char hex Ed25519 public key from the Developer Portal. Used to verify every interaction's cryptographic signature. Masked (`****{last4}`) in responses. |
+| `channel_id` | string | required | Discord channel snowflake ID. |
+| `hmac_secret` | string | auto-generated | Signs button `custom_id` values. Auto-generated (32 random bytes hex) if omitted at creation. Masked (`****{last4}`) in responses. |
+| `approval_mode` | boolean | `false` | When `true`, single-action sends include interactive Approve / Reject buttons. Digest batches always fall back to a plain embed. |
+| `allowed_approver_discord_user_ids` | string[] | `[]` | Discord user snowflake IDs allowed to click the buttons. Max 50. Must be non-empty when `approval_mode` is `true`. |
+
+When `approval_mode` is `true`, Impri receives interaction payloads at:
+
+```
+POST /v1/integrations/discord/interactions/:channelId
+```
+
+Discord uses Ed25519 asymmetric signatures — the platform holds the
+private key; Impri verifies using `public_key` only. Decisions recorded
+via this endpoint appear in the audit log with
+`decided_by = "dc:{discord_user_id}"`.
+
+See [docs/discord-approval.md](discord-approval.md) for full setup
+instructions, config reference, security model, and troubleshooting.
 
 ---
 
@@ -402,7 +485,14 @@ creation. Masking rules:
 | Channel | Field masked | Mask format |
 |---|---|---|
 | `slack` | `url` | `****{last4}` |
+| `slack` | `bot_token` (approval mode) | `****{last4}` |
+| `slack` | `signing_secret` (approval mode) | `****{last4}` |
+| `slack` | `channel_id`, `approval_mode`, `allowed_approver_slack_user_ids` | returned as-is |
 | `discord` | `url` | `****{last4}` |
+| `discord` | `bot_token` (approval mode) | `****{last4}` |
+| `discord` | `public_key` (approval mode) | `****{last4}` |
+| `discord` | `hmac_secret` (approval mode, if set) | `****{last4}` |
+| `discord` | `application_id`, `channel_id`, `approval_mode`, `allowed_approver_discord_user_ids` | returned as-is |
 | `telegram` | `bot_token` | `****{last4}` |
 | `telegram` | `chat_id` | returned as-is |
 | `telegram` | `approval_mode` | returned as-is |
@@ -560,3 +650,9 @@ The global `NTFY_URL` / `NTFY_TOPIC` variables configure the
 - [Telegram Approval Bot](telegram-approval.md) — step-by-step setup
   for in-chat Approve / Reject buttons, security model, and
   troubleshooting.
+- [Slack Approval Bot](slack-approval.md) — step-by-step setup for
+  in-channel Approve / Reject buttons using Slack's Interactivity API,
+  security model, and troubleshooting.
+- [Discord Approval Bot](discord-approval.md) — step-by-step setup for
+  in-channel Approve / Reject buttons using Discord's Interactions API
+  (Ed25519 signatures), security model, and troubleshooting.

@@ -133,6 +133,8 @@ pre code.hljs{display:block;overflow-x:auto}
 <a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
 <a href="../docs/notifications.html" class="sl active">Notification channels</a>
 <a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval.html" class="sl">Slack approval</a>
+<a href="../docs/discord-approval.html" class="sl">Discord approval</a>
 <a href="../docs/audit-log.html" class="sl">Audit log</a>
 <a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
 <a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
@@ -268,6 +270,68 @@ separate token field is needed.</p>
 <p><strong>Security:</strong> <code>url</code> is validated as <code>http</code>/<code>https</code> and must not resolve
 to a private IP address. The value is stored as a secret and masked in
 all API responses.</p>
+<h4>Slack approval mode (optional)</h4>
+<p>Additional fields enable <strong>in-channel Approve / Reject buttons</strong> so
+your team can decide without opening the web inbox:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;slack&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;config&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;bot_token&quot;</span><span class="hljs-punctuation">:</span>    <span class="hljs-string">&quot;xoxb-...&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;channel_id&quot;</span><span class="hljs-punctuation">:</span>   <span class="hljs-string">&quot;C0XXXXXXXX&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;signing_secret&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;...&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;approval_mode&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;allowed_approver_slack_user_ids&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;U0XXXXXXXX&quot;</span><span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>bot_token</code></td>
+<td>string</td>
+<td>required</td>
+<td>Bot User OAuth Token (<code>xoxb-...</code>). Masked (<code>****{last4}</code>) in responses.</td>
+</tr>
+<tr>
+<td><code>channel_id</code></td>
+<td>string</td>
+<td>required</td>
+<td>Slack channel or group ID (<code>C...</code> or <code>G...</code>).</td>
+</tr>
+<tr>
+<td><code>signing_secret</code></td>
+<td>string</td>
+<td>required</td>
+<td>Slack app Signing Secret used to verify the HMAC-SHA256 request signature on every interaction. Masked (<code>****{last4}</code>) in responses.</td>
+</tr>
+<tr>
+<td><code>approval_mode</code></td>
+<td>boolean</td>
+<td><code>false</code></td>
+<td>When <code>true</code>, single-action sends include interactive Approve / Reject buttons. Digest batches always fall back to a plain notification.</td>
+</tr>
+<tr>
+<td><code>allowed_approver_slack_user_ids</code></td>
+<td>string[]</td>
+<td><code>[]</code></td>
+<td>Slack user IDs (<code>U...</code>) allowed to click the buttons. Max 50. Must be non-empty when <code>approval_mode</code> is <code>true</code>.</td>
+</tr>
+</tbody></table>
+</div>
+<p>When <code>approval_mode</code> is <code>true</code>, Impri receives interaction payloads at:</p>
+<div class="code-block"><pre><code class="hljs">POST /v1/integrations/slack/interactions/:channelId</code></pre></div>
+<p>Decisions recorded via this endpoint are equivalent to decisions made
+through the web inbox: they run the same database transaction, fire
+<code>callback_url</code> webhooks, and appear in the audit log with
+<code>decided_by = &quot;sl:{slack_user_id}&quot;</code>.</p>
+<p>See <a href="slack-approval.html">docs/slack-approval.md</a> for full setup
+instructions, config reference, security model, and troubleshooting.</p>
 <hr>
 <h3 id="discord">Discord</h3>
 <div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
@@ -279,6 +343,81 @@ all API responses.</p>
 are surfaced as delivery failures (and counted toward the auto-disable
 threshold).</p>
 <p><strong>Security:</strong> same URL validation as Slack.</p>
+<h4>Discord approval mode (optional)</h4>
+<p>Additional fields enable <strong>in-channel Approve / Reject buttons</strong> so
+your team can decide without opening the web inbox:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;discord&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;config&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;bot_token&quot;</span><span class="hljs-punctuation">:</span>       <span class="hljs-string">&quot;MT...&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;application_id&quot;</span><span class="hljs-punctuation">:</span>  <span class="hljs-string">&quot;123456789012345678&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;public_key&quot;</span><span class="hljs-punctuation">:</span>      <span class="hljs-string">&quot;aabbccdd...&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;channel_id&quot;</span><span class="hljs-punctuation">:</span>      <span class="hljs-string">&quot;987654321098765432&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;approval_mode&quot;</span><span class="hljs-punctuation">:</span>   <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;allowed_approver_discord_user_ids&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;123456789012345678&quot;</span><span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>bot_token</code></td>
+<td>string</td>
+<td>required</td>
+<td>Discord bot token. Masked (<code>****{last4}</code>) in responses.</td>
+</tr>
+<tr>
+<td><code>application_id</code></td>
+<td>string</td>
+<td>required</td>
+<td>Discord application snowflake ID.</td>
+</tr>
+<tr>
+<td><code>public_key</code></td>
+<td>string</td>
+<td>required</td>
+<td>64-char hex Ed25519 public key from the Developer Portal. Used to verify every interaction&#39;s cryptographic signature. Masked (<code>****{last4}</code>) in responses.</td>
+</tr>
+<tr>
+<td><code>channel_id</code></td>
+<td>string</td>
+<td>required</td>
+<td>Discord channel snowflake ID.</td>
+</tr>
+<tr>
+<td><code>hmac_secret</code></td>
+<td>string</td>
+<td>auto-generated</td>
+<td>Signs button <code>custom_id</code> values. Auto-generated (32 random bytes hex) if omitted at creation. Masked (<code>****{last4}</code>) in responses.</td>
+</tr>
+<tr>
+<td><code>approval_mode</code></td>
+<td>boolean</td>
+<td><code>false</code></td>
+<td>When <code>true</code>, single-action sends include interactive Approve / Reject buttons. Digest batches always fall back to a plain embed.</td>
+</tr>
+<tr>
+<td><code>allowed_approver_discord_user_ids</code></td>
+<td>string[]</td>
+<td><code>[]</code></td>
+<td>Discord user snowflake IDs allowed to click the buttons. Max 50. Must be non-empty when <code>approval_mode</code> is <code>true</code>.</td>
+</tr>
+</tbody></table>
+</div>
+<p>When <code>approval_mode</code> is <code>true</code>, Impri receives interaction payloads at:</p>
+<div class="code-block"><pre><code class="hljs">POST /v1/integrations/discord/interactions/:channelId</code></pre></div>
+<p>Discord uses Ed25519 asymmetric signatures — the platform holds the
+private key; Impri verifies using <code>public_key</code> only. Decisions recorded
+via this endpoint appear in the audit log with
+<code>decided_by = &quot;dc:{discord_user_id}&quot;</code>.</p>
+<p>See <a href="discord-approval.html">docs/discord-approval.md</a> for full setup
+instructions, config reference, security model, and troubleshooting.</p>
 <hr>
 <h3 id="telegram">Telegram</h3>
 <div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
@@ -514,9 +653,44 @@ creation. Masking rules:</p>
 <td><code>****{last4}</code></td>
 </tr>
 <tr>
+<td><code>slack</code></td>
+<td><code>bot_token</code> (approval mode)</td>
+<td><code>****{last4}</code></td>
+</tr>
+<tr>
+<td><code>slack</code></td>
+<td><code>signing_secret</code> (approval mode)</td>
+<td><code>****{last4}</code></td>
+</tr>
+<tr>
+<td><code>slack</code></td>
+<td><code>channel_id</code>, <code>approval_mode</code>, <code>allowed_approver_slack_user_ids</code></td>
+<td>returned as-is</td>
+</tr>
+<tr>
 <td><code>discord</code></td>
 <td><code>url</code></td>
 <td><code>****{last4}</code></td>
+</tr>
+<tr>
+<td><code>discord</code></td>
+<td><code>bot_token</code> (approval mode)</td>
+<td><code>****{last4}</code></td>
+</tr>
+<tr>
+<td><code>discord</code></td>
+<td><code>public_key</code> (approval mode)</td>
+<td><code>****{last4}</code></td>
+</tr>
+<tr>
+<td><code>discord</code></td>
+<td><code>hmac_secret</code> (approval mode, if set)</td>
+<td><code>****{last4}</code></td>
+</tr>
+<tr>
+<td><code>discord</code></td>
+<td><code>application_id</code>, <code>channel_id</code>, <code>approval_mode</code>, <code>allowed_approver_discord_user_ids</code></td>
+<td>returned as-is</td>
 </tr>
 <tr>
 <td><code>telegram</code></td>
@@ -713,6 +887,12 @@ in the database.</p>
 <li><a href="telegram-approval.html">Telegram Approval Bot</a> — step-by-step setup
 for in-chat Approve / Reject buttons, security model, and
 troubleshooting.</li>
+<li><a href="slack-approval.html">Slack Approval Bot</a> — step-by-step setup for
+in-channel Approve / Reject buttons using Slack&#39;s Interactivity API,
+security model, and troubleshooting.</li>
+<li><a href="discord-approval.html">Discord Approval Bot</a> — step-by-step setup for
+in-channel Approve / Reject buttons using Discord&#39;s Interactions API
+(Ed25519 signatures), security model, and troubleshooting.</li>
 </ul>
 
   </main>
