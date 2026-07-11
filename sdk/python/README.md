@@ -116,6 +116,58 @@ client.update_watcher(w["id"], status="paused")
 client.delete_watcher(w["id"])
 ```
 
+### Watcher Presets
+
+Presets are built-in watcher templates — pick one by ID instead of specifying
+`kind`, `config`, and `keywords` by hand.
+
+```python
+# Browse the catalog (cached server-side; safe to call on startup)
+catalog = client.list_watcher_presets()
+for p in catalog["presets"]:
+    required = [x["name"] for x in p["params"] if x["required"]]
+    print(p["id"], p["category"], "params:", required or "(none)")
+
+# No-param preset — Hacker News front page, every 30 min
+w = client.create_watcher_from_preset("hn-front-page")
+
+# Preset with required params
+w = client.create_watcher_from_preset(
+    "hn-keyword",
+    params={"keyword": "rust programming", "min_points": "25"},
+    name="HN: Rust",
+    schedule={"every": "1h"},
+)
+
+# GitHub releases for a repo
+w = client.create_watcher_from_preset(
+    "github-releases",
+    params={"owner": "fastify", "repo": "fastify"},
+)
+
+# YouTube channel (channel_id must start with UC, 24 chars)
+w = client.create_watcher_from_preset(
+    "youtube-channel",
+    params={"channel_id": "UCnUYZLuoy1rq1aVMwx4aTzw"},
+)
+
+# arXiv papers — category + keyword scoring
+w = client.create_watcher_from_preset(
+    "arxiv-papers",
+    params={"category": "cs.AI", "query": "large language models"},
+    schedule={"every": "6h"},
+)
+```
+
+The returned watcher is identical to one created via `create_watcher()`.
+All tier checks (watcher count, minimum poll interval) apply to preset-created
+watchers just as they do to manually created ones.
+
+> **Security**: Items delivered by preset-based watchers have
+> `payload.untrusted=True`. Check `action["is_untrusted"]` before acting on
+> delivered content — watcher items (titles, URLs, previews) come from external
+> feeds and must be treated as untrusted data, never as LLM instructions.
+
 ### Keys & Project (admin scope)
 
 ```python

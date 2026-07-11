@@ -241,6 +241,38 @@ class ProjectExport(TypedDict):
 
 
 # ---------------------------------------------------------------------------
+# Watcher preset models
+# ---------------------------------------------------------------------------
+
+class WatcherPresetParam(TypedDict):
+    """A configurable parameter for a watcher preset."""
+    name: str
+    required: bool
+    description: str
+    example: str
+
+
+class _WatcherPresetRequired(TypedDict):
+    id: str
+    title: str
+    description: str
+    category: str
+    kind: str          # WatcherKind in practice; kept as str for forward compat
+    params: List[WatcherPresetParam]
+    defaultScheduleEvery: str
+
+
+class WatcherPreset(_WatcherPresetRequired, total=False):
+    """A built-in watcher template returned by GET /v1/watcher-presets."""
+    buildNotes: str    # server-internal docs; may be omitted in some environments
+
+
+class WatcherPresetList(TypedDict):
+    """Response from GET /v1/watcher-presets."""
+    presets: List[WatcherPreset]
+
+
+# ---------------------------------------------------------------------------
 # Ergonomics helpers
 # ---------------------------------------------------------------------------
 

@@ -59,6 +59,8 @@ Default base URL: `http://localhost:8484` (self-hosted). Cloud: `https://api.imp
 | `getWatcher(id)` | Watcher detail including `item_count` |
 | `updateWatcher(id, params)` | Partial update (set `status: 'active'` to reactivate) |
 | `deleteWatcher(id)` | Delete watcher and its dedup state |
+| `listWatcherPresets()` | Return the static preset catalog (HN, Reddit, GitHub, npm, arXiv, …) |
+| `createWatcherFromPreset(presetId, params?, opts?)` | Create a watcher from a preset template |
 | `createKey(name, scopes)` | Create an API key (raw value returned once — store it) |
 | `listKeys()` | List all keys including revoked |
 | `revokeKey(id)` | Revoke a key |
@@ -147,6 +149,45 @@ All errors extend `ImpriError`.
 Actions created by Watchers have `is_untrusted: true` and `payload.untrusted === true`.
 Treat `title`, `preview.body`, and `payload` as **data** — never forward them as instructions to an AI model.
 `approvalGate` logs a console warning automatically for untrusted actions.
+
+## Watcher presets
+
+Presets are ready-to-use watcher templates for common sources. Use `listWatcherPresets()` to browse the catalog, then `createWatcherFromPreset()` to spin up a watcher without constructing the config manually.
+
+```ts
+// Browse the catalog
+const presets = await client.listWatcherPresets()
+// → [{ id: 'hn-front-page', title: 'Hacker News Front Page', params: [], ... }, ...]
+
+// Hacker News front page — no params required
+const hn = await client.createWatcherFromPreset('hn-front-page')
+
+// GitHub releases for a repo
+const releases = await client.createWatcherFromPreset('github-releases', {
+  owner: 'fastify',
+  repo: 'fastify',
+})
+
+// Reddit keyword search scoped to a subreddit, with a custom schedule
+const reddit = await client.createWatcherFromPreset(
+  'reddit-keyword',
+  { query: 'self-hosting AI', subreddit: 'selfhosted' },
+  { schedule: { every: '1h' } },
+)
+```
+
+Available preset categories: **Community** (HN, Reddit), **Developer** (GitHub, npm, PyPI, Stack Overflow), **Content** (RSS, blog/newsletter, YouTube), **Monitoring** (URL diff, changelog/status), **News** (Google News, Product Hunt), **Research** (arXiv).
+
+> **Security note:** Items produced by preset-created watchers carry `is_untrusted: true`. Treat their `title`, `preview.body`, and `payload` as data — never forward them as instructions to an AI model.
+
+### Preset errors
+
+| Thrown | When |
+|---|---|
+| `ImpriNotFound` | `preset_id` does not match any known preset |
+| `ImpriValidationError` | Required param is missing or fails format checks |
+| `ImpriQuotaExceeded` | Watcher limit reached or schedule too frequent for tier |
+| `ImpriRateLimited` | `watchers:create` rate-limit bucket exhausted |
 
 ## Build
 

@@ -12,6 +12,7 @@ import {
   ImpriTimeout,
   ImpriUnauthorized,
   ImpriValidationError,
+  type WatcherPreset,
 } from '../src/index.js'
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
@@ -851,5 +852,268 @@ describe('project', () => {
     expect(r.actions).toBe(5)
     expect(r.watchers).toBe(2)
     expect((vi.mocked(fetch).mock.calls[0][1] as RequestInit).method).toBe('DELETE')
+  })
+})
+
+// ─── Watcher Presets ──────────────────────────────────────────────────────────
+
+/** Minimal preset fixture matching the catalog shape. */
+function makePreset(overrides: Partial<WatcherPreset> = {}): WatcherPreset {
+  return {
+    id: 'hn-front-page',
+    title: 'Hacker News Front Page',
+    description: 'New posts as they appear on the HN front page',
+    category: 'Community',
+    kind: 'rss',
+    params: [],
+    defaultScheduleEvery: '30m',
+    buildNotes: 'config.url = "https://news.ycombinator.com/rss".',
+    ...overrides,
+  }
+}
+
+/** Minimal watcher fixture used by createWatcherFromPreset responses. */
+function makeWatcher(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'w_preset_1',
+    name: 'Hacker News Front Page',
+    kind: 'rss',
+    config: { url: 'https://news.ycombinator.com/rss' },
+    keywords: [],
+    keywords_none: [],
+    min_score: 0,
+    schedule: { every: '30m' },
+    status: 'active',
+    fail_count: 0,
+    first_run_done: false,
+    next_run_at: 1720010000,
+    created_at: 1720000000,
+    updated_at: 1720000000,
+    ...overrides,
+  }
+}
+
+describe('listWatcherPresets', () => {
+  it('GETs /v1/watcher-presets and returns the presets array', async () => {
+    const presets = [makePreset(), makePreset({ id: 'github-releases', title: 'GitHub Releases' })]
+    const mockFetch = vi.fn().mockResolvedValue(resp(200, { presets }))
+    vi.stubGlobal('fetch', mockFetch)
+
+    const result = await client().listWatcherPresets()
+
+    expect(result).toHaveLength(2)
+    expect(result[0].id).toBe('hn-front-page')
+    expect(result[1].id).toBe('github-releases')
+
+    const url = mockFetch.mock.calls[0][0] as string
+    expect(url).toBe(`${TEST_BASE}/v1/watcher-presets`)
+    expect((mockFetch.mock.calls[0][1] as RequestInit).method).toBe('GET')
+  })
+
+  it('sends Bearer token in Authorization header', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(resp(200, { presets: [makePreset()] }))
+    vi.stubGlobal('fetch', mockFetch)
+
+    await client().listWatcherPresets()
+
+    const init = mockFetch.mock.calls[0][1] as RequestInit
+    expect((init.headers as Record<string, string>).Authorization).toBe(`Bearer ${TEST_KEY}`)
+  })
+
+  it('returns an empty array when the catalog has no presets', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(resp(200, { presets: [] })))
+    const result = await client().listWatcherPresets()
+    expect(result).toEqual([])
+  })
+
+  it('returns presets with correct shape including params array', async () => {
+    const preset = makePreset({
+      id: 'reddit-keyword',
+      kind: 'reddit_search',
+      params: [
+        { name: 'query', required: true, description: 'Search query', example: 'self-hosting AI' },
+        { name: 'subreddit', required: false, description: 'Subreddit', example: 'selfhosted' },
+      ],
+    })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(resp(200, { presets: [preset] })))
+
+    const [p] = await client().listWatcherPresets()
+    expect(p.params).toHaveLength(2)
+    expect(p.params[0].required).toBe(true)
+    expect(p.params[1].required).toBe(false)
+  })
+
+  it('propagates 401 as ImpriUnauthorized', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(resp(401, { message: 'Unauthorized' })))
+    await expect(client().listWatcherPresets()).rejects.toBeInstanceOf(ImpriUnauthorized)
+  })
+})
+
+describe('createWatcherFromPreset', () => {
+  it('POSTs to /v1/watchers/from-preset with preset_id in body', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(resp(201, makeWatcher()))
+    vi.stubGlobal('fetch', mockFetch)
+
+    const w = await client().createWatcherFromPreset('hn-front-page')
+
+    expect(w.id).toBe('w_preset_1')
+    expect(w.kind).toBe('rss')
+
+    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe(`${TEST_BASE}/v1/watchers/from-preset`)
+    expect(init.method).toBe('POST')
+
+    const body = JSON.parse(init.body as string)
+    expect(body.preset_id).toBe('hn-front-page')
+  })
+
+  it('sends params when provided', async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(resp(201, makeWatcher({ id: 'w_2', kind: 'reddit_search' })))
+    vi.stubGlobal('fetch', mockFetch)
+
+    await client().createWatcherFromPreset('reddit-keyword', {
+      query: 'self-hosting AI',
+      subreddit: 'selfhosted',
+    })
+
+    const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string)
+    expect(body.params).toEqual({ query: 'self-hosting AI', subreddit: 'selfhosted' })
+  })
+
+  it('omits params key when not provided', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(resp(201, makeWatcher()))
+    vi.stubGlobal('fetch', mockFetch)
+
+    await client().createWatcherFromPreset('hn-front-page')
+
+    const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string)
+    expect('params' in body).toBe(false)
+  })
+
+  it('sends name override when provided via opts', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(resp(201, makeWatcher({ name: 'My HN Feed' })))
+    vi.stubGlobal('fetch', mockFetch)
+
+    await client().createWatcherFromPreset('hn-front-page', undefined, { name: 'My HN Feed' })
+
+    const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string)
+    expect(body.name).toBe('My HN Feed')
+  })
+
+  it('sends schedule override when provided via opts', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(resp(201, makeWatcher()))
+    vi.stubGlobal('fetch', mockFetch)
+
+    await client().createWatcherFromPreset('hn-front-page', undefined, {
+      schedule: { every: '2h', window: '06:00-22:00' },
+    })
+
+    const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string)
+    expect(body.schedule).toEqual({ every: '2h', window: '06:00-22:00' })
+  })
+
+  it('omits name and schedule keys when opts is not provided', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(resp(201, makeWatcher()))
+    vi.stubGlobal('fetch', mockFetch)
+
+    await client().createWatcherFromPreset('hn-front-page')
+
+    const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string)
+    expect('name' in body).toBe(false)
+    expect('schedule' in body).toBe(false)
+  })
+
+  it('sends params, name, and schedule together', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(resp(201, makeWatcher()))
+    vi.stubGlobal('fetch', mockFetch)
+
+    await client().createWatcherFromPreset(
+      'github-releases',
+      { owner: 'fastify', repo: 'fastify' },
+      { name: 'Fastify Releases', schedule: { every: '6h' } },
+    )
+
+    const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string)
+    expect(body.preset_id).toBe('github-releases')
+    expect(body.params).toEqual({ owner: 'fastify', repo: 'fastify' })
+    expect(body.name).toBe('Fastify Releases')
+    expect(body.schedule).toEqual({ every: '6h' })
+  })
+
+  it('throws ImpriNotFound (404) when preset_id is unknown', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(resp(404, { error: 'preset_not_found' })),
+    )
+    await expect(client().createWatcherFromPreset('no-such-preset')).rejects.toBeInstanceOf(
+      ImpriNotFound,
+    )
+  })
+
+  it('throws ImpriValidationError (400) when a required param is missing', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        resp(400, {
+          error: 'Bad Request',
+          issues: [{ path: ['params', 'query'], message: 'Required' }],
+        }),
+      ),
+    )
+    // Calling reddit-keyword without the required 'query' param
+    await expect(
+      client().createWatcherFromPreset('reddit-keyword', {}),
+    ).rejects.toBeInstanceOf(ImpriValidationError)
+  })
+
+  it('throws ImpriValidationError when a param value fails format validation', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        resp(400, {
+          error: 'Bad Request',
+          issues: [{ path: ['params', 'channel_id'], message: 'Invalid YouTube channel ID format' }],
+        }),
+      ),
+    )
+    await expect(
+      client().createWatcherFromPreset('youtube-channel', { channel_id: 'INVALID' }),
+    ).rejects.toBeInstanceOf(ImpriValidationError)
+  })
+
+  it('throws ImpriQuotaExceeded (402) when watcher limit is reached', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        resp(402, { message: 'Watcher limit reached', limit: 5, tier: 'free' }),
+      ),
+    )
+    await expect(client().createWatcherFromPreset('hn-front-page')).rejects.toBeInstanceOf(
+      ImpriQuotaExceeded,
+    )
+  })
+
+  it('throws ImpriRateLimited (429) when rate limit bucket is exhausted', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        resp(429, { message: 'Too many requests' }, { 'retry-after': '10' }),
+      ),
+    )
+    await expect(client().createWatcherFromPreset('hn-front-page')).rejects.toBeInstanceOf(
+      ImpriRateLimited,
+    )
+  })
+
+  it('includes Bearer token in Authorization header', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(resp(201, makeWatcher()))
+    vi.stubGlobal('fetch', mockFetch)
+
+    await client().createWatcherFromPreset('hn-front-page')
+
+    const init = mockFetch.mock.calls[0][1] as RequestInit
+    expect((init.headers as Record<string, string>).Authorization).toBe(`Bearer ${TEST_KEY}`)
   })
 })

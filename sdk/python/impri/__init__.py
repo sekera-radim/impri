@@ -48,6 +48,9 @@ from .models import (
     Watcher,
     WatcherConfig,
     WatcherKind,
+    WatcherPreset,
+    WatcherPresetList,
+    WatcherPresetParam,
     WatcherSchedule,
 )
 
@@ -83,6 +86,9 @@ __all__ = [
     "WatcherSchedule",
     "WatcherKind",
     "Watcher",
+    "WatcherPresetParam",
+    "WatcherPreset",
+    "WatcherPresetList",
     "ApiKey",
     "ApiKeyCreated",
     "Project",

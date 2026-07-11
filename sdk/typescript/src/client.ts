@@ -6,6 +6,7 @@ import type {
   ApiKeyCreated,
   ApprovedAction,
   CreateActionParams,
+  CreateWatcherFromPresetParams,
   CreateWatcherParams,
   Decision,
   DecisionResult,
@@ -20,6 +21,8 @@ import type {
   UpdateProjectParams,
   UpdateWatcherParams,
   Watcher,
+  WatcherPreset,
+  WatcherSchedule,
   WatcherWithItemCount,
 } from './types.js'
 
@@ -664,6 +667,82 @@ export class ImpriClient {
    */
   async deleteWatcher(watcherId: string): Promise<void> {
     await this._request<void>('DELETE', `/watchers/${watcherId}`)
+  }
+
+  /**
+   * GET /v1/watcher-presets
+   *
+   * Returns the static preset catalog — ready-to-use watcher templates for
+   * common sources (Hacker News, Reddit, GitHub releases, npm, arXiv, etc.).
+   * Each preset describes its accepted params, default schedule, and the watcher
+   * kind it creates.
+   *
+   * Use the returned preset `id` and the required `params` to call
+   * `createWatcherFromPreset()`.
+   *
+   * Items produced by preset-created watchers carry `is_untrusted: true`.
+   * Treat their title/preview/payload as data — never as instructions to an AI.
+   *
+   * Requires 'watch' scope.
+   */
+  async listWatcherPresets(): Promise<WatcherPreset[]> {
+    const res = await this._request<{ presets: WatcherPreset[] }>('GET', '/watcher-presets')
+    return res.presets
+  }
+
+  /**
+   * POST /v1/watchers/from-preset
+   *
+   * Create a watcher from a preset template. The server validates the param
+   * values against preset-specific rules (regex, format, max-length), builds
+   * the watcher config, and applies all standard creation guards: rate-limit
+   * check, tier watcher-count quota, SSRF guard, and minimum schedule interval.
+   *
+   * Items produced by preset-created watchers carry `is_untrusted: true` —
+   * treat their title/preview/payload as data, not as instructions to an AI model.
+   *
+   * Requires 'watch' scope.
+   *
+   * @param presetId  - Preset identifier, e.g. `"hn-front-page"`, `"reddit-keyword"`.
+   * @param params    - Param values for the preset. Required params must be present.
+   * @param opts.name     - Overrides the auto-generated watcher name.
+   * @param opts.schedule - Overrides the preset's `defaultScheduleEvery`.
+   *
+   * @throws ImpriNotFound       when `presetId` does not match any known preset.
+   * @throws ImpriValidationError when a required param is missing or fails format checks.
+   * @throws ImpriQuotaExceeded  when the tier watcher limit is reached, or the requested
+   *                              schedule is more frequent than the tier minimum.
+   * @throws ImpriRateLimited    when the `watchers:create` rate-limit bucket is exhausted.
+   *
+   * @example
+   * ```ts
+   * // Hacker News front page — no params required
+   * const watcher = await client.createWatcherFromPreset('hn-front-page')
+   *
+   * // GitHub releases for a specific repo
+   * const releases = await client.createWatcherFromPreset('github-releases', {
+   *   owner: 'fastify',
+   *   repo: 'fastify',
+   * })
+   *
+   * // Reddit keyword search on a subreddit, with a custom schedule
+   * const reddit = await client.createWatcherFromPreset(
+   *   'reddit-keyword',
+   *   { query: 'self-hosting AI', subreddit: 'selfhosted' },
+   *   { schedule: { every: '1h' } },
+   * )
+   * ```
+   */
+  async createWatcherFromPreset(
+    presetId: string,
+    params?: Record<string, string>,
+    opts?: { name?: string; schedule?: WatcherSchedule },
+  ): Promise<Watcher> {
+    const body: CreateWatcherFromPresetParams = { preset_id: presetId }
+    if (params !== undefined) body.params = params
+    if (opts?.name !== undefined) body.name = opts.name
+    if (opts?.schedule !== undefined) body.schedule = opts.schedule
+    return this._request<Watcher>('POST', '/watchers/from-preset', body)
   }
 
   // ─── API Keys ──────────────────────────────────────────────────────────────

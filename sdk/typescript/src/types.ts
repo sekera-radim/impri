@@ -247,6 +247,47 @@ export interface ProjectExport {
   audit_log: unknown[]
 }
 
+// ─── Watcher Presets ─────────────────────────────────────────────────────────
+
+export interface PresetParam {
+  name: string
+  required: boolean
+  description: string
+  example: string
+}
+
+/**
+ * A ready-to-use watcher template from the preset catalog.
+ * Pass id + param values to POST /v1/watchers/from-preset.
+ *
+ * Items produced by preset-created watchers have `is_untrusted: true` —
+ * treat title/preview/payload as data, never as instructions to an AI model.
+ */
+export interface WatcherPreset {
+  id: string
+  title: string
+  description: string
+  /** High-level grouping, e.g. "Community", "Developer", "Content", "Monitoring", "News", "Research". */
+  category: string
+  kind: WatcherKind
+  params: PresetParam[]
+  /** Suggested schedule interval string, e.g. "30m", "1h", "6h". */
+  defaultScheduleEvery: string
+  /** Internal build notes describing how the config is constructed from params. */
+  buildNotes: string
+}
+
+export interface CreateWatcherFromPresetParams {
+  /** Must match a known preset id, e.g. "hn-front-page", "reddit-keyword". */
+  preset_id: string
+  /** Key/value map of param values. Required params must be present. */
+  params?: Record<string, string>
+  /** Defaults to `"${preset.title}: ${primaryParamValue}"` when omitted. */
+  name?: string
+  /** Defaults to `{ every: preset.defaultScheduleEvery }` when omitted. */
+  schedule?: WatcherSchedule
+}
+
 // ─── Ergonomics ───────────────────────────────────────────────────────────────
 
 export interface ApprovedAction {
