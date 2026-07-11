@@ -77,6 +77,9 @@ class MockTransport:
 
         if resp_body is None or status == 204:
             return status, b""
+        # Allow tests to inject pre-serialized bytes (e.g. ndjson / CSV for export).
+        if isinstance(resp_body, bytes):
+            return status, resp_body
         return status, json.dumps(resp_body).encode()
 
     @property

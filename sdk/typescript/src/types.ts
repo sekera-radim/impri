@@ -432,6 +432,74 @@ export interface BulkDecisionResponse {
   failed: number
 }
 
+// ─── Audit log ───────────────────────────────────────────────────────────────
+
+/**
+ * A single audit log entry returned by GET /v1/audit.
+ *
+ * The `ip` column is never surfaced (PII lives in pii_log only).
+ * `project_id` is implicit (the caller's own project).
+ * `data` is already parsed from the JSON blob when present.
+ */
+export interface AuditEvent {
+  id: number
+  event: string
+  action_id: string | null
+  actor: string | null
+  channel: string | null
+  /**
+   * Parsed JSON blob; shape varies by event type.
+   * Examples: `{ rule_id, rule_name, outcome }` for action.rule_applied;
+   * `{ rule_id }` for rule.deleted; `{ channel_id, type }` for channel.*.
+   * null when the column is NULL (most events that have no auxiliary data).
+   */
+  data: Record<string, unknown> | null
+  created_at: number
+}
+
+/** 'json' = newline-delimited JSON (Content-Type application/x-ndjson); 'csv' = RFC 4180. */
+export type AuditExportFormat = 'json' | 'csv'
+
+export interface ListAuditParams {
+  /**
+   * Exact event name or dot-prefix filter.
+   * 'action.' matches all action.created / action.approved / … events.
+   * 'key.' matches key.created and key.revoked.
+   */
+  type?: string
+  /** Filter by actor column (key ID). */
+  actor?: string
+  /**
+   * Filter by action_id (for action events) or by rule_id / channel_id in
+   * the data blob for rule.* and channel.* events.
+   */
+  entity_id?: string
+  /** Unix timestamp — only events at or after this time. */
+  since?: number
+  /** Unix timestamp — only events at or before this time. */
+  until?: number
+  /** Page size (1–200; default 50). */
+  limit?: number
+  cursor?: string
+  /** Fetch all pages automatically and return combined items. */
+  autoPaginate?: boolean
+}
+
+export interface ExportAuditParams {
+  /** Exact event name or dot-prefix filter (same as ListAuditParams.type). */
+  type?: string
+  /** Filter by actor key ID. */
+  actor?: string
+  /** Filter by action_id or rule_id / channel_id in the data blob. */
+  entity_id?: string
+  /** Unix timestamp lower bound (inclusive). */
+  since?: number
+  /** Unix timestamp upper bound (inclusive). */
+  until?: number
+  /** 'json' (newline-delimited JSON, default) or 'csv'. */
+  format?: AuditExportFormat
+}
+
 // ─── Ergonomics ───────────────────────────────────────────────────────────────
 
 export interface ApprovedAction {

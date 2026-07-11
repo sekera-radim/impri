@@ -38,6 +38,8 @@ from .models import (
     ApiKey,
     ApiKeyCreated,
     ApprovedAction,
+    AuditEvent,
+    AuditPage,
     BulkDecisionRequest,
     BulkDecisionResponse,
     BulkDecisionResult,
@@ -81,6 +83,8 @@ __all__ = [
     "ImpriApiError",
     "ImpriWebhookSignatureError",
     # Models
+    "AuditEvent",
+    "AuditPage",
     "Preview",
     "ActionStatus",
     "ActionCreated",

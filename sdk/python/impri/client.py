@@ -52,6 +52,8 @@ from .models import (
     ApiKey,
     ApiKeyCreated,
     ApprovedAction,
+    AuditEvent,
+    AuditPage,
     BulkDecisionRequest,
     BulkDecisionResponse,
     BulkDecisionResult,
@@ -1069,6 +1071,187 @@ class ImpriClient:
             The error message never contains the raw secret.
         """
         return self._request("POST", f"/notification-channels/{channel_id}/test")  # type: ignore[return-value]
+
+    # ------------------------------------------------------------------
+    # Audit log (admin scope)
+    # ------------------------------------------------------------------
+
+    def _raw_request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> bytes:
+        """Make an authenticated request and return the raw response bytes.
+
+        Used for export endpoints that stream ndjson or CSV instead of JSON.
+        Raises a typed ImpriError subclass for all 4xx/5xx responses.
+        """
+        url = f"{self._base_url}/v1{path}"
+        if params:
+            filtered = {k: v for k, v in params.items() if v is not None}
+            if filtered:
+                url += "?" + urllib.parse.urlencode(filtered)
+
+        headers: Dict[str, str] = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Accept": "*/*",
+        }
+
+        status, raw = self._transport(method, url, headers, None)
+
+        if status >= 400:
+            parsed: Any = {}
+            if raw:
+                try:
+                    parsed = json.loads(raw.decode())
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    pass
+            _raise_for_status(status, parsed)
+
+        return raw
+
+    def list_audit(
+        self,
+        *,
+        type: Optional[str] = None,
+        actor: Optional[str] = None,
+        entity_id: Optional[str] = None,
+        since: Optional[int] = None,
+        until: Optional[int] = None,
+        limit: int = 50,
+        cursor: Optional[str] = None,
+    ) -> AuditPage:
+        """List audit log entries for the project, newest first.
+
+        GET /v1/audit (requires 'admin' scope).
+
+        Project isolation is enforced server-side: the key's own project_id
+        is used — cross-project reads are impossible.  The ip column is never
+        returned (PII lives in pii_log).
+
+        Args:
+            type:       Exact event name or dot-prefix filter, e.g. 'action.'
+                        matches all action.* events; 'key.' matches key.created
+                        and key.revoked.
+            actor:      Filter by actor column (key ID).
+            entity_id:  Filter by action_id, or by rule_id/channel_id in the
+                        data blob for rule.* and channel.* events.
+            since:      Unix timestamp — only events at or after this time.
+            until:      Unix timestamp — only events at or before this time.
+            limit:      Page size (1–200; default 50).
+            cursor:     Opaque cursor from next_cursor for pagination.
+
+        Returns an AuditPage with items, has_more, and next_cursor.
+        Use iter_audit() for automatic pagination.
+        """
+        return self._request(  # type: ignore[return-value]
+            "GET",
+            "/audit",
+            params={
+                "type": type,
+                "actor": actor,
+                "entity_id": entity_id,
+                "since": since,
+                "until": until,
+                "limit": limit,
+                "cursor": cursor,
+            },
+        )
+
+    def iter_audit(
+        self,
+        *,
+        type: Optional[str] = None,
+        actor: Optional[str] = None,
+        entity_id: Optional[str] = None,
+        since: Optional[int] = None,
+        until: Optional[int] = None,
+        limit: int = 50,
+    ) -> Iterator[AuditEvent]:
+        """Auto-paginating iterator over all matching audit log entries.
+
+        Transparently fetches subsequent pages via next_cursor until has_more
+        is False.  Each yielded item is a fully deserialized AuditEvent dict.
+
+        Args:
+            type:       Exact event name or dot-prefix filter.
+            actor:      Filter by actor key ID.
+            entity_id:  Filter by action_id or related entity in data blob.
+            since:      Unix timestamp lower bound.
+            until:      Unix timestamp upper bound.
+            limit:      Page size per fetch (1–200; default 50).
+
+        Usage::
+
+            for event in client.iter_audit(type="action."):
+                print(event["event"], event["actor"])
+        """
+        cursor: Optional[str] = None
+        while True:
+            page = self.list_audit(
+                type=type,
+                actor=actor,
+                entity_id=entity_id,
+                since=since,
+                until=until,
+                limit=limit,
+                cursor=cursor,
+            )
+            yield from page.get("items", [])
+            if not page.get("has_more"):
+                break
+            cursor = page.get("next_cursor")
+
+    def export_audit(
+        self,
+        *,
+        type: Optional[str] = None,
+        actor: Optional[str] = None,
+        entity_id: Optional[str] = None,
+        since: Optional[int] = None,
+        until: Optional[int] = None,
+        format: Literal["json", "csv"] = "json",
+    ) -> bytes:
+        """Stream-export audit log entries as ndjson or CSV.
+
+        GET /v1/audit/export (requires 'admin' scope).
+
+        Accepts the same filters as list_audit().  The server streams rows
+        directly without buffering the full result set in memory.
+
+        Rate-limited to 5 requests/min per key.
+
+        Args:
+            type:       Exact event name or dot-prefix filter.
+            actor:      Filter by actor key ID.
+            entity_id:  Filter by action_id or related entity in data blob.
+            since:      Unix timestamp lower bound (inclusive).
+            until:      Unix timestamp upper bound (inclusive).
+            format:     'json' = newline-delimited JSON (default); 'csv' = RFC 4180
+                        CSV with a header row.
+
+        Returns:
+            Raw response bytes.  Decode with ``.decode('utf-8')`` as needed.
+            The ip column is never included.  project_id is excluded (implicit).
+
+        Security: content comes from the caller's own project only.
+        No secrets (key material, webhook URLs, bot tokens) are present in
+        audit rows — channel.* events store only channel_id and type.
+        """
+        return self._raw_request(
+            "GET",
+            "/audit/export",
+            params={
+                "type": type,
+                "actor": actor,
+                "entity_id": entity_id,
+                "since": since,
+                "until": until,
+                "format": format,
+            },
+        )
 
     # ------------------------------------------------------------------
     # Ergonomics: requires_approval decorator

@@ -351,6 +351,39 @@ class NotificationChannel(_NotificationChannelRequired, total=False):
     last_error: Optional[str]
 
 
+# ---------------------------------------------------------------------------
+# Audit log models
+# ---------------------------------------------------------------------------
+
+class _AuditEventRequired(TypedDict):
+    id: int
+    event: str
+    created_at: int
+
+
+class AuditEvent(_AuditEventRequired, total=False):
+    """A single audit log entry returned by GET /v1/audit.
+
+    The ip column is never returned (PII lives in pii_log only).
+    project_id is implicit (the caller's own project).
+    data is already parsed from JSON when present.
+    """
+    action_id: Optional[str]
+    actor: Optional[str]
+    channel: Optional[str]
+    data: Optional[Any]   # Parsed JSON blob; shape depends on the event type
+
+
+class _AuditPageRequired(TypedDict):
+    items: List[AuditEvent]
+    has_more: bool
+
+
+class AuditPage(_AuditPageRequired, total=False):
+    """Cursor-paginated audit log page from GET /v1/audit."""
+    next_cursor: Optional[str]
+
+
 class ChannelTestResult(TypedDict):
     """Response from POST /v1/notification-channels/:id/test."""
     ok: bool

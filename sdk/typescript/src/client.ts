@@ -5,6 +5,8 @@ import type {
   ApiKey,
   ApiKeyCreated,
   ApprovedAction,
+  AuditEvent,
+  AuditExportFormat,
   BulkDecisionRequest,
   BulkDecisionResponse,
   ChannelTestResult,
@@ -15,8 +17,10 @@ import type {
   CreateWatcherParams,
   Decision,
   DecisionResult,
+  ExportAuditParams,
   KeyScope,
   ListActionsParams,
+  ListAuditParams,
   ListWatchersParams,
   NotificationChannel,
   PagedResult,
@@ -894,6 +898,112 @@ export class ImpriClient {
       'DELETE',
       '/project/data',
     )
+  }
+
+  // ─── Audit log ────────────────────────────────────────────────────────────
+
+  /**
+   * Like _request but returns the raw text body instead of parsing it as JSON.
+   * Used for export endpoints that respond with ndjson or CSV.
+   */
+  private async _requestText(
+    method: string,
+    path: string,
+    query?: Record<string, string | number | boolean>,
+  ): Promise<string> {
+    let url = `${this._baseUrl}/v1${path}`
+    if (query && Object.keys(query).length > 0) {
+      const params = new URLSearchParams()
+      for (const [k, v] of Object.entries(query)) {
+        params.set(k, String(v))
+      }
+      url += `?${params.toString()}`
+    }
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${this._apiKey}`,
+      Accept: '*/*',
+    }
+    const res = await fetch(url, { method, headers })
+    if (!res.ok) {
+      return this._throwApiError(res)
+    }
+    return res.text()
+  }
+
+  /**
+   * GET /v1/audit
+   *
+   * List audit log entries for the project, newest first.
+   *
+   * Project isolation is enforced server-side via the authenticated key —
+   * cross-project reads are impossible. The ip column is never returned.
+   *
+   * Requires 'admin' scope.
+   *
+   * @param params.type       Exact event name or dot-prefix filter, e.g.
+   *                          'action.' matches all action.* events.
+   * @param params.actor      Filter by actor column (key ID).
+   * @param params.entity_id  Filter by action_id or by rule_id / channel_id
+   *                          in the data blob for rule.* / channel.* events.
+   * @param params.since      Unix timestamp lower bound (inclusive).
+   * @param params.until      Unix timestamp upper bound (inclusive).
+   * @param params.limit      Page size 1–200 (default 50).
+   * @param params.cursor     Opaque cursor from next_cursor.
+   * @param params.autoPaginate  Collect all pages automatically.
+   */
+  async listAudit(params: ListAuditParams = {}): Promise<PagedResult<AuditEvent>> {
+    const { autoPaginate, ...rest } = params
+    const q = buildQuery({
+      type: rest.type,
+      actor: rest.actor,
+      entity_id: rest.entity_id,
+      since: rest.since,
+      until: rest.until,
+      limit: rest.limit,
+      cursor: rest.cursor,
+    })
+
+    if (autoPaginate) {
+      return this._autoPaginate<AuditEvent>('/audit', q, raw => raw as AuditEvent)
+    }
+
+    return this._request<PagedResult<AuditEvent>>('GET', '/audit', undefined, q)
+  }
+
+  /**
+   * GET /v1/audit/export
+   *
+   * Stream-export audit log entries as ndjson or CSV. Accepts the same filters
+   * as listAudit(). The server streams rows without buffering the full result
+   * set in memory — safe to call on large audit logs.
+   *
+   * Rate-limited to 5 requests/min per key.
+   * Requires 'admin' scope.
+   *
+   * @param params.type    Exact event name or dot-prefix filter.
+   * @param params.actor   Filter by actor key ID.
+   * @param params.entity_id  Filter by action_id or entity in data blob.
+   * @param params.since   Unix timestamp lower bound (inclusive).
+   * @param params.until   Unix timestamp upper bound (inclusive).
+   * @param params.format  'json' (ndjson, default) or 'csv'.
+   *
+   * @returns Raw response body as a string: ndjson (one object per line) when
+   *          format is 'json', or RFC 4180 CSV with a header row for 'csv'.
+   *          The ip column is never included. project_id is excluded (implicit).
+   *
+   * Security: no secrets (key material, webhook URLs, bot tokens) appear in
+   * audit rows — channel.* events store only channel_id and type.
+   */
+  async exportAudit(params: ExportAuditParams = {}): Promise<string> {
+    const q = buildQuery({
+      type: params.type,
+      actor: params.actor,
+      entity_id: params.entity_id,
+      since: params.since,
+      until: params.until,
+      format: params.format,
+    })
+    return this._requestText('GET', '/audit/export', q)
   }
 
   // ─── Notification channels ─────────────────────────────────────────────────
