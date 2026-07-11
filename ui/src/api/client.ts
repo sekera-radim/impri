@@ -15,6 +15,8 @@ import type {
   UpdateWatcherRequest,
   VapidPublicKeyResponse,
   PushSubscriptionBody,
+  ListWatcherPresetsResponse,
+  CreateWatcherFromPresetRequest,
 } from '../types'
 
 export class ApiClientError extends Error {
@@ -123,6 +125,14 @@ export class ApiClient {
 
   async createWatcher(req: CreateWatcherRequest): Promise<Watcher> {
     return this.request<Watcher>('POST', '/watchers', req)
+  }
+
+  async listWatcherPresets(): Promise<ListWatcherPresetsResponse> {
+    return this.request<ListWatcherPresetsResponse>('GET', '/watcher-presets')
+  }
+
+  async createWatcherFromPreset(req: CreateWatcherFromPresetRequest): Promise<Watcher> {
+    return this.request<Watcher>('POST', '/watchers/from-preset', req)
   }
 
   async updateWatcher(id: string, req: UpdateWatcherRequest): Promise<Watcher> {

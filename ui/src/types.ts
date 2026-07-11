@@ -152,6 +152,40 @@ export interface UpdateWatcherRequest {
   schedule?: WatcherSchedule
 }
 
+// --- Watcher Presets ---
+
+export interface WatcherPresetParam {
+  name: string
+  required: boolean
+  description: string
+  example: string
+}
+
+export interface WatcherPreset {
+  id: string
+  title: string
+  description: string
+  category: string
+  kind: WatcherKind
+  params: WatcherPresetParam[]
+  defaultScheduleEvery: string
+}
+
+export interface ListWatcherPresetsResponse {
+  presets: WatcherPreset[]
+}
+
+export interface CreateWatcherFromPresetRequest {
+  preset_id: string
+  params: Record<string, string>
+  name?: string
+  schedule?: {
+    every: string
+    jitter?: string
+    window?: string
+  }
+}
+
 // --- Push notifications ---
 
 export interface VapidPublicKeyResponse {

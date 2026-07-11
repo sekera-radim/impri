@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useAuthStore } from './auth'
-import type { Watcher, CreateWatcherRequest } from '../types'
+import type { Watcher, CreateWatcherRequest, CreateWatcherFromPresetRequest } from '../types'
 import { ApiClientError } from '../api/client'
 
 export const useWatchersStore = defineStore('watchers', () => {
@@ -34,6 +34,14 @@ export const useWatchersStore = defineStore('watchers', () => {
     const client = auth.client
     if (!client) throw new Error('Not authenticated')
     const watcher = await client.createWatcher(req)
+    watchers.value.unshift(watcher)
+    return watcher
+  }
+
+  async function createWatcherFromPreset(req: CreateWatcherFromPresetRequest): Promise<Watcher> {
+    const client = auth.client
+    if (!client) throw new Error('Not authenticated')
+    const watcher = await client.createWatcherFromPreset(req)
     watchers.value.unshift(watcher)
     return watcher
   }
@@ -72,6 +80,7 @@ export const useWatchersStore = defineStore('watchers', () => {
     error,
     fetchWatchers,
     createWatcher,
+    createWatcherFromPreset,
     pauseWatcher,
     activateWatcher,
     deleteWatcher,

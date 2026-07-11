@@ -17,9 +17,9 @@
       variant="flat"
       size="small"
       prepend-icon="mdi-plus"
-      @click="openCreate()"
+      @click="showPresetGallery = true"
     >
-      Create
+      New watcher
     </v-btn>
   </div>
 
@@ -153,6 +153,13 @@
       </v-card-text>
     </v-card>
   </template>
+
+  <!-- ─── Preset gallery dialog ─── -->
+  <WatcherPresetsDialog
+    v-model="showPresetGallery"
+    @open-manual="showPresetGallery = false; openCreate()"
+    @created="showPresetGallery = false"
+  />
 
   <!-- ─── Create dialog ─── -->
   <v-dialog v-model="showCreate" max-width="600" scrollable>
@@ -349,6 +356,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import type { Watcher, WatcherKind } from '../types'
 import { useWatchersStore } from '../stores/watchers'
 import { ApiClientError } from '../api/client'
+import WatcherPresetsDialog from './WatcherPresetsDialog.vue'
 
 const store = useWatchersStore()
 
@@ -476,6 +484,7 @@ function emptyForm(): FormState {
   }
 }
 
+const showPresetGallery = ref(false)
 const showCreate = ref(false)
 const form = reactive<FormState>(emptyForm())
 const formError = ref<string | null>(null)
