@@ -130,6 +130,7 @@ npx @impri/mcp                     # MCP server (published)
 - [How to add human approval to an AI agent](docs/how-to-add-human-approval-to-an-ai-agent.md)
 - [Self-hosting](docs/self-hosting.md) — Docker, env vars, backups, reverse proxy
 - [Webhooks](docs/webhooks.md) — HMAC verification, retries, polling fallback
+- [Watcher presets](docs/watcher-presets.md) — 18 ready-to-use templates (HN, Reddit, GitHub, npm, arXiv, …); REST + SDK + MCP usage
 - [`llms.txt`](docs/llms.txt) — machine-readable index for AI assistants
 
 > **Hosted cloud (beta):** a managed instance runs at `app.impri.dev` /
