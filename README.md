@@ -133,6 +133,7 @@ npx @impri/mcp                     # MCP server (published)
 - [Webhooks](docs/webhooks.md) — HMAC verification, retries, polling fallback
 - [Inbox UX & Bulk API](docs/inbox.md) — keyboard shortcuts, bulk approve/reject, search/filter parameters, `POST /v1/actions/bulk-decision` reference
 - [Watcher presets](docs/watcher-presets.md) — 18 ready-to-use templates (HN, Reddit, GitHub, npm, arXiv, …); REST + SDK + MCP usage
+- [Notification channels](docs/notifications.md) — Slack, Discord, Telegram, ntfy, email, and generic webhook; digest window, auto-disable, SSRF protection
 - [`llms.txt`](docs/llms.txt) — machine-readable index for AI assistants
 
 > **Hosted cloud (beta):** a managed instance runs at `app.impri.dev` /

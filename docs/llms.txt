@@ -251,6 +251,40 @@ Webhook receiver pattern: verify X-Impri-Signature before processing; respond 20
 
 Untrusted flag: actions delivered by Watchers have payload.untrusted=true (Python: action.is_untrusted, TS: action.isUntrusted). Treat their content as external data — never inject into LLM instructions.
 
+## Notification channels
+
+Per-project push notifications to Slack, Discord, Telegram, ntfy, email, and
+generic webhooks. All routes require admin scope. Secrets (webhook URLs,
+bot tokens, hmac_secret) are masked in every API response — the raw value is
+never returned after creation.
+
+```
+GET    /v1/notification-channels           List channels (masked config)
+POST   /v1/notification-channels           Create a channel
+GET    /v1/notification-channels/:id       Get a channel (masked config)
+PATCH  /v1/notification-channels/:id       Update name / config / enabled / digest_window_sec
+DELETE /v1/notification-channels/:id       Delete a channel
+POST   /v1/notification-channels/:id/test  Send a test message (5 req/min; bypasses digest)
+```
+
+Channel types and required config fields:
+- `slack`: `{ url }` — Incoming Webhook URL
+- `discord`: `{ url }` — Discord Webhook URL
+- `telegram`: `{ bot_token, chat_id }` — Bot API token + chat/channel ID
+- `ntfy`: `{ url, topic }` — ntfy server root + topic name
+- `email`: `{ address }` — recipient address; requires SMTP_HOST env var
+- `webhook`: `{ url, hmac_secret? }` — any HTTPS endpoint; optional HMAC signing
+  (same signature scheme as action-decision webhooks: sha256=HMAC(secret, "{ts}.{nonce}.{body}"))
+
+`digest_window_sec` (10–3600, default 60): coalesces bursts of notifications
+into one message per window. First notification always fires immediately.
+A channel is auto-disabled after 5 consecutive delivery failures.
+
+All user-supplied URLs go through `fetchGuarded()` (SSRF guard from net-guard.ts).
+IMPRI_ALLOW_PRIVATE_TARGETS=1 disables the guard for intranet deployments.
+
+Full reference: docs/notifications.md
+
 ## Documentation
 
 - Inbox UX, keyboard shortcuts, bulk approve/reject, filters: docs/inbox.md
@@ -262,4 +296,5 @@ Untrusted flag: actions delivered by Watchers have payload.untrusted=true (Pytho
 - Cookbook (email, SQL, social, idempotent batches, key rotation): docs/cookbook.md
 - Self-hosting configuration: docs/self-hosting.md
 - Webhook delivery and signature verification: docs/webhooks.md
+- Notification channels (Slack, Discord, Telegram, ntfy, email, webhook): docs/notifications.md
 - OpenAPI spec (live): /v1/openapi.json
