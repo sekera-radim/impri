@@ -1,5 +1,10 @@
 node_modules/
 dist/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+build/
 *.db
 *.db-shm
 *.db-wal
