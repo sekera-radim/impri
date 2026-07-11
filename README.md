@@ -100,6 +100,27 @@ docker/   Dockerfiles (server.Dockerfile)
 docs/     Research, ADRs
 ```
 
+## SDKs & integrations
+
+> v0.1, pre-release. Self-host is the complete path; the hosted cloud is early beta.
+
+| Package | Location | Language |
+|---------|----------|----------|
+| Python SDK | `sdk/python/` | Python 3.10+ |
+| TypeScript SDK | `sdk/typescript/` | Node 18+ (native fetch) |
+| MCP server | `mcp/` / `npx @impri/mcp` | Any MCP client |
+
+```bash
+pip install -e sdk/python          # Python SDK (local, pre-PyPI)
+npm install ./sdk/typescript       # TS SDK (local, pre-npm)
+npx @impri/mcp                     # MCP server (published)
+```
+
+- [Python SDK reference](docs/sdk-python.md)
+- [TypeScript SDK reference](docs/sdk-typescript.md)
+- [Integrations](docs/integrations.md) — LangChain, OpenAI Agents, CrewAI, n8n, Make, Zapier, webhook receivers
+- [Cookbook](docs/cookbook.md) — recipes for email approval, SQL gating, social posts, idempotent batches, webhook verification, key rotation
+
 ## Documentation
 
 - **Web docs:** <https://impri.dev/docs>

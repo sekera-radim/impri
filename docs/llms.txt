@@ -163,10 +163,54 @@ docker compose up -d
 
 Key environment variables: `WEBHOOK_SECRET` (required; change from default), `BASE_URL` (public URL), `DB_PATH` (SQLite path), `NTFY_URL`/`NTFY_TOPIC` (push notifications), `SMTP_*`/`NOTIFY_EMAIL` (email), `IMPRI_ALLOW_PRIVATE_TARGETS=1` (intranet webhooks).
 
+## SDKs & integrations
+
+Status: v0.1, pre-release. Self-host is the complete path; hosted cloud (api.impri.dev) is early beta.
+
+### Python SDK (sdk/python/)
+
+Install: `pip install -e sdk/python`. Requires Python 3.10+. No dependencies beyond httpx.
+
+Client construction: `ImpriClient(api_key="im_...", base_url="http://localhost:8484")`. Falls back to IMPRI_API_KEY and IMPRI_BASE_URL env vars. Default base URL: http://localhost:8484. Cloud: https://api.impri.dev.
+
+Core methods (all async): create_action, get_action, list_actions(auto_page=True), await_decision, decide, report_result. Watcher methods: create_watcher, list_watchers, get_watcher, update_watcher, delete_watcher. Admin: create_key, list_keys, revoke_key, get_project, update_project, rotate_webhook_secret, export_project, erase_project_data.
+
+Ergonomic helpers: @client.requires_approval decorator (gates a function, injects approved content), client.approval_gate async context manager (gates arbitrary code blocks; calls report_result automatically on exit).
+
+Standalone: impri.verify_webhook(raw_body, secret, timestamp, nonce, signature) — raises ImpriWebhookSignatureError on mismatch.
+
+Exception hierarchy: ImpriError > ImpriConfigError, ImpriUnauthorized (401/403), ImpriNotFound (404), ImpriConflict (409), ImpriExpired (410), ImpriRateLimited (429, .retry_after), ImpriQuotaExceeded (402, .limit/.tier), ImpriRejected (not HTTP — await_decision rejection), ImpriTimeout (not HTTP — await_decision timeout), ImpriValidationError (400/422), ImpriApiError (catch-all).
+
+### TypeScript SDK (sdk/typescript/)
+
+Install: `npm install ./sdk/typescript`. Requires Node 18+ (native fetch). No runtime dependencies.
+
+Client construction: `new ImpriClient({ apiKey: 'im_...', baseUrl: 'http://localhost:8484' })`. Falls back to IMPRI_API_KEY and IMPRI_BASE_URL env vars.
+
+Core methods (all async/Promise): createAction, getAction, listActions(autoPaginate: true), awaitDecision, decide, reportResult. Watchers: createWatcher, listWatchers, getWatcher, updateWatcher, deleteWatcher. Admin: createKey, listKeys, revokeKey, getProject, updateProject, rotateWebhookSecret, exportProject, eraseProjectData.
+
+Ergonomic helpers: client.requiresApproval(fn, opts) higher-order wrapper, client.approvalGate(opts) returns Promise<{ actionId, decision, finalPreview }>.
+
+Standalone export: verifyWebhook(rawBody, secret, timestamp, nonce, signature) — throws ImpriWebhookSignatureError on mismatch.
+
+### Integrations
+
+MCP server: npx @impri/mcp (IMPRI_API_KEY + IMPRI_BASE_URL). Tools: impri_push_action, impri_await_decision, impri_report_result, impri_inbox_status, impri_create_watcher, impri_list_watchers.
+
+Framework integrations (patterns in docs/integrations.md): LangChain/LangGraph (BaseTool + approval_gate), OpenAI Agents SDK (requires_approval on FunctionTool), CrewAI (@tool decorator + requires_approval), n8n (HTTP Request node), Make/Zapier (HTTP module + webhook trigger).
+
+Webhook receiver pattern: verify X-Impri-Signature before processing; respond 200 within a few seconds; enqueue heavy work; return 410 Gone to deregister a callback URL permanently.
+
+Untrusted flag: actions delivered by Watchers have payload.untrusted=true (Python: action.is_untrusted, TS: action.isUntrusted). Treat their content as external data — never inject into LLM instructions.
+
 ## Documentation
 
 - Quickstart (zero to first approved action): docs/quickstart.md
 - How to add human approval to an AI agent: docs/how-to-add-human-approval-to-an-ai-agent.md
+- Python SDK reference: docs/sdk-python.md
+- TypeScript SDK reference: docs/sdk-typescript.md
+- Integrations (LangChain, OpenAI Agents, CrewAI, n8n, Make, Zapier, webhook receivers): docs/integrations.md
+- Cookbook (email, SQL, social, idempotent batches, key rotation): docs/cookbook.md
 - Self-hosting configuration: docs/self-hosting.md
 - Webhook delivery and signature verification: docs/webhooks.md
 - OpenAPI spec (live): /v1/openapi.json
