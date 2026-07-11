@@ -207,6 +207,28 @@ buttons.</li>
 to a plain notification with a &quot;View inbox&quot; link — interactive buttons
 are only meaningful for a single action.</p>
 <hr>
+<h2 id="cloud-add-to-slack-one-click">Cloud: Add to Slack (one click)</h2>
+<p>If you are using the hosted Impri cloud (impri.dev), you can connect your
+Slack workspace in seconds without creating a Slack app yourself.</p>
+<ol>
+<li>In the Impri UI → <strong>Notifications</strong> → <strong>Add channel</strong> → select <strong>Slack</strong>.</li>
+<li>Click <strong>Add to Slack</strong>. You are redirected to Slack&#39;s OAuth consent screen.</li>
+<li>Choose the channel where approval messages should appear.</li>
+<li>Click <strong>Allow</strong>. Slack redirects you back to Impri and the channel is ready.</li>
+</ol>
+<p>The Impri cloud app already has <code>chat:write</code> and <code>incoming-webhook</code> permissions
+and handles all Interactivity plumbing for you. Approve and Reject buttons work
+immediately — no signing secrets, no interactivity URL to configure.</p>
+<p><strong>Who can approve?</strong></p>
+<p>After the OAuth connection, the channel&#39;s <code>allowed_approver_slack_user_ids</code>
+is empty by default (no one can approve yet). Update it via the Impri UI
+(edit the channel and add Slack user IDs) or via the API:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -X PATCH https://api.impri.dev/v1/notification-channels/{channelId} \
+  -H <span class="hljs-string">&quot;Authorization: Bearer im_...&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;config&quot;: {&quot;allowed_approver_slack_user_ids&quot;: [&quot;U0XXXXXXXX&quot;]}}&#x27;</span></code></pre></div>
+<p><strong>Self-hosted Impri</strong> does not provide a shared Slack app — follow the
+<a href="#setup-one-time-15-minutes">manual setup</a> below to create your own.</p>
+<hr>
 <h2 id="setup-one-time-15-minutes">Setup (one-time, ~15 minutes)</h2>
 <h3 id="step-1-create-a-slack-app">Step 1 — Create a Slack app</h3>
 <p>Go to <a href="https://api.slack.com/apps" target="_blank" rel="noopener">https://api.slack.com/apps</a> and
@@ -557,6 +579,7 @@ then:</p>
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
 <ul><li class="ptoc-h2"><a href="#how-it-works">How it works</a></li>
+<li class="ptoc-h2"><a href="#cloud-add-to-slack-one-click">Cloud: Add to Slack (one click)</a></li>
 <li class="ptoc-h2"><a href="#setup-one-time-15-minutes">Setup (one-time, ~15 minutes)</a></li>
 <li class="ptoc-h3"><a href="#step-1-create-a-slack-app">Step 1 — Create a Slack app</a></li>
 <li class="ptoc-h3"><a href="#step-2-add-bot-permissions-and-install">Step 2 — Add bot permissions and install</a></li>

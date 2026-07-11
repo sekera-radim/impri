@@ -245,6 +245,35 @@
 
         <!-- ── Slack ── -->
         <template v-if="form.type === 'slack'">
+          <!-- Cloud shared Slack app: one-click install -->
+          <v-alert
+            v-if="slackAppAvailable && !isEditing"
+            type="info"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+          >
+            <div class="d-flex align-center justify-space-between flex-wrap gap-2">
+              <div>
+                <div class="text-body-2 font-weight-medium">One click — no Slack app setup needed</div>
+                <div class="text-caption text-medium-emphasis">
+                  Click Add to Slack to connect your workspace in seconds.
+                  Approve &amp; reject buttons included.
+                </div>
+              </div>
+              <v-btn
+                color="success"
+                variant="flat"
+                size="small"
+                prepend-icon="mdi-slack"
+                @click="openAddToSlack"
+              >
+                Add to Slack
+              </v-btn>
+            </div>
+          </v-alert>
+          <v-divider v-if="slackAppAvailable && !isEditing" class="mb-3" />
+
           <!-- Approval mode toggle -->
           <v-divider class="mb-4" />
           <div class="d-flex align-center gap-2 mb-1">
@@ -993,15 +1022,61 @@ U1XXXXXXXX"
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <!-- ─── Slack OAuth return snackbar ─── -->
+  <v-snackbar v-model="slackConnectedSnackbar" color="success" timeout="5000">
+    Slack connected! Your workspace was added as an approval channel.
+    <template #actions>
+      <v-btn variant="text" @click="slackConnectedSnackbar = false">Close</v-btn>
+    </template>
+  </v-snackbar>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
 import type { NotificationChannel, ChannelType, UpdateChannelRequest } from '../types'
 import { useChannelsStore } from '../stores/channels'
+import { useAuthStore } from '../stores/auth'
 import { ApiClientError } from '../api/client'
 
 const store = useChannelsStore()
+const authStore = useAuthStore()
+
+// ─── Slack shared app (cloud) ────────────────────────────────────────────────
+
+const slackAppAvailable = ref(false)
+const slackConnectedSnackbar = ref(false)
+
+async function fetchSlackAppInfo(): Promise<void> {
+  try {
+    const baseUrl = (import.meta.env.VITE_API_BASE as string | undefined) ?? '/v1'
+    const res = await fetch(`${baseUrl}/integrations/slack/app-info`)
+    if (res.ok) {
+      const data = await res.json() as { available?: boolean }
+      slackAppAvailable.value = data.available === true
+    }
+  } catch {
+    // not available — silently ignore
+  }
+}
+
+async function openAddToSlack(): Promise<void> {
+  try {
+    const baseUrl = (import.meta.env.VITE_API_BASE as string | undefined) ?? '/v1'
+    const res = await fetch(`${baseUrl}/integrations/slack/install-url`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authStore.apiKey ?? ''}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    if (!res.ok) throw new Error('Failed to get install URL')
+    const { url } = await res.json() as { url: string }
+    window.open(url, '_blank', 'noopener,noreferrer')
+  } catch (err) {
+    store.error = err instanceof Error ? err.message : 'Failed to get Slack install URL'
+  }
+}
 
 // ─── Channel type metadata ────────────────────────────────────────────────────
 
@@ -1173,6 +1248,7 @@ const setupGuide = computed<SetupGuide | null>(() => {
         ? {
             title: 'Where to get the Slack app credentials',
             steps: [
+              ...(slackAppAvailable.value ? ['Click "Add to Slack" above for one-click setup (no app configuration needed).'] : []),
               'Go to api.slack.com/apps → Create New App → From scratch.',
               'OAuth & Permissions → add the chat:write bot scope → Install to Workspace → copy the Bot User OAuth Token (xoxb-…).',
               'Basic Information → App Credentials → copy the Signing Secret.',
@@ -1725,8 +1801,20 @@ async function submitDialog(): Promise<void> {
 
 // ─── Lifecycle ───────────────────────────────────────────────────────────────
 
-onMounted(() => {
+onMounted(async () => {
   void store.fetchChannels()
+  void fetchSlackAppInfo()
+  // Handle OAuth return
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('slack') === 'connected') {
+    slackConnectedSnackbar.value = true
+    // Clean up URL without reload
+    const url = new URL(window.location.href)
+    url.searchParams.delete('slack')
+    window.history.replaceState({}, '', url.toString())
+    // Refresh channels to show the new one
+    await store.fetchChannels()
+  }
 })
 </script>
 

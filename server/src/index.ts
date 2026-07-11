@@ -15,6 +15,7 @@ import { registerRuleRoutes } from './routes/rules.js';
 import { registerWatcherPresetRoutes } from './routes/watcherPresets.js';
 import { registerNotificationChannelRoutes } from './routes/notification-channels.js';
 import { registerTelegramWebhookRoutes } from './routes/telegram-webhook.js';
+import { registerSlackOAuthRoutes } from './routes/slack-oauth.js';
 import { registerSlackInteractionRoutes } from './routes/slack-interactions.js';
 import { registerDiscordInteractionRoutes } from './routes/discord-interactions.js';
 import { registerAuditRoutes } from './routes/audit.js';
@@ -265,6 +266,12 @@ export async function createApp(db: Db) {
 
   // Telegram interactive approval bot webhook (public, authenticated via secret_token header)
   registerTelegramWebhookRoutes(app, db);
+
+  // Slack shared app OAuth (install-url, callback, shared interactions endpoint).
+  // Registered BEFORE registerSlackInteractionRoutes so the exact path
+  // POST /v1/integrations/slack/interactions is matched before the parameterised
+  // POST /v1/integrations/slack/interactions/:channelId route.
+  registerSlackOAuthRoutes(app, db);
 
   // Slack interactive approval webhook (public, authenticated via v0 HMAC signature)
   registerSlackInteractionRoutes(app, db);

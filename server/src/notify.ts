@@ -292,6 +292,17 @@ export function maskConfig(type: string, rawConfig: Record<string, unknown>): Re
 
   switch (type) {
     case 'slack':
+      if (rawConfig.shared_app === true) return {
+        shared_app: true,
+        approval_mode: true,
+        bot_token: mask(rawConfig.bot_token),
+        team_id: rawConfig.team_id,
+        team_name: rawConfig.team_name,
+        slack_channel_id: rawConfig.slack_channel_id,
+        slack_channel_name: rawConfig.slack_channel_name,
+        allowed_approver_slack_user_ids: rawConfig.allowed_approver_slack_user_ids ?? [],
+        button_secret: mask(rawConfig.button_secret),
+      };
       if (rawConfig.approval_mode === true) return {
         bot_token: mask(rawConfig.bot_token),
         channel_id: rawConfig.channel_id,
@@ -504,11 +515,15 @@ async function sendSlackApproval(
   actionId: string,
 ): Promise<void> {
   const botToken = String(config.bot_token);
-  const channelId = String(config.channel_id);
-  const signingSecret = String(config.signing_secret);
+  // Shared-app channels use button_secret (per-channel) instead of signing_secret.
+  // The signing_secret is the Slack app-level secret used only for verifying
+  // inbound interactions; button_secret is dedicated for signing button values.
+  const isSharedApp = config.shared_app === true;
+  const channelId   = isSharedApp ? String(config.slack_channel_id) : String(config.channel_id);
+  const buttonSecret = isSharedApp ? String(config.button_secret) : String(config.signing_secret);
 
-  const approveVal = `a:${actionId}:${buildSlackApprovalSig(signingSecret, 'a', actionId)}`;
-  const rejectVal  = `r:${actionId}:${buildSlackApprovalSig(signingSecret, 'r', actionId)}`;
+  const approveVal = `a:${actionId}:${buildSlackApprovalSig(buttonSecret, 'a', actionId)}`;
+  const rejectVal  = `r:${actionId}:${buildSlackApprovalSig(buttonSecret, 'r', actionId)}`;
 
   const body = JSON.stringify({
     channel: channelId,

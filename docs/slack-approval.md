@@ -35,6 +35,37 @@ are only meaningful for a single action.
 
 ---
 
+## Cloud: Add to Slack (one click)
+
+If you are using the hosted Impri cloud (impri.dev), you can connect your
+Slack workspace in seconds without creating a Slack app yourself.
+
+1. In the Impri UI → **Notifications** → **Add channel** → select **Slack**.
+2. Click **Add to Slack**. You are redirected to Slack's OAuth consent screen.
+3. Choose the channel where approval messages should appear.
+4. Click **Allow**. Slack redirects you back to Impri and the channel is ready.
+
+The Impri cloud app already has `chat:write` and `incoming-webhook` permissions
+and handles all Interactivity plumbing for you. Approve and Reject buttons work
+immediately — no signing secrets, no interactivity URL to configure.
+
+**Who can approve?**
+
+After the OAuth connection, the channel's `allowed_approver_slack_user_ids`
+is empty by default (no one can approve yet). Update it via the Impri UI
+(edit the channel and add Slack user IDs) or via the API:
+
+```bash
+curl -X PATCH https://api.impri.dev/v1/notification-channels/{channelId} \
+  -H "Authorization: Bearer im_..." \
+  -d '{"config": {"allowed_approver_slack_user_ids": ["U0XXXXXXXX"]}}'
+```
+
+**Self-hosted Impri** does not provide a shared Slack app — follow the
+[manual setup](#setup-one-time-15-minutes) below to create your own.
+
+---
+
 ## Setup (one-time, ~15 minutes)
 
 ### Step 1 — Create a Slack app
