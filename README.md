@@ -101,12 +101,35 @@ docker/   Dockerfiles (server.Dockerfile)
 docs/     Research, ADRs
 ```
 
+## CLI
+
+The `impri` CLI lets humans manage the inbox from a terminal — approve, reject, tail pending actions, add watchers, and manage keys — without writing any code.
+
+```bash
+# Build and install (local, pre-npm)
+cd sdk/typescript && npm install && npm run build
+cd ../cli && npm install && npm run build
+npm install -g ./cli
+
+# Connect to your instance
+impri init --cloud --signup   # or: impri init (self-hosted)
+
+# Common commands
+impri inbox                   # pending actions
+impri tail                    # live-tail new actions
+impri approve act_abc123
+impri watch add github-releases --param owner=fastify --param repo=fastify
+```
+
+- [CLI reference](docs/cli.md)
+
 ## SDKs & integrations
 
 > v0.1, pre-release. Self-host is the complete path; the hosted cloud is early beta.
 
 | Package | Location | Language |
 |---------|----------|----------|
+| CLI | `cli/` | Node 18+ |
 | Python SDK | `sdk/python/` | Python 3.10+ |
 | TypeScript SDK | `sdk/typescript/` | Node 18+ (native fetch) |
 | MCP server | `mcp/` / `npx @impri/mcp` | Any MCP client |
@@ -125,6 +148,7 @@ npx @impri/mcp                     # MCP server (published)
 ## Documentation
 
 - **Web docs:** <https://impri.dev/docs>
+- [CLI reference](docs/cli.md) — install, `impri init`, every command with examples, config + env precedence
 - [Quickstart](docs/quickstart.md) — signup → first approved action in < 5 min
 - [Example agent](examples/approval-gated-agent.mjs) — a complete, dependency-free
   agent that proposes an action, waits for approval, then acts and reports back

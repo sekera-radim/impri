@@ -285,8 +285,59 @@ IMPRI_ALLOW_PRIVATE_TARGETS=1 disables the guard for intranet deployments.
 
 Full reference: docs/notifications.md
 
+## CLI (impri command-line tool)
+
+Location: `cli/` in the repository. Not yet published to npm — install from source.
+
+Build sequence:
+```
+cd sdk/typescript && npm install && npm run build
+cd ../cli && npm install && npm run build
+npm install -g ./cli
+```
+
+Requires Node 18+. Single runtime dependency: commander. SDK is inlined into the bundle.
+
+**Onboarding:**
+```
+impri init [--cloud] [--signup] [--demo]
+impri login   # alias for init; use to rotate key or switch instance
+impri status  # verify config: calls GET /healthz + GET /v1/project
+```
+
+**Config file:** `~/.impri/config.json` (dir 0700, file 0600).
+Format: `{ "base_url": "...", "api_key": "im_..." }`
+Precedence: env vars (IMPRI_API_KEY, IMPRI_BASE_URL) > config file > code defaults.
+Key is never logged or printed in full; debug output shows `im_XXXX****` only.
+
+**Approval Inbox commands:**
+- `impri push --kind <k> --title <t> [--body <text>] [--format plain|markdown|diff] [--editable preview.body] [--target-url <url>] [--expires-in <s>] [--wait [--timeout <s>]] [--json]` — create action; body from --body or stdin
+- `impri inbox [--kind <k>] [--limit <n>] [--json]` — shorthand for `list --status pending`
+- `impri list [--status pending|approved|rejected|expired] [--kind <k>] [--since <iso-date>] [--q <search>] [--limit <n>] [--json]`
+- `impri get <action-id> [--json]` — full detail incl. decision.final_preview and diff
+- `impri approve <action-id> [--edit <new-body>] [--json]` — POST decision verdict=approve
+- `impri reject <action-id> [--json]` — POST decision verdict=reject; exits 2 on ImpriConflict
+- `impri tail [--kind <k>] [--interval <s>] [--json]` — long-poll pending inbox; min interval 5 s; Ctrl-C to exit
+
+**Watcher commands:**
+- `impri presets [--category Community|Developer|Content|Research|News|Monitoring] [--json]` — GET /v1/watcher-presets; 18 presets
+- `impri watch add <preset-id> [--param k=v]... [--name <n>] [--schedule <every>] [--json]` — POST /v1/watchers/from-preset
+- `impri watchers list [--status active|paused|degraded] [--kind rss|reddit_search|url_diff] [--json]`
+- `impri watchers get <watcher-id> [--json]` — includes item_count
+- `impri watchers delete <watcher-id> [--yes]`
+
+**API key commands (admin scope required):**
+- `impri keys list [--json]` — GET /v1/keys; never returns raw key values
+- `impri keys create --name <n> --scopes actions|watch|admin[,...] ` — prints raw im_... value once
+- `impri keys revoke <key-id> [--yes]`
+
+**Exit codes:** 0 success, 1 error (unreachable/invalid key/rejected on --wait), 2 conflict (already decided).
+
+Full reference: docs/cli.md
+
 ## Documentation
 
+- CLI reference (install, onboarding, every command, examples): docs/cli.md
 - Inbox UX, keyboard shortcuts, bulk approve/reject, filters: docs/inbox.md
 - Quickstart (zero to first approved action): docs/quickstart.md
 - How to add human approval to an AI agent: docs/how-to-add-human-approval-to-an-ai-agent.md
