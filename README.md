@@ -112,8 +112,9 @@ docs/     Research, ADRs
 - [`llms.txt`](docs/llms.txt) — machine-readable index for AI assistants
 
 > **Hosted cloud (beta):** a managed instance runs at `app.impri.dev` /
-> `api.impri.dev`. Self-serve signup isn't open yet — open an issue for early
-> access. Everything here works self-hosted today.
+> `api.impri.dev`. Self-serve signup is open: create a project + admin key with
+> the **Create an API key** button at [app.impri.dev](https://app.impri.dev), or
+> `POST /v1/signup`. It's early beta, so self-host is still the most complete path.
 
 ## Self-hosting notes
 
