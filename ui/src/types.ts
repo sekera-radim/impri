@@ -266,6 +266,24 @@ export interface TestChannelResponse {
   error?: string
 }
 
+// --- Audit log ---
+
+export interface AuditEvent {
+  id: number
+  event: string
+  action_id?: string | null
+  actor?: string | null
+  channel?: string | null
+  data?: Record<string, unknown> | null
+  created_at: number
+}
+
+export interface ListAuditResponse {
+  items: AuditEvent[]
+  has_more: boolean
+  next_cursor?: string
+}
+
 // --- Billing ---
 
 export type Tier = 'free' | 'indie' | 'team'

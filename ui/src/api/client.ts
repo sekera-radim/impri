@@ -9,6 +9,7 @@ import type {
   DecisionRequest,
   DecisionResponse,
   ListActionsResponse,
+  ListAuditResponse,
   Watcher,
   WatcherStatus,
   WatcherKind,
@@ -211,4 +212,65 @@ export class ApiClient {
   async testChannel(id: string): Promise<TestChannelResponse> {
     return this.request<TestChannelResponse>('POST', `/notification-channels/${id}/test`)
   }
+
+  // --- Audit log (admin scope required) ---
+
+  async listAudit(params: {
+    type?: string
+    actor?: string
+    entity_id?: string
+    since?: number
+    until?: number
+    limit?: number
+    cursor?: string
+  } = {}): Promise<ListAuditResponse> {
+    const query = new URLSearchParams()
+    if (params.type) query.set('type', params.type)
+    if (params.actor) query.set('actor', params.actor)
+    if (params.entity_id) query.set('entity_id', params.entity_id)
+    if (params.since !== undefined) query.set('since', String(params.since))
+    if (params.until !== undefined) query.set('until', String(params.until))
+    if (params.limit !== undefined) query.set('limit', String(params.limit))
+    if (params.cursor) query.set('cursor', params.cursor)
+    const qs = query.toString()
+    return this.request<ListAuditResponse>('GET', `/audit${qs ? `?${qs}` : ''}`)
+  }
+
+  async exportAudit(params: {
+    type?: string
+    actor?: string
+    entity_id?: string
+    since?: number
+    until?: number
+    format?: 'json' | 'csv'
+  } = {}): Promise<{ blob: Blob; filename: string }> {
+    const query = new URLSearchParams()
+    if (params.type) query.set('type', params.type)
+    if (params.actor) query.set('actor', params.actor)
+    if (params.entity_id) query.set('entity_id', params.entity_id)
+    if (params.since !== undefined) query.set('since', String(params.since))
+    if (params.until !== undefined) query.set('until', String(params.until))
+    if (params.format) query.set('format', params.format)
+    const qs = query.toString()
+
+    const response = await fetch(`${this.baseUrl}/audit/export${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+      },
+    })
+
+    if (!response.ok) {
+      const json = await response.json() as ApiError
+      throw new ApiClientError(response.status, json)
+    }
+
+    const blob = await response.blob()
+    const disposition = response.headers.get('Content-Disposition') ?? ''
+    const filenameMatch = /filename="([^"]+)"/.exec(disposition)
+    const ext = params.format === 'csv' ? 'csv' : 'json'
+    const filename = filenameMatch ? filenameMatch[1] : `audit-export.${ext}`
+    return { blob, filename }
+  }
+
 }
