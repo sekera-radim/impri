@@ -350,12 +350,37 @@ export const SlackConfig = z.object({
   signing_secret: z.string().min(16).max(256).optional(),
   // When true, sends interactive Approve/Reject buttons instead of plain link.
   approval_mode: z.boolean().default(false),
+  // Shared official app install (OAuth "Add to Slack"): team/channel identity +
+  // per-channel button_secret replace the BYO-app channel_id/signing_secret pair.
+  shared_app: z.boolean().optional(),
+  team_id: z.string().regex(/^T[A-Z0-9]{6,}$/, 'Invalid Slack team ID (must start with T)').optional(),
+  team_name: z.string().max(200).optional(),
+  slack_channel_id: z.string().regex(/^[CG][A-Z0-9]{6,}$/, 'Invalid Slack channel ID (must start with C or G)').optional(),
+  slack_channel_name: z.string().max(200).optional(),
+  button_secret: z.string().min(16).max(256).optional(),
   // Slack user IDs allowed to click the approval buttons. Required when
   // approval_mode is true. Max 50.
   allowed_approver_slack_user_ids: z.array(
     z.string().regex(/^U[A-Z0-9]{6,}$/, 'Invalid Slack user ID (must start with U)'),
   ).max(50).default([]),
 }).superRefine((d, ctx) => {
+  if (d.shared_app) {
+    // Shared-app channels are created by the OAuth callback; the allowed-approver
+    // list starts EMPTY on purpose (fail-closed) and is added via PATCH later.
+    if (!d.bot_token) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['bot_token'], message: 'bot_token is required for shared_app channels' });
+    }
+    if (!d.team_id) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['team_id'], message: 'team_id is required for shared_app channels' });
+    }
+    if (!d.slack_channel_id) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['slack_channel_id'], message: 'slack_channel_id is required for shared_app channels' });
+    }
+    if (!d.button_secret) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['button_secret'], message: 'button_secret is required for shared_app channels' });
+    }
+    return;
+  }
   if (d.approval_mode) {
     if (!d.bot_token) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['bot_token'], message: 'bot_token is required when approval_mode is true' });

@@ -274,8 +274,10 @@ function channelMaxFails(): number {
   return Number(process.env.IMPRI_CHANNEL_MAX_FAILS ?? 5);
 }
 
+// Inbox links must point at the web UI (APP_URL, e.g. app.impri.dev), NOT the
+// API host (BASE_URL, api.impri.dev) which has no /inbox route → 404.
 function baseUrl(): string {
-  return process.env.BASE_URL ?? 'http://localhost:8484';
+  return process.env.APP_URL ?? process.env.BASE_URL ?? 'http://localhost:5173';
 }
 
 // ---------------------------------------------------------------------------
@@ -377,34 +379,50 @@ async function sendSlack(
   kind: string,
   inboxUrl: string,
 ): Promise<void> {
-  const url = String(config.url);
-  // Values go into the JSON body via JSON.stringify — no header injection risk.
-  const body = JSON.stringify({
-    blocks: [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: `:bell: *${title}*\nKind: \`${kind}\`\n<${inboxUrl}|Review in Impri>`,
+  const blocks = [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `:bell: *${slackEscape(title)}*\nKind: \`${slackEscape(kind)}\`\n<${inboxUrl}|Review in Impri>`,
+      },
+    },
+    {
+      type: 'actions',
+      elements: [
+        {
+          type: 'button',
+          text: { type: 'plain_text', text: 'Review' },
+          url: inboxUrl,
+          style: 'primary',
         },
+      ],
+    },
+  ];
+
+  // Shared-app channels have no incoming-webhook URL — they post via
+  // chat.postMessage with the bot token (same as approval sends). Only BYO-app
+  // webhook channels carry config.url.
+  if (config.shared_app === true) {
+    const res = await fetchGuarded('https://slack.com/api/chat.postMessage', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${String(config.bot_token)}`,
       },
-      {
-        type: 'actions',
-        elements: [
-          {
-            type: 'button',
-            text: { type: 'plain_text', text: 'Review' },
-            url: inboxUrl,
-            style: 'primary',
-          },
-        ],
-      },
-    ],
-  });
-  const res = await fetchGuarded(url, {
+      body: JSON.stringify({ channel: String(config.slack_channel_id), blocks }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) throw new Error(`Slack HTTP ${res.status}`);
+    const data = (await res.json()) as { ok?: boolean; error?: string };
+    if (!data.ok) throw new Error(`Slack API error: ${data.error ?? 'unknown'}`);
+    return;
+  }
+
+  const res = await fetchGuarded(String(config.url), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body,
+    body: JSON.stringify({ blocks }),
     signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) throw new Error(`Slack HTTP ${res.status}`);
@@ -567,6 +585,11 @@ async function sendSlackApproval(
     signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) throw new Error(`Slack HTTP ${res.status}`);
+  // chat.postMessage returns HTTP 200 even on failure — the real status is the
+  // `ok` field in the JSON body (e.g. not_in_channel, channel_not_found). Without
+  // this check a failed post silently "succeeds" and the channel never surfaces it.
+  const data = (await res.json()) as { ok?: boolean; error?: string };
+  if (!data.ok) throw new Error(`Slack API error: ${data.error ?? 'unknown'}`);
 }
 
 async function sendDiscordApproval(
@@ -813,6 +836,24 @@ async function fireChannel(db: Db, channel: ChannelRow, payload: ChannelPayload)
   const now = nowSec();
   const config = JSON.parse(channel.config) as Record<string, unknown>;
   const queue = JSON.parse(channel.digest_queue) as QueueItem[];
+
+  // Approval-mode channels never batch: every pending action must arrive as its
+  // OWN message with per-action Approve/Reject buttons. A digest merges N actions
+  // into one plain "N pending" message that can only carry a Review link (a single
+  // button pair can't encode multiple action IDs), which defeats in-chat approval.
+  if (config.approval_mode === true) {
+    try {
+      await dispatchChannelType(channel.type, config, payload.title, payload.kind, payload.inboxUrl, payload.actionId, payload.escalate, false);
+      onChannelSuccess(db, channel.id, now);
+      incCounter('impri_notifications_total', { channel_type: channel.type, result: 'ok' });
+    } catch (err) {
+      const msg = sanitizeError(err instanceof Error ? err.message : String(err), config);
+      onChannelFailure(db, channel, msg, now);
+      incCounter('impri_notifications_total', { channel_type: channel.type, result: 'error' });
+      throw new Error(msg);
+    }
+    return;
+  }
 
   // Layer 2 digest window check (Layer 1 = action-level soft-dedup in POST /v1/actions).
   if (channel.last_fired_at !== null && (now - channel.last_fired_at) < channel.digest_window_sec) {

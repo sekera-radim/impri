@@ -146,7 +146,10 @@ export function registerSlackOAuthRoutes(app: FastifyInstance, db: Db): void {
 
     const params = new URLSearchParams({
       client_id: CLIENT_ID,
-      scope: 'chat:write,incoming-webhook',
+      // channels:join lets the callback auto-add the bot to the selected channel;
+      // without it chat.postMessage fails with not_in_channel until a human runs
+      // /invite. chat:write.public would also work but is broader.
+      scope: 'chat:write,incoming-webhook,channels:join',
       redirect_uri: redirectUri,
       state,
     });
@@ -207,11 +210,19 @@ export function registerSlackOAuthRoutes(app: FastifyInstance, db: Db): void {
         });
 
         exchangeData = await res.json() as Record<string, unknown>;
-      } catch {
+      } catch (err) {
+        // Log the transport failure (no secrets in the message) — silent catch made
+        // exchange_failed undebuggable in production.
+        request.log.error(
+          { err: err instanceof Error ? err.message : String(err) },
+          'slack oauth: token exchange request failed',
+        );
         return errorRedirect('exchange_failed');
       }
 
       if (exchangeData.ok !== true) {
+        // Slack error codes are not secret (invalid_code, bad_redirect_uri, …).
+        request.log.error({ slack_error: exchangeData.error ?? 'unknown' }, 'slack oauth: exchange rejected');
         return errorRedirect('exchange_failed');
       }
 
@@ -228,7 +239,32 @@ export function registerSlackOAuthRoutes(app: FastifyInstance, db: Db): void {
         typeof incomingWebhook?.channel !== 'string' ||
         typeof incomingWebhook?.url !== 'string'
       ) {
+        request.log.error(
+          {
+            has_token: typeof accessToken === 'string',
+            has_team: typeof team?.id === 'string',
+            has_webhook: typeof incomingWebhook?.channel_id === 'string',
+          },
+          'slack oauth: response missing expected fields',
+        );
         return errorRedirect('missing_data');
+      }
+
+      // Auto-join the selected channel so chat.postMessage works without a manual
+      // /invite. Best-effort: already_in_channel is fine; other failures just mean
+      // the user may need to invite the bot manually (surfaced later as not_in_channel).
+      try {
+        await fetchGuarded('https://slack.com/api/conversations.join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({ channel: incomingWebhook.channel_id }),
+          signal: AbortSignal.timeout(10_000),
+        });
+      } catch (err) {
+        request.log.warn(
+          { err: err instanceof Error ? err.message : String(err) },
+          'slack oauth: conversations.join failed (bot may need manual /invite)',
+        );
       }
 
       const buttonSecret = randomBytes(32).toString('base64url');
@@ -270,7 +306,11 @@ export function registerSlackOAuthRoutes(app: FastifyInstance, db: Db): void {
           JSON.stringify({ channel_id: channelId, type: 'slack' }),
           now,
         );
-      } catch {
+      } catch (err) {
+        request.log.error(
+          { err: err instanceof Error ? err.message : String(err) },
+          'slack oauth: channel insert failed',
+        );
         return errorRedirect('exchange_failed');
       }
 

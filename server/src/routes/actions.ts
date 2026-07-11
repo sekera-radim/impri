@@ -116,7 +116,10 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
     }
 
     const actionId = genId('act_');
-    const inboxUrl = `${process.env.BASE_URL ?? 'http://localhost:8484'}/inbox/${actionId}`;
+    // Inbox link must target the web UI (APP_URL), not the API host — api.impri.dev
+    // has no /inbox route (would 404). Falls back to BASE_URL for single-host setups.
+    const appBase = process.env.APP_URL ?? process.env.BASE_URL ?? 'http://localhost:5173';
+    const inboxUrl = `${appBase}/inbox/${actionId}`;
 
     // Evaluate rules AFTER idempotency/dedup and BEFORE INSERT so we can
     // override expires_in or short-circuit to auto_approve / auto_reject.

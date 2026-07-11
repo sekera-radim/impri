@@ -75,7 +75,7 @@ export async function assertPublicUrl(rawUrl: string): Promise<void> {
 // the socket its address, there is no window for a DNS rebind to swap in a
 // private IP between validation and connect (the residual TOCTOU that
 // assertPublicUrl alone can't close). TLS still validates the original hostname.
-const guardedLookup: LookupFunction = (hostname, _options, callback) => {
+const guardedLookup: LookupFunction = (hostname, options, callback) => {
   dns.lookup(hostname, { all: true }, (err, addresses) => {
     if (err) return callback(err, '', 0);
     const list = addresses as dns.LookupAddress[];
@@ -83,6 +83,14 @@ const guardedLookup: LookupFunction = (hostname, _options, callback) => {
       if (isPrivateIp(a.address)) {
         return callback(new Error(`Blocked private address ${a.address} for ${hostname}`), '', 0);
       }
+    }
+    // Node >=20 connects with autoSelectFamily (Happy Eyeballs): net.connect then
+    // calls lookup with { all: true } and expects the ADDRESS LIST back. Returning
+    // a single (address, family) pair there kills the connection with a bare
+    // "fetch failed" — the bug behind failing Slack OAuth exchange and watcher runs.
+    if ((options as { all?: boolean } | undefined)?.all) {
+      (callback as unknown as (e: NodeJS.ErrnoException | null, addrs: dns.LookupAddress[]) => void)(null, list);
+      return;
     }
     const chosen = list[0];
     callback(null, chosen.address, chosen.family);
