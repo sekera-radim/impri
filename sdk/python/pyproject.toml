@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "impri"
+version = "0.1.0"
+description = "Python SDK for the Impri human-in-the-loop approval API"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+# Zero mandatory runtime dependencies — uses stdlib urllib for HTTP.
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "coverage[toml]>=7.0",
+]
+
+[project.urls]
+Homepage = "https://impri.dev"
+Repository = "https://github.com/sekera-radim/impri"
+Documentation = "https://impri.dev/docs"
+
+[tool.hatch.build.targets.wheel]
+packages = ["impri"]
+
+[tool.coverage.run]
+source = ["impri"]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
