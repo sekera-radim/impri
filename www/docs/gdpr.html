@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GDPR &amp;amp; Data Management — Impri Docs</title>
+<meta name="description" content="Impri provides two GDPR-compliant data management endpoints under your project&amp;#39;s admin scope: a full data export and a hard erasure. Both are project-scoped — cross-project data access is impossib">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="GDPR &amp;amp; Data Management — Impri Docs">
+<meta property="og:description" content="Impri provides two GDPR-compliant data management endpoints under your project&amp;#39;s admin scope: a full data export and a hard erasure. Both are project-scoped — cross-project data access is impossib">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl active">GDPR &amp; data export</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>API reference</span>
+      <span class="bc-sep">/</span>
+      <span>GDPR &amp;amp; Data Management</span>
+    </nav>
+    <h1>GDPR &amp; Data Management</h1>
+<p>Impri provides two GDPR-compliant data management endpoints under your project&#39;s admin scope: a full data export and a hard erasure. Both are project-scoped — cross-project data access is impossible regardless of the key used.</p>
+<hr>
+<h2 id="data-export">Data export</h2>
+<p><code>GET /v1/project/export</code> returns a JSON snapshot of everything stored under your project.</p>
+<div class="code-block"><span class="code-lang">http</span><pre><code class="hljs"><span class="hljs-keyword">GET</span> <span class="hljs-string">/v1/project/export</span> <span class="hljs-meta">HTTP/1.1</span>
+<span class="hljs-attribute">Authorization</span><span class="hljs-punctuation">: </span>Bearer im_...</code></pre></div>
+<p>Response:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;exported_at&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1720000000</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;project&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;prj_...&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;My project&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;timezone&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;UTC&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;created_at&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1719000000</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;actions&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span> ... <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;decisions&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span> ... <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;watchers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span> ... <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;audit_log&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span> ... <span class="hljs-punctuation">]</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>Included tables:</p>
+<ul>
+<li><code>project</code> — name, timezone, created_at (no Stripe IDs or secrets)</li>
+<li><code>actions</code> — all actions ever created for the project</li>
+<li><code>decisions</code> — all approve/reject decisions linked to those actions</li>
+<li><code>watchers</code> — all watcher definitions and their current state</li>
+<li><code>audit_log</code> — full audit trail (see <a href="audit-log.html">Audit log</a>)</li>
+</ul>
+<p><strong>Not included:</strong></p>
+<ul>
+<li><code>api_keys</code> — contains argon2 hashes; key material is never exported</li>
+<li><code>pii_log</code> — request IPs are stored separately and excluded from the export JSON (they are erased by <code>DELETE /v1/project/data</code>)</li>
+<li><code>push_subscriptions</code> — browser push endpoint details</li>
+</ul>
+<p>A <code>gdpr.export</code> audit event is written before the response is returned.</p>
+<h3 id="using-the-export">Using the export</h3>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Save the export to a file</span>
+curl -H <span class="hljs-string">&quot;Authorization: Bearer im_...&quot;</span> \
+     https://api.impri.dev/v1/project/export \
+     -o <span class="hljs-built_in">export</span>-$(<span class="hljs-built_in">date</span> +%Y%m%d).json
+
+<span class="hljs-comment"># Or with the SDK:</span>
+export_data = client.export_project()
+import json
+with open(<span class="hljs-string">&quot;export.json&quot;</span>, <span class="hljs-string">&quot;w&quot;</span>) as f:
+    json.dump(export_data, f, indent=2)</code></pre></div>
+<hr>
+<h2 id="data-erasure">Data erasure</h2>
+<p><code>DELETE /v1/project/data</code> performs a hard GDPR erasure. It wipes all user-generated content while preserving the project record and API keys so the account remains functional.</p>
+<div class="code-block"><span class="code-lang">http</span><pre><code class="hljs"><span class="hljs-keyword">DELETE</span> <span class="hljs-string">/v1/project/data</span> <span class="hljs-meta">HTTP/1.1</span>
+<span class="hljs-attribute">Authorization</span><span class="hljs-punctuation">: </span>Bearer im_...</code></pre></div>
+<p>Response:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;erased&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;actions&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">142</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;watchers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">5</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p><strong>What is erased (irreversible):</strong></p>
+<ul>
+<li>All <code>actions</code> for the project</li>
+<li>All <code>decisions</code> linked to those actions</li>
+<li>All <code>webhook_deliveries</code> linked to those actions</li>
+<li>All <code>watchers</code> for the project</li>
+<li>All <code>watcher_items</code> (dedup state) for those watchers</li>
+<li>The entire <code>audit_log</code> for the project</li>
+<li>All <code>pii_log</code> rows (request IPs) for the project</li>
+</ul>
+<p><strong>What is preserved:</strong></p>
+<ul>
+<li>The <code>projects</code> row (account identity, tier, Stripe link)</li>
+<li>All <code>api_keys</code> (so the account can still authenticate)</li>
+<li><code>push_subscriptions</code> (browser push endpoints)</li>
+</ul>
+<p>After erasure, a single <code>gdpr.erase</code> tombstone audit row is written. This is the only surviving audit record and confirms the erasure happened.</p>
+<blockquote>
+<p><strong>Warning: this operation is irreversible.</strong> There is no soft-delete or recovery path. Export first if you need to retain data.</p>
+</blockquote>
+<h3 id="sdk">SDK</h3>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-comment"># Python</span>
+counts = client.erase_project_data()
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Erased <span class="hljs-subst">{counts[<span class="hljs-string">&#x27;actions&#x27;</span>]}</span> actions and <span class="hljs-subst">{counts[<span class="hljs-string">&#x27;watchers&#x27;</span>]}</span> watchers&quot;</span>)</code></pre></div>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-comment">// TypeScript</span>
+<span class="hljs-keyword">const</span> { actions, watchers } = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">eraseProjectData</span>()
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Erased <span class="hljs-subst">${actions}</span> actions and <span class="hljs-subst">${watchers}</span> watchers`</span>)</code></pre></div>
+<hr>
+<h2 id="what-data-impri-stores">What data Impri stores</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Where</th>
+<th>Erasable</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Action content (title, preview, payload)</td>
+<td><code>actions</code> table</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Decisions (verdict, edited content)</td>
+<td><code>decisions</code> table</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Webhook delivery attempts</td>
+<td><code>webhook_deliveries</code> table</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Watcher definitions and hit dedup</td>
+<td><code>watchers</code>, <code>watcher_items</code></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Audit trail (events, actors, timestamps)</td>
+<td><code>audit_log</code> table</td>
+<td>Yes (one tombstone survives)</td>
+</tr>
+<tr>
+<td>Request IP addresses</td>
+<td><code>pii_log</code> table (separate)</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>API key hashes and prefixes</td>
+<td><code>api_keys</code> table</td>
+<td><strong>No</strong> (preserved for account continuity)</td>
+</tr>
+<tr>
+<td>Project metadata (name, tier, Stripe ID)</td>
+<td><code>projects</code> table</td>
+<td><strong>No</strong> (preserved for account continuity)</td>
+</tr>
+</tbody></table>
+</div>
+<hr>
+<h2 id="audit-events">Audit events</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Trigger</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>gdpr.export</code></td>
+<td><code>GET /v1/project/export</code> called</td>
+</tr>
+<tr>
+<td><code>gdpr.erase</code></td>
+<td><code>DELETE /v1/project/data</code> completed</td>
+</tr>
+</tbody></table>
+</div>
+<p>The <code>gdpr.erase</code> tombstone is written <strong>after</strong> the transaction that deletes all other audit rows, so it is not deleted by the erasure itself. It records the count of erased rows in the <code>data</code> field.</p>
+<hr>
+<h2 id="retention-policy">Retention policy</h2>
+<p>By default, audit log rows are kept indefinitely (until a GDPR erasure). To enable automatic cleanup, set <code>AUDIT_RETENTION_DAYS=90</code> (or any positive integer) in the server environment. The scheduler purges rows older than that threshold during its maintenance pass.</p>
+<p>See <a href="audit-log.html">Audit log</a> for the full audit log reference.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#data-export">Data export</a></li>
+<li class="ptoc-h3"><a href="#using-the-export">Using the export</a></li>
+<li class="ptoc-h2"><a href="#data-erasure">Data erasure</a></li>
+<li class="ptoc-h3"><a href="#sdk">SDK</a></li>
+<li class="ptoc-h2"><a href="#what-data-impri-stores">What data Impri stores</a></li>
+<li class="ptoc-h2"><a href="#audit-events">Audit events</a></li>
+<li class="ptoc-h2"><a href="#retention-policy">Retention policy</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents.</span></div>
+</footer>
+</body>
+</html>

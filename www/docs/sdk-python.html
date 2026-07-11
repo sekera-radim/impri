@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Python SDK — Impri Docs</title>
+<meta name="description" content="Status — v0.1, pre-release. The SDK lives at sdk/python/ in this repository. It is not yet published to PyPI. Install it from the local source while the package matures. The REST API it wraps is stabl">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Python SDK — Impri Docs">
+<meta property="og:description" content="Status — v0.1, pre-release. The SDK lives at sdk/python/ in this repository. It is not yet published to PyPI. Install it from the local source while the package matures. The REST API it wraps is stabl">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl active">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>SDKs</span>
+      <span class="bc-sep">/</span>
+      <span>Python SDK</span>
+    </nav>
+    <h1>Python SDK</h1>
+<blockquote>
+<p><strong>Status — v0.1, pre-release.</strong> The SDK lives at <code>sdk/python/</code> in this repository. It is not yet published to PyPI. Install it from the local source while the package matures. The REST API it wraps is stable; self-host is the complete path today; the hosted cloud (<code>api.impri.dev</code>) is early beta.</p>
+</blockquote>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># From the repo root</span>
+pip install -e sdk/python</code></pre></div>
+<hr>
+<h2 id="setup">Setup</h2>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">from</span> impri <span class="hljs-keyword">import</span> ImpriClient
+
+client = ImpriClient(
+    api_key=<span class="hljs-string">&quot;im_...&quot;</span>,            <span class="hljs-comment"># or set IMPRI_API_KEY env var</span>
+    base_url=<span class="hljs-string">&quot;http://localhost:8484&quot;</span>,  <span class="hljs-comment"># or set IMPRI_BASE_URL; default is localhost:8484</span>
+)
+<span class="hljs-comment"># Cloud:</span>
+<span class="hljs-comment"># client = ImpriClient(api_key=&quot;im_...&quot;, base_url=&quot;https://api.impri.dev&quot;)</span></code></pre></div>
+<p>The client raises <code>ImpriConfigError</code> at construction time if neither the argument nor the environment variable is set. <code>base_url</code> defaults to <code>http://localhost:8484</code> (self-hosted). Strip any trailing slash from the value you pass — the SDK does this internally, but it is cleaner to be explicit. The client appends <code>/v1</code> internally; callers never include it.</p>
+<hr>
+<h2 id="authentication">Authentication</h2>
+<p>Every request carries <code>Authorization: Bearer im_&lt;key&gt;</code>. Key scopes are enforced server-side:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>What it covers</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>actions</code></td>
+<td>Create, list, get, decide, report result, await decision</td>
+</tr>
+<tr>
+<td><code>watch</code></td>
+<td>Create, list, get, update, delete watchers</td>
+</tr>
+<tr>
+<td><code>admin</code></td>
+<td>Keys CRUD, project read/write, export/erase, rotate secret — implies <code>actions</code> + <code>watch</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>A 403 response means the key exists but lacks the required scope. A 401 means the key is wrong or revoked. Both raise <code>ImpriUnauthorized</code>.</p>
+<hr>
+<h2 id="approval-inbox">Approval Inbox</h2>
+<h3 id="createaction"><code>create_action</code></h3>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs">action = <span class="hljs-keyword">await</span> client.create_action(
+    kind=<span class="hljs-string">&quot;email.send&quot;</span>,
+    title=<span class="hljs-string">&quot;Outreach: partnership proposal to acme.com&quot;</span>,
+    preview={<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: <span class="hljs-string">&quot;Hi Alice, ...&quot;</span>},
+    payload={<span class="hljs-string">&quot;to&quot;</span>: <span class="hljs-string">&quot;alice@acme.com&quot;</span>, <span class="hljs-string">&quot;thread_id&quot;</span>: <span class="hljs-string">&quot;t_123&quot;</span>},
+    target_url=<span class="hljs-string">&quot;https://mail.acme.com/thread/123&quot;</span>,
+    callback_url=<span class="hljs-string">&quot;https://your-agent.example.com/webhook&quot;</span>,
+    expires_in=<span class="hljs-number">86400</span>,         <span class="hljs-comment"># seconds; min 300, max 2 592 000 (30 days), default 259 200 (72 h)</span>
+    idempotency_key=<span class="hljs-string">&quot;batch-2026-07-11-acme&quot;</span>,
+    editable=[<span class="hljs-string">&quot;preview.body&quot;</span>],
+)
+<span class="hljs-comment"># action.id, action.status == &quot;pending&quot;, action.inbox_url, action.expires_at</span></code></pre></div>
+<p>The call requires <code>actions</code> scope and is rate-limited to <strong>60 POST/min per key</strong>.</p>
+<p><code>create_action</code> returns 201 on a new action and 200 when an existing action is found via <code>idempotency_key</code> match or a soft-duplicate (same <code>kind</code> + <code>title</code> + <code>preview</code> hash, already pending). Check <code>action.duplicate_of</code> to tell which case you are in — if set, the action was a duplicate and the field holds the original action&#39;s id.</p>
+<p><code>editable</code> is a list of dot-path field names the reviewer may change before approving (<code>&quot;preview.body&quot;</code> is the common one). An empty list means the reviewer cannot edit — they can only approve or reject as-is.</p>
+<h3 id="getaction"><code>get_action</code></h3>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs">action = <span class="hljs-keyword">await</span> client.get_action(<span class="hljs-string">&quot;act_abc123&quot;</span>)
+<span class="hljs-comment"># action.status, action.decision (present after a human decides), action.webhook_delivery</span></code></pre></div>
+<p>Returns <code>ImpriNotFound</code> (404) if the id is unknown or belongs to a different project.</p>
+<p><code>action.decision</code> is <code>None</code> while the action is pending and populated once a human has acted:</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">if</span> action.decision:
+    <span class="hljs-built_in">print</span>(action.decision.verdict)       <span class="hljs-comment"># &quot;approve&quot; or &quot;reject&quot;</span>
+    <span class="hljs-built_in">print</span>(action.decision.decided_at)    <span class="hljs-comment"># Unix timestamp</span>
+    <span class="hljs-built_in">print</span>(action.decision.final_preview) <span class="hljs-comment"># use this for execution (may be edited)</span>
+    <span class="hljs-built_in">print</span>(action.decision.diff)          <span class="hljs-comment"># unified patch if reviewer changed preview.body</span></code></pre></div>
+<p>Always use <code>decision.final_preview</code> as the content to execute — it carries the human-edited version when the reviewer used edit-before-approve.</p>
+<h3 id="listactions"><code>list_actions</code></h3>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs">page = <span class="hljs-keyword">await</span> client.list_actions(
+    status=<span class="hljs-string">&quot;pending&quot;</span>,            <span class="hljs-comment"># pending | approved | rejected | expired | executed | execute_failed</span>
+    kind=<span class="hljs-string">&quot;email.send&quot;</span>,           <span class="hljs-comment"># free-form string, matches exactly</span>
+    since=<span class="hljs-number">1720000000</span>,            <span class="hljs-comment"># Unix timestamp; only actions created after this</span>
+    limit=<span class="hljs-number">50</span>,                    <span class="hljs-comment"># max 100</span>
+    cursor=page.next_cursor,     <span class="hljs-comment"># pagination</span>
+)
+<span class="hljs-keyword">for</span> action <span class="hljs-keyword">in</span> page.items:
+    <span class="hljs-built_in">print</span>(action.<span class="hljs-built_in">id</span>, action.status)
+
+<span class="hljs-keyword">if</span> page.has_more:
+    next_page = <span class="hljs-keyword">await</span> client.list_actions(cursor=page.next_cursor)</code></pre></div>
+<p>Use <code>iter_actions()</code> to iterate automatically across all pages:</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">for</span> action <span class="hljs-keyword">in</span> client.iter_actions(status=<span class="hljs-string">&quot;approved&quot;</span>):
+    <span class="hljs-built_in">print</span>(action.<span class="hljs-built_in">id</span>)</code></pre></div>
+<p>Rate-limited to <strong>300 GET/min per key</strong>.</p>
+<h3 id="awaitdecision"><code>await_decision</code></h3>
+<p>The most common pattern — push an action then block until a human decides:</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">from</span> impri <span class="hljs-keyword">import</span> ImpriRejected, ImpriExpired, ImpriTimeout
+
+action_created = <span class="hljs-keyword">await</span> client.create_action(
+    kind=<span class="hljs-string">&quot;db.exec&quot;</span>,
+    title=<span class="hljs-string">&quot;DROP TABLE sessions&quot;</span>,
+    preview={<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;plain&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: sql},
+    editable=[<span class="hljs-string">&quot;preview.body&quot;</span>],
+)
+
+<span class="hljs-keyword">try</span>:
+    action = <span class="hljs-keyword">await</span> client.await_decision(
+        action_created.<span class="hljs-built_in">id</span>,
+        timeout_s=<span class="hljs-number">300</span>,         <span class="hljs-comment"># raise ImpriTimeout after this; action stays pending server-side</span>
+        poll_interval_s=<span class="hljs-number">5</span>,     <span class="hljs-comment"># minimum recommended is 5 s</span>
+    )
+    <span class="hljs-comment"># action.status == &quot;approved&quot;</span>
+    sql_to_run = action.decision.final_preview[<span class="hljs-string">&quot;body&quot;</span>]
+
+<span class="hljs-keyword">except</span> ImpriRejected <span class="hljs-keyword">as</span> e:
+    <span class="hljs-comment"># Human said no — this is normal flow, not an error.</span>
+    <span class="hljs-comment"># e.action_id, e.decision, e.final_preview</span>
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Rejected — doing nothing.&quot;</span>)
+
+<span class="hljs-keyword">except</span> ImpriExpired:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Approval window closed before a decision was made.&quot;</span>)
+
+<span class="hljs-keyword">except</span> ImpriTimeout:
+    <span class="hljs-comment"># timeout_s elapsed; action is still pending server-side.</span>
+    <span class="hljs-comment"># You can call await_decision again, or poll manually.</span>
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Timed out waiting for approval.&quot;</span>)</code></pre></div>
+<p><code>await_decision</code> polls <code>GET /v1/actions/:id</code> in a loop. It is not a separate HTTP endpoint. Do not set <code>poll_interval_s</code> below 5 s; the rate limit is 300 req/min.</p>
+<h3 id="decide"><code>decide</code></h3>
+<p>Used primarily by the web inbox. Expose it in scripts that programmatically approve or reject actions:</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs">result = <span class="hljs-keyword">await</span> client.decide(
+    <span class="hljs-string">&quot;act_abc123&quot;</span>,
+    verdict=<span class="hljs-string">&quot;approve&quot;</span>,                       <span class="hljs-comment"># or &quot;reject&quot;</span>
+    edited={<span class="hljs-string">&quot;preview.body&quot;</span>: <span class="hljs-string">&quot;Edited copy.&quot;</span>}, <span class="hljs-comment"># restricted to action.editable whitelist</span>
+    channel=<span class="hljs-string">&quot;bot-script&quot;</span>,
+)</code></pre></div>
+<p>Returns <code>ImpriConflict</code> (409) if the action is already decided or two writers race. Only call on pending actions.</p>
+<h3 id="bulkdecide"><code>bulk_decide</code></h3>
+<p>Approve or reject up to 50 actions in one request.</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs">resp = client.bulk_decide(
+    ids=[<span class="hljs-string">&quot;act_aaa&quot;</span>, <span class="hljs-string">&quot;act_bbb&quot;</span>, <span class="hljs-string">&quot;act_ccc&quot;</span>],
+    verdict=<span class="hljs-string">&quot;approve&quot;</span>,            <span class="hljs-comment"># or &quot;reject&quot;</span>
+    comment=<span class="hljs-string">&quot;Batch approved&quot;</span>,     <span class="hljs-comment"># optional; stored on each succeeded decision</span>
+)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Succeeded: <span class="hljs-subst">{resp[<span class="hljs-string">&#x27;succeeded&#x27;</span>]}</span>, Failed: <span class="hljs-subst">{resp[<span class="hljs-string">&#x27;failed&#x27;</span>]}</span>&quot;</span>)
+<span class="hljs-keyword">for</span> result <span class="hljs-keyword">in</span> resp[<span class="hljs-string">&quot;results&quot;</span>]:
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> result[<span class="hljs-string">&quot;ok&quot;</span>]:
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;  <span class="hljs-subst">{result[<span class="hljs-string">&#x27;id&#x27;</span>]}</span>: <span class="hljs-subst">{result[<span class="hljs-string">&#x27;error&#x27;</span>]}</span>&quot;</span>)</code></pre></div>
+<p>Rate-limited to <strong>10 requests/min per key</strong> (net: 500 decisions/min). Each item is processed in its own transaction — a failure on one ID does not roll back successes on others. The response is always HTTP 200; check each <code>result[&quot;ok&quot;]</code>.</p>
+<p>Per-item <code>error</code> values: <code>&quot;not_found&quot;</code>, <code>&quot;already_decided&quot;</code> (with <code>current_status</code>), or <code>&quot;internal&quot;</code>.</p>
+<p>Actions with non-empty <code>editable</code> lists must be decided via <code>decide()</code> so per-item edits can pass whitelist validation. Bulk intentionally omits the <code>edited</code> field.</p>
+<h3 id="reportresult"><code>report_result</code></h3>
+<p>Call after executing an approved action to close the lifecycle:</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">try</span>:
+    <span class="hljs-keyword">await</span> send_email(to=recipient, body=final_body)
+    <span class="hljs-keyword">await</span> client.report_result(action.<span class="hljs-built_in">id</span>, <span class="hljs-string">&quot;executed&quot;</span>)
+<span class="hljs-keyword">except</span> Exception <span class="hljs-keyword">as</span> exc:
+    <span class="hljs-keyword">await</span> client.report_result(action.<span class="hljs-built_in">id</span>, <span class="hljs-string">&quot;execute_failed&quot;</span>, detail=<span class="hljs-built_in">str</span>(exc))
+    <span class="hljs-keyword">raise</span></code></pre></div>
+<p>Returns <code>ImpriConflict</code> (409) if the action is not in <code>approved</code> state — only call after a confirmed approval.</p>
+<hr>
+<h2 id="ergonomic-helpers">Ergonomic helpers</h2>
+<h3 id="clientrequiresapproval-decorator"><code>@client.requires_approval</code> decorator</h3>
+<p>Gates a function through an Impri approval. Every call pushes an action, blocks until decided, and invokes the original function only on approval. On rejection it raises <code>ImpriRejected</code> without calling the function.</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-meta">@client.requires_approval(<span class="hljs-params">
+    kind=<span class="hljs-string">&quot;email.send&quot;</span>,
+    title=<span class="hljs-keyword">lambda</span> to, **_: <span class="hljs-string">f&quot;Send email to <span class="hljs-subst">{to}</span>&quot;</span>,
+    preview=<span class="hljs-keyword">lambda</span> to, body, **_: {<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;plain&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: body},
+    editable=[<span class="hljs-string">&quot;preview.body&quot;</span>],
+    timeout_s=<span class="hljs-number">300</span>,
+</span>)</span>
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">def</span> <span class="hljs-title function_">send_email</span>(<span class="hljs-params">to: <span class="hljs-built_in">str</span>, body: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-literal">None</span>:
+    <span class="hljs-keyword">await</span> mailer.send(to=to, subject=<span class="hljs-string">&quot;Hello&quot;</span>, body=body)</code></pre></div>
+<p>When <code>preview.body</code> was edited by the reviewer, the decorator injects the edited value as the <code>body</code> argument before calling <code>send_email</code>. If the function signature does not include a parameter matching the editable field name, the full <code>Decision</code> object is passed as <code>_decision</code> instead.</p>
+<p><code>title</code> and <code>preview</code> accept either a plain value or a callable that receives the function&#39;s call arguments — use callables to build the title from runtime data (like the recipient&#39;s email address).</p>
+<p>Any extra keyword arguments (<code>expires_in</code>, <code>idempotency_key</code>, <code>payload</code>, etc.) are forwarded to <code>create_action</code>.</p>
+<h3 id="clientapprovalgate-context-manager"><code>client.approval_gate</code> context manager</h3>
+<p>For cases where the work is not a single function call or you need the decision object directly:</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">async</span> <span class="hljs-keyword">with</span> client.approval_gate(
+    kind=<span class="hljs-string">&quot;db.exec&quot;</span>,
+    title=<span class="hljs-string">&quot;DROP TABLE users&quot;</span>,
+    preview={<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;plain&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: sql},
+    editable=[<span class="hljs-string">&quot;preview.body&quot;</span>],
+    timeout_s=<span class="hljs-number">120</span>,
+) <span class="hljs-keyword">as</span> approved:
+    <span class="hljs-comment"># approved.action_id, approved.decision, approved.final_preview</span>
+    <span class="hljs-keyword">await</span> db.execute(approved.final_preview[<span class="hljs-string">&quot;body&quot;</span>])
+    <span class="hljs-comment"># On clean exit __aexit__ calls report_result(&quot;executed&quot;) automatically.</span>
+    <span class="hljs-comment"># On exception __aexit__ calls report_result(&quot;execute_failed&quot;, detail=str(exc)).</span></code></pre></div>
+<p><code>__aexit__</code> takes care of <code>report_result</code> so you never forget to close the loop. <code>ImpriRejected</code> is raised on exit from the <code>async with</code> block if the human rejected — you do not need to handle cleanup because the action was never executed.</p>
+<hr>
+<h2 id="watchers">Watchers</h2>
+<p>Watchers monitor external sources (RSS feeds, Reddit searches, URL content) and deliver matching items to the inbox as actions with <code>payload.untrusted = True</code>. Requires <code>watch</code> scope.</p>
+<h3 id="createwatcher"><code>create_watcher</code></h3>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs">watcher = <span class="hljs-keyword">await</span> client.create_watcher(
+    name=<span class="hljs-string">&quot;Impri mentions on Reddit&quot;</span>,
+    kind=<span class="hljs-string">&quot;reddit_search&quot;</span>,               <span class="hljs-comment"># rss | reddit_search | url_diff</span>
+    config={<span class="hljs-string">&quot;query&quot;</span>: <span class="hljs-string">&quot;impri approval&quot;</span>, <span class="hljs-string">&quot;subreddit&quot;</span>: <span class="hljs-string">&quot;selfhosted&quot;</span>},
+    schedule={<span class="hljs-string">&quot;every&quot;</span>: <span class="hljs-string">&quot;1h&quot;</span>, <span class="hljs-string">&quot;window&quot;</span>: <span class="hljs-string">&quot;08:00-22:00&quot;</span>},  <span class="hljs-comment"># window uses project timezone</span>
+    keywords=[
+        {<span class="hljs-string">&quot;pattern&quot;</span>: <span class="hljs-string">&quot;impri&quot;</span>, <span class="hljs-string">&quot;points&quot;</span>: <span class="hljs-number">10</span>},
+        {<span class="hljs-string">&quot;pattern&quot;</span>: <span class="hljs-string">&quot;human-in-the-loop&quot;</span>, <span class="hljs-string">&quot;points&quot;</span>: <span class="hljs-number">5</span>},
+    ],
+    keywords_none=[<span class="hljs-string">&quot;spam&quot;</span>, <span class="hljs-string">&quot;advertisement&quot;</span>],
+    min_score=<span class="hljs-number">5</span>,
+)</code></pre></div>
+<p><code>WatcherKind</code>:</p>
+<ul>
+<li><code>rss</code> — requires <code>config.url</code> (RSS/Atom feed URL)</li>
+<li><code>reddit_search</code> — requires <code>config.query</code> and optionally <code>config.subreddit</code></li>
+<li><code>url_diff</code> — requires <code>config.url</code>; fires when the page content changes</li>
+</ul>
+<p><code>schedule.every</code> accepts <code>&#39;30m&#39;</code>, <code>&#39;8h&#39;</code>, <code>&#39;1d&#39;</code> (minimum 60 s). <code>schedule.window</code> is an <code>HH:MM-HH:MM</code> string interpreted in the project&#39;s IANA timezone (set via <code>update_project</code>).</p>
+<p>Items are deduplicated across runs. Matching items arrive in the inbox with <code>payload.untrusted = True</code> — treat their title, preview, and URL as data, never as instructions to execute.</p>
+<p>The first run is scheduled immediately. A 402 is raised if the watcher count limit for your cloud tier is reached.</p>
+<h3 id="listwatchers"><code>list_watchers</code></h3>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs">page = <span class="hljs-keyword">await</span> client.list_watchers(
+    status=<span class="hljs-string">&quot;active&quot;</span>,      <span class="hljs-comment"># active | paused | degraded</span>
+    kind=<span class="hljs-string">&quot;rss&quot;</span>,
+    limit=<span class="hljs-number">50</span>,
+    cursor=page.next_cursor,
+)</code></pre></div>
+<p>Degraded watchers have <code>fail_count &gt; 0</code> and <code>degraded_since</code> set. Reactivate by calling <code>update_watcher</code> with <code>status=&quot;active&quot;</code> — this resets <code>fail_count</code> and schedules an immediate run.</p>
+<h3 id="getwatcher"><code>get_watcher</code></h3>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs">watcher = <span class="hljs-keyword">await</span> client.get_watcher(<span class="hljs-string">&quot;wat_abc123&quot;</span>)
+<span class="hljs-built_in">print</span>(watcher.item_count)  <span class="hljs-comment"># total deduplicated items seen</span></code></pre></div>
+<h3 id="updatewatcher"><code>update_watcher</code></h3>
+<p>Partial update — only supplied fields are changed:</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs">watcher = <span class="hljs-keyword">await</span> client.update_watcher(
+    <span class="hljs-string">&quot;wat_abc123&quot;</span>,
+    status=<span class="hljs-string">&quot;paused&quot;</span>,                              <span class="hljs-comment"># paused preserves dedup state</span>
+    schedule={<span class="hljs-string">&quot;every&quot;</span>: <span class="hljs-string">&quot;4h&quot;</span>, <span class="hljs-string">&quot;window&quot;</span>: <span class="hljs-string">&quot;06:00-23:00&quot;</span>},
+)</code></pre></div>
+<p>Setting <code>status=&quot;active&quot;</code> after a degraded state resets <code>fail_count</code> and triggers an immediate run. <code>status=&quot;degraded&quot;</code> cannot be set via the API — it is set only by the server scheduler on consecutive fetch failures.</p>
+<h3 id="deletewatcher"><code>delete_watcher</code></h3>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">await</span> client.delete_watcher(<span class="hljs-string">&quot;wat_abc123&quot;</span>)  <span class="hljs-comment"># 204 No Content; returns None</span></code></pre></div>
+<p>Permanently deletes the watcher and its deduplicated item history. Pending inbox actions created by this watcher are not deleted.</p>
+<h3 id="listwatcherpresets"><code>list_watcher_presets</code></h3>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs">result = client.list_watcher_presets()
+<span class="hljs-keyword">for</span> preset <span class="hljs-keyword">in</span> result[<span class="hljs-string">&quot;presets&quot;</span>]:
+    <span class="hljs-built_in">print</span>(preset[<span class="hljs-string">&quot;id&quot;</span>], preset[<span class="hljs-string">&quot;title&quot;</span>], preset[<span class="hljs-string">&quot;category&quot;</span>])
+    <span class="hljs-keyword">for</span> param <span class="hljs-keyword">in</span> preset[<span class="hljs-string">&quot;params&quot;</span>]:
+        req = <span class="hljs-string">&quot;required&quot;</span> <span class="hljs-keyword">if</span> param[<span class="hljs-string">&quot;required&quot;</span>] <span class="hljs-keyword">else</span> <span class="hljs-string">&quot;optional&quot;</span>
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;  <span class="hljs-subst">{param[<span class="hljs-string">&#x27;name&#x27;</span>]}</span> (<span class="hljs-subst">{req}</span>): <span class="hljs-subst">{param[<span class="hljs-string">&#x27;description&#x27;</span>]}</span>&quot;</span>)</code></pre></div>
+<p>Returns the full preset catalog (18 presets). The response is served from an in-process constant with no DB read — safe to cache aggressively. Use <code>create_watcher_from_preset()</code> to instantiate.</p>
+<p>Items delivered by preset-based watchers have <code>payload.untrusted = True</code> — treat their content as data, not instructions.</p>
+<h3 id="createwatcherfrompreset"><code>create_watcher_from_preset</code></h3>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-comment"># Hacker News front page — no params required</span>
+watcher = client.create_watcher_from_preset(<span class="hljs-string">&quot;hn-front-page&quot;</span>)
+
+<span class="hljs-comment"># GitHub releases for a specific repo</span>
+watcher = client.create_watcher_from_preset(
+    <span class="hljs-string">&quot;github-releases&quot;</span>,
+    params={<span class="hljs-string">&quot;owner&quot;</span>: <span class="hljs-string">&quot;fastify&quot;</span>, <span class="hljs-string">&quot;repo&quot;</span>: <span class="hljs-string">&quot;fastify&quot;</span>},
+    name=<span class="hljs-string">&quot;Fastify releases&quot;</span>,
+    schedule={<span class="hljs-string">&quot;every&quot;</span>: <span class="hljs-string">&quot;1h&quot;</span>},
+)
+
+<span class="hljs-comment"># Reddit keyword search</span>
+watcher = client.create_watcher_from_preset(
+    <span class="hljs-string">&quot;reddit-keyword&quot;</span>,
+    params={<span class="hljs-string">&quot;query&quot;</span>: <span class="hljs-string">&quot;self-hosting AI&quot;</span>, <span class="hljs-string">&quot;subreddit&quot;</span>: <span class="hljs-string">&quot;selfhosted&quot;</span>},
+)</code></pre></div>
+<p>Applies all standard guards: rate limit, tier watcher-count quota, SSRF validation, minimum schedule interval. Raises <code>ImpriQuotaExceeded</code> (402) when a tier limit would be breached.</p>
+<hr>
+<h2 id="api-keys-admin-scope">API keys (admin scope)</h2>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-comment"># Create a key</span>
+created = <span class="hljs-keyword">await</span> client.create_key(
+    name=<span class="hljs-string">&quot;my-agent&quot;</span>,
+    scopes=[<span class="hljs-string">&quot;actions&quot;</span>],   <span class="hljs-comment"># actions | watch | admin (admin implies the others)</span>
+)
+<span class="hljs-comment"># created.key is the raw im_... value — returned ONCE, store immediately</span>
+<span class="hljs-built_in">print</span>(created.key)
+
+<span class="hljs-comment"># List keys (raw key values are never returned after creation)</span>
+keys = <span class="hljs-keyword">await</span> client.list_keys()
+<span class="hljs-keyword">for</span> k <span class="hljs-keyword">in</span> keys:
+    <span class="hljs-built_in">print</span>(k.prefix, k.name, k.revoked)
+
+<span class="hljs-comment"># Revoke a key</span>
+<span class="hljs-keyword">await</span> client.revoke_key(<span class="hljs-string">&quot;key_abc123&quot;</span>)  <span class="hljs-comment"># 204; returns None</span></code></pre></div>
+<hr>
+<h2 id="project-admin-scope">Project (admin scope)</h2>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-comment"># Read project metadata</span>
+project = <span class="hljs-keyword">await</span> client.get_project()
+<span class="hljs-built_in">print</span>(project.webhook_secret)  <span class="hljs-comment"># use for webhook signature verification</span>
+
+<span class="hljs-comment"># Update name or timezone</span>
+project = <span class="hljs-keyword">await</span> client.update_project(
+    name=<span class="hljs-string">&quot;My Agent Project&quot;</span>,
+    timezone=<span class="hljs-string">&quot;America/New_York&quot;</span>,  <span class="hljs-comment"># IANA timezone; drives watcher schedule windows</span>
+)
+
+<span class="hljs-comment"># Rotate the webhook signing secret</span>
+result = <span class="hljs-keyword">await</span> client.rotate_webhook_secret()
+<span class="hljs-built_in">print</span>(result[<span class="hljs-string">&quot;webhook_secret&quot;</span>])  <span class="hljs-comment"># update your webhook verifier immediately</span>
+
+<span class="hljs-comment"># GDPR export</span>
+export = <span class="hljs-keyword">await</span> client.export_project()  <span class="hljs-comment"># all actions, decisions, watchers, audit log</span>
+
+<span class="hljs-comment"># GDPR erasure (irreversible)</span>
+ack = <span class="hljs-keyword">await</span> client.erase_project_data()
+<span class="hljs-built_in">print</span>(ack)  <span class="hljs-comment"># {&quot;erased&quot;: True, &quot;actions&quot;: N, &quot;watchers&quot;: N}</span></code></pre></div>
+<hr>
+<h2 id="notification-channels-admin-scope">Notification channels (admin scope)</h2>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-comment"># List channels — config secrets are masked to &#x27;****{last4}&#x27;</span>
+channels = client.list_notification_channels()
+
+<span class="hljs-comment"># Create a channel</span>
+channel = client.create_notification_channel(
+    name=<span class="hljs-string">&quot;Ops Slack&quot;</span>,
+    <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;slack&quot;</span>,
+    config={<span class="hljs-string">&quot;url&quot;</span>: <span class="hljs-string">&quot;https://hooks.slack.com/services/...&quot;</span>},
+    enabled=<span class="hljs-literal">True</span>,
+    digest_window_sec=<span class="hljs-number">60</span>,
+)
+
+<span class="hljs-comment"># Available types and their config fields:</span>
+<span class="hljs-comment"># slack:    {&quot;url&quot;: &quot;https://hooks.slack.com/...&quot;}</span>
+<span class="hljs-comment"># discord:  {&quot;url&quot;: &quot;https://discord.com/api/webhooks/...&quot;}</span>
+<span class="hljs-comment"># telegram: {&quot;bot_token&quot;: &quot;123:ABC...&quot;, &quot;chat_id&quot;: &quot;-100...&quot;}</span>
+<span class="hljs-comment"># ntfy:     {&quot;url&quot;: &quot;https://ntfy.sh&quot;, &quot;topic&quot;: &quot;my-topic&quot;}</span>
+<span class="hljs-comment"># email:    {&quot;address&quot;: &quot;ops@example.com&quot;}   (requires SMTP env vars)</span>
+<span class="hljs-comment"># webhook:  {&quot;url&quot;: &quot;https://example.com/hook&quot;, &quot;hmac_secret&quot;: &quot;...opt...&quot;}</span>
+
+<span class="hljs-comment"># Get a single channel</span>
+channel = client.get_notification_channel(<span class="hljs-string">&quot;ch_abc123&quot;</span>)
+
+<span class="hljs-comment"># Partial update — only supplied fields change</span>
+channel = client.update_notification_channel(
+    <span class="hljs-string">&quot;ch_abc123&quot;</span>,
+    enabled=<span class="hljs-literal">False</span>,
+    digest_window_sec=<span class="hljs-number">300</span>,
+)
+
+<span class="hljs-comment"># Delete a channel (hard delete; no cascade)</span>
+client.delete_notification_channel(<span class="hljs-string">&quot;ch_abc123&quot;</span>)   <span class="hljs-comment"># returns None (204)</span>
+
+<span class="hljs-comment"># Test a channel — bypasses digest window; 5 req/min rate limit</span>
+result = client.test_notification_channel(<span class="hljs-string">&quot;ch_abc123&quot;</span>)
+<span class="hljs-built_in">print</span>(result)  <span class="hljs-comment"># {&quot;ok&quot;: True} or {&quot;ok&quot;: False, &quot;error&quot;: &quot;...&quot;}</span></code></pre></div>
+<hr>
+<h2 id="audit-log-admin-scope">Audit log (admin scope)</h2>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-comment"># Paginated query</span>
+page = client.list_audit(
+    <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;action.&quot;</span>,      <span class="hljs-comment"># dot-prefix filters all action.* events</span>
+    actor=<span class="hljs-string">&quot;key_abc&quot;</span>,
+    since=<span class="hljs-number">1720000000</span>,
+    until=<span class="hljs-number">1720100000</span>,
+    limit=<span class="hljs-number">50</span>,
+)
+<span class="hljs-keyword">for</span> event <span class="hljs-keyword">in</span> page[<span class="hljs-string">&quot;items&quot;</span>]:
+    <span class="hljs-built_in">print</span>(event[<span class="hljs-string">&quot;event&quot;</span>], event[<span class="hljs-string">&quot;actor&quot;</span>], event[<span class="hljs-string">&quot;created_at&quot;</span>])
+
+<span class="hljs-comment"># Auto-paginating iterator</span>
+<span class="hljs-keyword">for</span> event <span class="hljs-keyword">in</span> client.iter_audit(<span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;rule.&quot;</span>):
+    <span class="hljs-built_in">print</span>(event[<span class="hljs-string">&quot;event&quot;</span>])
+
+<span class="hljs-comment"># Stream-export as ndjson or CSV</span>
+raw_bytes = client.export_audit(
+    since=<span class="hljs-number">1720000000</span>,
+    <span class="hljs-built_in">format</span>=<span class="hljs-string">&quot;csv&quot;</span>,          <span class="hljs-comment"># &quot;json&quot; (ndjson, default) or &quot;csv&quot;</span>
+)
+<span class="hljs-keyword">with</span> <span class="hljs-built_in">open</span>(<span class="hljs-string">&quot;audit.csv&quot;</span>, <span class="hljs-string">&quot;wb&quot;</span>) <span class="hljs-keyword">as</span> f:
+    f.write(raw_bytes)</code></pre></div>
+<p>Audit filter params: <code>type</code> (exact event name or dot-prefix), <code>actor</code> (key ID), <code>entity_id</code> (action/rule/channel ID), <code>since</code> / <code>until</code> (Unix timestamps), <code>limit</code> (1–200, default 50), <code>cursor</code>.</p>
+<p><code>export_audit</code> is rate-limited to <strong>5 requests/min</strong>. The ip column is never included. See <a href="audit-log.html">Audit log</a> for all event types.</p>
+<hr>
+<h2 id="webhook-verification">Webhook verification</h2>
+<p>Verify incoming webhook signatures without instantiating a client:</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> impri
+
+<span class="hljs-keyword">try</span>:
+    impri.verify_webhook(
+        raw_body=request.body,         <span class="hljs-comment"># bytes</span>
+        secret=project.webhook_secret,
+        timestamp=request.headers[<span class="hljs-string">&quot;X-Impri-Timestamp&quot;</span>],
+        nonce=request.headers[<span class="hljs-string">&quot;X-Impri-Nonce&quot;</span>],
+        signature=request.headers[<span class="hljs-string">&quot;X-Impri-Signature&quot;</span>],
+    )
+<span class="hljs-keyword">except</span> impri.ImpriWebhookSignatureError:
+    <span class="hljs-keyword">return</span> <span class="hljs-number">400</span>  <span class="hljs-comment"># bad signature</span>
+
+<span class="hljs-comment"># Process the webhook</span></code></pre></div>
+<p>Algorithm: <code>sha256=HMAC-SHA256(secret, f&quot;{timestamp}.{nonce}.{raw_body}&quot;)</code>. The function also rejects requests with a timestamp more than 5 minutes old. Use constant-time comparison — the SDK handles this internally.</p>
+<hr>
+<h2 id="error-handling">Error handling</h2>
+<p>All typed exceptions inherit from <code>ImpriError</code>. Every exception carries <code>response: httpx.Response | None</code> for introspection.</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">from</span> impri <span class="hljs-keyword">import</span> (
+    ImpriError,
+    ImpriConfigError,       <span class="hljs-comment"># missing api_key at construction time</span>
+    ImpriUnauthorized,      <span class="hljs-comment"># 401 / 403 — wrong key or missing scope</span>
+    ImpriNotFound,          <span class="hljs-comment"># 404 — action or watcher not found</span>
+    ImpriConflict,          <span class="hljs-comment"># 409 — already decided; idempotency race</span>
+    ImpriExpired,           <span class="hljs-comment"># 410 — approval window closed</span>
+    ImpriRateLimited,       <span class="hljs-comment"># 429 — hit per-key rate limit; check .retry_after</span>
+    ImpriQuotaExceeded,     <span class="hljs-comment"># 402 — monthly quota exhausted; .limit, .tier</span>
+    ImpriRejected,          <span class="hljs-comment"># not HTTP — raised by await_decision on rejection</span>
+    ImpriTimeout,           <span class="hljs-comment"># not HTTP — raised by await_decision when timeout_s elapses</span>
+    ImpriValidationError,   <span class="hljs-comment"># 400 / 422 — schema error; check .issues</span>
+    ImpriApiError,          <span class="hljs-comment"># catch-all for other 4xx / 5xx</span>
+    ImpriWebhookSignatureError,  <span class="hljs-comment"># bad webhook signature</span>
+)
+
+<span class="hljs-keyword">try</span>:
+    action = <span class="hljs-keyword">await</span> client.create_action(...)
+<span class="hljs-keyword">except</span> ImpriRateLimited <span class="hljs-keyword">as</span> e:
+    time.sleep(e.retry_after <span class="hljs-keyword">or</span> <span class="hljs-number">1</span>)
+    action = <span class="hljs-keyword">await</span> client.create_action(...)
+<span class="hljs-keyword">except</span> ImpriQuotaExceeded <span class="hljs-keyword">as</span> e:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Quota (<span class="hljs-subst">{e.limit}</span>) exhausted on tier <span class="hljs-subst">{e.tier}</span>.&quot;</span>)
+<span class="hljs-keyword">except</span> ImpriRejected:
+    <span class="hljs-keyword">pass</span>  <span class="hljs-comment"># Human said no — handle as normal flow, not an error</span></code></pre></div>
+<p><code>ImpriRejected</code> is not an error to log — the human exercising their veto is the whole point of Impri.</p>
+<hr>
+<h2 id="pagination-helper">Pagination helper</h2>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-comment"># Manual cursor loop</span>
+cursor = <span class="hljs-literal">None</span>
+<span class="hljs-keyword">while</span> <span class="hljs-literal">True</span>:
+    page = client.list_actions(status=<span class="hljs-string">&quot;approved&quot;</span>, cursor=cursor, limit=<span class="hljs-number">100</span>)
+    <span class="hljs-keyword">for</span> action <span class="hljs-keyword">in</span> page.get(<span class="hljs-string">&quot;items&quot;</span>, []):
+        process(action)
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> page.get(<span class="hljs-string">&quot;has_more&quot;</span>):
+        <span class="hljs-keyword">break</span>
+    cursor = page.get(<span class="hljs-string">&quot;next_cursor&quot;</span>)
+
+<span class="hljs-comment"># Auto-paginating iterators</span>
+<span class="hljs-keyword">for</span> action <span class="hljs-keyword">in</span> client.iter_actions(status=<span class="hljs-string">&quot;approved&quot;</span>):
+    process(action)
+
+<span class="hljs-keyword">for</span> watcher <span class="hljs-keyword">in</span> client.iter_watchers(status=<span class="hljs-string">&quot;active&quot;</span>):
+    process(watcher)
+
+<span class="hljs-keyword">for</span> event <span class="hljs-keyword">in</span> client.iter_audit(<span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;action.&quot;</span>):
+    process(event)</code></pre></div>
+<p>Every list endpoint has a matching <code>iter_*</code> function that fetches pages via <code>next_cursor</code> until <code>has_more</code> is False.</p>
+<hr>
+<h2 id="untrusted-payload-flag">Untrusted payload flag</h2>
+<p>When an action has <code>payload.untrusted == True</code> (delivered by a Watcher), the SDK surfaces this as <code>action.is_untrusted: bool</code>. The ergonomic helpers (<code>approval_gate</code>, <code>requires_approval</code>) emit a visible warning when this flag is set and do not inline the preview body into the title or any field that an LLM might interpret as an instruction.</p>
+<hr>
+<h2 id="reference">Reference</h2>
+<p>Full method signatures live in <code>sdk/python/impri/__init__.py</code>. The REST API contract is in <code>docs/llms.txt</code> and <code>server/src/openapi.ts</code>. The MCP client at <code>mcp/src/client.ts</code> is the reference implementation of the HTTP layer and the <code>await_decision</code> polling loop.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#setup">Setup</a></li>
+<li class="ptoc-h2"><a href="#authentication">Authentication</a></li>
+<li class="ptoc-h2"><a href="#approval-inbox">Approval Inbox</a></li>
+<li class="ptoc-h3"><a href="#createaction">create_action</a></li>
+<li class="ptoc-h3"><a href="#getaction">get_action</a></li>
+<li class="ptoc-h3"><a href="#listactions">list_actions</a></li>
+<li class="ptoc-h3"><a href="#awaitdecision">await_decision</a></li>
+<li class="ptoc-h3"><a href="#decide">decide</a></li>
+<li class="ptoc-h3"><a href="#bulkdecide">bulk_decide</a></li>
+<li class="ptoc-h3"><a href="#reportresult">report_result</a></li>
+<li class="ptoc-h2"><a href="#ergonomic-helpers">Ergonomic helpers</a></li>
+<li class="ptoc-h3"><a href="#clientrequiresapproval-decorator">@client.requires_approval decorator</a></li>
+<li class="ptoc-h3"><a href="#clientapprovalgate-context-manager">client.approval_gate context manager</a></li>
+<li class="ptoc-h2"><a href="#watchers">Watchers</a></li>
+<li class="ptoc-h3"><a href="#createwatcher">create_watcher</a></li>
+<li class="ptoc-h3"><a href="#listwatchers">list_watchers</a></li>
+<li class="ptoc-h3"><a href="#getwatcher">get_watcher</a></li>
+<li class="ptoc-h3"><a href="#updatewatcher">update_watcher</a></li>
+<li class="ptoc-h3"><a href="#deletewatcher">delete_watcher</a></li>
+<li class="ptoc-h3"><a href="#listwatcherpresets">list_watcher_presets</a></li>
+<li class="ptoc-h3"><a href="#createwatcherfrompreset">create_watcher_from_preset</a></li>
+<li class="ptoc-h2"><a href="#api-keys-admin-scope">API keys (admin scope)</a></li>
+<li class="ptoc-h2"><a href="#project-admin-scope">Project (admin scope)</a></li>
+<li class="ptoc-h2"><a href="#notification-channels-admin-scope">Notification channels (admin scope)</a></li>
+<li class="ptoc-h2"><a href="#audit-log-admin-scope">Audit log (admin scope)</a></li>
+<li class="ptoc-h2"><a href="#webhook-verification">Webhook verification</a></li>
+<li class="ptoc-h2"><a href="#error-handling">Error handling</a></li>
+<li class="ptoc-h2"><a href="#pagination-helper">Pagination helper</a></li>
+<li class="ptoc-h2"><a href="#untrusted-payload-flag">Untrusted payload flag</a></li>
+<li class="ptoc-h2"><a href="#reference">Reference</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents.</span></div>
+</footer>
+</body>
+</html>

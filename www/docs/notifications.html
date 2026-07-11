@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notification Channels — Impri Docs</title>
+<meta name="description" content="Impri can push a notification to your team&amp;#39;s tools the moment an action lands in the inbox. Notification channels are per-project, configurable via the Settings screen in the web inbox or via the ">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Notification Channels — Impri Docs">
+<meta property="og:description" content="Impri can push a notification to your team&amp;#39;s tools the moment an action lands in the inbox. Notification channels are per-project, configurable via the Settings screen in the web inbox or via the ">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl active">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>API reference</span>
+      <span class="bc-sep">/</span>
+      <span>Notification Channels</span>
+    </nav>
+    <h1>Notification Channels</h1>
+<p>Impri can push a notification to your team&#39;s tools the moment an action
+lands in the inbox. Notification channels are per-project, configurable
+via the Settings screen in the web inbox or via the REST API, and require
+an <strong>admin-scope</strong> API key.</p>
+<hr>
+<h2 id="overview">Overview</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Channel type</th>
+<th>What you need</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>slack</code></td>
+<td>Slack Incoming Webhook URL</td>
+</tr>
+<tr>
+<td><code>discord</code></td>
+<td>Discord Webhook URL</td>
+</tr>
+<tr>
+<td><code>telegram</code></td>
+<td>Telegram Bot token + chat/channel ID</td>
+</tr>
+<tr>
+<td><code>ntfy</code></td>
+<td>ntfy server URL + topic name</td>
+</tr>
+<tr>
+<td><code>email</code></td>
+<td>Recipient e-mail address (SMTP configured server-side)</td>
+</tr>
+<tr>
+<td><code>webhook</code></td>
+<td>Any HTTPS endpoint; optional HMAC signing</td>
+</tr>
+</tbody></table>
+</div>
+<p>Each channel has a <strong>digest window</strong> (<code>digest_window_sec</code>, default 60 s).
+If several actions arrive within that window, they are batched into a
+single message instead of flooding the channel. A single action always
+sends immediately.</p>
+<p>A channel that fails delivery five times in a row is automatically
+disabled. You can re-enable it from Settings after fixing the config.</p>
+<hr>
+<h2 id="configuring-channels">Configuring channels</h2>
+<h3 id="web-inbox-settings-gt-notifications">Web inbox (Settings &gt; Notifications)</h3>
+<p>Open the web inbox, go to <strong>Settings → Notifications</strong>, and click
+<strong>Add channel</strong>. Pick a type, fill in the fields, and click <strong>Save</strong>.
+Use the <strong>Send test</strong> button to verify delivery before going live.
+The URL and token fields show the last four characters only — the full
+secret is never echoed back.</p>
+<h3 id="rest-api">REST API</h3>
+<p>All channel routes require <code>Authorization: Bearer im_&lt;admin-key&gt;</code>.</p>
+<div class="code-block"><pre><code class="hljs">GET    /v1/notification-channels           List channels (masked secrets)
+POST   /v1/notification-channels           Create a channel
+GET    /v1/notification-channels/:id       Get a channel (masked secrets)
+PATCH  /v1/notification-channels/:id       Update name / config / enabled / window
+DELETE /v1/notification-channels/:id       Delete a channel
+POST   /v1/notification-channels/:id/test  Send a test message now</code></pre></div>
+<p>Rate limits: 30 req/min per key on write routes; 5 req/min per key on
+the <code>/test</code> endpoint.</p>
+<p><strong>Create a channel (POST /v1/notification-channels):</strong></p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;My Slack workspace&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;slack&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;config&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://hooks.slack.com/services/T.../B.../...&quot;</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;enabled&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;digest_window_sec&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">60</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p><code>digest_window_sec</code> must be between 10 and 3600 (seconds). The response
+echoes the created channel with secrets masked (see <a href="#secrets-and-masking">Secrets</a>).</p>
+<p><strong>Update a channel (PATCH /v1/notification-channels/:id):</strong></p>
+<p>Send only the fields you want to change. Config fields are merged — you
+do not have to resend the full config object. Updating any config field
+resets the failure counter and re-enables automatic delivery.</p>
+<hr>
+<h2 id="channel-types">Channel types</h2>
+<h3 id="slack">Slack</h3>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;slack&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;config&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://hooks.slack.com/services/...&quot;</span> <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>Sends a <a href="https://api.slack.com/block-kit" target="_blank" rel="noopener">Block Kit</a> message to the
+provided Incoming Webhook URL. The message contains a brief description
+of the pending action and a <strong>Review</strong> button that links to the inbox.</p>
+<p>The webhook URL embeds the Slack authentication token in its path — no
+separate token field is needed.</p>
+<p><strong>Security:</strong> <code>url</code> is validated as <code>http</code>/<code>https</code> and must not resolve
+to a private IP address. The value is stored as a secret and masked in
+all API responses.</p>
+<hr>
+<h3 id="discord">Discord</h3>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;discord&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;config&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://discord.com/api/webhooks/...&quot;</span> <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>Posts a rich embed to the Discord channel associated with the webhook.</p>
+<p>The request uses <code>?wait=true</code> so that non-2xx responses from Discord
+are surfaced as delivery failures (and counted toward the auto-disable
+threshold).</p>
+<p><strong>Security:</strong> same URL validation as Slack.</p>
+<hr>
+<h3 id="telegram">Telegram</h3>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;telegram&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;config&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;bot_token&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;1234567890:AAF...&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;chat_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;-1001234567890&quot;</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>Sends an HTML-formatted message via the Telegram Bot API to the
+specified chat or channel.</p>
+<p><code>bot_token</code> must match <code>/^\d+:[A-Za-z0-9_-]+$/</code> — this prevents URL
+path injection when the token is assembled into
+<code>https://api.telegram.org/bot{token}/sendMessage</code>. The base URL is
+hardcoded server-side; no part of it comes from user input.</p>
+<p><code>chat_id</code> is a non-empty string up to 50 characters. It is returned
+as-is in API responses because it is not a secret.</p>
+<p><code>bot_token</code> is treated as a secret and masked in API responses.</p>
+<p><strong>Security:</strong> <code>bot_token</code> format validated by Zod. The assembled API
+URL goes through <code>fetchGuarded()</code> for defense in depth (the domain is
+hardcoded, but DNS rebinding protection is applied regardless). Title,
+kind, and the inbox URL are HTML-escaped before interpolation to prevent
+markup injection.</p>
+<h4>Telegram approval mode (optional)</h4>
+<p>Three additional optional fields enable <strong>in-chat Approve / Reject
+buttons</strong> so your team can decide without opening the web inbox:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;telegram&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;config&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;bot_token&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;1234567890:AAF...&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;chat_id&quot;</span><span class="hljs-punctuation">:</span>   <span class="hljs-string">&quot;-1001234567890&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;approval_mode&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;allowed_approver_user_ids&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-number">123456789</span><span class="hljs-punctuation">,</span> <span class="hljs-number">987654321</span><span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>approval_mode</code></td>
+<td>boolean</td>
+<td><code>false</code></td>
+<td>When <code>true</code>, single-action sends include inline Approve / Reject buttons. Digest batches always fall back to a plain notification with a &quot;View inbox&quot; link.</td>
+</tr>
+<tr>
+<td><code>allowed_approver_user_ids</code></td>
+<td>integer[]</td>
+<td><code>[]</code></td>
+<td>Telegram numeric user IDs (the integer <code>from.id</code>) allowed to tap the buttons. Max 50. Must be non-empty when <code>approval_mode</code> is <code>true</code> — a validation error is raised otherwise.</td>
+</tr>
+<tr>
+<td><code>hmac_secret</code></td>
+<td>string</td>
+<td>auto-generated</td>
+<td>16–256 character secret used to sign button payloads and derive the Telegram webhook verification token. Auto-generated on channel creation if omitted. Masked (<code>****{last4}</code>) in all responses. Rotate via PATCH.</td>
+</tr>
+</tbody></table>
+</div>
+<p>When <code>approval_mode</code> is <code>true</code> and <code>BASE_URL</code> is a publicly reachable
+URL, Impri automatically registers a Telegram webhook at:</p>
+<div class="code-block"><pre><code class="hljs">POST /v1/integrations/telegram/webhook/:channelId</code></pre></div>
+<p>Decisions recorded via this endpoint are equivalent to decisions made
+through the web inbox: they run the same database transaction, fire
+<code>callback_url</code> webhooks, and appear in the audit log with
+<code>decided_by = &quot;tg:{telegram_user_id}&quot;</code>.</p>
+<p>See <a href="telegram-approval.html">docs/telegram-approval.md</a> for full setup
+instructions, config reference, security model, and troubleshooting.</p>
+<hr>
+<h3 id="ntfy">ntfy</h3>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;ntfy&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;config&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://ntfy.sh&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;topic&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;my-impri-alerts&quot;</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>Sends a notification to <code>{url}/{topic}</code> on any ntfy-compatible server.
+This generalises the global <code>NTFY_URL</code> / <code>NTFY_TOPIC</code> environment
+variables to per-project, per-channel configuration.</p>
+<p><code>topic</code> must match <code>/^[A-Za-z0-9_/-]{1,64}$/</code> to prevent path traversal
+when the URL is assembled server-side.</p>
+<p><code>url</code> is treated as a secret (useful for self-hosted ntfy instances that
+embed a token in the URL). <code>topic</code> is not a secret and is returned as-is.</p>
+<p><strong>Security:</strong> <code>url</code> validated as <code>http</code>/<code>https</code>, no private IPs.
+Title and kind values are passed through the <code>headerSafe()</code> helper
+(strips <code>\r</code> / <code>\n</code>) before being placed in <code>Title</code> and <code>Tags</code> HTTP
+headers — identical to the global ntfy adapter in <code>notify.ts</code>.</p>
+<hr>
+<h3 id="email">Email</h3>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;email&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;config&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;address&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;team@example.com&quot;</span> <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>Sends a plain-text email using the SMTP transport configured via
+environment variables (<code>SMTP_HOST</code>, <code>SMTP_PORT</code>, <code>SMTP_SECURE</code>,
+<code>SMTP_USER</code>, <code>SMTP_PASS</code>, <code>SMTP_FROM</code>). If <code>SMTP_HOST</code> is not set,
+delivery is silently skipped (a warning is logged), matching the
+behaviour of the global <code>notifyEmail()</code> adapter.</p>
+<p><code>address</code> is validated as an e-mail address by Zod. It is not a secret
+and is returned as-is in API responses.</p>
+<p>The email subject is <code>[Impri] {title}</code> with CR/LF stripped (header
+injection guard). The body is plain text only — no HTML — to avoid
+template injection surface.</p>
+<hr>
+<h3 id="webhook">Webhook</h3>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;webhook&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;config&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://your-service.example.com/impri-hook&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;hmac_secret&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;optional-signing-secret-min-16-chars&quot;</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>POSTs a JSON payload to <code>url</code> on every pending action:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;event&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;action.pending&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_...&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;title&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;...&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;kind&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;...&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;inbox_url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://app.impri.dev/inbox/act_...&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;triggered_at&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1720003600</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;escalate&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p><code>escalate</code> is <code>true</code> when the action matched a rule with
+<code>rule_action: &quot;escalate&quot;</code>, letting receivers distinguish escalated
+notifications from ordinary ones.</p>
+<p>When <code>hmac_secret</code> is provided, the outbound request carries the same
+HMAC-SHA256 signature headers used by the existing webhook delivery
+system:</p>
+<div class="code-block"><pre><code class="hljs">X-Impri-Signature: sha256={sig}
+X-Impri-Timestamp: {unix-sec}
+X-Impri-Nonce: {hex}</code></pre></div>
+<p>Signature is computed over <code>{timestamp}.{nonce}.{rawBody}</code> using
+<code>signWebhookBody()</code> from <code>webhooks.ts</code> — so receivers can share the
+same verification logic as for action-decision webhooks.</p>
+<p><code>hmac_secret</code> must be 16–256 characters. Both <code>url</code> and <code>hmac_secret</code>
+are treated as secrets and masked in API responses.</p>
+<p><strong>Security:</strong> <code>url</code> validated as <code>http</code>/<code>https</code>, no private IPs,
+routed through <code>fetchGuarded()</code>.</p>
+<hr>
+<h2 id="test-endpoint">Test endpoint</h2>
+<div class="code-block"><pre><code class="hljs">POST /v1/notification-channels/:id/test</code></pre></div>
+<p>Sends a test message through the channel immediately, bypassing the
+digest window. The channel&#39;s <code>last_fired_at</code>, <code>digest_queue</code>, and
+<code>fail_count</code> are not modified — a test send does not count as a delivery
+attempt.</p>
+<p>Rate limit: 5 req/min per key.</p>
+<p>Response:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;ok&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span> <span class="hljs-punctuation">}</span></code></pre></div>
+<p>or on failure:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;ok&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;error&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;connection refused&quot;</span> <span class="hljs-punctuation">}</span></code></pre></div>
+<p>The error string is sanitised — it will not contain the secret from the
+channel config.</p>
+<hr>
+<h2 id="digest-window-and-deduplication">Digest window and deduplication</h2>
+<p>Each channel has a <code>digest_window_sec</code> (default 60 s). The window
+governs two behaviours:</p>
+<ol>
+<li><p><strong>First notification always fires immediately.</strong> When
+<code>last_fired_at</code> is null (channel never fired) or the window has
+expired, the notification is sent straight away.</p>
+</li>
+<li><p><strong>Subsequent notifications within the window are queued.</strong> They
+accumulate in <code>digest_queue</code> and are flushed by a background tick
+that runs approximately every 30 seconds. When the flush fires, all
+queued items plus the triggering item are combined into a single
+digest message:</p>
+<ul>
+<li>1 item → normal single-action message.</li>
+<li>2+ items → &quot;N actions pending your approval: Title 1, Title 2 …
+(+N more)&quot;.</li>
+</ul>
+</li>
+<li><p><strong>Same <code>action_id</code> is never queued twice</strong> for the same channel.
+This complements the existing soft-dedup in <code>POST /v1/actions</code>
+(identical preview hash + kind + pending = one row), so a burst of
+identical requests produces at most one notification.</p>
+</li>
+</ol>
+<hr>
+<h2 id="triggers">Triggers</h2>
+<p>A channel fires when:</p>
+<ul>
+<li><p><strong>An action becomes pending</strong> — immediately after <code>POST /v1/actions</code>
+creates an action with <code>status = &#39;pending&#39;</code>. This covers all rule
+outcomes that leave the action in pending state: no rule matched,
+<code>set_expiry</code>, <code>require_n_approvers</code>, and <code>escalate</code>. Auto-approved
+or auto-rejected actions (rule outcomes <code>auto_approve</code> /
+<code>auto_reject</code>) do not trigger channel notifications because no human
+review is needed.</p>
+</li>
+<li><p><strong>Escalate rule matched</strong> — the channel payload includes
+<code>&quot;escalate&quot;: true</code>. The global escalate override (<code>escalateChannel</code>
+in <code>notify.ts</code>) still fires simultaneously; per-project channels fire
+in addition.</p>
+</li>
+</ul>
+<p>Both paths call <code>notifyChannels()</code> inside a <code>.catch(() =&gt; {})</code> wrapper,
+so a failing channel never blocks action creation or the HTTP response.
+One channel failing does not prevent the others from firing.</p>
+<hr>
+<h2 id="auto-disable-on-repeated-failure">Auto-disable on repeated failure</h2>
+<p>After <strong>5 consecutive delivery failures</strong>, a channel is automatically
+set to <code>enabled = false</code> and a structured warning is logged
+(<code>channelId</code>, <code>type</code>, <code>projectId</code>). This prevents a misconfigured
+channel from silently absorbing notification attempts.</p>
+<p>To re-enable, fix the config (via <code>PATCH /v1/notification-channels/:id</code>)
+and then re-enable (<code>&quot;enabled&quot;: true</code> in the same or a separate PATCH).
+Updating the config resets <code>fail_count</code> to 0 automatically.</p>
+<p>The threshold (default 5) will be configurable via
+<code>IMPRI_CHANNEL_MAX_FAILS</code> in a future release.</p>
+<hr>
+<h2 id="secrets-and-masking">Secrets and masking</h2>
+<p>All fields that contain credentials are <strong>masked</strong> in every API response
+— list, get, create, and update. The raw value is never returned after
+creation. Masking rules:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Channel</th>
+<th>Field masked</th>
+<th>Mask format</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>slack</code></td>
+<td><code>url</code></td>
+<td><code>****{last4}</code></td>
+</tr>
+<tr>
+<td><code>discord</code></td>
+<td><code>url</code></td>
+<td><code>****{last4}</code></td>
+</tr>
+<tr>
+<td><code>telegram</code></td>
+<td><code>bot_token</code></td>
+<td><code>****{last4}</code></td>
+</tr>
+<tr>
+<td><code>telegram</code></td>
+<td><code>chat_id</code></td>
+<td>returned as-is</td>
+</tr>
+<tr>
+<td><code>telegram</code></td>
+<td><code>approval_mode</code></td>
+<td>returned as-is</td>
+</tr>
+<tr>
+<td><code>telegram</code></td>
+<td><code>allowed_approver_user_ids</code></td>
+<td>returned as-is</td>
+</tr>
+<tr>
+<td><code>telegram</code></td>
+<td><code>hmac_secret</code> (if set)</td>
+<td><code>****{last4}</code></td>
+</tr>
+<tr>
+<td><code>ntfy</code></td>
+<td><code>url</code></td>
+<td><code>****{last4}</code></td>
+</tr>
+<tr>
+<td><code>ntfy</code></td>
+<td><code>topic</code></td>
+<td>returned as-is</td>
+</tr>
+<tr>
+<td><code>email</code></td>
+<td><code>address</code></td>
+<td>returned as-is</td>
+</tr>
+<tr>
+<td><code>webhook</code></td>
+<td><code>url</code></td>
+<td><code>****{last4}</code></td>
+</tr>
+<tr>
+<td><code>webhook</code></td>
+<td><code>hmac_secret</code> (if set)</td>
+<td><code>****{last4}</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Any config value shorter than 5 characters is replaced entirely with
+<code>****</code>.</p>
+<p>Secrets are stored as plaintext JSON in the SQLite <code>config</code> column. The
+column is only reachable via admin-scope API keys. A future hardening
+step will encrypt the config column at rest using AES-256-GCM with a
+key from <code>IMPRI_CONFIG_KEY</code>.</p>
+<p>Secrets are never interpolated into log messages. Structured error logs
+record only <code>channelId</code>, <code>type</code>, <code>projectId</code>, and a sanitised error
+message string.</p>
+<hr>
+<h2 id="ssrf-protection">SSRF protection</h2>
+<p>Every outbound HTTP request to a user-supplied URL goes through
+<code>fetchGuarded()</code> from <code>net-guard.ts</code>. This dispatcher:</p>
+<ul>
+<li>Rejects non-<code>http</code>/<code>https</code> protocols.</li>
+<li>Rejects literal private-IP addresses at connection time.</li>
+<li>Performs DNS resolution inside the same socket lookup, pinning the
+resolved IP at connect time so a DNS rebind cannot swap in a private
+address between validation and the actual connection.</li>
+</ul>
+<p>Zod validation at write time provides an additional early-rejection
+layer: private IP literals and invalid protocols are rejected before any
+value reaches the database.</p>
+<p>The <code>IMPRI_ALLOW_PRIVATE_TARGETS=1</code> opt-out (used by operators running
+Impri on a private network) disables SSRF checks for all outbound
+requests, including channel delivery.</p>
+<hr>
+<h2 id="database-schema">Database schema</h2>
+<p>The <code>notification_channels</code> table is added via the existing <code>migrate()</code>
+pattern in <code>db.ts</code> (checks <code>sqlite_master</code>, creates if absent; never
+touches existing tables or rows):</p>
+<div class="code-block"><span class="code-lang">sql</span><pre><code class="hljs"><span class="hljs-keyword">CREATE TABLE</span> notification_channels (
+  id                TEXT    <span class="hljs-keyword">PRIMARY KEY</span>,
+  project_id        TEXT    <span class="hljs-keyword">NOT NULL</span> <span class="hljs-keyword">REFERENCES</span> projects(id),
+  name              TEXT    <span class="hljs-keyword">NOT NULL</span>,
+  type              TEXT    <span class="hljs-keyword">NOT NULL</span>
+                            <span class="hljs-keyword">CHECK</span>(type <span class="hljs-keyword">IN</span> (<span class="hljs-string">&#x27;slack&#x27;</span>,<span class="hljs-string">&#x27;discord&#x27;</span>,<span class="hljs-string">&#x27;telegram&#x27;</span>,<span class="hljs-string">&#x27;ntfy&#x27;</span>,<span class="hljs-string">&#x27;email&#x27;</span>,<span class="hljs-string">&#x27;webhook&#x27;</span>)),
+  enabled           <span class="hljs-type">INTEGER</span> <span class="hljs-keyword">NOT NULL</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-number">1</span>,
+  config            TEXT    <span class="hljs-keyword">NOT NULL</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-string">&#x27;{}&#x27;</span>,
+  digest_window_sec <span class="hljs-type">INTEGER</span> <span class="hljs-keyword">NOT NULL</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-number">60</span>,
+  last_fired_at     <span class="hljs-type">INTEGER</span>,
+  digest_queue      TEXT    <span class="hljs-keyword">NOT NULL</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-string">&#x27;[]&#x27;</span>,
+  fail_count        <span class="hljs-type">INTEGER</span> <span class="hljs-keyword">NOT NULL</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-number">0</span>,
+  last_error        TEXT,
+  created_at        <span class="hljs-type">INTEGER</span> <span class="hljs-keyword">NOT NULL</span>,
+  updated_at        <span class="hljs-type">INTEGER</span> <span class="hljs-keyword">NOT NULL</span>
+);</code></pre></div>
+<p><code>digest_queue</code> is a JSON array of <code>{actionId, title, kind}</code> objects.
+<code>last_error</code> records the sanitised reason for the last delivery failure
+(no secrets in this field). <code>config</code> stores the type-specific secret
+fields as JSON (see <a href="#secrets-and-masking">Secrets and masking</a>).</p>
+<hr>
+<h2 id="sdk-usage">SDK usage</h2>
+<p>The Python and TypeScript SDKs do not yet expose a dedicated
+notifications client. Use the REST API directly with an admin-scope key.</p>
+<p>Python example:</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> httpx
+
+headers = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">&quot;Bearer im_...&quot;</span>}
+base = <span class="hljs-string">&quot;http://localhost:8484/v1&quot;</span>
+
+<span class="hljs-comment"># Create a Slack channel</span>
+r = httpx.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{base}</span>/notification-channels&quot;</span>, headers=headers, json={
+    <span class="hljs-string">&quot;name&quot;</span>: <span class="hljs-string">&quot;ops-alerts&quot;</span>,
+    <span class="hljs-string">&quot;type&quot;</span>: <span class="hljs-string">&quot;slack&quot;</span>,
+    <span class="hljs-string">&quot;config&quot;</span>: {<span class="hljs-string">&quot;url&quot;</span>: <span class="hljs-string">&quot;https://hooks.slack.com/services/T.../B.../...&quot;</span>},
+    <span class="hljs-string">&quot;digest_window_sec&quot;</span>: <span class="hljs-number">120</span>,
+})
+r.raise_for_status()
+channel = r.json()
+<span class="hljs-built_in">print</span>(channel[<span class="hljs-string">&quot;id&quot;</span>])  <span class="hljs-comment"># chan_...</span>
+
+<span class="hljs-comment"># Test it</span>
+r = httpx.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{base}</span>/notification-channels/<span class="hljs-subst">{channel[<span class="hljs-string">&#x27;id&#x27;</span>]}</span>/test&quot;</span>, headers=headers)
+<span class="hljs-built_in">print</span>(r.json())  <span class="hljs-comment"># {&quot;ok&quot;: true}</span></code></pre></div>
+<p>TypeScript example:</p>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">const</span> headers = {
+  <span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">&quot;Bearer im_...&quot;</span>,
+  <span class="hljs-string">&quot;Content-Type&quot;</span>: <span class="hljs-string">&quot;application/json&quot;</span>,
+};
+
+<span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">&quot;http://localhost:8484/v1/notification-channels&quot;</span>, {
+  <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>,
+  headers,
+  <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({
+    <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;ops-alerts&quot;</span>,
+    <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;discord&quot;</span>,
+    <span class="hljs-attr">config</span>: { <span class="hljs-attr">url</span>: <span class="hljs-string">&quot;https://discord.com/api/webhooks/...&quot;</span> },
+  }),
+});
+<span class="hljs-keyword">const</span> channel = <span class="hljs-keyword">await</span> res.<span class="hljs-title function_">json</span>();</code></pre></div>
+<hr>
+<h2 id="environment-variables">Environment variables</h2>
+<p>The following variables affect notification channel behaviour at the
+server level. They are in addition to the channel-specific config stored
+in the database.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SMTP_HOST</code></td>
+<td>SMTP server for the <code>email</code> channel type. Absent = email delivery skipped.</td>
+</tr>
+<tr>
+<td><code>SMTP_PORT</code></td>
+<td>SMTP port (default 587).</td>
+</tr>
+<tr>
+<td><code>SMTP_SECURE</code></td>
+<td>Set to <code>&quot;true&quot;</code> for implicit TLS (port 465).</td>
+</tr>
+<tr>
+<td><code>SMTP_USER</code></td>
+<td>SMTP username (omit for open relay).</td>
+</tr>
+<tr>
+<td><code>SMTP_PASS</code></td>
+<td>SMTP password.</td>
+</tr>
+<tr>
+<td><code>SMTP_FROM</code></td>
+<td>From address used in outbound emails (default <code>impri@localhost</code>).</td>
+</tr>
+<tr>
+<td><code>IMPRI_ALLOW_PRIVATE_TARGETS</code></td>
+<td>Set to <code>&quot;1&quot;</code> to allow channel URLs that resolve to private/RFC1918 addresses (intranet use). Off by default.</td>
+</tr>
+</tbody></table>
+</div>
+<p>The global <code>NTFY_URL</code> / <code>NTFY_TOPIC</code> variables configure the
+<strong>instance-wide</strong> ntfy notification that fires for all projects (via
+<code>notifyAll()</code> in <code>notify.ts</code>). Per-project <code>ntfy</code> channels in the
+<code>notification_channels</code> table are independent and additive.</p>
+<hr>
+<h2 id="see-also">See also</h2>
+<ul>
+<li><a href="telegram-approval.html">Telegram Approval Bot</a> — step-by-step setup
+for in-chat Approve / Reject buttons, security model, and
+troubleshooting.</li>
+</ul>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#overview">Overview</a></li>
+<li class="ptoc-h2"><a href="#configuring-channels">Configuring channels</a></li>
+<li class="ptoc-h3"><a href="#web-inbox-settings-gt-notifications">Web inbox (Settings &amp;gt; Notifications)</a></li>
+<li class="ptoc-h3"><a href="#rest-api">REST API</a></li>
+<li class="ptoc-h2"><a href="#channel-types">Channel types</a></li>
+<li class="ptoc-h3"><a href="#slack">Slack</a></li>
+<li class="ptoc-h3"><a href="#discord">Discord</a></li>
+<li class="ptoc-h3"><a href="#telegram">Telegram</a></li>
+<li class="ptoc-h3"><a href="#ntfy">ntfy</a></li>
+<li class="ptoc-h3"><a href="#email">Email</a></li>
+<li class="ptoc-h3"><a href="#webhook">Webhook</a></li>
+<li class="ptoc-h2"><a href="#test-endpoint">Test endpoint</a></li>
+<li class="ptoc-h2"><a href="#digest-window-and-deduplication">Digest window and deduplication</a></li>
+<li class="ptoc-h2"><a href="#triggers">Triggers</a></li>
+<li class="ptoc-h2"><a href="#auto-disable-on-repeated-failure">Auto-disable on repeated failure</a></li>
+<li class="ptoc-h2"><a href="#secrets-and-masking">Secrets and masking</a></li>
+<li class="ptoc-h2"><a href="#ssrf-protection">SSRF protection</a></li>
+<li class="ptoc-h2"><a href="#database-schema">Database schema</a></li>
+<li class="ptoc-h2"><a href="#sdk-usage">SDK usage</a></li>
+<li class="ptoc-h2"><a href="#environment-variables">Environment variables</a></li>
+<li class="ptoc-h2"><a href="#see-also">See also</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents.</span></div>
+</footer>
+</body>
+</html>

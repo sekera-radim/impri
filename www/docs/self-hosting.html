@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Self-Hosting Impri — Impri Docs</title>
+<meta name="description" content="Impri is fully self-hostable. docker compose up gives you the complete stack: API server, web inbox, SQLite database, and the watcher scheduler. No licence required, no external services needed to get">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Self-Hosting Impri — Impri Docs">
+<meta property="og:description" content="Impri is fully self-hostable. docker compose up gives you the complete stack: API server, web inbox, SQLite database, and the watcher scheduler. No licence required, no external services needed to get">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl active">Self-hosting</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Getting started</span>
+      <span class="bc-sep">/</span>
+      <span>Self-Hosting Impri</span>
+    </nav>
+    <h1>Self-Hosting Impri</h1>
+<p>Impri is fully self-hostable. <code>docker compose up</code> gives you the complete stack: API server, web inbox, SQLite database, and the watcher scheduler. No licence required, no external services needed to get started.</p>
+<hr>
+<h2 id="requirements">Requirements</h2>
+<ul>
+<li>Docker Engine 24+ and Docker Compose v2</li>
+<li>A machine with at least 256 MB of free RAM (SQLite; a Hetzner CX22 is more than enough)</li>
+<li>(Optional) A domain name and a reverse proxy (Caddy, nginx, Traefik) for HTTPS</li>
+</ul>
+<hr>
+<h2 id="quick-start">Quick start</h2>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">git <span class="hljs-built_in">clone</span> https://github.com/impri-dev/impri.git
+<span class="hljs-built_in">cd</span> impri
+
+<span class="hljs-comment"># Generate a strong webhook secret (required — do not leave it as &quot;change-me-in-production&quot;)</span>
+<span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;WEBHOOK_SECRET=<span class="hljs-subst">$(openssl rand -hex 32)</span>&quot;</span> &gt; .<span class="hljs-built_in">env</span>
+
+docker compose up -d</code></pre></div>
+<p>The server is now running:</p>
+<ul>
+<li><strong>API</strong>: <code>http://localhost:8484/v1</code></li>
+<li><strong>Web inbox</strong>: <code>http://localhost:8080</code></li>
+<li><strong>Health check</strong>: <code>http://localhost:8484/healthz</code></li>
+<li><strong>OpenAPI spec</strong>: <code>http://localhost:8484/v1/openapi.json</code></li>
+</ul>
+<p>On first start, the bootstrap admin key is printed to the server log. Retrieve it:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">docker compose logs server | grep <span class="hljs-string">&quot;Admin API Key&quot;</span></code></pre></div>
+<p>Store this key somewhere safe — it is hashed in the database and will not be shown again.</p>
+<hr>
+<h2 id="environment-variables">Environment variables</h2>
+<p>All configuration is passed via environment variables. The easiest way to manage them is a <code>.env</code> file in the project root (Docker Compose picks it up automatically).</p>
+<h3 id="required">Required</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>WEBHOOK_SECRET</code></td>
+<td><code>change-me-in-production</code></td>
+<td>Shared secret used to sign outgoing webhook payloads (HMAC-SHA256). <strong>Change this before exposing the server to the network.</strong> The server prints a warning on startup if this is the default value.</td>
+</tr>
+</tbody></table>
+</div>
+<h3 id="server">Server</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>DB_PATH</code></td>
+<td><code>/app/data/impri.db</code></td>
+<td>Path to the SQLite database file. The Docker volume <code>impri-data</code> is mounted at <code>/app/data</code>.</td>
+</tr>
+<tr>
+<td><code>PORT</code></td>
+<td><code>8484</code></td>
+<td>Port the API server listens on inside the container.</td>
+</tr>
+<tr>
+<td><code>HOST</code></td>
+<td><code>0.0.0.0</code></td>
+<td>Bind address for the API server.</td>
+</tr>
+<tr>
+<td><code>BASE_URL</code></td>
+<td><code>http://localhost:8080</code></td>
+<td>Public base URL used to construct <code>inbox_url</code> values in API responses. Set this to your public domain when deploying with a reverse proxy (e.g. <code>https://impri.yourdomain.com</code>).</td>
+</tr>
+<tr>
+<td><code>DISABLE_WATCHER_SCHEDULER</code></td>
+<td>unset</td>
+<td>Set to <code>1</code> to disable the watcher scheduler (useful if you only use the approval inbox and do not need watchers).</td>
+</tr>
+</tbody></table>
+</div>
+<h3 id="notifications">Notifications</h3>
+<p>Impri can notify you via email (SMTP) and/or ntfy. Both are optional; the server starts without them and falls back to logging the notification.</p>
+<p><strong>Email (SMTP):</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SMTP_HOST</code></td>
+<td>unset</td>
+<td>SMTP server hostname. If not set, email notifications are skipped.</td>
+</tr>
+<tr>
+<td><code>SMTP_PORT</code></td>
+<td><code>587</code></td>
+<td>SMTP port.</td>
+</tr>
+<tr>
+<td><code>SMTP_SECURE</code></td>
+<td><code>false</code></td>
+<td>Set to <code>true</code> for TLS on connect (port 465 style). Port 587 with STARTTLS works with the default <code>false</code>.</td>
+</tr>
+<tr>
+<td><code>SMTP_USER</code></td>
+<td>unset</td>
+<td>SMTP username for authentication.</td>
+</tr>
+<tr>
+<td><code>SMTP_PASS</code></td>
+<td>unset</td>
+<td>SMTP password.</td>
+</tr>
+<tr>
+<td><code>SMTP_FROM</code></td>
+<td><code>impri@localhost</code></td>
+<td>From address for outgoing notification emails.</td>
+</tr>
+<tr>
+<td><code>NOTIFY_EMAIL</code></td>
+<td>unset</td>
+<td>Recipient address for approval notifications. Without this, no emails are sent even if SMTP is configured.</td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>ntfy (recommended for self-hosters):</strong></p>
+<p>ntfy is an open-source push notification service with mobile apps. It works with the public <code>ntfy.sh</code> instance or your own self-hosted ntfy server, and requires no registration for basic use.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>NTFY_URL</code></td>
+<td>unset</td>
+<td>ntfy server base URL (e.g. <code>https://ntfy.sh</code> or your own instance).</td>
+</tr>
+<tr>
+<td><code>NTFY_TOPIC</code></td>
+<td>unset</td>
+<td>Your private ntfy topic name. Use a random, hard-to-guess string as the topic (it acts as a shared secret on ntfy.sh).</td>
+</tr>
+</tbody></table>
+</div>
+<p>Example: to receive notifications at <code>https://ntfy.sh/my-secret-topic-abc123</code>:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">NTFY_URL=https://ntfy.sh
+NTFY_TOPIC=my-secret-topic-abc123</code></pre></div>
+<p>Install the ntfy app on your phone, subscribe to the topic, and you will receive a push notification for every pending action.</p>
+<h3 id="web-push-vapid-optional">Web push (VAPID) — optional</h3>
+<p>Browser push notifications for the web inbox. Generate a keypair once and set it
+in the environment; without these keys the web-push channel is simply off
+(email / ntfy still work).</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">npx web-push generate-vapid-keys   <span class="hljs-comment"># prints a public + private key</span></code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>VAPID_PUBLIC_KEY</code></td>
+<td>unset</td>
+<td>VAPID public key. Also served at <code>GET /v1/push/vapid-public-key</code> for the browser to subscribe.</td>
+</tr>
+<tr>
+<td><code>VAPID_PRIVATE_KEY</code></td>
+<td>unset</td>
+<td>VAPID private key. Keep secret.</td>
+</tr>
+<tr>
+<td><code>VAPID_SUBJECT</code></td>
+<td><code>mailto:admin@impri.dev</code></td>
+<td>Contact <code>mailto:</code> or URL, per the web-push spec.</td>
+</tr>
+</tbody></table>
+</div>
+<p>Once enabled, open the web inbox and use <strong>Enable push notifications</strong> in the
+Notifications section — the browser subscribes and you get a push for every new
+pending action.</p>
+<h3 id="redis-rate-limiter-optional-multi-instance-only">Redis (rate limiter) — optional, multi-instance only</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>REDIS_URL</code></td>
+<td>unset</td>
+<td>Only needed when running <strong>more than one</strong> server instance behind a load balancer: it makes the rate limiter a shared window across instances. A single instance uses SQLite and does not need Redis.</td>
+</tr>
+</tbody></table>
+</div>
+<h3 id="security">Security</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>IMPRI_ALLOW_PRIVATE_TARGETS</code></td>
+<td>unset</td>
+<td>Set to <code>1</code> to allow <code>callback_url</code> and watcher <code>config.url</code> to target private/intranet addresses (RFC 1918, loopback). <strong>Only set this on an isolated intranet deployment.</strong> By default, the SSRF guard blocks any URL that resolves to a private IP.</td>
+</tr>
+</tbody></table>
+</div>
+<hr>
+<h2 id="example-env-for-a-production-self-host">Example <code>.env</code> for a production self-host</h2>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">WEBHOOK_SECRET=a6f3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4
+BASE_URL=https://impri.yourdomain.com
+
+<span class="hljs-comment"># Notifications via ntfy</span>
+NTFY_URL=https://ntfy.sh
+NTFY_TOPIC=my-secret-topic-abc123
+
+<span class="hljs-comment"># Email backup notifications</span>
+SMTP_HOST=smtp.mailgun.org
+SMTP_PORT=587
+SMTP_USER=postmaster@mg.yourdomain.com
+SMTP_PASS=your-smtp-password
+SMTP_FROM=impri@yourdomain.com
+NOTIFY_EMAIL=you@yourdomain.com</code></pre></div>
+<hr>
+<h2 id="reverse-proxy-https">Reverse proxy (HTTPS)</h2>
+<p>For production use, put a reverse proxy in front that handles TLS. The UI container serves on port 8080 and the API server on 8484. A typical setup proxies both through a single domain:</p>
+<ul>
+<li><code>https://impri.yourdomain.com</code> → UI (port 8080)</li>
+<li><code>https://impri.yourdomain.com/v1</code> → API (port 8484/v1)</li>
+</ul>
+<p>Or run them on separate subdomains. The important variable is <code>BASE_URL</code>, which must match the public URL the UI and API are reachable at.</p>
+<p><strong>Example Caddy config:</strong></p>
+<div class="code-block"><span class="code-lang">caddyfile</span><pre><code class="hljs">impri.yourdomain.com {
+  reverse_proxy /v1/* localhost:8484
+  reverse_proxy /* localhost:8080
+}</code></pre></div>
+<hr>
+<h2 id="backups">Backups</h2>
+<p>Impri uses SQLite. The database file is stored in the <code>impri-data</code> Docker volume, mounted at <code>/app/data/impri.db</code> inside the container.</p>
+<p><strong>Manual backup:</strong></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Hot backup using SQLite&#x27;s built-in online backup</span>
+docker compose <span class="hljs-built_in">exec</span> server sqlite3 /app/data/impri.db <span class="hljs-string">&quot;.backup /app/data/impri-backup-<span class="hljs-subst">$(date +%Y%m%d)</span>.db&quot;</span></code></pre></div>
+<p><strong>Automated daily backup (cron example):</strong></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># /etc/cron.daily/impri-backup</span>
+<span class="hljs-comment">#!/bin/bash</span>
+BACKUP_DIR=/var/backups/impri
+<span class="hljs-built_in">mkdir</span> -p <span class="hljs-string">&quot;<span class="hljs-variable">$BACKUP_DIR</span>&quot;</span>
+docker compose -f /home/impri/docker-compose.yml <span class="hljs-built_in">exec</span> -T server \
+  sqlite3 /app/data/impri.db <span class="hljs-string">&quot;.backup /tmp/impri-<span class="hljs-subst">$(date +%Y%m%d)</span>.db&quot;</span>
+docker compose -f /home/impri/docker-compose.yml <span class="hljs-built_in">cp</span> \
+  server:/tmp/impri-$(<span class="hljs-built_in">date</span> +%Y%m%d).db <span class="hljs-string">&quot;<span class="hljs-variable">$BACKUP_DIR</span>/&quot;</span>
+<span class="hljs-comment"># Optionally: rsync to offsite storage</span></code></pre></div>
+<p>Decisions (what a human approved or rejected) are the most critical data. The database schema stores them in an append-only <code>decisions</code> table with a <code>decisions</code> unique constraint that prevents overwrite.</p>
+<hr>
+<h2 id="upgrading">Upgrading</h2>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Pull the latest images</span>
+docker compose pull
+
+<span class="hljs-comment"># Restart with zero-downtime (the server handles SQLite migrations on startup)</span>
+docker compose up -d</code></pre></div>
+<p>There are no manual migration steps for v1 — schema migrations run automatically on startup. Database backups before upgrading are always a good idea.</p>
+<hr>
+<h2 id="monitoring">Monitoring</h2>
+<ul>
+<li><strong>Health endpoint</strong>: <code>GET /healthz</code> returns <code>{&quot;status&quot;:&quot;ok&quot;,&quot;ts&quot;:&lt;unix&gt;}</code> — use it for uptime checks.</li>
+<li><strong>Prometheus metrics</strong>: <code>GET /metrics</code> (if enabled in your build — check the deployment).</li>
+<li><strong>Structured logs</strong>: the server writes JSON logs via Fastify&#39;s built-in logger. API keys are redacted from all log output.</li>
+</ul>
+<hr>
+<h2 id="watcher-scheduler">Watcher scheduler</h2>
+<p>When watchers are enabled (the default), the scheduler polls each active watcher on its configured interval and delivers matching items to your inbox or a webhook. The scheduler runs inside the same server container and requires no external queue.</p>
+<p>To disable it (approval inbox only):</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">DISABLE_WATCHER_SCHEDULER=1</code></pre></div>
+<p>Watcher state is persisted in SQLite. A degraded watcher (3 consecutive failures) is surfaced in the UI and triggers a notification. After 24 hours of failures it is automatically paused.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#requirements">Requirements</a></li>
+<li class="ptoc-h2"><a href="#quick-start">Quick start</a></li>
+<li class="ptoc-h2"><a href="#environment-variables">Environment variables</a></li>
+<li class="ptoc-h3"><a href="#required">Required</a></li>
+<li class="ptoc-h3"><a href="#server">Server</a></li>
+<li class="ptoc-h3"><a href="#notifications">Notifications</a></li>
+<li class="ptoc-h3"><a href="#web-push-vapid-optional">Web push (VAPID) — optional</a></li>
+<li class="ptoc-h3"><a href="#redis-rate-limiter-optional-multi-instance-only">Redis (rate limiter) — optional, multi-instance only</a></li>
+<li class="ptoc-h3"><a href="#security">Security</a></li>
+<li class="ptoc-h2"><a href="#example-env-for-a-production-self-host">Example .env for a production self-host</a></li>
+<li class="ptoc-h2"><a href="#reverse-proxy-https">Reverse proxy (HTTPS)</a></li>
+<li class="ptoc-h2"><a href="#backups">Backups</a></li>
+<li class="ptoc-h2"><a href="#upgrading">Upgrading</a></li>
+<li class="ptoc-h2"><a href="#monitoring">Monitoring</a></li>
+<li class="ptoc-h2"><a href="#watcher-scheduler">Watcher scheduler</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents.</span></div>
+</footer>
+</body>
+</html>

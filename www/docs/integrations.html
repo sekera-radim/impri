@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Integrations — Impri Docs</title>
+<meta name="description" content="Impri integrates with agent frameworks and runtime environments through two paths: the MCP server (drop-in for any MCP-compatible client) and the REST API (used directly or via the SDK wrappers). The ">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Integrations — Impri Docs">
+<meta property="og:description" content="Impri integrates with agent frameworks and runtime environments through two paths: the MCP server (drop-in for any MCP-compatible client) and the REST API (used directly or via the SDK wrappers). The ">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl active">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Integrations</span>
+      <span class="bc-sep">/</span>
+      <span>Integrations</span>
+    </nav>
+    <h1>Integrations</h1>
+<p>Impri integrates with agent frameworks and runtime environments through two paths: the <strong>MCP server</strong> (drop-in for any MCP-compatible client) and the <strong>REST API</strong> (used directly or via the SDK wrappers). The patterns below show how each framework fits into the Impri approval loop.</p>
+<blockquote>
+<p>The SDKs at <code>sdk/python/</code> and <code>sdk/typescript/</code> are v0.1, pre-release. MCP, raw REST, and all framework integrations documented here are available today.</p>
+</blockquote>
+<hr>
+<h2 id="mcp-server-claude-code-claude-desktop-any-mcp-client">MCP server (Claude Code, Claude Desktop, any MCP client)</h2>
+<p>The <code>@impri/mcp</code> package is the fastest way to add human approval to any MCP-compatible agent. No SDK needed.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">npx @impri/mcp
+<span class="hljs-comment"># env: IMPRI_API_KEY=im_...  IMPRI_BASE_URL=http://localhost:8484</span></code></pre></div>
+<p>Add to <code>~/.claude/mcp.json</code> (or your client&#39;s MCP config file):</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;mcpServers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;impri&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">&quot;command&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;npx&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;args&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;@impri/mcp&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;env&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">&quot;IMPRI_API_KEY&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_&lt;your-key&gt;&quot;</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">&quot;IMPRI_BASE_URL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;http://localhost:8484&quot;</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>Cloud endpoint:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-attr">&quot;IMPRI_BASE_URL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://api.impri.dev&quot;</span></code></pre></div>
+<p>Available tools the agent can call:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>impri_push_action</code></td>
+<td>Submit an action for human approval</td>
+</tr>
+<tr>
+<td><code>impri_await_decision</code></td>
+<td>Poll until decided (default timeout 300 s)</td>
+</tr>
+<tr>
+<td><code>impri_report_result</code></td>
+<td>Report execution outcome after approval</td>
+</tr>
+<tr>
+<td><code>impri_inbox_status</code></td>
+<td>Count pending actions</td>
+</tr>
+<tr>
+<td><code>impri_create_watcher</code></td>
+<td>Create a watcher (rss / reddit_search / url_diff)</td>
+</tr>
+<tr>
+<td><code>impri_list_watchers</code></td>
+<td>List watchers, optional status filter</td>
+</tr>
+</tbody></table>
+</div>
+<p>The agent calls these tools in sequence: <code>impri_push_action</code> → <code>impri_await_decision</code> → execute → <code>impri_report_result</code>. The MCP server handles all HTTP and polling internally.</p>
+<p>See <a href="quickstart.html">Quickstart</a> for a step-by-step walkthrough inside a Claude Code session.</p>
+<hr>
+<h2 id="langchain-langgraph">LangChain / LangGraph</h2>
+<p>The <code>integrations/langchain/</code> package provides a ready-made <code>ImpriApprovalTool</code> class (a <code>BaseTool</code> subclass) and a <code>wrap()</code> factory. The pattern for custom tools is:</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">from</span> langchain.tools <span class="hljs-keyword">import</span> BaseTool
+<span class="hljs-keyword">from</span> impri <span class="hljs-keyword">import</span> ImpriClient, ImpriRejected
+
+client = ImpriClient()  <span class="hljs-comment"># reads IMPRI_API_KEY, IMPRI_BASE_URL from env</span>
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">ApprovedEmailTool</span>(<span class="hljs-title class_ inherited__">BaseTool</span>):
+    name = <span class="hljs-string">&quot;send_email&quot;</span>
+    description = <span class="hljs-string">&quot;Send an email — requires human approval before sending.&quot;</span>
+
+    <span class="hljs-keyword">async</span> <span class="hljs-keyword">def</span> <span class="hljs-title function_">_arun</span>(<span class="hljs-params">self, to: <span class="hljs-built_in">str</span>, body: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">str</span>:
+        <span class="hljs-keyword">async</span> <span class="hljs-keyword">with</span> client.approval_gate(
+            kind=<span class="hljs-string">&quot;email.send&quot;</span>,
+            title=<span class="hljs-string">f&quot;Send email to <span class="hljs-subst">{to}</span>&quot;</span>,
+            preview={<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;plain&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: body},
+            editable=[<span class="hljs-string">&quot;preview.body&quot;</span>],
+            timeout_s=<span class="hljs-number">300</span>,
+        ) <span class="hljs-keyword">as</span> approved:
+            <span class="hljs-comment"># Use the human-approved (possibly edited) body</span>
+            <span class="hljs-keyword">await</span> mailer.send(to=to, body=approved.final_preview[<span class="hljs-string">&quot;body&quot;</span>])
+        <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;Sent.&quot;</span></code></pre></div>
+<p>The <code>approval_gate</code> context manager calls <code>report_result</code> automatically on both clean exit and exception, so you do not need to handle that in the tool.</p>
+<p><strong>LangGraph interrupt pattern</strong></p>
+<p>For LangGraph graphs that use the <code>interrupt</code> mechanism, push an action and store the <code>action_id</code> in the graph state, then surface it to the frontend. The frontend polls or receives a webhook and resumes the graph with the decision:</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">async</span> <span class="hljs-keyword">def</span> <span class="hljs-title function_">approval_node</span>(<span class="hljs-params">state: GraphState</span>) -&gt; GraphState:
+    action = <span class="hljs-keyword">await</span> client.create_action(
+        kind=state[<span class="hljs-string">&quot;planned_action&quot;</span>],
+        title=state[<span class="hljs-string">&quot;proposed_title&quot;</span>],
+        preview={<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: state[<span class="hljs-string">&quot;proposed_body&quot;</span>]},
+        editable=[<span class="hljs-string">&quot;preview.body&quot;</span>],
+    )
+    <span class="hljs-comment"># store for the next node; the graph can be interrupted here</span>
+    <span class="hljs-keyword">return</span> {**state, <span class="hljs-string">&quot;pending_action_id&quot;</span>: action.<span class="hljs-built_in">id</span>, <span class="hljs-string">&quot;inbox_url&quot;</span>: action.inbox_url}
+
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">def</span> <span class="hljs-title function_">execute_node</span>(<span class="hljs-params">state: GraphState</span>) -&gt; GraphState:
+    action = <span class="hljs-keyword">await</span> client.get_action(state[<span class="hljs-string">&quot;pending_action_id&quot;</span>])
+    <span class="hljs-keyword">if</span> action.status == <span class="hljs-string">&quot;approved&quot;</span>:
+        body = action.decision.final_preview[<span class="hljs-string">&quot;body&quot;</span>]
+        <span class="hljs-keyword">await</span> perform(body)
+        <span class="hljs-keyword">await</span> client.report_result(action.<span class="hljs-built_in">id</span>, <span class="hljs-string">&quot;executed&quot;</span>)
+    <span class="hljs-keyword">return</span> state</code></pre></div>
+<hr>
+<h2 id="openai-agents-sdk">OpenAI Agents SDK</h2>
+<p>The <code>integrations/openai-agents/</code> package provides a <code>make_guardrail()</code> factory that returns an <code>InputGuardrail</code>. Use <code>@client.requires_approval</code> directly on the function you pass to <code>FunctionTool</code>:</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">from</span> agents <span class="hljs-keyword">import</span> FunctionTool
+<span class="hljs-keyword">from</span> impri <span class="hljs-keyword">import</span> ImpriClient, ImpriRejected
+
+client = ImpriClient()
+
+<span class="hljs-meta">@client.requires_approval(<span class="hljs-params">
+    kind=<span class="hljs-string">&quot;code.exec&quot;</span>,
+    title=<span class="hljs-keyword">lambda</span> code, **_: <span class="hljs-string">f&quot;Execute: <span class="hljs-subst">{code[:<span class="hljs-number">60</span>]}</span>&quot;</span>,
+    preview=<span class="hljs-keyword">lambda</span> code, **_: {<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;plain&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: code},
+    editable=[<span class="hljs-string">&quot;preview.body&quot;</span>],
+</span>)</span>
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">def</span> <span class="hljs-title function_">run_python</span>(<span class="hljs-params">code: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">str</span>:
+    <span class="hljs-keyword">return</span> subprocess.check_output([<span class="hljs-string">&quot;python&quot;</span>, <span class="hljs-string">&quot;-c&quot;</span>, code], text=<span class="hljs-literal">True</span>)
+
+tools = [FunctionTool(run_python)]</code></pre></div>
+<p>When the agent calls <code>run_python</code>, the decorator intercepts it, pushes an approval action, blocks until decided, then either calls the real function or raises <code>ImpriRejected</code>. The agent framework sees the exception as a tool error and can handle it in its error loop.</p>
+<p><strong>Run-level guardrail with <code>make_guardrail()</code></strong></p>
+<p>For gating every agent run (not just individual tool calls), use the <code>InputGuardrail</code> factory from <code>integrations/openai-agents/</code>:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">pip install <span class="hljs-string">&#x27;impri-openai[openai-agents]&#x27;</span></code></pre></div>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">from</span> agents <span class="hljs-keyword">import</span> Agent, Runner
+<span class="hljs-keyword">from</span> impri_openai <span class="hljs-keyword">import</span> ImpriClient
+<span class="hljs-keyword">from</span> impri_openai.guardrail <span class="hljs-keyword">import</span> make_guardrail
+
+client = ImpriClient()                    <span class="hljs-comment"># reads IMPRI_API_KEY from env</span>
+
+approval = make_guardrail(
+    client,
+    kind=<span class="hljs-string">&quot;agent.run&quot;</span>,
+    title=<span class="hljs-string">&quot;Approve this agent task&quot;</span>,
+    preview_from_input=<span class="hljs-literal">True</span>,              <span class="hljs-comment"># show the user&#x27;s input in the inbox card</span>
+    timeout_s=<span class="hljs-number">300</span>,
+)
+
+agent = Agent(
+    name=<span class="hljs-string">&quot;my-agent&quot;</span>,
+    instructions=<span class="hljs-string">&quot;You are a helpful assistant.&quot;</span>,
+    input_guardrails=[approval],
+)
+result = <span class="hljs-keyword">await</span> Runner.run(agent, <span class="hljs-string">&quot;Summarise my emails&quot;</span>)</code></pre></div>
+<p>Key parameters:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>kind</code></td>
+<td><code>&#39;agent.run&#39;</code></td>
+<td>Action kind for inbox categorisation</td>
+</tr>
+<tr>
+<td><code>title</code></td>
+<td><code>&#39;Agent run requires human approval&#39;</code></td>
+<td>Title shown in the inbox card</td>
+</tr>
+<tr>
+<td><code>preview_from_input</code></td>
+<td><code>True</code></td>
+<td>When <code>True</code>, the user&#39;s raw input is shown as the preview body so the reviewer sees exactly what the agent was asked to do. When <code>False</code>, shows a generic <code>&quot;Agent &#39;&lt;name&gt;&#39; was triggered.&quot;</code> message instead.</td>
+</tr>
+<tr>
+<td><code>timeout_s</code></td>
+<td><code>300</code></td>
+<td>Seconds to wait for a human decision</td>
+</tr>
+<tr>
+<td><code>editable</code></td>
+<td><code>None</code></td>
+<td>Dot-path fields the reviewer may edit before approving</td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Return semantics:</strong> The guardrail returns a <code>GuardrailFunctionOutput</code> with:</p>
+<ul>
+<li><code>tripwire_triggered=False</code> when the human <strong>approves</strong> — the agent proceeds normally.</li>
+<li><code>tripwire_triggered=True</code> when the human <strong>rejects</strong> — the OpenAI Agents runner raises <code>InputGuardrailTripwireTriggered</code>, halting the run.</li>
+</ul>
+<p><code>output_info</code> always contains <code>{&quot;action_id&quot;: &quot;...&quot;, &quot;verdict&quot;: &quot;approve&quot; | &quot;reject&quot;}</code> so calling code can inspect the Impri action after the guardrail returns.</p>
+<hr>
+<h2 id="crewai">CrewAI</h2>
+<p>The <code>integrations/crewai/</code> directory ships a dedicated <code>impri-crewai</code> package with two integration classes: <strong><code>ImpriApprovalTool</code></strong> (agent-initiated gating) and <strong><code>ImpriApprovalCallback</code></strong> (automatic step/task gating). Install the package first:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">pip install impri-crewai
+<span class="hljs-comment"># or with crewai bundled as an extra:</span>
+pip install <span class="hljs-string">&quot;impri-crewai[crewai]&quot;</span></code></pre></div>
+<h3 id="impriapprovaltool-agent-initiated-approval">ImpriApprovalTool — agent-initiated approval</h3>
+<p><code>ImpriApprovalTool</code> is a CrewAI <code>BaseTool</code> that the agent calls explicitly when it wants to request human approval for a specific action. The agent provides a title and body describing the action; the tool blocks until the human decides.</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> os
+<span class="hljs-keyword">from</span> crewai <span class="hljs-keyword">import</span> Agent, Crew, Task
+<span class="hljs-keyword">from</span> impri_crewai <span class="hljs-keyword">import</span> ImpriClient, ImpriApprovalTool, ImpriRejected
+
+client = ImpriClient(api_key=os.environ[<span class="hljs-string">&quot;IMPRI_API_KEY&quot;</span>])
+
+approval_tool = ImpriApprovalTool(
+    client=client,
+    action_kind=<span class="hljs-string">&quot;email.send&quot;</span>,   <span class="hljs-comment"># dot-namespaced category for inbox filtering</span>
+    timeout_s=<span class="hljs-number">600</span>,              <span class="hljs-comment"># seconds to wait for human decision (default 300)</span>
+    editable=[<span class="hljs-string">&quot;preview.body&quot;</span>],  <span class="hljs-comment"># fields the reviewer may edit before approving</span>
+)
+
+agent = Agent(
+    role=<span class="hljs-string">&quot;Marketing assistant&quot;</span>,
+    goal=<span class="hljs-string">&quot;Draft and send campaign emails with human sign-off.&quot;</span>,
+    backstory=<span class="hljs-string">&quot;You help marketing teams communicate with customers.&quot;</span>,
+    tools=[approval_tool],
+)
+
+task = Task(
+    description=(
+        <span class="hljs-string">&quot;Draft a follow-up email to newsletter subscribers and send it &quot;</span>
+        <span class="hljs-string">&quot;after getting human approval.&quot;</span>
+    ),
+    expected_output=<span class="hljs-string">&quot;Confirmation that the email was approved and sent.&quot;</span>,
+    agent=agent,
+)
+
+crew = Crew(agents=[agent], tasks=[task])
+<span class="hljs-keyword">try</span>:
+    result = crew.kickoff()
+<span class="hljs-keyword">except</span> ImpriRejected <span class="hljs-keyword">as</span> exc:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Human rejected the action: <span class="hljs-subst">{exc}</span>&quot;</span>)</code></pre></div>
+<p>The agent calls the tool with three arguments (filled automatically from its description):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Input field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>action_title</code></td>
+<td>Short human-readable title (max ~120 chars). Shown at the top of the inbox card.</td>
+</tr>
+<tr>
+<td><code>action_body</code></td>
+<td>Full description of the proposed action. The reviewer reads this before deciding. Supports markdown.</td>
+</tr>
+<tr>
+<td><code>preview_format</code></td>
+<td>Format of <code>action_body</code>: <code>&#39;markdown&#39;</code>, <code>&#39;plain&#39;</code>, or <code>&#39;diff&#39;</code>. Defaults to <code>&#39;markdown&#39;</code>.</td>
+</tr>
+</tbody></table>
+</div>
+<p>On <strong>approval</strong>, the tool returns the final (possibly human-edited) content as a string the agent can read. On <strong>rejection</strong>, <code>ImpriRejected</code> is raised — CrewAI surfaces it as a tool error so the agent can handle it gracefully.</p>
+<h3 id="impriapprovalcallback-automatic-steptask-gating">ImpriApprovalCallback — automatic step/task gating</h3>
+<p><code>ImpriApprovalCallback</code> is a callable that wires into CrewAI&#39;s <code>step_callback</code> or <code>task_callback</code>. It intercepts agent outputs automatically, without modifying agent prompts or tool lists.</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> os
+<span class="hljs-keyword">from</span> crewai <span class="hljs-keyword">import</span> Agent, Crew, Task
+<span class="hljs-keyword">from</span> impri_crewai <span class="hljs-keyword">import</span> ImpriClient, ImpriApprovalCallback, ImpriRejected
+
+client = ImpriClient(api_key=os.environ[<span class="hljs-string">&quot;IMPRI_API_KEY&quot;</span>])
+
+gate = ImpriApprovalCallback(
+    client,
+    action_kind=<span class="hljs-string">&quot;agent.output&quot;</span>,         <span class="hljs-comment"># kind string for inbox categorisation</span>
+    timeout_s=<span class="hljs-number">300</span>,                      <span class="hljs-comment"># seconds to wait (default 300)</span>
+    title_prefix=<span class="hljs-string">&quot;Review agent draft&quot;</span>,  <span class="hljs-comment"># prepended to the auto-generated title</span>
+)
+
+agent = Agent(
+    role=<span class="hljs-string">&quot;Content writer&quot;</span>,
+    goal=<span class="hljs-string">&quot;Write blog posts.&quot;</span>,
+    backstory=<span class="hljs-string">&quot;...&quot;</span>,
+)
+
+task = Task(
+    description=<span class="hljs-string">&quot;Write a 500-word blog post about Impri.&quot;</span>,
+    expected_output=<span class="hljs-string">&quot;A complete blog post.&quot;</span>,
+    agent=agent,
+)
+
+crew = Crew(
+    agents=[agent],
+    tasks=[task],
+    step_callback=gate,   <span class="hljs-comment"># gate every intermediate step output</span>
+    <span class="hljs-comment"># task_callback=gate  # alternative: gate only the final task output</span>
+)
+
+<span class="hljs-keyword">try</span>:
+    result = crew.kickoff()
+<span class="hljs-keyword">except</span> ImpriRejected <span class="hljs-keyword">as</span> exc:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Step rejected by human reviewer: <span class="hljs-subst">{exc}</span>&quot;</span>)</code></pre></div>
+<p><code>ImpriApprovalCallback</code> constructor parameters:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>client</code></td>
+<td>required</td>
+<td>An <code>ImpriClient</code> configured with your API key</td>
+</tr>
+<tr>
+<td><code>action_kind</code></td>
+<td><code>&#39;agent.output&#39;</code></td>
+<td>Kind string for inbox categorisation</td>
+</tr>
+<tr>
+<td><code>timeout_s</code></td>
+<td><code>300</code></td>
+<td>Seconds to wait for a human decision</td>
+</tr>
+<tr>
+<td><code>title_prefix</code></td>
+<td><code>&#39;Review agent output&#39;</code></td>
+<td>Prefix prepended to the auto-generated action title</td>
+</tr>
+<tr>
+<td><code>editable</code></td>
+<td><code>[&#39;preview.body&#39;]</code></td>
+<td>Dot-path fields the reviewer may edit</td>
+</tr>
+</tbody></table>
+</div>
+<blockquote>
+<p><strong>Note:</strong> CrewAI callbacks are invoked for their side effects and their return value is ignored, so <code>ImpriApprovalCallback</code> cannot inject the reviewer&#39;s edits back into the agent flow. If you need the human-edited content to feed back into the agent, use <code>ImpriApprovalTool</code> instead.</p>
+</blockquote>
+<p>On rejection, <code>ImpriRejected</code> propagates from the callback into <code>crew.kickoff()</code>, surfacing as a task failure. <code>ImpriTimeout</code> (human did not decide within <code>timeout_s</code>) propagates the same way.</p>
+<hr>
+<h2 id="claude-agent-sdk-anthropic">Claude Agent SDK (Anthropic)</h2>
+<p>The <code>integrations/claude-agent-sdk/</code> package provides a TypeScript <code>GatedTool</code> that intercepts <code>tool_use</code> content blocks before execution. The tool definition is passed to Claude unchanged — only the execution path goes through Impri.</p>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">ImpriClient</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@impri/sdk&#x27;</span>
+<span class="hljs-keyword">import</span> { withImpriApproval } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@impri/claude-agent-sdk&#x27;</span>
+
+<span class="hljs-keyword">const</span> impri = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ImpriClient</span>({ <span class="hljs-attr">apiKey</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_API_KEY</span>! })
+
+<span class="hljs-keyword">const</span> sendEmailGated = <span class="hljs-title function_">withImpriApproval</span>({
+  <span class="hljs-attr">toolDef</span>: {
+    <span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;send_email&#x27;</span>,
+    <span class="hljs-attr">description</span>: <span class="hljs-string">&#x27;Send an email to a recipient.&#x27;</span>,
+    <span class="hljs-attr">input_schema</span>: {
+      <span class="hljs-attr">type</span>: <span class="hljs-string">&#x27;object&#x27;</span>,
+      <span class="hljs-attr">properties</span>: {
+        <span class="hljs-attr">to</span>:   { <span class="hljs-attr">type</span>: <span class="hljs-string">&#x27;string&#x27;</span> },
+        <span class="hljs-attr">body</span>: { <span class="hljs-attr">type</span>: <span class="hljs-string">&#x27;string&#x27;</span> },
+      },
+      <span class="hljs-attr">required</span>: [<span class="hljs-string">&#x27;to&#x27;</span>, <span class="hljs-string">&#x27;body&#x27;</span>],
+    },
+  },
+  <span class="hljs-attr">execute</span>: <span class="hljs-title function_">async</span> ({ to, body }) =&gt; {
+    <span class="hljs-keyword">await</span> emailService.<span class="hljs-title function_">send</span>({ <span class="hljs-attr">to</span>: <span class="hljs-title class_">String</span>(to), <span class="hljs-attr">body</span>: <span class="hljs-title class_">String</span>(body) })
+    <span class="hljs-keyword">return</span> <span class="hljs-string">`Email sent to <span class="hljs-subst">${to}</span>.`</span>
+  },
+  <span class="hljs-attr">impriClient</span>: impri,
+  <span class="hljs-attr">kind</span>: <span class="hljs-string">&#x27;email.send&#x27;</span>,
+  <span class="hljs-attr">title</span>: <span class="hljs-function">(<span class="hljs-params">{ to }</span>) =&gt;</span> <span class="hljs-string">`Send email to <span class="hljs-subst">${to}</span>`</span>,
+  <span class="hljs-attr">preview</span>: <span class="hljs-function">(<span class="hljs-params">{ body }</span>) =&gt;</span> ({ <span class="hljs-attr">format</span>: <span class="hljs-string">&#x27;plain&#x27;</span>, <span class="hljs-attr">body</span>: <span class="hljs-title class_">String</span>(body) }),
+  <span class="hljs-attr">editable</span>: [<span class="hljs-string">&#x27;preview.body&#x27;</span>],
+  <span class="hljs-attr">onRejected</span>: <span class="hljs-function">(<span class="hljs-params">err</span>) =&gt;</span> <span class="hljs-string">`Email rejected (action <span class="hljs-subst">${err.actionId}</span>).`</span>,
+})
+
+<span class="hljs-comment">// In your agent loop:</span>
+<span class="hljs-keyword">const</span> response = <span class="hljs-keyword">await</span> anthropic.<span class="hljs-property">messages</span>.<span class="hljs-title function_">create</span>({
+  <span class="hljs-attr">model</span>: <span class="hljs-string">&#x27;claude-opus-4-5&#x27;</span>,
+  <span class="hljs-attr">tools</span>: [sendEmailGated.<span class="hljs-property">toolDef</span>],  <span class="hljs-comment">// unchanged — Claude sees the normal tool</span>
+  messages,
+})
+
+<span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> block <span class="hljs-keyword">of</span> response.<span class="hljs-property">content</span>) {
+  <span class="hljs-keyword">if</span> (block.<span class="hljs-property">type</span> === <span class="hljs-string">&#x27;tool_use&#x27;</span> &amp;&amp; block.<span class="hljs-property">name</span> === <span class="hljs-string">&#x27;send_email&#x27;</span>) {
+    <span class="hljs-keyword">const</span> result = <span class="hljs-keyword">await</span> sendEmailGated.<span class="hljs-title function_">handle</span>(block)
+    <span class="hljs-comment">// feed result back to Claude as tool_result</span>
+  }
+}</code></pre></div>
+<p><code>withImpriApproval</code> creates a <code>GatedTool</code> with:</p>
+<ul>
+<li><code>toolDef</code> — the original Anthropic tool definition, unchanged</li>
+<li><code>handle(block)</code> — call for each matching <code>tool_use</code> block; submits to Impri, waits for approval, executes, reports result; returns a string for <code>tool_result</code></li>
+<li><code>execute</code> — the underlying executor, available for direct testing</li>
+</ul>
+<p>When the reviewer edits <code>preview.body</code> and the tool input has a <code>body</code> field, the edited value is injected before calling <code>execute()</code>. Call <code>reportResult</code> is handled automatically inside <code>handle()</code>.</p>
+<p>Full reference: <a href="claude-agent-sdk.html">Claude Agent SDK</a></p>
+<hr>
+<h2 id="n8n">n8n</h2>
+<p>Use the <strong>HTTP Request</strong> node to call the Impri REST API directly. A two-node pattern works for most workflows:</p>
+<ol>
+<li><strong>HTTP Request</strong> node: <code>POST /v1/actions</code> with your agent&#39;s proposed content.</li>
+<li><strong>Wait</strong> node: wait for a webhook callback (<code>callback_url</code> set in step 1) or poll <code>GET /v1/actions/:id</code> on a schedule.</li>
+<li><strong>IF</strong> node: branch on <code>status === &quot;approved&quot;</code> / <code>&quot;rejected&quot;</code>.</li>
+<li><strong>Execute</strong> and then <strong>HTTP Request</strong> node: <code>POST /v1/actions/:id/result</code>.</li>
+</ol>
+<p>Set <code>Authorization: Bearer im_&lt;key&gt;</code> as a credential in n8n&#39;s <strong>Header Auth</strong> section and reference it in all Impri nodes.</p>
+<p>Webhook delivery: set <code>callback_url</code> to your n8n webhook URL. n8n&#39;s Webhook node receives the decision and resumes the workflow. Signature verification can be done in a Function node using the algorithm in <a href="webhooks.html">webhooks.md</a>.</p>
+<hr>
+<h2 id="make-integromat">Make (Integromat)</h2>
+<p>Use the <strong>HTTP</strong> module with method <code>POST</code> and URL <code>https://api.impri.dev/v1/actions</code> (cloud) or your self-hosted base URL. Headers: <code>Authorization: Bearer im_&lt;key&gt;</code>, <code>Content-Type: application/json</code>.</p>
+<p>Body (JSON template):</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;kind&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;{{1.kind}}&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;title&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;{{1.title}}&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;preview&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;format&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;plain&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;body&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;{{1.body}}&quot;</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;callback_url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://hook.make.com/&lt;your-scenario-webhook&gt;&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;expires_in&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">86400</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>The <code>callback_url</code> points back to a Make <strong>Custom webhook</strong> that resumes the scenario when the human decides. Use a <strong>Router</strong> module to branch on <code>status</code>.</p>
+<hr>
+<h2 id="zapier">Zapier</h2>
+<p>Use the <strong>Webhooks by Zapier</strong> action with <code>POST</code> to push an action. For the decision, add an inbound webhook as the trigger of a second Zap, or use Zapier&#39;s <strong>Delay Until</strong> step while polling <code>GET /v1/actions/:id</code>.</p>
+<hr>
+<h2 id="webhook-receiver-patterns">Webhook receiver patterns</h2>
+<p>For servers that receive Impri webhook deliveries, the pattern is consistent regardless of framework:</p>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-comment">// Express / Fastify / Hono (TypeScript)</span>
+<span class="hljs-keyword">import</span> { verifyWebhook, <span class="hljs-title class_">ImpriWebhookSignatureError</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@impri/sdk&#x27;</span>
+
+app.<span class="hljs-title function_">post</span>(<span class="hljs-string">&#x27;/impri/webhook&#x27;</span>, express.<span class="hljs-title function_">raw</span>({ <span class="hljs-attr">type</span>: <span class="hljs-string">&#x27;application/json&#x27;</span> }), <span class="hljs-title function_">async</span> (req, res) =&gt; {
+  <span class="hljs-keyword">try</span> {
+    <span class="hljs-title function_">verifyWebhook</span>(
+      req.<span class="hljs-property">body</span>,
+      process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_WEBHOOK_SECRET</span>!,
+      req.<span class="hljs-property">headers</span>[<span class="hljs-string">&#x27;x-impri-timestamp&#x27;</span>] <span class="hljs-keyword">as</span> <span class="hljs-built_in">string</span>,
+      req.<span class="hljs-property">headers</span>[<span class="hljs-string">&#x27;x-impri-nonce&#x27;</span>] <span class="hljs-keyword">as</span> <span class="hljs-built_in">string</span>,
+      req.<span class="hljs-property">headers</span>[<span class="hljs-string">&#x27;x-impri-signature&#x27;</span>] <span class="hljs-keyword">as</span> <span class="hljs-built_in">string</span>,
+    )
+  } <span class="hljs-keyword">catch</span> (e) {
+    <span class="hljs-keyword">if</span> (e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriWebhookSignatureError</span>) <span class="hljs-keyword">return</span> res.<span class="hljs-title function_">status</span>(<span class="hljs-number">400</span>).<span class="hljs-title function_">end</span>()
+    <span class="hljs-keyword">throw</span> e
+  }
+
+  <span class="hljs-keyword">const</span> event = <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">parse</span>(req.<span class="hljs-property">body</span>.<span class="hljs-title function_">toString</span>())
+  <span class="hljs-keyword">if</span> (event.<span class="hljs-property">status</span> === <span class="hljs-string">&#x27;approved&#x27;</span>) {
+    <span class="hljs-keyword">await</span> <span class="hljs-title function_">enqueue</span>({ <span class="hljs-attr">actionId</span>: event.<span class="hljs-property">action_id</span>, <span class="hljs-attr">body</span>: event.<span class="hljs-property">final_preview</span>?.<span class="hljs-property">body</span> })
+  }
+  res.<span class="hljs-title function_">status</span>(<span class="hljs-number">200</span>).<span class="hljs-title function_">end</span>()
+})</code></pre></div>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-comment"># FastAPI / Flask / Django (Python)</span>
+<span class="hljs-keyword">import</span> impri
+<span class="hljs-keyword">from</span> impri <span class="hljs-keyword">import</span> ImpriWebhookSignatureError
+
+<span class="hljs-meta">@app.post(<span class="hljs-params"><span class="hljs-string">&quot;/impri/webhook&quot;</span></span>)</span>
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">def</span> <span class="hljs-title function_">webhook</span>(<span class="hljs-params">request: Request</span>):
+    raw = <span class="hljs-keyword">await</span> request.body()
+    <span class="hljs-keyword">try</span>:
+        impri.verify_webhook(
+            raw_body=raw,
+            secret=os.environ[<span class="hljs-string">&quot;IMPRI_WEBHOOK_SECRET&quot;</span>],
+            timestamp=request.headers[<span class="hljs-string">&quot;X-Impri-Timestamp&quot;</span>],
+            nonce=request.headers[<span class="hljs-string">&quot;X-Impri-Nonce&quot;</span>],
+            signature=request.headers[<span class="hljs-string">&quot;X-Impri-Signature&quot;</span>],
+        )
+    <span class="hljs-keyword">except</span> ImpriWebhookSignatureError:
+        <span class="hljs-keyword">raise</span> HTTPException(status_code=<span class="hljs-number">400</span>)
+
+    event = <span class="hljs-keyword">await</span> request.json()
+    <span class="hljs-keyword">if</span> event[<span class="hljs-string">&quot;status&quot;</span>] == <span class="hljs-string">&quot;approved&quot;</span>:
+        <span class="hljs-keyword">await</span> enqueue(action_id=event[<span class="hljs-string">&quot;action_id&quot;</span>], body=event[<span class="hljs-string">&quot;final_preview&quot;</span>][<span class="hljs-string">&quot;body&quot;</span>])
+    <span class="hljs-keyword">return</span> Response(status_code=<span class="hljs-number">200</span>)</code></pre></div>
+<p>Key rules:</p>
+<ul>
+<li>Verify the signature before processing. Never trust the payload without it.</li>
+<li>Respond <code>200</code> quickly (within a few seconds); do the heavy work asynchronously.</li>
+<li>Return <code>410 Gone</code> to permanently deregister a callback URL.</li>
+<li>If your endpoint is temporarily unavailable, let it return a non-2xx — Impri will retry up to 6 times over 12 hours. Polling is always available as a fallback.</li>
+</ul>
+<p>Full signature algorithm and retry schedule: <a href="webhooks.html">webhooks.md</a>.</p>
+<hr>
+<h2 id="self-hosted-vs-cloud">Self-hosted vs. cloud</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Self-hosted</th>
+<th>Cloud (api.impri.dev)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Status</td>
+<td>Complete, MIT</td>
+<td>Early beta</td>
+</tr>
+<tr>
+<td>Base URL</td>
+<td><code>http://localhost:8484</code> (default)</td>
+<td><code>https://api.impri.dev</code></td>
+</tr>
+<tr>
+<td>Setup</td>
+<td><code>docker compose up</code></td>
+<td>Create account at app.impri.dev</td>
+</tr>
+<tr>
+<td>API surface</td>
+<td>Full</td>
+<td>Full</td>
+</tr>
+<tr>
+<td>Watcher limits</td>
+<td>None</td>
+<td>Per-tier</td>
+</tr>
+<tr>
+<td>Approval quota</td>
+<td>None</td>
+<td>Per-tier</td>
+</tr>
+<tr>
+<td>Support</td>
+<td>Community / issues</td>
+<td>—</td>
+</tr>
+</tbody></table>
+</div>
+<p>For both: set <code>IMPRI_BASE_URL</code> (or the <code>baseUrl</code> constructor argument) to the appropriate endpoint. The API surface is identical.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#mcp-server-claude-code-claude-desktop-any-mcp-client">MCP server (Claude Code, Claude Desktop, any MCP client)</a></li>
+<li class="ptoc-h2"><a href="#langchain-langgraph">LangChain / LangGraph</a></li>
+<li class="ptoc-h2"><a href="#openai-agents-sdk">OpenAI Agents SDK</a></li>
+<li class="ptoc-h2"><a href="#crewai">CrewAI</a></li>
+<li class="ptoc-h3"><a href="#impriapprovaltool-agent-initiated-approval">ImpriApprovalTool — agent-initiated approval</a></li>
+<li class="ptoc-h3"><a href="#impriapprovalcallback-automatic-steptask-gating">ImpriApprovalCallback — automatic step/task gating</a></li>
+<li class="ptoc-h2"><a href="#claude-agent-sdk-anthropic">Claude Agent SDK (Anthropic)</a></li>
+<li class="ptoc-h2"><a href="#n8n">n8n</a></li>
+<li class="ptoc-h2"><a href="#make-integromat">Make (Integromat)</a></li>
+<li class="ptoc-h2"><a href="#zapier">Zapier</a></li>
+<li class="ptoc-h2"><a href="#webhook-receiver-patterns">Webhook receiver patterns</a></li>
+<li class="ptoc-h2"><a href="#self-hosted-vs-cloud">Self-hosted vs. cloud</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents.</span></div>
+</footer>
+</body>
+</html>

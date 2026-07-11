@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to Add Human Approval to an AI Agent — Impri Docs</title>
+<meta name="description" content="AI agents are good at drafting. They are bad at knowing when to stop and ask. This guide explains how to wire a human checkpoint into an agent so it can propose actions but never execute them without ">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="How to Add Human Approval to an AI Agent — Impri Docs">
+<meta property="og:description" content="AI agents are good at drafting. They are bad at knowing when to stop and ask. This guide explains how to wire a human checkpoint into an agent so it can propose actions but never execute them without ">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl active">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Getting started</span>
+      <span class="bc-sep">/</span>
+      <span>How to Add Human Approval to an AI Agent</span>
+    </nav>
+    <h1>How to Add Human Approval to an AI Agent</h1>
+<p>AI agents are good at drafting. They are bad at knowing when to stop and ask. This guide explains how to wire a human checkpoint into an agent so it can propose actions but never execute them without an explicit human decision.</p>
+<hr>
+<h2 id="the-problem">The problem</h2>
+<p>An agent that can send emails, post comments, publish content, or make API calls needs a gate. Without one, a prompt injection, a misread context, or simply a bad draft goes out immediately.</p>
+<p>The naive solution — &quot;just add a confirmation step in the prompt&quot; — doesn&#39;t work reliably. The agent still has to be trusted to actually pause, and there is no audit record.</p>
+<p>What you need instead is a pattern where the agent can only <em>propose</em> an action and must poll for an external decision before proceeding. The execution code is never reached without that decision.</p>
+<hr>
+<h2 id="the-push-approve-execute-pattern">The push → approve → execute pattern</h2>
+<div class="code-block"><pre><code class="hljs">Agent                         Impri                          Human
+  │                             │                              │
+  ├── POST /v1/actions ─────────▶ stores action, notifies ────▶ inbox card
+  │   (kind, title, preview,    │                              │
+  │    payload, editable)       │                              ├── approves / rejects
+  │                             │◀─────────────────────────────┘
+  ├── GET /v1/actions/:id ──────▶ returns status + decision
+  │   (polling until decided)   │
+  │                             │
+  ├── [if approved] execute     │
+  │   with final_preview        │
+  │                             │
+  └── POST /v1/actions/:id/result (executed | execute_failed)</code></pre></div>
+<p>The key property: the agent never calls &quot;send&quot; without first seeing <code>status: &quot;approved&quot;</code> from the API. The gate is in the data, not in a prompt.</p>
+<hr>
+<h2 id="minimal-integration-rest">Minimal integration — REST</h2>
+<p>Any HTTP client works. The agent needs three calls.</p>
+<p><strong>1. Push the action:</strong></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">ACTION=$(curl -s -X POST https://api.impri.dev/v1/actions \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{
+    &quot;kind&quot;: &quot;email.send&quot;,
+    &quot;title&quot;: &quot;Outreach: Acme Corp partnership proposal&quot;,
+    &quot;preview&quot;: {
+      &quot;format&quot;: &quot;markdown&quot;,
+      &quot;body&quot;: &quot;Hi Sarah,\n\nI came across your work on distributed systems and think there could be a strong fit with what we are building at...&quot;
+    },
+    &quot;target_url&quot;: &quot;https://mail.google.com/mail/u/0/#drafts/abc123&quot;,
+    &quot;expires_in&quot;: 86400,
+    &quot;editable&quot;: [&quot;preview.body&quot;]
+  }&#x27;</span>)
+
+ACTION_ID=$(<span class="hljs-built_in">echo</span> <span class="hljs-variable">$ACTION</span> | jq -r .<span class="hljs-built_in">id</span>)</code></pre></div>
+<p><strong>2. Poll until decided:</strong></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-keyword">while</span> <span class="hljs-literal">true</span>; <span class="hljs-keyword">do</span>
+  RESULT=$(curl -s https://api.impri.dev/v1/actions/<span class="hljs-variable">$ACTION_ID</span> \
+    -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span>)
+  STATUS=$(<span class="hljs-built_in">echo</span> <span class="hljs-variable">$RESULT</span> | jq -r .status)
+
+  <span class="hljs-keyword">if</span> [ <span class="hljs-string">&quot;<span class="hljs-variable">$STATUS</span>&quot;</span> != <span class="hljs-string">&quot;pending&quot;</span> ]; <span class="hljs-keyword">then</span>
+    <span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;Decision: <span class="hljs-variable">$STATUS</span>&quot;</span>
+    <span class="hljs-built_in">break</span>
+  <span class="hljs-keyword">fi</span>
+  <span class="hljs-built_in">sleep</span> 10
+<span class="hljs-keyword">done</span></code></pre></div>
+<p><strong>3. Execute only on approval, then report:</strong></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-keyword">if</span> [ <span class="hljs-string">&quot;<span class="hljs-variable">$STATUS</span>&quot;</span> = <span class="hljs-string">&quot;approved&quot;</span> ]; <span class="hljs-keyword">then</span>
+  <span class="hljs-comment"># Use final_preview — it carries the human-edited version when editable fields were changed</span>
+  BODY=$(<span class="hljs-built_in">echo</span> <span class="hljs-variable">$RESULT</span> | jq -r <span class="hljs-string">&#x27;.decision.final_preview.body&#x27;</span>)
+  send_email <span class="hljs-string">&quot;<span class="hljs-variable">$BODY</span>&quot;</span>  <span class="hljs-comment"># your sending function</span>
+
+  curl -s -X POST https://api.impri.dev/v1/actions/<span class="hljs-variable">$ACTION_ID</span>/result \
+    -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+    -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+    -d <span class="hljs-string">&#x27;{&quot;status&quot;: &quot;executed&quot;}&#x27;</span>
+<span class="hljs-keyword">fi</span></code></pre></div>
+<p>A rejected or expired action is never executed — the polling loop exits and the execution block is never reached.</p>
+<hr>
+<h2 id="minimal-integration-mcp">Minimal integration — MCP</h2>
+<p>For agents running inside Claude Code, Claude Desktop, or any MCP client, the Impri MCP server wraps the REST calls into tool calls. The agent handles the flow without writing any HTTP code.</p>
+<p><strong>Configure the MCP server</strong> (add to your client&#39;s MCP config):</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;mcpServers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;impri&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">&quot;command&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;npx&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;args&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;@impri/mcp&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;env&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">&quot;IMPRI_API_KEY&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_your_key_here&quot;</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>The <code>IMPRI_BASE_URL</code> defaults to <code>http://localhost:8484</code>. For the cloud API set it to <code>https://api.impri.dev</code>.</p>
+<p><strong>The agent flow in natural language (as seen by the agent):</strong></p>
+<div class="code-block"><pre><code class="hljs">1. impri_push_action(
+     kind=&quot;blog.publish&quot;,
+     title=&quot;Draft: 10 things I wish I knew about distributed tracing&quot;,
+     preview={ format=&quot;markdown&quot;, body=&quot;...&quot; },
+     expires_in=7200,
+     editable=[&quot;preview.body&quot;]
+   )
+
+   → { action_id: &quot;act_xyz&quot;, status: &quot;pending&quot;, inbox_url: &quot;...&quot; }
+
+2. impri_await_decision(action_id=&quot;act_xyz&quot;, timeout_s=3600)
+   # Blocks for up to 1 hour. The tool polls every 5 seconds internally.
+
+   → { status: &quot;approved&quot;, preview: { body: &quot;...&quot; }, edited_by_human: true }
+
+3. publish_post(content=decision.preview.body)  # your actual action
+
+4. impri_report_result(action_id=&quot;act_xyz&quot;, status=&quot;executed&quot;)</code></pre></div>
+<p>If the decision is <code>rejected</code> or <code>expired</code>, <code>impri_await_decision</code> returns that status and the agent stops without publishing.</p>
+<hr>
+<h2 id="what-impri-provides-what-it-doesn39t">What Impri provides, what it doesn&#39;t</h2>
+<p>Impri is focused on one thing: the approval gate. It stores the proposed action, notifies the human, and holds the decision. It does not generate content, does not interpret what the action does, and never executes anything itself.</p>
+<p>This keeps the integration surface small and the responsibilities clear: your agent owns the logic of what to do; Impri owns the question of whether a human said yes.</p>
+<p><strong>What Impri is not:</strong></p>
+<ul>
+<li>A workflow engine with branching, scheduling, or multi-step orchestration. If you need those, look at n8n, Temporal, or Inngest. You can use Impri as one step inside an n8n workflow.</li>
+<li>A content moderation service. It does not review the content itself — it surfaces it to a specific human who you trust to make that call.</li>
+<li>A multi-agent coordination layer. It is a human-in-the-loop gate, not an agent-to-agent handoff mechanism.</li>
+</ul>
+<p><strong>When Impri is the right tool:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Situation</th>
+<th>Use Impri</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Agent proposes external action (send, post, publish, modify)</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>You want a one-tap approve/reject from your phone</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>You need an audit log of what was approved, when, by whom</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>You want the human to be able to edit the draft before approving</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>You need to branch on many conditions before deciding</td>
+<td>Consider n8n HITL node instead</td>
+</tr>
+<tr>
+<td>You need to coordinate multiple agents with dependencies</td>
+<td>Use a workflow engine; Impri can be one node</td>
+</tr>
+</tbody></table>
+</div>
+<hr>
+<h2 id="handling-edits-made-by-the-human-reviewer">Handling edits made by the human reviewer</h2>
+<p>When you set <code>editable: [&quot;preview.body&quot;]</code>, the human reviewer can modify the draft text before approving. The decision callback and the polling response both carry:</p>
+<ul>
+<li><code>decision.final_preview</code> — the content as the human left it (use this to execute)</li>
+<li><code>decision.diff</code> — a unified diff showing what changed (present only when something was actually modified)</li>
+</ul>
+<p>Always send <code>final_preview.body</code> rather than the original <code>preview.body</code>. The API never includes the original in <code>final_preview</code> — the field always holds the version the human approved.</p>
+<hr>
+<h2 id="expiry-and-what-to-do-about-it">Expiry and what to do about it</h2>
+<p>Every action has an expiry (<code>expires_in</code> in seconds, minimum 300, maximum 30 days, default 72 hours). After expiry the status becomes <code>expired</code> and the action cannot be approved.</p>
+<p>This is intentional. A draft reply to a Reddit thread that is two days old is not worth sending. Expiry is a correctness feature, not just a cleanup mechanism.</p>
+<p>In your agent, treat <code>expired</code> the same as <code>rejected</code> — do not execute and optionally create a new action if the task is still relevant.</p>
+<hr>
+<h2 id="security-considerations">Security considerations</h2>
+<p><strong>Rate limit</strong>: <code>POST /v1/actions</code> is rate-limited to 60 requests per minute per API key. An agent caught in a loop will be throttled.</p>
+<p><strong>Prompt injection from external sources</strong>: if your agent reads from RSS, web pages, or social media before constructing the action, those sources may contain adversarial instructions. Impri does not interpret action content — it presents it to you visually as a card. But you should still treat any external text as data, not instructions, in your agent&#39;s system prompt.</p>
+<p><strong>Scopes</strong>: use the minimum scope your key needs. A key used only for actions approval needs <code>actions</code> scope, not <code>admin</code>. Create separate keys for watchers (<code>watch</code> scope) if you use those.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#the-problem">The problem</a></li>
+<li class="ptoc-h2"><a href="#the-push-approve-execute-pattern">The push → approve → execute pattern</a></li>
+<li class="ptoc-h2"><a href="#minimal-integration-rest">Minimal integration — REST</a></li>
+<li class="ptoc-h2"><a href="#minimal-integration-mcp">Minimal integration — MCP</a></li>
+<li class="ptoc-h2"><a href="#what-impri-provides-what-it-doesn39t">What Impri provides, what it doesn&amp;#39;t</a></li>
+<li class="ptoc-h2"><a href="#handling-edits-made-by-the-human-reviewer">Handling edits made by the human reviewer</a></li>
+<li class="ptoc-h2"><a href="#expiry-and-what-to-do-about-it">Expiry and what to do about it</a></li>
+<li class="ptoc-h2"><a href="#security-considerations">Security considerations</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents.</span></div>
+</footer>
+</body>
+</html>

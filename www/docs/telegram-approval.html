@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Telegram Approval Bot — Impri Docs</title>
+<meta name="description" content="Impri can send pending-action notifications to a Telegram chat with Approve and Reject buttons that let your team decide without ever opening a browser. The decision is recorded in Impri with the same">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Telegram Approval Bot — Impri Docs">
+<meta property="og:description" content="Impri can send pending-action notifications to a Telegram chat with Approve and Reject buttons that let your team decide without ever opening a browser. The decision is recorded in Impri with the same">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl active">Telegram approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>API reference</span>
+      <span class="bc-sep">/</span>
+      <span>Telegram Approval Bot</span>
+    </nav>
+    <h1>Telegram Approval Bot</h1>
+<p>Impri can send pending-action notifications to a Telegram chat with
+<strong>Approve</strong> and <strong>Reject</strong> buttons that let your team decide without
+ever opening a browser. The decision is recorded in Impri with the same
+integrity guarantees as a web-inbox decision.</p>
+<p>This is an extension of the existing <code>telegram</code> notification channel
+(see <a href="notifications.html">Notification channels</a>). When <code>approval_mode</code>
+is <code>false</code> (the default), the channel behaves exactly as before —
+a plain HTML notification with a &quot;Review in Impri&quot; link. Setting
+<code>approval_mode: true</code> enables the inline-keyboard approval flow
+described here.</p>
+<hr>
+<h2 id="how-it-works">How it works</h2>
+<ol>
+<li>An action lands in Impri as <code>pending</code>.</li>
+<li>Impri sends a Telegram message to the configured chat or group with
+two inline buttons: <strong>✅ Approve</strong> and <strong>❌ Reject</strong> (plus an optional
+<strong>🔗 View in inbox</strong> link if <code>BASE_URL</code> is set).</li>
+<li>An authorized team member taps a button. Telegram delivers a
+<code>callback_query</code> to Impri&#39;s webhook endpoint.</li>
+<li>Impri verifies the webhook secret, the HMAC signature on the button
+payload, and the tapper&#39;s Telegram user ID against the allow-list.</li>
+<li>If all checks pass, Impri records the decision (same transaction as
+<code>POST /v1/actions/:id/decision</code>), fires any <code>callback_url</code> webhook,
+and edits the Telegram message to show the outcome and remove the
+buttons.</li>
+</ol>
+<p>Digest batches (multiple actions coalesced into one message) fall back
+to the plain notification with a &quot;View inbox&quot; link — inline buttons are
+only meaningful for a single action.</p>
+<hr>
+<h2 id="setup-one-time-10-minutes">Setup (one-time, ~10 minutes)</h2>
+<h3 id="step-1-create-a-telegram-bot">Step 1 — Create a Telegram bot</h3>
+<p>Open Telegram, start a chat with <strong>@BotFather</strong>, send <code>/newbot</code>, and
+follow the prompts. BotFather returns a <strong>bot token</strong> in the form
+<code>1234567890:AAFxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</code>. Save it — it is not
+shown again.</p>
+<h3 id="step-2-get-the-chat-id">Step 2 — Get the chat ID</h3>
+<p><strong>Group chat:</strong> Add the bot to the group as a member. Post any message
+in the group. Call:</p>
+<div class="code-block"><pre><code class="hljs">GET https://api.telegram.org/bot{token}/getUpdates</code></pre></div>
+<p>Look for <code>message.chat.id</code> in the response. Group IDs are negative
+integers (e.g. <code>-1001234567890</code>).</p>
+<p><strong>Direct message:</strong> Send <code>/start</code> to the bot. Call <code>getUpdates</code> and look
+for <code>message.chat.id</code> (a positive integer — your personal ID).</p>
+<p><strong>Channel:</strong> Add the bot as an admin, post anything, and look for
+<code>channel_post.chat.id</code> in <code>getUpdates</code>.</p>
+<h3 id="step-3-collect-authorized-telegram-user-ids">Step 3 — Collect authorized Telegram user IDs</h3>
+<p>Each team member who should be able to tap the buttons needs their
+<strong>numeric Telegram user ID</strong> added to <code>allowed_approver_user_ids</code>.</p>
+<p>The easiest method: each person messages <strong>@userinfobot</strong> and it replies
+with their <code>Id:</code> (a positive integer like <code>123456789</code>).</p>
+<p>Alternatively, after any message is sent in the group, <code>getUpdates</code>
+returns <code>message.from.id</code> for each sender — that is the same ID.</p>
+<p>Collect all IDs you want to authorize.</p>
+<h3 id="step-4-create-the-approval-channel-via-the-impri-api">Step 4 — Create the approval channel via the Impri API</h3>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -X POST https://api.impri.dev/v1/notification-channels \
+  -H <span class="hljs-string">&quot;Authorization: Bearer im_...&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{
+    &quot;name&quot;: &quot;Ops approvals (Telegram)&quot;,
+    &quot;type&quot;: &quot;telegram&quot;,
+    &quot;config&quot;: {
+      &quot;bot_token&quot;:  &quot;1234567890:AAFxxx&quot;,
+      &quot;chat_id&quot;:    &quot;-1001234567890&quot;,
+      &quot;approval_mode&quot;: true,
+      &quot;allowed_approver_user_ids&quot;: [123456789, 987654321]
+    },
+    &quot;enabled&quot;: true
+  }&#x27;</span></code></pre></div>
+<p><strong>Omit <code>hmac_secret</code></strong> — Impri generates a 64-character hex secret
+automatically and stores it. The response shows it masked (<code>****xxxx</code>).
+You never need to know its value unless you want to supply your own
+(16–256 characters).</p>
+<h3 id="step-5-webhook-registration">Step 5 — Webhook registration</h3>
+<p><strong>Automatic (public HTTPS server):</strong> If <code>BASE_URL</code> is set to a public
+<code>https://</code> URL, Impri calls Telegram&#39;s <code>setWebhook</code> automatically on
+channel creation. Look for a log line:</p>
+<div class="code-block"><pre><code class="hljs">[telegram-approval] setWebhook ok {&quot;channelId&quot;:&quot;chan_...&quot;,&quot;url&quot;:&quot;https://...&quot;}</code></pre></div>
+<p>No further action is needed.</p>
+<p><strong>Local dev / self-host behind NAT:</strong> When <code>BASE_URL</code> is absent,
+<code>localhost</code>, or an RFC 1918 address, <code>setWebhook</code> is skipped. To
+register manually:</p>
+<ol>
+<li>Expose your local server with a tunnel:<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">ngrok http 8484
+<span class="hljs-comment"># or: cloudflared tunnel --url http://localhost:8484</span></code></pre></div>
+</li>
+<li>Set <code>BASE_URL=https://&lt;tunnel-hostname&gt;</code> in your <code>.env</code> and restart
+the server.</li>
+<li>Trigger webhook registration:<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -X POST http://localhost:8484/v1/notification-channels/{channelId}/setup-webhook \
+  -H <span class="hljs-string">&quot;Authorization: Bearer im_...&quot;</span></code></pre></div>
+Response on success:<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;ok&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://...&quot;</span> <span class="hljs-punctuation">}</span></code></pre></div>
+</li>
+</ol>
+<p>You can also skip the tunnel for local testing and use the
+<code>/test</code> endpoint to verify the notification format (the test buttons are
+harmless — they reference a synthetic action ID that does not exist in
+the DB, so the webhook handler returns &quot;Action not found&quot; gracefully).</p>
+<h3 id="step-6-verify">Step 6 — Verify</h3>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Send a test message to the chat</span>
+curl -X POST http://localhost:8484/v1/notification-channels/{channelId}/test \
+  -H <span class="hljs-string">&quot;Authorization: Bearer im_...&quot;</span></code></pre></div>
+<p>The bot posts a message with Approve / Reject buttons to the chat. You
+can tap them — the response &quot;Action not found&quot; is correct and expected.
+For a real end-to-end test, create a pending action via your agent and
+tap the button; check <code>GET /v1/actions/{actionId}</code> to confirm the
+decision landed.</p>
+<hr>
+<h2 id="configuration-reference">Configuration reference</h2>
+<p>All fields live inside the <code>config</code> object of a <code>telegram</code> channel. The
+three new fields are optional and default to off so existing channels
+are unaffected.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>bot_token</code></td>
+<td>string</td>
+<td>required</td>
+<td>Telegram Bot API token (<code>\d+:[A-Za-z0-9_-]+</code>).</td>
+</tr>
+<tr>
+<td><code>chat_id</code></td>
+<td>string</td>
+<td>required</td>
+<td>Destination chat, group, or channel ID.</td>
+</tr>
+<tr>
+<td><code>approval_mode</code></td>
+<td>boolean</td>
+<td><code>false</code></td>
+<td>When <code>true</code>, single-action sends use inline Approve/Reject buttons. Digest batches always use plain text.</td>
+</tr>
+<tr>
+<td><code>allowed_approver_user_ids</code></td>
+<td>integer[]</td>
+<td><code>[]</code></td>
+<td>Telegram numeric user IDs permitted to tap the buttons. Max 50. An empty list means no one can approve via Telegram (a validation warning is raised if <code>approval_mode</code> is <code>true</code> and the list is empty).</td>
+</tr>
+<tr>
+<td><code>hmac_secret</code></td>
+<td>string</td>
+<td>auto-generated</td>
+<td>16–256 character secret used to sign button payloads and derive the Telegram webhook token. Auto-generated if omitted at creation time. Masked (<code>****{last4}</code>) in all API responses. Rotate via <code>PATCH config.hmac_secret</code>.</td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Masking in API responses:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>bot_token</code></td>
+<td><code>****{last4}</code></td>
+</tr>
+<tr>
+<td><code>hmac_secret</code></td>
+<td><code>****{last4}</code> (when present)</td>
+</tr>
+<tr>
+<td><code>chat_id</code></td>
+<td>returned as-is</td>
+</tr>
+<tr>
+<td><code>approval_mode</code></td>
+<td>returned as-is</td>
+</tr>
+<tr>
+<td><code>allowed_approver_user_ids</code></td>
+<td>returned as-is</td>
+</tr>
+</tbody></table>
+</div>
+<hr>
+<h2 id="managing-the-channel">Managing the channel</h2>
+<p><strong>Add or remove approvers</strong> without re-creating the channel:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -X PATCH .../v1/notification-channels/{channelId} \
+  -H <span class="hljs-string">&quot;Authorization: Bearer im_...&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;config&quot;: {&quot;allowed_approver_user_ids&quot;: [123456789]}}&#x27;</span></code></pre></div>
+<p>Config fields are shallow-merged — you only need to send what changes.</p>
+<p><strong>Disable the approval flow</strong> (revert to plain notifications):</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -X PATCH .../v1/notification-channels/{channelId} \
+  -d <span class="hljs-string">&#x27;{&quot;config&quot;: {&quot;approval_mode&quot;: false}}&#x27;</span></code></pre></div>
+<p>Impri calls <code>deleteWebhook</code> for the bot automatically when
+<code>approval_mode</code> transitions to <code>false</code> or when <code>enabled</code> is set to
+<code>false</code>.</p>
+<p><strong>Rotate <code>hmac_secret</code>:</strong> Send a new value in a PATCH. Impri
+re-derives the webhook secret, calls <code>setWebhook</code> with the updated
+<code>secret_token</code>, and saves the new value. Old inline buttons in chat
+history return &quot;Invalid approval link&quot; — safe and harmless.</p>
+<p><strong>Delete the channel:</strong> <code>DELETE /v1/notification-channels/{channelId}</code>
+calls <code>deleteWebhook</code> first, then removes the row.</p>
+<hr>
+<h2 id="webhook-endpoint">Webhook endpoint</h2>
+<p>Telegram posts <code>callback_query</code> updates to:</p>
+<div class="code-block"><pre><code class="hljs">POST /v1/integrations/telegram/webhook/:channelId</code></pre></div>
+<p>This endpoint is <strong>public</strong> (no Bearer token). Authentication happens
+entirely via the <code>X-Telegram-Bot-Api-Secret-Token</code> header verified
+against the derived webhook secret before the request body is parsed.
+Operators do not call this endpoint directly — Telegram does.</p>
+<p>Rate limit: 100 requests per minute per <code>channelId</code> (fixed window,
+keyed on <code>channelId + IP</code>). Legitimate Telegram traffic peaks at a
+handful of requests per second; this limit stops scanner abuse.</p>
+<hr>
+<h2 id="security-model">Security model</h2>
+<h3 id="four-independent-defenses">Four independent defenses</h3>
+<p>An attacker must bypass <strong>all four</strong> simultaneously to forge an approval.</p>
+<p><strong>1. Webhook secret header</strong></p>
+<p>Every <code>callback_query</code> from Telegram carries
+<code>X-Telegram-Bot-Api-Secret-Token</code>. The value Impri registered at
+<code>setWebhook</code> time is derived as:</p>
+<div class="code-block"><pre><code class="hljs">HMAC-SHA256(hmac_secret, &quot;tg-webhook-secret&quot;).slice(0, 32).hex()</code></pre></div>
+<p>Impri re-derives and compares it with <code>crypto.timingSafeEqual()</code> before
+parsing the request body. A missing or wrong header gets 403 immediately.
+Without <code>hmac_secret</code>, no scanner or forger can produce a valid header.</p>
+<p><strong>2. Button payload HMAC</strong></p>
+<p>Each Approve / Reject button carries a signature in its <code>callback_data</code>:</p>
+<div class="code-block"><pre><code class="hljs">{v}:{actionId}:{sig}</code></pre></div>
+<p><code>sig</code> is the first 6 bytes (48 bits) of
+<code>HMAC-SHA256(hmac_secret, &quot;tg:&quot; + v + &quot;:&quot; + actionId)</code> encoded as
+base64url (8 chars). Total payload: 37 bytes, well within Telegram&#39;s
+64-byte <code>callback_data</code> limit.</p>
+<p>Without <code>hmac_secret</code>, an attacker in the Telegram chat cannot fabricate
+valid <code>callback_data</code> for any action ID. A 48-bit HMAC requires 2^47
+guesses on average — each requiring a real Telegram account to press a
+real button, observable in chat, rate-limited by Telegram itself.
+Comparison uses <code>timingSafeEqual</code> to prevent timing attacks.</p>
+<p><strong>3. Authorized-user check</strong></p>
+<p>Telegram sets <code>callback_query.from.id</code> in its own infrastructure — other
+Telegram users cannot spoof this integer. Impri checks it against
+<code>allowed_approver_user_ids</code> before recording any decision. If the user
+ID is not in the list, the handler answers &quot;Not authorized&quot; with
+<code>show_alert: true</code> and returns without reading the action from the DB —
+no information about the action is revealed to unauthorized users.</p>
+<p>Authorized taps are recorded in <code>audit_log</code> with
+<code>decided_by = &quot;tg:{telegram_user_id}&quot;</code> and <code>channel = &quot;telegram&quot;</code>.
+First names (<code>cq.from.first_name</code>) are used only in the ephemeral
+in-chat confirmation message and are never stored.</p>
+<p><strong>4. Idempotency via UNIQUE constraint</strong></p>
+<p><code>decisions(action_id)</code> has a DB UNIQUE constraint. The first writer wins.
+A concurrent second tap (two team members pressing simultaneously) is
+caught by the constraint violation, answered with &quot;Already decided,&quot; and
+returns 200 to Telegram. Replaying a pressed button is a safe no-op.</p>
+<h3 id="project-isolation">Project isolation</h3>
+<p>The action is loaded with <code>WHERE id = ? AND project_id = channel.project_id</code>.
+An action from project A cannot be approved via a channel belonging to
+project B, even if an attacker reconstructs a valid HMAC for a foreign
+action ID — the lookup returns not-found.</p>
+<h3 id="bot-token-protection">Bot token protection</h3>
+<p><code>bot_token</code> appears only in outbound Telegram API URLs assembled
+server-side. It is masked in all API responses (<code>****{last4}</code>), stripped
+from error messages by <code>sanitizeError()</code> in <code>notify.ts</code>, never stored in
+logs or <code>audit_log</code>, and never included in webhook request or response
+bodies. All outbound Telegram calls go through <code>fetchGuarded()</code> with the
+<code>api.telegram.org</code> domain hardcoded — not user-supplied.</p>
+<h3 id="threat-model-summary">Threat model summary</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Attack</th>
+<th>Blocked by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Forge a button press without being in the chat</td>
+<td>Webhook secret header (Layer 1)</td>
+</tr>
+<tr>
+<td>Craft valid <code>callback_data</code> without <code>hmac_secret</code></td>
+<td>Button payload HMAC (Layer 2)</td>
+</tr>
+<tr>
+<td>Press buttons but not in <code>allowed_approver_user_ids</code></td>
+<td>Authorized-user check (Layer 3)</td>
+</tr>
+<tr>
+<td>Press the same button twice / race two team members</td>
+<td>UNIQUE constraint (Layer 4)</td>
+</tr>
+<tr>
+<td>Approve an action from a different project</td>
+<td><code>project_id</code> binding in SQL query</td>
+</tr>
+<tr>
+<td>Extract <code>bot_token</code> from logs or API</td>
+<td><code>maskConfig()</code> + <code>sanitizeError()</code></td>
+</tr>
+<tr>
+<td>SSRF via <code>api.telegram.org</code> URL</td>
+<td>Hardcoded domain in <code>fetchGuarded()</code></td>
+</tr>
+</tbody></table>
+</div>
+<hr>
+<h2 id="environment-variables">Environment variables</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>BASE_URL</code></td>
+<td>Must be a publicly reachable URL for <code>setWebhook</code> to be called automatically. Absent or <code>localhost</code> = webhook registration skipped.</td>
+</tr>
+</tbody></table>
+</div>
+<hr>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p><strong>The bot sends a message but buttons do nothing.</strong></p>
+<p>The webhook is not registered or is pointing to an unreachable URL.
+Check the server logs for a <code>setWebhook</code> call on channel creation.
+If <code>BASE_URL</code> was a tunnel URL that has since expired, update <code>.env</code>
+with the new tunnel URL, restart, and call
+<code>POST /v1/notification-channels/{channelId}/setup-webhook</code>.</p>
+<p><strong>&quot;Not authorized to approve in this project&quot; when tapping a button.</strong></p>
+<p>The Telegram user ID of the person tapping is not in
+<code>allowed_approver_user_ids</code>. Find their ID via @userinfobot or
+<code>getUpdates</code> and add it with a PATCH.</p>
+<p><strong>&quot;Invalid or expired approval link&quot; when tapping a button.</strong></p>
+<p>The <code>hmac_secret</code> was rotated since the message was sent, or the
+<code>callback_data</code> was tampered with. Old buttons become invalid after
+rotation — this is intentional and safe. The action is still decidable
+from the web inbox or CLI.</p>
+<p><strong>&quot;Action not found&quot;.</strong></p>
+<p>The action expired, was already decided via a different path, or the
+button belongs to a test message. Check
+<code>GET /v1/actions/{actionId}</code> to see current status.</p>
+<p><strong>&quot;Already decided&quot;.</strong></p>
+<p>Another approver (or a concurrent tap from the same person) beat this
+one to it. The decision is idempotent — nothing went wrong.</p>
+<p><strong>Buttons still appear after a decision.</strong></p>
+<p>The <code>editMessageReplyMarkup</code> call to Telegram failed (network error or
+the message was too old). The decision was still recorded in Impri.
+The buttons are cosmetically stale; any additional tap is answered with
+&quot;Already decided&quot; and is a no-op.</p>
+<p><strong><code>setup-webhook</code> returns an error from Telegram.</strong></p>
+<p>Telegram requires the webhook URL to be reachable from the internet over
+HTTPS. Verify that <code>BASE_URL</code> resolves publicly and serves a valid TLS
+certificate. A self-signed cert is rejected by Telegram unless it is
+uploaded as a <code>certificate</code> parameter to <code>setWebhook</code> (not currently
+automated — use a CA-signed cert or a tunnel service).</p>
+<p><strong>The channel was auto-disabled (fail_count reached 5).</strong></p>
+<p>Fix the underlying issue (e.g. incorrect <code>bot_token</code> or <code>chat_id</code>), then:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -X PATCH .../v1/notification-channels/{channelId} \
+  -d <span class="hljs-string">&#x27;{&quot;enabled&quot;: true}&#x27;</span></code></pre></div>
+<p>This resets <code>fail_count</code> to 0 and re-enables delivery.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#how-it-works">How it works</a></li>
+<li class="ptoc-h2"><a href="#setup-one-time-10-minutes">Setup (one-time, ~10 minutes)</a></li>
+<li class="ptoc-h3"><a href="#step-1-create-a-telegram-bot">Step 1 — Create a Telegram bot</a></li>
+<li class="ptoc-h3"><a href="#step-2-get-the-chat-id">Step 2 — Get the chat ID</a></li>
+<li class="ptoc-h3"><a href="#step-3-collect-authorized-telegram-user-ids">Step 3 — Collect authorized Telegram user IDs</a></li>
+<li class="ptoc-h3"><a href="#step-4-create-the-approval-channel-via-the-impri-api">Step 4 — Create the approval channel via the Impri API</a></li>
+<li class="ptoc-h3"><a href="#step-5-webhook-registration">Step 5 — Webhook registration</a></li>
+<li class="ptoc-h3"><a href="#step-6-verify">Step 6 — Verify</a></li>
+<li class="ptoc-h2"><a href="#configuration-reference">Configuration reference</a></li>
+<li class="ptoc-h2"><a href="#managing-the-channel">Managing the channel</a></li>
+<li class="ptoc-h2"><a href="#webhook-endpoint">Webhook endpoint</a></li>
+<li class="ptoc-h2"><a href="#security-model">Security model</a></li>
+<li class="ptoc-h3"><a href="#four-independent-defenses">Four independent defenses</a></li>
+<li class="ptoc-h3"><a href="#project-isolation">Project isolation</a></li>
+<li class="ptoc-h3"><a href="#bot-token-protection">Bot token protection</a></li>
+<li class="ptoc-h3"><a href="#threat-model-summary">Threat model summary</a></li>
+<li class="ptoc-h2"><a href="#environment-variables">Environment variables</a></li>
+<li class="ptoc-h2"><a href="#troubleshooting">Troubleshooting</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents.</span></div>
+</footer>
+</body>
+</html>

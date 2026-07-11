@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Watcher Presets — Impri Docs</title>
+<meta name="description" content="Presets are named, parameterized templates for the most common watcher configurations. Instead of hand-crafting a config object and choosing a schedule, you pick a preset, supply a handful of params, ">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Watcher Presets — Impri Docs">
+<meta property="og:description" content="Presets are named, parameterized templates for the most common watcher configurations. Instead of hand-crafting a config object and choosing a schedule, you pick a preset, supply a handful of params, ">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl active">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>API reference</span>
+      <span class="bc-sep">/</span>
+      <span>Watcher Presets</span>
+    </nav>
+    <h1>Watcher Presets</h1>
+<p>Presets are named, parameterized templates for the most common watcher
+configurations. Instead of hand-crafting a <code>config</code> object and choosing a
+schedule, you pick a preset, supply a handful of params, and the server builds
+the watcher for you.</p>
+<blockquote>
+<p><strong>Honest framing.</strong> A preset is a UI convenience, not a separate watcher
+kind. Under the hood every preset resolves to one of the three watcher kinds:
+<code>rss</code>, <code>reddit_search</code>, or <code>url_diff</code>. The <code>POST /v1/watchers/from-preset</code>
+endpoint builds the <code>CreateWatcherBody</code>, runs the same validation pipeline as
+<code>POST /v1/watchers</code>, and inserts the same row. Billing limits, scheduling
+minimums, and SSRF guards all apply identically.</p>
+</blockquote>
+<hr>
+<h2 id="endpoints">Endpoints</h2>
+<h3 id="list-the-preset-catalog">List the preset catalog</h3>
+<div class="code-block"><pre><code class="hljs">GET /v1/watcher-presets
+Authorization: Bearer im_&lt;key&gt;   (scope: watch)</code></pre></div>
+<p>Returns the static preset catalog — no DB read, safe to cache aggressively.</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;presets&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+    <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;hn-front-page&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;title&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Hacker News Front Page&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;description&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;New posts as they appear on the HN front page&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;category&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Community&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;kind&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;rss&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;params&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;defaultScheduleEvery&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;30m&quot;</span>
+    <span class="hljs-punctuation">}</span>
+    <span class="hljs-comment">// …</span>
+  <span class="hljs-punctuation">]</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<h3 id="create-a-watcher-from-a-preset">Create a watcher from a preset</h3>
+<div class="code-block"><pre><code class="hljs">POST /v1/watchers/from-preset
+Authorization: Bearer im_&lt;key&gt;   (scope: watch)
+Content-Type: application/json</code></pre></div>
+<p>Request body:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;preset_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;github-releases&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;params&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;owner&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;fastify&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;repo&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;fastify&quot;</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;fastify releases&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;schedule&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;every&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;2h&quot;</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<ul>
+<li><code>preset_id</code> — required; must match a known preset id.</li>
+<li><code>params</code> — required; key/value map of the preset&#39;s declared params.</li>
+<li><code>name</code> — optional; defaults to <code>&quot;&lt;preset title&gt;: &lt;primary param value&gt;&quot;</code>.</li>
+<li><code>schedule</code> — optional; defaults to the preset&#39;s <code>defaultScheduleEvery</code>.</li>
+</ul>
+<p>Successful response: <code>201</code> with the same watcher object as <code>POST /v1/watchers</code>.</p>
+<p><strong>Errors:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Error</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>400</td>
+<td><code>preset_not_found</code></td>
+<td>Unknown <code>preset_id</code></td>
+</tr>
+<tr>
+<td>400</td>
+<td><code>Bad Request</code> + <code>issues</code></td>
+<td>Missing or invalid param, or body fails validation</td>
+</tr>
+<tr>
+<td>402</td>
+<td><code>Payment Required</code></td>
+<td>Watcher count limit or schedule too frequent for tier</td>
+</tr>
+<tr>
+<td>403</td>
+<td><code>Forbidden</code></td>
+<td>Key missing <code>watch</code> scope</td>
+</tr>
+<tr>
+<td>429</td>
+<td><code>Too Many Requests</code></td>
+<td><code>watchers:create</code> rate-limit (30 req/min per key)</td>
+</tr>
+</tbody></table>
+</div>
+<hr>
+<h2 id="how-to-create-a-watcher-from-a-preset">How to create a watcher from a preset</h2>
+<h3 id="web-ui">Web UI</h3>
+<p>Open the <strong>Watchers</strong> page in the inbox, click <strong>Add Watcher</strong>, and choose
+<strong>From preset</strong> to see the picker. Select a preset, fill in the param fields,
+optionally change the name and schedule, and click <strong>Create</strong>.</p>
+<h3 id="rest-curl">REST (curl)</h3>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST https://api.impri.dev/v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{
+    &quot;preset_id&quot;: &quot;reddit-keyword&quot;,
+    &quot;params&quot;: {
+      &quot;query&quot;: &quot;self-hosting AI&quot;,
+      &quot;subreddit&quot;: &quot;selfhosted&quot;
+    },
+    &quot;schedule&quot;: { &quot;every&quot;: &quot;30m&quot; }
+  }&#x27;</span></code></pre></div>
+<h3 id="python">Python</h3>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">from</span> impri <span class="hljs-keyword">import</span> ImpriClient
+
+client = ImpriClient()  <span class="hljs-comment"># reads IMPRI_API_KEY from env</span>
+
+<span class="hljs-comment"># Browse the preset catalog</span>
+catalog = client.list_watcher_presets()
+<span class="hljs-keyword">for</span> p <span class="hljs-keyword">in</span> catalog[<span class="hljs-string">&quot;presets&quot;</span>]:
+    <span class="hljs-built_in">print</span>(p[<span class="hljs-string">&quot;id&quot;</span>], <span class="hljs-string">&quot;-&quot;</span>, p[<span class="hljs-string">&quot;title&quot;</span>])
+
+<span class="hljs-comment"># Create a watcher from a preset</span>
+watcher = client.create_watcher_from_preset(
+    <span class="hljs-string">&quot;github-releases&quot;</span>,
+    params={<span class="hljs-string">&quot;owner&quot;</span>: <span class="hljs-string">&quot;fastify&quot;</span>, <span class="hljs-string">&quot;repo&quot;</span>: <span class="hljs-string">&quot;fastify&quot;</span>},
+)
+<span class="hljs-built_in">print</span>(watcher[<span class="hljs-string">&quot;id&quot;</span>], watcher[<span class="hljs-string">&quot;status&quot;</span>])
+
+<span class="hljs-comment"># With a custom schedule and explicit name</span>
+reddit = client.create_watcher_from_preset(
+    <span class="hljs-string">&quot;reddit-keyword&quot;</span>,
+    params={<span class="hljs-string">&quot;query&quot;</span>: <span class="hljs-string">&quot;self-hosting AI&quot;</span>, <span class="hljs-string">&quot;subreddit&quot;</span>: <span class="hljs-string">&quot;selfhosted&quot;</span>},
+    schedule={<span class="hljs-string">&quot;every&quot;</span>: <span class="hljs-string">&quot;30m&quot;</span>},
+    name=<span class="hljs-string">&quot;Self-hosting AI on Reddit&quot;</span>,
+)</code></pre></div>
+<h3 id="typescript">TypeScript</h3>
+<div class="code-block"><span class="code-lang">ts</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">ImpriClient</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@impri/sdk&#x27;</span>
+
+<span class="hljs-keyword">const</span> client = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ImpriClient</span>()  <span class="hljs-comment">// reads IMPRI_API_KEY from env</span>
+
+<span class="hljs-comment">// Browse the preset catalog</span>
+<span class="hljs-keyword">const</span> presets = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">listWatcherPresets</span>()
+presets.<span class="hljs-title function_">forEach</span>(<span class="hljs-function"><span class="hljs-params">p</span> =&gt;</span> <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(p.<span class="hljs-property">id</span>, <span class="hljs-string">&#x27;-&#x27;</span>, p.<span class="hljs-property">title</span>))
+
+<span class="hljs-comment">// Create a watcher from a preset (no params required)</span>
+<span class="hljs-keyword">const</span> hn = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">createWatcherFromPreset</span>(<span class="hljs-string">&#x27;hn-front-page&#x27;</span>)
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(hn.<span class="hljs-property">id</span>, hn.<span class="hljs-property">status</span>)
+
+<span class="hljs-comment">// With params</span>
+<span class="hljs-keyword">const</span> arxiv = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">createWatcherFromPreset</span>(<span class="hljs-string">&#x27;arxiv-papers&#x27;</span>, {
+  <span class="hljs-attr">category</span>: <span class="hljs-string">&#x27;cs.AI&#x27;</span>,
+  <span class="hljs-attr">query</span>: <span class="hljs-string">&#x27;large language models&#x27;</span>,
+})
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(arxiv.<span class="hljs-property">id</span>, arxiv.<span class="hljs-property">status</span>)
+
+<span class="hljs-comment">// With a custom schedule and name override</span>
+<span class="hljs-keyword">const</span> reddit = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">createWatcherFromPreset</span>(
+  <span class="hljs-string">&#x27;reddit-keyword&#x27;</span>,
+  { <span class="hljs-attr">query</span>: <span class="hljs-string">&#x27;self-hosting AI&#x27;</span>, <span class="hljs-attr">subreddit</span>: <span class="hljs-string">&#x27;selfhosted&#x27;</span> },
+  { <span class="hljs-attr">schedule</span>: { <span class="hljs-attr">every</span>: <span class="hljs-string">&#x27;30m&#x27;</span> }, <span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;Self-hosting AI on Reddit&#x27;</span> },
+)</code></pre></div>
+<h3 id="mcp-claude-code-agents">MCP (Claude Code / agents)</h3>
+<p>The MCP server (<code>npx @impri/mcp</code>) exposes two dedicated tools for working
+with presets.</p>
+<p><strong><code>impri_list_watcher_presets</code></strong> — no inputs required; returns the full preset
+catalog grouped by category, including each preset&#39;s id, required and optional
+params, and default schedule. Call this first to discover which preset fits
+your monitoring goal.</p>
+<p><strong><code>impri_create_watcher_from_preset</code></strong> — creates a watcher by supplying the
+preset id and param values. Example for GitHub releases with a custom schedule:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;preset_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;github-releases&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;params&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;owner&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;fastify&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;repo&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;fastify&quot;</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;schedule&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;every&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;2h&quot;</span> <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>Example for Hacker News keyword watch (no schedule override needed):</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;preset_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;hn-keyword&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;params&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;keyword&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;rust programming&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;min_points&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;25&quot;</span> <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>The <code>name</code> field is optional in both tools; when omitted the server defaults to
+<code>&quot;{preset title}: {primary param value}&quot;</code>.</p>
+<hr>
+<h2 id="security-note-on-watcher-payloads">Security note on watcher payloads</h2>
+<p>Regardless of how a watcher is created, every item it discovers comes from an
+external source (HN, Reddit, GitHub, arXiv, …). These items arrive in the
+inbox with <code>payload.untrusted = true</code>. Treat their <code>title</code>, <code>url</code>, and
+<code>preview</code> as external data — <strong>never inject them into LLM instructions or
+system prompts without sanitization.</strong> This applies to preset-based watchers
+the same as to hand-crafted ones.</p>
+<p>Python: <code>action.is_untrusted</code>. TypeScript: <code>action.isUntrusted</code>.</p>
+<hr>
+<h2 id="preset-catalog">Preset catalog</h2>
+<h3 id="community">Community</h3>
+<hr>
+<h4><code>hn-front-page</code> — Hacker News Front Page</h4>
+<p>Delivers every new post that appears on the HN front page via the official RSS
+feed. No filtering is applied by default; add ScoringRules after creation to
+surface topics you care about.</p>
+<p><strong>Params:</strong> none<br><strong>Default schedule:</strong> <code>30m</code><br><strong>Kind:</strong> <code>rss</code></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;preset_id&quot;: &quot;hn-front-page&quot;, &quot;params&quot;: {}}&#x27;</span></code></pre></div>
+<hr>
+<h4><code>hn-keyword</code> — Hacker News – Keyword</h4>
+<p>HN posts whose title or text mention a keyword, pre-filtered server-side by
+minimum upvote points via <a href="https://hnrss.org" target="_blank" rel="noopener">hnrss.org</a>.</p>
+<p><strong>Params:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>keyword</code></td>
+<td>yes</td>
+<td>Word or phrase to search for in HN posts</td>
+<td><code>rust programming</code></td>
+</tr>
+<tr>
+<td><code>min_points</code></td>
+<td>no</td>
+<td>Minimum upvote points; defaults to 10</td>
+<td><code>25</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Default schedule:</strong> <code>30m</code><br><strong>Kind:</strong> <code>rss</code></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{
+    &quot;preset_id&quot;: &quot;hn-keyword&quot;,
+    &quot;params&quot;: { &quot;keyword&quot;: &quot;rust programming&quot;, &quot;min_points&quot;: &quot;25&quot; }
+  }&#x27;</span></code></pre></div>
+<hr>
+<h4><code>hn-show-ask</code> — Hacker News – Show/Ask HN</h4>
+<p>Show HN or Ask HN posts from Hacker News.</p>
+<p><strong>Params:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>type</code></td>
+<td>yes</td>
+<td><code>&quot;show&quot;</code> for Show HN posts, <code>&quot;ask&quot;</code> for Ask HN posts</td>
+<td><code>show</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Default schedule:</strong> <code>1h</code><br><strong>Kind:</strong> <code>rss</code></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;preset_id&quot;: &quot;hn-show-ask&quot;, &quot;params&quot;: {&quot;type&quot;: &quot;show&quot;}}&#x27;</span></code></pre></div>
+<hr>
+<h4><code>reddit-subreddit</code> — Reddit – Subreddit New Posts</h4>
+<p>New posts from a subreddit sorted by new, via Reddit&#39;s public RSS feed.</p>
+<p><strong>Params:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>subreddit</code></td>
+<td>yes</td>
+<td>Subreddit name without the <code>r/</code> prefix</td>
+<td><code>MachineLearning</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Default schedule:</strong> <code>30m</code><br><strong>Kind:</strong> <code>rss</code></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;preset_id&quot;: &quot;reddit-subreddit&quot;, &quot;params&quot;: {&quot;subreddit&quot;: &quot;MachineLearning&quot;}}&#x27;</span></code></pre></div>
+<hr>
+<h4><code>reddit-keyword</code> — Reddit – Keyword Search</h4>
+<p>Reddit posts matching a search query, optionally scoped to a single subreddit.
+Supports Reddit search operators such as <code>title:</code>, <code>flair:</code>, and boolean <code>AND</code>/<code>OR</code>.</p>
+<p><strong>Params:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>query</code></td>
+<td>yes</td>
+<td>Search query; supports Reddit operators</td>
+<td><code>self-hosting AI</code></td>
+</tr>
+<tr>
+<td><code>subreddit</code></td>
+<td>no</td>
+<td>Limit search to this subreddit; omit or use <code>&quot;all&quot;</code> for all of Reddit</td>
+<td><code>selfhosted</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Default schedule:</strong> <code>30m</code><br><strong>Kind:</strong> <code>reddit_search</code></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{
+    &quot;preset_id&quot;: &quot;reddit-keyword&quot;,
+    &quot;params&quot;: { &quot;query&quot;: &quot;self-hosting AI&quot;, &quot;subreddit&quot;: &quot;selfhosted&quot; }
+  }&#x27;</span></code></pre></div>
+<hr>
+<h3 id="developer">Developer</h3>
+<hr>
+<h4><code>github-releases</code> — GitHub – Repository Releases</h4>
+<p>New releases published to a public GitHub repository via the Atom releases
+feed. No auth required.</p>
+<p><strong>Params:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>owner</code></td>
+<td>yes</td>
+<td>GitHub username or org</td>
+<td><code>fastify</code></td>
+</tr>
+<tr>
+<td><code>repo</code></td>
+<td>yes</td>
+<td>Repository name</td>
+<td><code>fastify</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Default schedule:</strong> <code>1h</code><br><strong>Kind:</strong> <code>rss</code></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;preset_id&quot;: &quot;github-releases&quot;, &quot;params&quot;: {&quot;owner&quot;: &quot;fastify&quot;, &quot;repo&quot;: &quot;fastify&quot;}}&#x27;</span></code></pre></div>
+<hr>
+<h4><code>github-commits</code> — GitHub – Repository Commits</h4>
+<p>New commits pushed to the default branch of a public GitHub repository. On
+active repos this feed can be high-frequency; consider adding keyword filters
+after creation to match specific commit message patterns.</p>
+<p><strong>Params:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>owner</code></td>
+<td>yes</td>
+<td>GitHub username or org</td>
+<td><code>torvalds</code></td>
+</tr>
+<tr>
+<td><code>repo</code></td>
+<td>yes</td>
+<td>Repository name</td>
+<td><code>linux</code></td>
+</tr>
+<tr>
+<td><code>feed</code></td>
+<td>no</td>
+<td><code>&quot;commits&quot;</code> (default) for commit history, <code>&quot;tags&quot;</code> for new tags</td>
+<td><code>commits</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Default schedule:</strong> <code>1h</code><br><strong>Kind:</strong> <code>rss</code></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{
+    &quot;preset_id&quot;: &quot;github-commits&quot;,
+    &quot;params&quot;: {&quot;owner&quot;: &quot;torvalds&quot;, &quot;repo&quot;: &quot;linux&quot;},
+    &quot;schedule&quot;: {&quot;every&quot;: &quot;6h&quot;}
+  }&#x27;</span></code></pre></div>
+<hr>
+<h4><code>npm-package</code> — npm – Package New Version</h4>
+<p>Watches for new versions of an npm package by polling the registry&#39;s
+<code>/latest</code> endpoint. The endpoint returns stable metadata that changes only
+when a new version is published, making it a reliable <code>url_diff</code> trigger.</p>
+<p><strong>Params:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>package</code></td>
+<td>yes</td>
+<td>Package name; include the full scope for scoped packages</td>
+<td><code>@types/react</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Default schedule:</strong> <code>6h</code><br><strong>Kind:</strong> <code>url_diff</code></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;preset_id&quot;: &quot;npm-package&quot;, &quot;params&quot;: {&quot;package&quot;: &quot;@types/react&quot;}}&#x27;</span></code></pre></div>
+<hr>
+<h4><code>pypi-package</code> — PyPI – Package New Release</h4>
+<p>New releases of a Python package on PyPI, via the official per-project RSS
+feed.</p>
+<p><strong>Params:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>package</code></td>
+<td>yes</td>
+<td>PyPI package name (normalized to lowercase)</td>
+<td><code>requests</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Default schedule:</strong> <code>6h</code><br><strong>Kind:</strong> <code>rss</code></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;preset_id&quot;: &quot;pypi-package&quot;, &quot;params&quot;: {&quot;package&quot;: &quot;requests&quot;}}&#x27;</span></code></pre></div>
+<hr>
+<h4><code>stackoverflow-tag</code> — Stack Overflow – Tag Questions</h4>
+<p>New questions tagged with a specific Stack Overflow tag. The same URL pattern
+works for other Stack Exchange sites by changing the <code>name</code> and <code>schedule</code>
+after creation.</p>
+<p><strong>Params:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tag</code></td>
+<td>yes</td>
+<td>Tag name (lowercase, max 35 chars)</td>
+<td><code>typescript</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Default schedule:</strong> <code>30m</code><br><strong>Kind:</strong> <code>rss</code></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;preset_id&quot;: &quot;stackoverflow-tag&quot;, &quot;params&quot;: {&quot;tag&quot;: &quot;typescript&quot;}}&#x27;</span></code></pre></div>
+<hr>
+<h3 id="content">Content</h3>
+<hr>
+<h4><code>rss-feed</code> — Generic RSS / Atom Feed</h4>
+<p>Follow any publicly accessible RSS 2.0 or Atom feed by URL. Both formats are
+supported. The URL is passed through the existing SSRF guard; private-IP
+addresses are blocked at both parse time and fetch time.</p>
+<p><strong>Params:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>url</code></td>
+<td>yes</td>
+<td>Full http/https URL of the feed</td>
+<td><code>https://martinfowler.com/feed.atom</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Default schedule:</strong> <code>1h</code><br><strong>Kind:</strong> <code>rss</code></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;preset_id&quot;: &quot;rss-feed&quot;, &quot;params&quot;: {&quot;url&quot;: &quot;https://martinfowler.com/feed.atom&quot;}}&#x27;</span></code></pre></div>
+<hr>
+<h4><code>blog-newsletter</code> — Blog / Newsletter</h4>
+<p>Follow a blog or newsletter RSS/Atom feed. When <code>keywords</code> is supplied, only
+posts matching at least one keyword are delivered; omit it to receive all
+posts. Scored at <code>min_score = 10</code> when keywords are active, <code>0</code> otherwise.</p>
+<p><strong>Params:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>url</code></td>
+<td>yes</td>
+<td>RSS or Atom feed URL</td>
+<td><code>https://newsletter.pragmaticengineer.com/feed</code></td>
+</tr>
+<tr>
+<td><code>keywords</code></td>
+<td>no</td>
+<td>Comma-separated list of topic keywords</td>
+<td><code>AI, LLM, architecture</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Default schedule:</strong> <code>12h</code><br><strong>Kind:</strong> <code>rss</code></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{
+    &quot;preset_id&quot;: &quot;blog-newsletter&quot;,
+    &quot;params&quot;: {
+      &quot;url&quot;: &quot;https://newsletter.pragmaticengineer.com/feed&quot;,
+      &quot;keywords&quot;: &quot;AI, LLM, architecture&quot;
+    }
+  }&#x27;</span></code></pre></div>
+<hr>
+<h4><code>youtube-channel</code> — YouTube Channel – New Videos</h4>
+<p>New video uploads from a YouTube channel via YouTube&#39;s official public Atom
+feed. No API key or auth required.</p>
+<p><strong>Params:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>channel_id</code></td>
+<td>yes</td>
+<td>Channel ID starting with <code>UC</code>, 24 characters total. Find it at <code>youtube.com/channel/UC…</code> or on the channel&#39;s About page.</td>
+<td><code>UCnUYZLuoy1rq1aVMwx4aTzw</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Default schedule:</strong> <code>6h</code><br><strong>Kind:</strong> <code>rss</code></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;preset_id&quot;: &quot;youtube-channel&quot;, &quot;params&quot;: {&quot;channel_id&quot;: &quot;UCnUYZLuoy1rq1aVMwx4aTzw&quot;}}&#x27;</span></code></pre></div>
+<hr>
+<h3 id="research">Research</h3>
+<hr>
+<h4><code>arxiv-papers</code> — arXiv – New Papers</h4>
+<p>New preprints on arXiv by subject category, keyword query, or both. At least
+one of <code>category</code> or <code>query</code> is required.</p>
+<p>When both are provided the category RSS feed is used and keyword scoring is
+applied in-process. When only <code>query</code> is provided the arXiv search API
+(Atom) is used. When only <code>category</code> is provided all new submissions in that
+category are delivered without keyword filtering.</p>
+<p><strong>Params:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>category</code></td>
+<td>if no <code>query</code></td>
+<td>arXiv subject category code</td>
+<td><code>cs.AI</code></td>
+</tr>
+<tr>
+<td><code>query</code></td>
+<td>if no <code>category</code></td>
+<td>Keyword or phrase to search across all arXiv metadata</td>
+<td><code>large language models</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Default schedule:</strong> <code>6h</code><br><strong>Kind:</strong> <code>rss</code></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Category only</span>
+curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;preset_id&quot;: &quot;arxiv-papers&quot;, &quot;params&quot;: {&quot;category&quot;: &quot;cs.AI&quot;}}&#x27;</span>
+
+<span class="hljs-comment"># Category + keyword filter</span>
+curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{
+    &quot;preset_id&quot;: &quot;arxiv-papers&quot;,
+    &quot;params&quot;: {&quot;category&quot;: &quot;cs.AI&quot;, &quot;query&quot;: &quot;large language models&quot;}
+  }&#x27;</span></code></pre></div>
+<hr>
+<h3 id="news">News</h3>
+<hr>
+<h4><code>google-news</code> — Google News – Keyword</h4>
+<p>News articles matching a search query from the Google News RSS feed. Supports
+boolean operators (<code>AND</code>, <code>OR</code>), <code>site:</code>, and exact phrase quoting.</p>
+<p><strong>Params:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>query</code></td>
+<td>yes</td>
+<td>News search query (max 500 chars)</td>
+<td><code>AI regulation Europe</code></td>
+</tr>
+<tr>
+<td><code>language</code></td>
+<td>no</td>
+<td>Language and region in <code>hl-gl</code> format; defaults to <code>en-US</code></td>
+<td><code>de-DE</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Default schedule:</strong> <code>1h</code><br><strong>Kind:</strong> <code>rss</code></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{
+    &quot;preset_id&quot;: &quot;google-news&quot;,
+    &quot;params&quot;: {&quot;query&quot;: &quot;AI regulation Europe&quot;}
+  }&#x27;</span></code></pre></div>
+<hr>
+<h4><code>product-hunt</code> — Product Hunt – Daily Posts</h4>
+<p>New products launched on Product Hunt via the public RSS feed. The feed is
+high-volume; add ScoringRule keywords after creation (e.g. <code>&quot;developer&quot;</code>,
+<code>&quot;open source&quot;</code>) to surface launches relevant to you.</p>
+<p><strong>Params:</strong> none<br><strong>Default schedule:</strong> <code>6h</code><br><strong>Kind:</strong> <code>rss</code></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;preset_id&quot;: &quot;product-hunt&quot;, &quot;params&quot;: {}}&#x27;</span></code></pre></div>
+<hr>
+<h3 id="monitoring">Monitoring</h3>
+<hr>
+<h4><code>url-changed</code> — Website Page Changed</h4>
+<p>Delivers a notification whenever the full content of any web page changes.
+Uses SHA-256 of the fetched page text; any change triggers a <code>watcher.triage</code>
+action regardless of keyword scoring.</p>
+<p><strong>Params:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>url</code></td>
+<td>yes</td>
+<td>Full http/https URL of the page to monitor</td>
+<td><code>https://example.com/pricing</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Default schedule:</strong> <code>6h</code><br><strong>Kind:</strong> <code>url_diff</code></p>
+<p>Note: the scheduler respects <code>robots.txt</code>. If the <code>Impri-Watcher</code> user-agent
+is disallowed, the watcher is degraded with <code>error: robots_disallowed</code> rather
+than crawling.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;preset_id&quot;: &quot;url-changed&quot;, &quot;params&quot;: {&quot;url&quot;: &quot;https://example.com/pricing&quot;}}&#x27;</span></code></pre></div>
+<hr>
+<h4><code>changelog-status</code> — Changelog / Status Page</h4>
+<p>Watch a changelog or incident/status page for updates. Identical to
+<code>url-changed</code> in construction but uses a <code>1h</code> default schedule (vs <code>6h</code>)
+to reflect the operational urgency of status pages.</p>
+<p><strong>Params:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Required</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>url</code></td>
+<td>yes</td>
+<td>URL of the changelog or status page</td>
+<td><code>https://www.githubstatus.com/</code></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Default schedule:</strong> <code>1h</code><br><strong>Kind:</strong> <code>url_diff</code></p>
+<p>Note: status pages that render dynamic content may fire on non-meaningful JS
+bundle hash changes. Consider adding keywords such as <code>&quot;incident&quot;</code>,
+<code>&quot;degraded&quot;</code>, or <code>&quot;version&quot;</code> after creation to filter for genuine signal.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST .../v1/watchers/from-preset \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;preset_id&quot;: &quot;changelog-status&quot;, &quot;params&quot;: {&quot;url&quot;: &quot;https://www.githubstatus.com/&quot;}}&#x27;</span></code></pre></div>
+<hr>
+<h2 id="quick-reference-index">Quick-reference index</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Title</th>
+<th>Kind</th>
+<th>Default schedule</th>
+<th>Params</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>hn-front-page</code></td>
+<td>Hacker News Front Page</td>
+<td>rss</td>
+<td>30m</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>hn-keyword</code></td>
+<td>Hacker News – Keyword</td>
+<td>rss</td>
+<td>30m</td>
+<td><code>keyword</code>, <code>min_points</code></td>
+</tr>
+<tr>
+<td><code>hn-show-ask</code></td>
+<td>Hacker News – Show/Ask HN</td>
+<td>rss</td>
+<td>1h</td>
+<td><code>type</code></td>
+</tr>
+<tr>
+<td><code>reddit-subreddit</code></td>
+<td>Reddit – Subreddit New Posts</td>
+<td>rss</td>
+<td>30m</td>
+<td><code>subreddit</code></td>
+</tr>
+<tr>
+<td><code>reddit-keyword</code></td>
+<td>Reddit – Keyword Search</td>
+<td>reddit_search</td>
+<td>30m</td>
+<td><code>query</code>, <code>subreddit</code></td>
+</tr>
+<tr>
+<td><code>github-releases</code></td>
+<td>GitHub – Repository Releases</td>
+<td>rss</td>
+<td>1h</td>
+<td><code>owner</code>, <code>repo</code></td>
+</tr>
+<tr>
+<td><code>github-commits</code></td>
+<td>GitHub – Repository Commits</td>
+<td>rss</td>
+<td>1h</td>
+<td><code>owner</code>, <code>repo</code>, <code>feed</code></td>
+</tr>
+<tr>
+<td><code>npm-package</code></td>
+<td>npm – Package New Version</td>
+<td>url_diff</td>
+<td>6h</td>
+<td><code>package</code></td>
+</tr>
+<tr>
+<td><code>pypi-package</code></td>
+<td>PyPI – Package New Release</td>
+<td>rss</td>
+<td>6h</td>
+<td><code>package</code></td>
+</tr>
+<tr>
+<td><code>stackoverflow-tag</code></td>
+<td>Stack Overflow – Tag Questions</td>
+<td>rss</td>
+<td>30m</td>
+<td><code>tag</code></td>
+</tr>
+<tr>
+<td><code>rss-feed</code></td>
+<td>Generic RSS / Atom Feed</td>
+<td>rss</td>
+<td>1h</td>
+<td><code>url</code></td>
+</tr>
+<tr>
+<td><code>blog-newsletter</code></td>
+<td>Blog / Newsletter</td>
+<td>rss</td>
+<td>12h</td>
+<td><code>url</code>, <code>keywords</code></td>
+</tr>
+<tr>
+<td><code>youtube-channel</code></td>
+<td>YouTube Channel – New Videos</td>
+<td>rss</td>
+<td>6h</td>
+<td><code>channel_id</code></td>
+</tr>
+<tr>
+<td><code>arxiv-papers</code></td>
+<td>arXiv – New Papers</td>
+<td>rss</td>
+<td>6h</td>
+<td><code>category</code>, <code>query</code></td>
+</tr>
+<tr>
+<td><code>google-news</code></td>
+<td>Google News – Keyword</td>
+<td>rss</td>
+<td>1h</td>
+<td><code>query</code>, <code>language</code></td>
+</tr>
+<tr>
+<td><code>product-hunt</code></td>
+<td>Product Hunt – Daily Posts</td>
+<td>rss</td>
+<td>6h</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>url-changed</code></td>
+<td>Website Page Changed</td>
+<td>url_diff</td>
+<td>6h</td>
+<td><code>url</code></td>
+</tr>
+<tr>
+<td><code>changelog-status</code></td>
+<td>Changelog / Status Page</td>
+<td>url_diff</td>
+<td>1h</td>
+<td><code>url</code></td>
+</tr>
+</tbody></table>
+</div>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#endpoints">Endpoints</a></li>
+<li class="ptoc-h3"><a href="#list-the-preset-catalog">List the preset catalog</a></li>
+<li class="ptoc-h3"><a href="#create-a-watcher-from-a-preset">Create a watcher from a preset</a></li>
+<li class="ptoc-h2"><a href="#how-to-create-a-watcher-from-a-preset">How to create a watcher from a preset</a></li>
+<li class="ptoc-h3"><a href="#web-ui">Web UI</a></li>
+<li class="ptoc-h3"><a href="#rest-curl">REST (curl)</a></li>
+<li class="ptoc-h3"><a href="#python">Python</a></li>
+<li class="ptoc-h3"><a href="#typescript">TypeScript</a></li>
+<li class="ptoc-h3"><a href="#mcp-claude-code-agents">MCP (Claude Code / agents)</a></li>
+<li class="ptoc-h2"><a href="#security-note-on-watcher-payloads">Security note on watcher payloads</a></li>
+<li class="ptoc-h2"><a href="#preset-catalog">Preset catalog</a></li>
+<li class="ptoc-h3"><a href="#community">Community</a></li>
+<li class="ptoc-h3"><a href="#developer">Developer</a></li>
+<li class="ptoc-h3"><a href="#content">Content</a></li>
+<li class="ptoc-h3"><a href="#research">Research</a></li>
+<li class="ptoc-h3"><a href="#news">News</a></li>
+<li class="ptoc-h3"><a href="#monitoring">Monitoring</a></li>
+<li class="ptoc-h2"><a href="#quick-reference-index">Quick-reference index</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents.</span></div>
+</footer>
+</body>
+</html>

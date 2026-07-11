@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inbox UX &amp;amp; Bulk API — Impri Docs</title>
+<meta name="description" content="Reference for the web inbox interface, keyboard shortcuts, search/filter parameters, and the POST /v1/actions/bulk-decision REST endpoint.">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Inbox UX &amp;amp; Bulk API — Impri Docs">
+<meta property="og:description" content="Reference for the web inbox interface, keyboard shortcuts, search/filter parameters, and the POST /v1/actions/bulk-decision REST endpoint.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl active">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Inbox &amp; webhooks</span>
+      <span class="bc-sep">/</span>
+      <span>Inbox UX &amp;amp; Bulk API</span>
+    </nav>
+    <h1>Inbox UX &amp; Bulk API</h1>
+<p>Reference for the web inbox interface, keyboard shortcuts, search/filter parameters,
+and the <code>POST /v1/actions/bulk-decision</code> REST endpoint.</p>
+<hr>
+<h2 id="contents">Contents</h2>
+<ul>
+<li><a href="#filter-toolbar">Filter toolbar</a></li>
+<li><a href="#keyboard-navigation">Keyboard navigation</a></li>
+<li><a href="#bulk-selection-and-bulk-actions">Bulk selection and bulk actions</a></li>
+<li><a href="#inline-editable-fields-and-detail-panel">Inline editable fields and detail panel</a></li>
+<li><a href="#pagination--load-more">Pagination — Load more</a></li>
+<li><a href="#bulk-decision-api">Bulk decision API</a></li>
+<li><a href="#search-and-filter-query-parameters">Search and filter query parameters</a></li>
+<li><a href="#sdk--bulkdecide--bulk_decide">SDK — bulkDecide / bulk_decide</a></li>
+<li><a href="#new-ui-components">New UI components</a></li>
+<li><a href="#security-notes">Security notes</a></li>
+</ul>
+<hr>
+<h2 id="filter-toolbar">Filter toolbar</h2>
+<p>The toolbar lives above the action list and exposes four parameters that are
+sent together on every poll cycle.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Bound parameter</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Status tabs</td>
+<td><code>status</code></td>
+<td>Already wired; pending/approved/rejected/expired/executed/failed</td>
+</tr>
+<tr>
+<td>Search field</td>
+<td><code>q</code></td>
+<td>Free-text; debounced 300 ms; press <code>/</code> to focus</td>
+</tr>
+<tr>
+<td>Kind dropdown</td>
+<td><code>kind</code></td>
+<td>Clearable v-select; populated from seen kinds</td>
+</tr>
+<tr>
+<td>Time range</td>
+<td><code>since</code></td>
+<td>All time / Last 24 h / Last 7 d / Last 30 d</td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Active-filter indicator</strong> — when any of <code>q</code>, <code>kind</code>, or <code>since</code> are non-default
+a dismissible &quot;Filtered&quot; chip appears with a clear-all button.</p>
+<p><strong>Empty state for active filters</strong> — when the list is empty and any filter is
+active, the message reads &quot;No actions match your filters&quot; with a &quot;Clear filters&quot;
+button. The &quot;Nothing to review&quot; message only appears when every filter is at its
+default.</p>
+<p><strong>Inline loading</strong> — while a background poll is in flight and there are already
+items in the list, a 2 px indeterminate progress bar appears at the top of the
+list (not a skeleton). Skeleton loaders are shown only on the very first load
+(<code>actions.length === 0</code>).</p>
+<hr>
+<h2 id="keyboard-navigation">Keyboard navigation</h2>
+<p>All shortcuts are disabled when focus is on an <code>INPUT</code>, <code>TEXTAREA</code>, <code>SELECT</code>, or
+a <code>contenteditable</code> element.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>j</code></td>
+<td>Move focus to the next card (wraps at end)</td>
+</tr>
+<tr>
+<td><code>k</code></td>
+<td>Move focus to the previous card (wraps at start)</td>
+</tr>
+<tr>
+<td><code>Enter</code> or <code>Space</code></td>
+<td>Open ActionDetail for the focused card</td>
+</tr>
+<tr>
+<td><code>a</code></td>
+<td>Approve the focused card — skips to confirm step when no editable fields; otherwise opens ActionDetail in edit mode</td>
+</tr>
+<tr>
+<td><code>r</code></td>
+<td>Reject the focused card — opens DecisionDialog pre-set to reject</td>
+</tr>
+<tr>
+<td><code>e</code></td>
+<td>Open ActionDetail and scroll to the editable fields section</td>
+</tr>
+<tr>
+<td><code>x</code></td>
+<td>Toggle bulk-selection of the focused card; enters bulk mode if not already active</td>
+</tr>
+<tr>
+<td><code>/</code></td>
+<td>Focus the search input and select its content (prevents browser find-in-page)</td>
+</tr>
+<tr>
+<td><code>Shift+A</code></td>
+<td>Bulk-approve all selected cards via <code>POST /v1/actions/bulk-decision</code></td>
+</tr>
+<tr>
+<td><code>Shift+R</code></td>
+<td>Bulk-reject all selected cards via <code>POST /v1/actions/bulk-decision</code></td>
+</tr>
+<tr>
+<td><code>Escape</code></td>
+<td>Close open dialog → blur search → deselect all / exit bulk mode (in that order)</td>
+</tr>
+<tr>
+<td><code>?</code></td>
+<td>Open the keyboard shortcut help overlay</td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Focused card indicator</strong> — the focused card receives a 3 px left border in the
+primary color and a visible ARIA focus ring. <code>j</code>/<code>k</code> auto-scroll the card into
+view with <code>scrollIntoView({ block: &#39;nearest&#39; })</code>.</p>
+<p>Keyboard state is managed by the <code>useKeyboardNav</code> composable
+(<code>ui/src/composables/useKeyboardNav.ts</code>). It exports:</p>
+<ul>
+<li><code>focusedIdx</code> — current focused list index (ref)</li>
+<li><code>selectedIds</code> — Set of selected action IDs (ref)</li>
+<li><code>isBulkMode</code> — computed <code>selectedIds.size &gt; 0</code></li>
+<li><code>focusNext()</code>, <code>focusPrev()</code>, <code>toggleSelect(id)</code>, <code>selectAll(ids)</code>, <code>deselectAll()</code></li>
+</ul>
+<hr>
+<h2 id="bulk-selection-and-bulk-actions">Bulk selection and bulk actions</h2>
+<p>Entering bulk mode: click a checkbox on any ActionCard, or press <code>x</code> on the
+keyboard-focused card. A sticky bar fixed to the bottom of the viewport appears
+showing the count of selected items and <strong>Approve N</strong> / <strong>Reject N</strong> buttons.</p>
+<p><strong>Select all visible</strong> — a checkbox in the filter toolbar becomes visible when
+bulk mode is active. Checking it calls <code>selectAll(actions.map(a =&gt; a.id))</code>;
+unchecking it calls <code>deselectAll()</code>.</p>
+<p><strong>Excluded from bulk</strong> — actions whose <code>editable.length &gt; 0</code> are excluded from
+bulk selection (or trigger a warning chip when selected). Per-item edits cannot
+be applied in bulk; use <code>POST /v1/actions/:id/decision</code> for those.</p>
+<p><strong>Escape</strong> — pressing Escape or deselecting all items collapses the bulk bar.</p>
+<p><strong>Mobile layout</strong> — on viewports ≤ 600 px the bulk bar uses
+<code>position: fixed; bottom: 0; left: 0; right: 0</code> with full-width stacked buttons.
+On desktop it is <code>position: sticky</code> at the bottom of the list.</p>
+<p><strong>Optimistic updates</strong> — when a bulk decision is submitted, each selected card is
+immediately moved out of the visible list (via <code>inbox.updateAction()</code>) before the
+API response arrives. If the API returns per-item errors, the affected cards are
+restored and a per-item error list is surfaced in a snackbar.</p>
+<hr>
+<h2 id="inline-editable-fields-and-detail-panel">Inline editable fields and detail panel</h2>
+<p>Editable fields are rendered inside <strong>ActionDetail</strong> rather than in DecisionDialog&#39;s
+choose step.</p>
+<ul>
+<li>Each field shows its current value as read-only text with an &quot;Edit&quot; icon button
+that toggles a <code>v-textarea</code> for that field.</li>
+<li>While editing, a diff block appears below the field using
+<code>MarkdownPreview format=&#39;diff&#39;</code>, showing <code>- original</code> / <code>+ edited</code>.</li>
+<li>Clicking <strong>Approve with edits</strong> in the footer passes the edited values to
+DecisionDialog&#39;s confirm step, skipping the choose step.</li>
+</ul>
+<p><strong>Copy target URL</strong> — an <code>mdi-content-copy</code> icon button sits next to the target
+URL link. Clicking it calls <code>navigator.clipboard.writeText</code> and shows a brief
+&quot;Copied!&quot; snackbar.</p>
+<p><strong>Copy action ID</strong> — the action ID is displayed as a small monospace chip in the
+ActionDetail footer with its own copy button. Useful for referencing in agent
+logs or support.</p>
+<p><strong><code>e</code> shortcut</strong> — when ActionDetail is opened with the <code>e</code> keyboard shortcut, the
+editable fields section is scrolled into view on mount (<code>:openInEditMode</code> prop).</p>
+<hr>
+<h2 id="pagination-load-more">Pagination — Load more</h2>
+<p>The inbox uses cursor-based pagination. The server returns <code>has_more</code> and
+<code>next_cursor</code> in every list response.</p>
+<ul>
+<li>When <code>has_more === true</code>, a <strong>Load more</strong> button appears at the bottom of the list.</li>
+<li>Clicking it calls <code>inbox.loadMore()</code>, which fetches the next page with <code>cursor</code>
+and <strong>appends</strong> items to <code>actions[]</code> rather than replacing them.</li>
+<li>The polling interval resets on load-more to avoid a race between the next poll
+and the appended page.</li>
+</ul>
+<hr>
+<h2 id="bulk-decision-api">Bulk decision API</h2>
+<h3 id="post-v1actionsbulk-decision"><code>POST /v1/actions/bulk-decision</code></h3>
+<p>Decide up to 50 pending actions in a single request.</p>
+<p><strong>Auth scope:</strong> <code>actions</code> (same as single-decision). Admin scope implies it.</p>
+<p><strong>Rate limit:</strong> 10 requests / min per key (route key <code>actions:bulk-decide</code>).
+Each request can touch up to 50 rows, so effective throughput is 500 decisions/min —
+8× the single-item ceiling of 60/min.</p>
+<h4>Request body</h4>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;ids&quot;</span><span class="hljs-punctuation">:</span>     <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;act_aaa&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-string">&quot;act_bbb&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;verdict&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;approve&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;comment&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Looks good — shipping.&quot;</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ids</code></td>
+<td><code>string[]</code></td>
+<td>yes</td>
+<td>1–50 action IDs; server deduplicates</td>
+</tr>
+<tr>
+<td><code>verdict</code></td>
+<td><code>&quot;approve&quot;</code> | <code>&quot;reject&quot;</code></td>
+<td>yes</td>
+<td>Applied to all items in the batch</td>
+</tr>
+<tr>
+<td><code>comment</code></td>
+<td><code>string</code></td>
+<td>no</td>
+<td>Max 500 chars; stored in <code>decisions.comment</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>No <code>edited</code> field — bulk intentionally omits per-item edits. Actions with
+<code>editable.length &gt; 0</code> must be decided via <code>POST /v1/actions/:id/decision</code>.</p>
+<p>Validation errors return <strong>400</strong> with the standard Zod issues shape before any
+rate-limit or DB access.</p>
+<h4>Response — 200</h4>
+<p>HTTP 200 even on partial failure. The batch was processed; per-item results carry
+the outcome.</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;results&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+    <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_aaa&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;ok&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>  <span class="hljs-attr">&quot;status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;approved&quot;</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_bbb&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;ok&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;error&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;already_decided&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;current_status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;approved&quot;</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_ccc&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;ok&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;error&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;not_found&quot;</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_ddd&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;ok&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;error&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;internal&quot;</span> <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;succeeded&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;failed&quot;</span><span class="hljs-punctuation">:</span>    <span class="hljs-number">3</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th><code>error</code> value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&quot;not_found&quot;</code></td>
+<td>ID does not exist in the caller&#39;s project (also used for out-of-project IDs — no information disclosure)</td>
+</tr>
+<tr>
+<td><code>&quot;already_decided&quot;</code></td>
+<td><code>action.status !== &quot;pending&quot;</code>; <code>current_status</code> is provided</td>
+</tr>
+<tr>
+<td><code>&quot;internal&quot;</code></td>
+<td>Unexpected DB error; logged server-side, not surfaced to caller</td>
+</tr>
+</tbody></table>
+</div>
+<h4>Atomicity model</h4>
+<p>Each item is decided in its own transaction (the same <code>commitDecision</code> transaction
+that single-decision uses). A failure on item N does <strong>not</strong> roll back successes
+on items 0..N-1. This per-item-atomic, batch-partial model avoids lock escalation
+on SQLite and matches UX expectations: bulk-approve 20 items, 3 already-decided →
+17 succeed, 3 fail gracefully.</p>
+<h4>Audit trail</h4>
+<p>Each succeeded item writes one <code>audit_log</code> row and one <code>pii_log</code> row, identical
+to single-decision. Channel is set to <code>&quot;bulk-web&quot;</code> (browser UI) or <code>&quot;bulk-api&quot;</code>
+(programmatic), preserving the ability to distinguish bulk operations in audit
+queries.</p>
+<h4>Required DB migration</h4>
+<div class="code-block"><span class="code-lang">sql</span><pre><code class="hljs"><span class="hljs-keyword">ALTER TABLE</span> decisions <span class="hljs-keyword">ADD</span> <span class="hljs-keyword">COLUMN</span> comment TEXT;
+<span class="hljs-comment">-- nullable; existing rows unaffected</span></code></pre></div>
+<h4>Zod schema (server/src/schemas.ts)</h4>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> <span class="hljs-title class_">BulkDecisionBody</span> = z.<span class="hljs-title function_">object</span>({
+  <span class="hljs-attr">ids</span>:     z.<span class="hljs-title function_">array</span>(z.<span class="hljs-title function_">string</span>().<span class="hljs-title function_">min</span>(<span class="hljs-number">1</span>)).<span class="hljs-title function_">min</span>(<span class="hljs-number">1</span>).<span class="hljs-title function_">max</span>(<span class="hljs-number">50</span>),
+  <span class="hljs-attr">verdict</span>: z.<span class="hljs-title function_">enum</span>([<span class="hljs-string">&#x27;approve&#x27;</span>, <span class="hljs-string">&#x27;reject&#x27;</span>]),
+  <span class="hljs-attr">comment</span>: z.<span class="hljs-title function_">string</span>().<span class="hljs-title function_">max</span>(<span class="hljs-number">500</span>).<span class="hljs-title function_">optional</span>(),
+});</code></pre></div>
+<hr>
+<h2 id="search-and-filter-query-parameters">Search and filter query parameters</h2>
+<h3 id="get-v1actions-full-parameter-table"><code>GET /v1/actions</code> — full parameter table</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Server support</th>
+<th>UI support</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>status</code></td>
+<td><code>ActionStatus</code></td>
+<td>yes</td>
+<td>yes</td>
+<td><code>pending</code> | <code>approved</code> | <code>rejected</code> | <code>expired</code> | <code>executed</code> | <code>execute_failed</code></td>
+</tr>
+<tr>
+<td><code>q</code></td>
+<td><code>string</code></td>
+<td><strong>NEW</strong></td>
+<td><strong>NEW</strong></td>
+<td>Free-text LIKE search on <code>title</code> and <code>preview.body</code>; max 200 chars</td>
+</tr>
+<tr>
+<td><code>kind</code></td>
+<td><code>string</code></td>
+<td>yes</td>
+<td><strong>NEW</strong></td>
+<td>Exact match; single value only in v1</td>
+</tr>
+<tr>
+<td><code>since</code></td>
+<td><code>integer</code></td>
+<td>yes</td>
+<td><strong>NEW</strong></td>
+<td>Unix timestamp; actions created at or after this time</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td><code>1–100</code></td>
+<td>yes</td>
+<td>yes</td>
+<td>Default 50; UI uses 50 for initial page, cursor for subsequent pages</td>
+</tr>
+<tr>
+<td><code>cursor</code></td>
+<td><code>string</code></td>
+<td>yes</td>
+<td><strong>NEW</strong></td>
+<td>Composite (created_at + id) cursor from <code>next_cursor</code> in previous response</td>
+</tr>
+</tbody></table>
+</div>
+<h4>New server parameter: <code>q</code></h4>
+<p>Add to <code>ListActionsQuery</code> in <code>server/src/schemas.ts</code>:</p>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-attr">q</span>: z.<span class="hljs-title function_">string</span>().<span class="hljs-title function_">max</span>(<span class="hljs-number">200</span>).<span class="hljs-title function_">optional</span>(),</code></pre></div>
+<p>SQL implementation in <code>server/src/routes/actions.ts</code> (after existing kind/since filters):</p>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">if</span> (q.<span class="hljs-property">q</span>) {
+  <span class="hljs-comment">// Escape LIKE metacharacters to prevent wildcard injection</span>
+  <span class="hljs-keyword">const</span> pattern = <span class="hljs-string">&#x27;%&#x27;</span> + q.<span class="hljs-property">q</span>.<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/[%_\\]/g</span>, <span class="hljs-function"><span class="hljs-params">c</span> =&gt;</span> <span class="hljs-string">&#x27;\\&#x27;</span> + c) + <span class="hljs-string">&#x27;%&#x27;</span>;
+  sql += <span class="hljs-string">&quot; AND (title LIKE ? ESCAPE &#x27;\\&#x27; OR json_extract(preview, &#x27;$.body&#x27;) LIKE ? ESCAPE &#x27;\\&#x27;)&quot;</span>;
+  params.<span class="hljs-title function_">push</span>(pattern, pattern);
+}</code></pre></div>
+<p>This uses <code>json_extract</code> to search only the preview body string, not the format
+key name. SQLite JSON1 is available in <code>better-sqlite3</code> by default. For very large
+tables, add a covering index:</p>
+<div class="code-block"><span class="code-lang">sql</span><pre><code class="hljs"><span class="hljs-keyword">CREATE</span> INDEX IF <span class="hljs-keyword">NOT</span> <span class="hljs-keyword">EXISTS</span> idx_actions_project_status_created
+  <span class="hljs-keyword">ON</span> actions(project_id, status, created_at <span class="hljs-keyword">DESC</span>);</code></pre></div>
+<p>Full-text search with FTS5 can be added later if LIKE performance degrades.</p>
+<hr>
+<h2 id="sdk-bulkdecide-bulkdecide">SDK — bulkDecide / bulk_decide</h2>
+<h3 id="typescript-uisrcapiclientts">TypeScript (ui/src/api/client.ts)</h3>
+<p>New types (<code>ui/src/types.ts</code>):</p>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">export</span> <span class="hljs-keyword">interface</span> <span class="hljs-title class_">BulkDecisionRequest</span> {
+  <span class="hljs-attr">ids</span>:     <span class="hljs-built_in">string</span>[]
+  <span class="hljs-attr">verdict</span>: <span class="hljs-string">&#x27;approve&#x27;</span> | <span class="hljs-string">&#x27;reject&#x27;</span>
+  <span class="hljs-attr">comment</span>?: <span class="hljs-built_in">string</span>
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">interface</span> <span class="hljs-title class_">BulkDecisionResult</span> {
+  <span class="hljs-attr">id</span>:             <span class="hljs-built_in">string</span>
+  <span class="hljs-attr">ok</span>:             <span class="hljs-built_in">boolean</span>
+  <span class="hljs-attr">status</span>?:        <span class="hljs-title class_">ActionStatus</span>
+  <span class="hljs-attr">error</span>?:         <span class="hljs-built_in">string</span>
+  <span class="hljs-attr">current_status</span>?: <span class="hljs-title class_">ActionStatus</span>
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">interface</span> <span class="hljs-title class_">BulkDecisionResponse</span> {
+  <span class="hljs-attr">results</span>:   <span class="hljs-title class_">BulkDecisionResult</span>[]
+  <span class="hljs-attr">succeeded</span>: <span class="hljs-built_in">number</span>
+  <span class="hljs-attr">failed</span>:    <span class="hljs-built_in">number</span>
+}</code></pre></div>
+<p>New method on <code>ApiClient</code>:</p>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">async</span> <span class="hljs-title function_">bulkDecide</span>(<span class="hljs-attr">req</span>: <span class="hljs-title class_">BulkDecisionRequest</span>): <span class="hljs-title class_">Promise</span>&lt;<span class="hljs-title class_">BulkDecisionResponse</span>&gt; {
+  <span class="hljs-keyword">return</span> <span class="hljs-variable language_">this</span>.<span class="hljs-property">request</span>&lt;<span class="hljs-title class_">BulkDecisionResponse</span>&gt;(<span class="hljs-string">&#x27;POST&#x27;</span>, <span class="hljs-string">&#x27;/actions/bulk-decision&#x27;</span>, req)
+}</code></pre></div>
+<h3 id="python-sdk-sdkpython">Python SDK (sdk/python/)</h3>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">await</span> client.bulk_decide(
+    ids=[<span class="hljs-string">&quot;act_aaa&quot;</span>, <span class="hljs-string">&quot;act_bbb&quot;</span>],
+    verdict=<span class="hljs-string">&quot;approve&quot;</span>,
+    comment=<span class="hljs-string">&quot;Looks good.&quot;</span>,
+)
+<span class="hljs-comment"># Returns BulkDecisionResponse with .results, .succeeded, .failed</span></code></pre></div>
+<p>Method signature:</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">async</span> <span class="hljs-keyword">def</span> <span class="hljs-title function_">bulk_decide</span>(<span class="hljs-params">
+    self,
+    ids: <span class="hljs-built_in">list</span>[<span class="hljs-built_in">str</span>],
+    verdict: <span class="hljs-type">Literal</span>[<span class="hljs-string">&quot;approve&quot;</span>, <span class="hljs-string">&quot;reject&quot;</span>],
+    comment: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>,
+</span>) -&gt; BulkDecisionResponse:
+    ...</code></pre></div>
+<p>Raises <code>ImpriValidationError</code> on 400, <code>ImpriRateLimited</code> on 429. Individual item
+failures are surfaced in <code>BulkDecisionResponse.results</code>, not as exceptions.</p>
+<hr>
+<h2 id="new-ui-components">New UI components</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Location</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>BulkActionBar.vue</code></td>
+<td><code>ui/src/components/</code></td>
+<td>Sticky/fixed bottom bar; shows count + Approve N / Reject N</td>
+</tr>
+<tr>
+<td><code>InboxSearchBar.vue</code></td>
+<td><code>ui/src/components/</code></td>
+<td>Filter toolbar: q field, kind select, since select, clear-all chip</td>
+</tr>
+<tr>
+<td><code>ShortcutHelpDialog.vue</code></td>
+<td><code>ui/src/components/</code></td>
+<td>Two-column shortcut table; opened by <code>?</code></td>
+</tr>
+<tr>
+<td><code>useKeyboardNav.ts</code></td>
+<td><code>ui/src/composables/</code></td>
+<td>Composable: focusedIdx, selectedIds, bulk-mode logic</td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Modified components:</strong></p>
+<ul>
+<li><code>InboxList.vue</code> — integrates <code>InboxSearchBar</code>, <code>BulkActionBar</code>, <code>useKeyboardNav</code>;
+wires q/kind/since into <code>inbox.fetchActions()</code>; adds &quot;Load more&quot; button; adds
+&quot;Select all visible&quot; checkbox in bulk mode.</li>
+<li><code>ActionCard.vue</code> — adds <code>:focused</code>, <code>:selected</code>, <code>:bulkMode</code>, <code>:highlight</code> props;
+renders checkbox in left gutter; applies focus-ring and primary left border when
+focused; wraps matching substrings in <code>&lt;mark&gt;</code> (plain text, no v-html).</li>
+<li><code>ActionDetail.vue</code> — moves editable fields from DecisionDialog into the panel;
+adds diff preview; adds copy buttons for <code>target_url</code> and action ID; accepts
+<code>:openInEditMode</code> prop.</li>
+<li><code>DecisionDialog.vue</code> — adds <code>:initialEdited</code> prop; when provided, skips the
+choose step and merges edits into the confirm payload.</li>
+<li><code>inbox.ts</code> store — adds <code>selectedIds</code>, <code>searchQuery</code>, <code>kindFilter</code>, <code>sinceFilter</code>,
+<code>bulkDecide()</code>, <code>loadMore()</code>.</li>
+</ul>
+<hr>
+<h2 id="security-notes">Security notes</h2>
+<ol>
+<li><p><strong>Project isolation</strong> — every ID lookup in <code>POST /v1/actions/bulk-decision</code> uses
+<code>WHERE id = ? AND project_id = ?</code> binding <code>project_id</code> from the verified key
+record (never from the request body). Out-of-project IDs return
+<code>ok: false, error: &quot;not_found&quot;</code> — indistinguishable from a missing ID.</p>
+</li>
+<li><p><strong>Scope check first</strong> — <code>hasScope(key.scopes, &#39;actions&#39;)</code> is evaluated before
+rate-limit or any DB access, consistent with all other action endpoints.</p>
+</li>
+<li><p><strong>Batch size cap</strong> — <code>z.array(...).max(50)</code> is enforced by Zod before any DB
+work. IDs are deduplicated server-side (<code>new Set(ids)</code>) before processing.</p>
+</li>
+<li><p><strong>No editable bypass</strong> — <code>BulkDecisionBody</code> has no <code>edited</code> field. The editable
+whitelist check (PLAYBOOK A3) applies only to single-decision; bulk operations
+are intentionally edit-free.</p>
+</li>
+<li><p><strong>Comment injection</strong> — <code>comment</code> is stored via parameterized <code>.run(..., body.comment ?? null)</code>.
+In the UI it is rendered as text content (<code>{{ }}</code>), never <code>v-html</code>.</p>
+</li>
+<li><p><strong>UNIQUE constraint race</strong> — the <code>UNIQUE</code> constraint on <code>decisions(action_id)</code>
+makes concurrent bulk requests safe: the losing <code>INSERT</code> returns
+<code>ok: false, error: &quot;already_decided&quot;</code>.</p>
+</li>
+<li><p><strong>Audit completeness</strong> — 50-item bulk = 50 <code>audit_log</code> rows + 50 <code>pii_log</code>
+rows. Channel <code>&quot;bulk-web&quot;</code> / <code>&quot;bulk-api&quot;</code> distinguishes bulk from single
+operations in audit queries.</p>
+</li>
+</ol>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#contents">Contents</a></li>
+<li class="ptoc-h2"><a href="#filter-toolbar">Filter toolbar</a></li>
+<li class="ptoc-h2"><a href="#keyboard-navigation">Keyboard navigation</a></li>
+<li class="ptoc-h2"><a href="#bulk-selection-and-bulk-actions">Bulk selection and bulk actions</a></li>
+<li class="ptoc-h2"><a href="#inline-editable-fields-and-detail-panel">Inline editable fields and detail panel</a></li>
+<li class="ptoc-h2"><a href="#pagination-load-more">Pagination — Load more</a></li>
+<li class="ptoc-h2"><a href="#bulk-decision-api">Bulk decision API</a></li>
+<li class="ptoc-h3"><a href="#post-v1actionsbulk-decision">POST /v1/actions/bulk-decision</a></li>
+<li class="ptoc-h2"><a href="#search-and-filter-query-parameters">Search and filter query parameters</a></li>
+<li class="ptoc-h3"><a href="#get-v1actions-full-parameter-table">GET /v1/actions — full parameter table</a></li>
+<li class="ptoc-h2"><a href="#sdk-bulkdecide-bulkdecide">SDK — bulkDecide / bulk_decide</a></li>
+<li class="ptoc-h3"><a href="#typescript-uisrcapiclientts">TypeScript (ui/src/api/client.ts)</a></li>
+<li class="ptoc-h3"><a href="#python-sdk-sdkpython">Python SDK (sdk/python/)</a></li>
+<li class="ptoc-h2"><a href="#new-ui-components">New UI components</a></li>
+<li class="ptoc-h2"><a href="#security-notes">Security notes</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents.</span></div>
+</footer>
+</body>
+</html>

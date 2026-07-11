@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audit Log — Impri Docs</title>
+<meta name="description" content="Impri keeps an append-only audit trail of every significant action taken on a project. The log is designed for compliance review, incident investigation, and change accountability. It covers the appro">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Audit Log — Impri Docs">
+<meta property="og:description" content="Impri keeps an append-only audit trail of every significant action taken on a project. The log is designed for compliance review, incident investigation, and change accountability. It covers the appro">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/audit-log.html" class="sl active">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>API reference</span>
+      <span class="bc-sep">/</span>
+      <span>Audit Log</span>
+    </nav>
+    <h1>Audit Log</h1>
+<p>Impri keeps an append-only audit trail of every significant action taken on a
+project. The log is designed for compliance review, incident investigation, and
+change accountability. It covers the approval lifecycle, key management,
+watcher operations, rule changes, notification channel changes, and GDPR
+operations.</p>
+<h2 id="current-implementation-status">Current implementation status</h2>
+<p>All recording points, query/export API endpoints, and the retention prune job
+described in this document are <strong>live</strong> in the current codebase. The schema and
+security model are fully implemented.</p>
+<hr>
+<h2 id="schema">Schema</h2>
+<p>Two tables underlie the audit system.</p>
+<h3 id="auditlog-immutable-trail"><code>audit_log</code> — immutable trail</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>INTEGER PK AUTOINCREMENT</td>
+<td>Monotone within the instance</td>
+</tr>
+<tr>
+<td><code>project_id</code></td>
+<td>TEXT</td>
+<td>Always the authenticated key&#39;s project</td>
+</tr>
+<tr>
+<td><code>action_id</code></td>
+<td>TEXT nullable</td>
+<td>Set for action-lifecycle events; NULL for administrative events</td>
+</tr>
+<tr>
+<td><code>event</code></td>
+<td>TEXT</td>
+<td>Event name, e.g. <code>action.approved</code></td>
+</tr>
+<tr>
+<td><code>actor</code></td>
+<td>TEXT nullable</td>
+<td>Key ID of the authenticated caller; NULL for system-generated events (expiry, watcher scheduler)</td>
+</tr>
+<tr>
+<td><code>channel</code></td>
+<td>TEXT nullable</td>
+<td>Decision channel: <code>web</code>, <code>api</code>, <code>bulk-web</code>, <code>bulk-api</code></td>
+</tr>
+<tr>
+<td><code>data</code></td>
+<td>TEXT nullable</td>
+<td>JSON blob with event-specific detail (never contains secrets)</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>INTEGER</td>
+<td>Unix seconds</td>
+</tr>
+</tbody></table>
+</div>
+<p>The <code>ip</code> column exists in the schema but is intentionally left NULL on write.
+Request IPs are written exclusively to <code>pii_log</code>.</p>
+<h3 id="piilog-erasable-pii"><code>pii_log</code> — erasable PII</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>id</code></td>
+<td>INTEGER PK AUTOINCREMENT</td>
+<td></td>
+</tr>
+<tr>
+<td><code>project_id</code></td>
+<td>TEXT</td>
+<td></td>
+</tr>
+<tr>
+<td><code>action_id</code></td>
+<td>TEXT nullable</td>
+<td></td>
+</tr>
+<tr>
+<td><code>event</code></td>
+<td>TEXT</td>
+<td>Mirrors the triggering audit event name</td>
+</tr>
+<tr>
+<td><code>ip</code></td>
+<td>TEXT</td>
+<td>Request IP of the caller</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>INTEGER</td>
+<td>Unix seconds</td>
+</tr>
+</tbody></table>
+</div>
+<p>Keeping IPs in a separate table means they can be wiped under GDPR Art. 17
+(<code>DELETE /v1/project/data</code>) without touching the immutable <code>audit_log</code> rows.
+The audit trail stays intact; only the PII disappears.</p>
+<hr>
+<h2 id="event-types">Event types</h2>
+<h3 id="action-lifecycle">Action lifecycle</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Recorded</th>
+<th><code>action_id</code></th>
+<th><code>actor</code></th>
+<th><code>data</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>action.created</code></td>
+<td>Yes — <code>actions.ts:181</code></td>
+<td>set</td>
+<td>key ID</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>action.rule_applied</code></td>
+<td>Yes — <code>actions.ts:186</code></td>
+<td>set</td>
+<td>NULL</td>
+<td><code>{rule_id, rule_name, outcome}</code></td>
+</tr>
+<tr>
+<td><code>action.approved</code></td>
+<td>Yes — <code>actions.ts:580</code> (single) / <code>actions.ts:388</code> (bulk)</td>
+<td>set</td>
+<td>key ID</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>action.rejected</code></td>
+<td>Yes — same locations</td>
+<td>set</td>
+<td>key ID</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>action.expired</code></td>
+<td>Yes — <code>webhooks.ts:176</code>, atomically with the status UPDATE</td>
+<td>set</td>
+<td>NULL (system)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>action.executed</code></td>
+<td>Yes — <code>actions.ts:650</code></td>
+<td>set</td>
+<td>NULL</td>
+<td><code>{detail}</code></td>
+</tr>
+<tr>
+<td><code>action.execute_failed</code></td>
+<td>Yes — <code>actions.ts:650</code></td>
+<td>set</td>
+<td>NULL</td>
+<td><code>{detail}</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>The <code>channel</code> column on decision events distinguishes <code>api</code> (single decision),
+<code>web</code> (single decision via inbox), <code>bulk-api</code>, and <code>bulk-web</code>.</p>
+<h3 id="key-management">Key management</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Recorded</th>
+<th><code>actor</code></th>
+<th><code>data</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>key.created</code></td>
+<td>Yes — <code>keys.ts:46</code></td>
+<td>calling key ID</td>
+<td><code>{new_key_id, name, scopes}</code></td>
+</tr>
+<tr>
+<td><code>key.revoked</code></td>
+<td>Yes — <code>keys.ts:103</code></td>
+<td>calling key ID</td>
+<td><code>{revoked_key_id}</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Raw key material and hashes are never stored in <code>data</code>.</p>
+<h3 id="watcher-lifecycle">Watcher lifecycle</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Recorded</th>
+<th><code>actor</code></th>
+<th><code>data</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>watcher.created</code></td>
+<td>Yes — <code>watchers.ts:100</code></td>
+<td>key ID</td>
+<td><code>{watcher_id, kind, name}</code></td>
+</tr>
+<tr>
+<td><code>watcher.updated</code></td>
+<td>Yes — <code>watchers.ts:264</code></td>
+<td>key ID</td>
+<td><code>{watcher_id}</code></td>
+</tr>
+<tr>
+<td><code>watcher.deleted</code></td>
+<td>Yes — <code>watchers.ts:293</code></td>
+<td>key ID</td>
+<td><code>{watcher_id}</code></td>
+</tr>
+<tr>
+<td><code>watcher.hit</code></td>
+<td>Yes — <code>scheduler.ts:448</code>, written when a new inbox action is created by the watcher</td>
+<td>NULL (system)</td>
+<td><code>{watcher_id}</code></td>
+</tr>
+</tbody></table>
+</div>
+<h3 id="approval-rules">Approval rules</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Recorded</th>
+<th><code>actor</code></th>
+<th><code>data</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>rule.created</code></td>
+<td>Yes — <code>rules.ts:90</code></td>
+<td>key ID</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>rule.updated</code></td>
+<td>Yes — <code>rules.ts:178</code></td>
+<td>key ID</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>rule.deleted</code></td>
+<td>Yes — <code>rules.ts:207</code></td>
+<td>key ID</td>
+<td><code>{rule_id}</code></td>
+</tr>
+</tbody></table>
+</div>
+<h3 id="notification-channels">Notification channels</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Recorded</th>
+<th><code>actor</code></th>
+<th><code>data</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>channel.created</code></td>
+<td>Yes — <code>notification-channels.ts:153</code></td>
+<td>key ID</td>
+<td><code>{channel_id, type}</code></td>
+</tr>
+<tr>
+<td><code>channel.updated</code></td>
+<td>Yes — <code>notification-channels.ts:246</code></td>
+<td>key ID</td>
+<td><code>{channel_id, type}</code></td>
+</tr>
+<tr>
+<td><code>channel.deleted</code></td>
+<td>Yes — <code>notification-channels.ts:277</code></td>
+<td>key ID</td>
+<td><code>{channel_id}</code></td>
+</tr>
+<tr>
+<td><code>channel.tested</code></td>
+<td>Yes — <code>notification-channels.ts:329</code></td>
+<td>key ID</td>
+<td><code>{channel_id, type, ok}</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>Channel config (Slack tokens, webhook URLs, Telegram bot tokens) is never
+written to any audit row.</p>
+<h3 id="project-operations">Project operations</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Recorded</th>
+<th><code>actor</code></th>
+<th><code>data</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>project.updated</code></td>
+<td>Yes — <code>project.ts:63</code></td>
+<td>key ID</td>
+<td><code>{fields_changed: [...]}</code></td>
+</tr>
+<tr>
+<td><code>project.secret_rotated</code></td>
+<td>Yes — <code>project.ts:83</code></td>
+<td>key ID</td>
+<td>— (old/new secrets never stored)</td>
+</tr>
+<tr>
+<td><code>gdpr.export</code></td>
+<td>Yes — <code>project.ts:100</code></td>
+<td>key ID</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>gdpr.erase</code></td>
+<td>Yes — <code>project.ts:145</code> <strong>after</strong> the transaction</td>
+<td>key ID</td>
+<td><code>{erased_actions, erased_watchers}</code></td>
+</tr>
+</tbody></table>
+</div>
+<p>The <code>gdpr.erase</code> row is written after the transaction that wipes all project
+audit rows. This leaves exactly one surviving audit row for the project — a
+tombstone showing that an erasure occurred and who requested it.</p>
+<hr>
+<h2 id="query-api">Query API</h2>
+<div class="code-block"><pre><code class="hljs">GET /v1/audit</code></pre></div>
+<p>Requires <code>admin</code> scope. Returns events for the authenticated key&#39;s project only
+(project ID is never taken from the query string).</p>
+<h3 id="query-parameters">Query parameters</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>type</code></td>
+<td>string</td>
+<td>Filter by exact event name (<code>action.approved</code>) or dot-prefix (<code>action.</code> matches all <code>action.*</code> events)</td>
+</tr>
+<tr>
+<td><code>actor</code></td>
+<td>string</td>
+<td>Filter by <code>actor</code> column value (key ID)</td>
+</tr>
+<tr>
+<td><code>entity_id</code></td>
+<td>string</td>
+<td>Match <code>action_id</code> for action events; for non-action events also matches <code>rule_id</code>, <code>channel_id</code>, <code>watcher_id</code>, <code>new_key_id</code>, or <code>revoked_key_id</code> inside <code>data</code> via <code>json_extract</code></td>
+</tr>
+<tr>
+<td><code>since</code></td>
+<td>integer</td>
+<td><code>created_at &gt;= since</code> (unix seconds)</td>
+</tr>
+<tr>
+<td><code>until</code></td>
+<td>integer</td>
+<td><code>created_at &lt;= until</code> (unix seconds)</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>integer</td>
+<td>Page size; default 50, max 200</td>
+</tr>
+<tr>
+<td><code>cursor</code></td>
+<td>string</td>
+<td>Opaque keyset cursor (base64url-encoded <code>(created_at, id)</code> pair, descending)</td>
+</tr>
+</tbody></table>
+</div>
+<h3 id="response">Response</h3>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;items&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+    <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1234</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;event&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;action.approved&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_...&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;actor&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;key_...&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;channel&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;web&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;data&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;rule_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;rul_...&quot;</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;created_at&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1720000000</span>
+    <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;has_more&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;next_cursor&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;base64url...&quot;</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>The <code>ip</code> column is never returned (it lives in <code>pii_log</code>). <code>project_id</code> is
+implicit. <code>data</code> is parsed from JSON before serialization.</p>
+<h3 id="pagination">Pagination</h3>
+<p>Pass <code>next_cursor</code> from one response as <code>cursor</code> in the next request. Cursor
+encodes <code>(created_at, id)</code> descending using the same <code>encodeCursor</code> /
+<code>decodeCursor</code> pattern used by <code>GET /v1/actions</code> and <code>GET /v1/watchers</code>.
+Predicate: <code>created_at &lt; cTs OR (created_at = cTs AND id &lt; cId)</code>.</p>
+<hr>
+<h2 id="export-api">Export API</h2>
+<div class="code-block"><pre><code class="hljs">GET /v1/audit/export</code></pre></div>
+<p>Requires <code>admin</code> scope. Same project isolation as the query API.</p>
+<h3 id="query-parameters-2">Query parameters</h3>
+<p>All filters from <code>GET /v1/audit</code> (<code>type</code>, <code>actor</code>, <code>entity_id</code>, <code>since</code>,
+<code>until</code>) plus:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>format</code></td>
+<td>string</td>
+<td><code>json</code> (default) = newline-delimited JSON (NDJSON, one object per line); <code>csv</code> = RFC 4180 CSV with header row</td>
+</tr>
+</tbody></table>
+</div>
+<h3 id="response-headers">Response headers</h3>
+<div class="code-block"><pre><code class="hljs">Content-Type: application/x-ndjson          (format=json)
+Content-Type: text/csv; charset=utf-8       (format=csv)
+Content-Disposition: attachment; filename=&quot;audit-export-&lt;project_id&gt;-&lt;iso_date&gt;.json&quot;</code></pre></div>
+<h3 id="columns">Columns</h3>
+<p><code>id</code>, <code>event</code>, <code>action_id</code>, <code>actor</code>, <code>channel</code>, <code>data</code> (JSON string), <code>created_at</code>.
+The <code>ip</code> column is excluded. <code>project_id</code> is excluded (implicit).</p>
+<h3 id="streaming">Streaming</h3>
+<p>The response streams row-by-row using <code>better-sqlite3</code>&#39;s <code>.iterate()</code> so large
+exports do not buffer the full result set in process memory.</p>
+<h3 id="rate-limit">Rate limit</h3>
+<p>5 requests / min per API key (<code>checkRateLimit</code>) to prevent export storms or
+full-table-scan abuse.</p>
+<h3 id="retention-boundary">Retention boundary</h3>
+<p>When <code>AUDIT_RETENTION_DAYS</code> is configured, the export query adds
+<code>AND created_at &gt;= (now - retention_days * 86400)</code> so exported data matches the
+live retention window.</p>
+<hr>
+<h2 id="retention">Retention</h2>
+<p>Configuration is via environment variables (no-op when unset, which is the
+self-host default):</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AUDIT_RETENTION_DAYS</code></td>
+<td>unset (unlimited)</td>
+<td>Prune audit rows older than N days</td>
+</tr>
+<tr>
+<td><code>PII_RETENTION_DAYS</code></td>
+<td>same as <code>AUDIT_RETENTION_DAYS</code></td>
+<td>Prune <code>pii_log</code> rows (often set shorter)</td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Enforcement:</strong> a prune job runs alongside the existing
+<code>runExpiryTick</code> loop (<code>webhooks.ts:161</code>, via <code>pruneAuditLogs</code>):</p>
+<div class="code-block"><span class="code-lang">sql</span><pre><code class="hljs"><span class="hljs-keyword">DELETE</span> <span class="hljs-keyword">FROM</span> audit_log <span class="hljs-keyword">WHERE</span> created_at <span class="hljs-operator">&lt;</span> (strftime(<span class="hljs-string">&#x27;%s&#x27;</span>,<span class="hljs-string">&#x27;now&#x27;</span>) <span class="hljs-operator">-</span> AUDIT_RETENTION_DAYS <span class="hljs-operator">*</span> <span class="hljs-number">86400</span>);
+<span class="hljs-keyword">DELETE</span> <span class="hljs-keyword">FROM</span> pii_log   <span class="hljs-keyword">WHERE</span> created_at <span class="hljs-operator">&lt;</span> (strftime(<span class="hljs-string">&#x27;%s&#x27;</span>,<span class="hljs-string">&#x27;now&#x27;</span>) <span class="hljs-operator">-</span> PII_RETENTION_DAYS  <span class="hljs-operator">*</span> <span class="hljs-number">86400</span>);</code></pre></div>
+<p>The prune is instance-wide (all projects) and opt-in (no-op without the env
+var).</p>
+<p><strong>GDPR erase</strong> (<code>DELETE /v1/project/data</code>) remains the only path to wipe a
+specific project&#39;s audit history on demand, regardless of retention config.</p>
+<p>Cloud tiers can enforce retention by setting <code>AUDIT_RETENTION_DAYS</code> per-tier at
+deploy time (e.g. free=30 days, indie=180 days, team=unlimited). This is a
+billing policy concern; the prune mechanism is the same regardless of tier.</p>
+<hr>
+<h2 id="security-model">Security model</h2>
+<h3 id="admin-scope-required">Admin scope required</h3>
+<p>All audit endpoints (<code>GET /v1/audit</code>, <code>GET /v1/audit/export</code>) call
+<code>hasScope(key.scopes, &#39;admin&#39;)</code> and return 403 otherwise. This matches the
+pattern used by <code>/v1/keys</code>, <code>/v1/rules</code>, and <code>/v1/notification-channels</code>.</p>
+<h3 id="project-isolation">Project isolation</h3>
+<p>Every query and export binds <code>project_id = key.projectId</code> derived from the
+authenticated key — never from the request body or query string. A key for
+project A cannot read project B&#39;s audit rows even if it knows the project ID.</p>
+<h3 id="no-secret-content-in-rows">No secret content in rows</h3>
+<p>Notification channel configs (Slack tokens, webhook URLs, Telegram bot tokens)
+are never written to <code>audit_log</code>. Channel events store only <code>channel_id</code> and
+<code>type</code>. API key events store only the key ID and granted scopes, never the raw
+secret or its hash. Webhook signing secrets are never logged. The
+<code>channel.tested</code> event stores only <code>channel_id</code>, <code>type</code>, and <code>ok</code> (boolean).
+Every new recording point must be reviewed against this rule before merging.</p>
+<h3 id="append-only-guarantee">Append-only guarantee</h3>
+<p>No <code>UPDATE</code> or <code>DELETE</code> routes exist on individual <code>audit_log</code> rows. The only
+write path is <code>INSERT</code>. The only bulk wipe is GDPR erase
+(<code>DELETE WHERE project_id = ?</code>). Query and export APIs are strictly read-only.</p>
+<h3 id="pii-separation">PII separation</h3>
+<p>Request IPs go to <code>pii_log</code>, not <code>audit_log</code>. The <code>ip</code> column in <code>audit_log</code>
+exists in the schema but is kept NULL on all current write paths. The export
+API never surfaces this column. Dropping the column in a future migration would
+make the separation unambiguous at the schema level.</p>
+<h3 id="streamed-export">Streamed export</h3>
+<p>The export endpoint uses <code>better-sqlite3</code>&#39;s <code>.iterate()</code> cursor to avoid
+accumulating potentially large result sets in server RAM.</p>
+<h3 id="rate-limited-export">Rate-limited export</h3>
+<p><code>GET /v1/audit/export</code> is rate-limited (5 req/min per key) to prevent
+export-based data exfiltration at high throughput or denial-of-service via
+repeated full-table scans.</p>
+<hr>
+<h2 id="gdpr-export-vs-audit-export">GDPR export vs. audit export</h2>
+<p>These are different endpoints with different purposes:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th><code>GET /v1/project/export</code></th>
+<th><code>GET /v1/audit/export</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Scope</td>
+<td>All project data: actions, decisions, watchers, audit rows</td>
+<td>Audit rows only</td>
+</tr>
+<tr>
+<td>Filtering</td>
+<td>None — full dump</td>
+<td>Type, actor, entity, time range</td>
+</tr>
+<tr>
+<td>Streaming</td>
+<td>No (buffered)</td>
+<td>Yes (<code>.iterate()</code>)</td>
+</tr>
+<tr>
+<td>Format</td>
+<td>JSON object</td>
+<td>NDJSON or CSV</td>
+</tr>
+<tr>
+<td>Purpose</td>
+<td>GDPR data portability</td>
+<td>Compliance / incident review</td>
+</tr>
+</tbody></table>
+</div>
+<p>The existing <code>GET /v1/project/export</code> already includes <code>audit_log</code> rows as a
+raw array. It is sufficient for small projects and GDPR portability requests.
+The planned <code>GET /v1/audit/export</code> adds streaming, filtering, and format
+options for larger datasets.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#current-implementation-status">Current implementation status</a></li>
+<li class="ptoc-h2"><a href="#schema">Schema</a></li>
+<li class="ptoc-h3"><a href="#auditlog-immutable-trail">audit_log — immutable trail</a></li>
+<li class="ptoc-h3"><a href="#piilog-erasable-pii">pii_log — erasable PII</a></li>
+<li class="ptoc-h2"><a href="#event-types">Event types</a></li>
+<li class="ptoc-h3"><a href="#action-lifecycle">Action lifecycle</a></li>
+<li class="ptoc-h3"><a href="#key-management">Key management</a></li>
+<li class="ptoc-h3"><a href="#watcher-lifecycle">Watcher lifecycle</a></li>
+<li class="ptoc-h3"><a href="#approval-rules">Approval rules</a></li>
+<li class="ptoc-h3"><a href="#notification-channels">Notification channels</a></li>
+<li class="ptoc-h3"><a href="#project-operations">Project operations</a></li>
+<li class="ptoc-h2"><a href="#query-api">Query API</a></li>
+<li class="ptoc-h3"><a href="#query-parameters">Query parameters</a></li>
+<li class="ptoc-h3"><a href="#response">Response</a></li>
+<li class="ptoc-h3"><a href="#pagination">Pagination</a></li>
+<li class="ptoc-h2"><a href="#export-api">Export API</a></li>
+<li class="ptoc-h3"><a href="#query-parameters-2">Query parameters</a></li>
+<li class="ptoc-h3"><a href="#response-headers">Response headers</a></li>
+<li class="ptoc-h3"><a href="#columns">Columns</a></li>
+<li class="ptoc-h3"><a href="#streaming">Streaming</a></li>
+<li class="ptoc-h3"><a href="#rate-limit">Rate limit</a></li>
+<li class="ptoc-h3"><a href="#retention-boundary">Retention boundary</a></li>
+<li class="ptoc-h2"><a href="#retention">Retention</a></li>
+<li class="ptoc-h2"><a href="#security-model">Security model</a></li>
+<li class="ptoc-h3"><a href="#admin-scope-required">Admin scope required</a></li>
+<li class="ptoc-h3"><a href="#project-isolation">Project isolation</a></li>
+<li class="ptoc-h3"><a href="#no-secret-content-in-rows">No secret content in rows</a></li>
+<li class="ptoc-h3"><a href="#append-only-guarantee">Append-only guarantee</a></li>
+<li class="ptoc-h3"><a href="#pii-separation">PII separation</a></li>
+<li class="ptoc-h3"><a href="#streamed-export">Streamed export</a></li>
+<li class="ptoc-h3"><a href="#rate-limited-export">Rate-limited export</a></li>
+<li class="ptoc-h2"><a href="#gdpr-export-vs-audit-export">GDPR export vs. audit export</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents.</span></div>
+</footer>
+</body>
+</html>

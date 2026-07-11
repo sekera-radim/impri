@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operator / Multi-tenant Self-hosting — Impri Docs</title>
+<meta name="description" content="When you run Impri as a shared platform for multiple teams or users, you need visibility into the whole instance — not just your own project. The operator endpoint provides platform-wide stats without">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Operator / Multi-tenant Self-hosting — Impri Docs">
+<meta property="og:description" content="When you run Impri as a shared platform for multiple teams or users, you need visibility into the whole instance — not just your own project. The operator endpoint provides platform-wide stats without">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/operator.html" class="sl active">Operator / admin</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>API reference</span>
+      <span class="bc-sep">/</span>
+      <span>Operator / Multi-tenant Self-hosting</span>
+    </nav>
+    <h1>Operator / Multi-tenant Self-hosting</h1>
+<p>When you run Impri as a shared platform for multiple teams or users, you need visibility into the whole instance — not just your own project. The operator endpoint provides platform-wide stats without exposing individual project data.</p>
+<hr>
+<h2 id="setup">Setup</h2>
+<p>Set the <code>OPERATOR_PROJECT_ID</code> environment variable to the ID of the project whose admin key you will use for operator calls:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">OPERATOR_PROJECT_ID=prj_your_project_id</code></pre></div>
+<p>Any admin key belonging to that project can call the operator stats endpoint. All other keys (including admin keys from other projects) receive <code>404 Not Found</code> — the endpoint is invisible to non-operators.</p>
+<hr>
+<h2 id="get-v1adminstats-platform-totals"><code>GET /v1/admin/stats</code> — platform totals</h2>
+<div class="code-block"><span class="code-lang">http</span><pre><code class="hljs"><span class="hljs-keyword">GET</span> <span class="hljs-string">/v1/admin/stats</span> <span class="hljs-meta">HTTP/1.1</span>
+<span class="hljs-attribute">Authorization</span><span class="hljs-punctuation">: </span>Bearer im_&lt;operator-admin-key&gt;</code></pre></div>
+<p>Response:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;signups&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;total&quot;</span><span class="hljs-punctuation">:</span>   <span class="hljs-number">142</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;last_24h&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">3</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;last_7d&quot;</span><span class="hljs-punctuation">:</span>  <span class="hljs-number">18</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;last_30d&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">61</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;by_tier&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;free&quot;</span><span class="hljs-punctuation">:</span>  <span class="hljs-number">115</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;indie&quot;</span><span class="hljs-punctuation">:</span>  <span class="hljs-number">22</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;team&quot;</span><span class="hljs-punctuation">:</span>    <span class="hljs-number">5</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;paid&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">27</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;activity&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;actions_total&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">9842</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;actions_7d&quot;</span><span class="hljs-punctuation">:</span>    <span class="hljs-number">1203</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;watchers&quot;</span><span class="hljs-punctuation">:</span>       <span class="hljs-number">88</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;ts&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1720000000</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>Fields:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>signups.total</code></td>
+<td>Total number of projects (one per signup)</td>
+</tr>
+<tr>
+<td><code>signups.last_24h/7d/30d</code></td>
+<td>Projects created in the last N days</td>
+</tr>
+<tr>
+<td><code>by_tier</code></td>
+<td>Breakdown of projects by current tier</td>
+</tr>
+<tr>
+<td><code>paid</code></td>
+<td>Count of indie + team projects</td>
+</tr>
+<tr>
+<td><code>activity.actions_total</code></td>
+<td>Total actions ever created across all projects</td>
+</tr>
+<tr>
+<td><code>activity.actions_7d</code></td>
+<td>Actions created in the last 7 days</td>
+</tr>
+<tr>
+<td><code>activity.watchers</code></td>
+<td>Active (non-paused) watchers across all projects</td>
+</tr>
+<tr>
+<td><code>ts</code></td>
+<td>Unix timestamp of the response</td>
+</tr>
+</tbody></table>
+</div>
+<hr>
+<h2 id="security-notes">Security notes</h2>
+<ul>
+<li>Returns <code>404 Not Found</code> for all keys that do not belong to <code>OPERATOR_PROJECT_ID</code>, regardless of scope. The endpoint is not discoverable.</li>
+<li>No individual project data is exposed — only platform-level aggregate counts.</li>
+<li>Even operator keys cannot read another project&#39;s actions, decisions, or audit log.</li>
+<li>Set <code>OPERATOR_PROJECT_ID</code> to a dedicated operator project — do not reuse a user-facing project for this.</li>
+</ul>
+<hr>
+<h2 id="usage-example-python">Usage example (Python)</h2>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> os
+<span class="hljs-keyword">from</span> impri <span class="hljs-keyword">import</span> ImpriClient
+
+operator_key = os.environ[<span class="hljs-string">&quot;OPERATOR_API_KEY&quot;</span>]  <span class="hljs-comment"># admin key for OPERATOR_PROJECT_ID</span>
+client = ImpriClient(api_key=operator_key, base_url=<span class="hljs-string">&quot;http://localhost:8484&quot;</span>)
+
+<span class="hljs-comment"># The SDK doesn&#x27;t have a dedicated method — call the raw endpoint</span>
+<span class="hljs-keyword">import</span> urllib.request, json, os
+
+req = urllib.request.Request(
+    <span class="hljs-string">&quot;http://localhost:8484/v1/admin/stats&quot;</span>,
+    headers={<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{operator_key}</span>&quot;</span>},
+)
+<span class="hljs-keyword">with</span> urllib.request.urlopen(req) <span class="hljs-keyword">as</span> resp:
+    stats = json.loads(resp.read())
+
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Total signups: <span class="hljs-subst">{stats[<span class="hljs-string">&#x27;signups&#x27;</span>][<span class="hljs-string">&#x27;total&#x27;</span>]}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Paid projects: <span class="hljs-subst">{stats[<span class="hljs-string">&#x27;paid&#x27;</span>]}</span>&quot;</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Actions this week: <span class="hljs-subst">{stats[<span class="hljs-string">&#x27;activity&#x27;</span>][<span class="hljs-string">&#x27;actions_7d&#x27;</span>]}</span>&quot;</span>)</code></pre></div>
+<hr>
+<h2 id="environment-variables-for-multi-tenant-operation">Environment variables for multi-tenant operation</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>OPERATOR_PROJECT_ID</code></td>
+<td>Unlocks <code>GET /v1/admin/stats</code> for that project&#39;s admin keys</td>
+</tr>
+<tr>
+<td><code>ALLOW_SIGNUP</code></td>
+<td>When set to <code>1</code> or <code>true</code>, enables <code>POST /v1/signup</code> for self-serve project creation</td>
+</tr>
+<tr>
+<td><code>DB_PATH</code></td>
+<td>SQLite database path (default: <code>data/impri.db</code>)</td>
+</tr>
+<tr>
+<td><code>BASE_URL</code></td>
+<td>Public base URL shown in inbox links</td>
+</tr>
+</tbody></table>
+</div>
+<p>See <a href="self-hosting.html">Self-hosting</a> for the full environment variable reference.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#setup">Setup</a></li>
+<li class="ptoc-h2"><a href="#get-v1adminstats-platform-totals">GET /v1/admin/stats — platform totals</a></li>
+<li class="ptoc-h2"><a href="#security-notes">Security notes</a></li>
+<li class="ptoc-h2"><a href="#usage-example-python">Usage example (Python)</a></li>
+<li class="ptoc-h2"><a href="#environment-variables-for-multi-tenant-operation">Environment variables for multi-tenant operation</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents.</span></div>
+</footer>
+</body>
+</html>

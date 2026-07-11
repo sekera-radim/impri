@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Impri CLI — Impri Docs</title>
+<meta name="description" content="Status — v0.1, pre-release. The CLI lives at cli/ in this repository and is not yet published to npm. Install it from the local source using the build steps below. The REST API it wraps is stable; the">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Impri CLI — Impri Docs">
+<meta property="og:description" content="Status — v0.1, pre-release. The CLI lives at cli/ in this repository and is not yet published to npm. Install it from the local source using the build steps below. The REST API it wraps is stable; the">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl active">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>CLI</span>
+      <span class="bc-sep">/</span>
+      <span>Impri CLI</span>
+    </nav>
+    <h1>Impri CLI</h1>
+<blockquote>
+<p><strong>Status — v0.1, pre-release.</strong> The CLI lives at <code>cli/</code> in this repository and is not yet published to npm. Install it from the local source using the build steps below. The REST API it wraps is stable; the hosted cloud (<code>api.impri.dev</code>) is early beta.</p>
+</blockquote>
+<p>The <code>impri</code> CLI is the fastest way to manage the approval inbox from a terminal — push actions, watch for new ones, approve or reject, and manage watchers and API keys — without writing any code.</p>
+<hr>
+<h2 id="install-local-pre-npm">Install (local, pre-npm)</h2>
+<p>The CLI depends on the TypeScript SDK via a <code>file:</code> reference. Build the SDK first:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-built_in">cd</span> sdk/typescript &amp;&amp; npm install &amp;&amp; npm run build
+<span class="hljs-built_in">cd</span> ../cli &amp;&amp; npm install &amp;&amp; npm run build</code></pre></div>
+<p>Install globally to put <code>impri</code> on your PATH:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">npm install -g ./cli
+impri --version</code></pre></div>
+<blockquote>
+<p>The build inlines the SDK into a single <code>dist/cli.js</code> (shebang included). A global install requires no <code>node_modules/</code> at runtime — only Node 18+.</p>
+</blockquote>
+<p><strong>Dev mode</strong> (no build step, for iterating on the CLI source):</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-built_in">cd</span> cli &amp;&amp; npx tsx src/cli.ts inbox</code></pre></div>
+<hr>
+<h2 id="onboarding">Onboarding</h2>
+<p>Run <code>impri init</code> once to store your base URL and API key:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Self-hosted (default)</span>
+impri init
+
+<span class="hljs-comment"># Cloud — connect with an existing key</span>
+impri init --cloud
+
+<span class="hljs-comment"># Cloud — create a new free project and key in one step</span>
+impri init --cloud --signup
+
+<span class="hljs-comment"># Seed two sample actions so the inbox is not empty on first run</span>
+impri init --cloud --signup --demo</code></pre></div>
+<p><code>init</code> calls <code>GET /v1/project</code> to validate the key, then writes <code>~/.impri/config.json</code> (mode 0600). The interactive flow:</p>
+<ol>
+<li>Prompt for base URL (default: <code>http://localhost:8484</code>).</li>
+<li>Prompt for API key (<code>im_...</code>) with masked input.</li>
+<li>Validate the key against the server.</li>
+<li>Write the config file.</li>
+<li>Print the connected project name.</li>
+</ol>
+<p>With <code>--cloud --signup</code>, the CLI calls <code>POST /v1/signup</code>, prints the returned <code>im_...</code> key <strong>once</strong> inside a box border with a &quot;store this now&quot; warning, pauses for confirmation, then saves.</p>
+<hr>
+<h2 id="config-and-credentials">Config and credentials</h2>
+<p><strong>File:</strong> <code>~/.impri/config.json</code>
+Directory created as <code>0700</code>; file written as <code>0600</code> on every save.</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;base_url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://api.impri.dev&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;api_key&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_xxxxxxxxxxxxxxxxxxxxxxxx&quot;</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p><strong>Precedence (highest wins):</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Source</th>
+<th>How to set</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Environment</td>
+<td><code>IMPRI_API_KEY</code>, <code>IMPRI_BASE_URL</code></td>
+</tr>
+<tr>
+<td>Config file</td>
+<td><code>~/.impri/config.json</code> (written by <code>impri init</code>)</td>
+</tr>
+<tr>
+<td>Code default</td>
+<td><code>http://localhost:8484</code>; no key → commands print &quot;Run &#39;impri init&#39; first&quot; and exit 1</td>
+</tr>
+</tbody></table>
+</div>
+<p>Environment variables take effect immediately without touching the config file — suitable for CI, Docker, and per-process overrides:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">IMPRI_BASE_URL=http://staging.internal:8484 \
+IMPRI_API_KEY=im_stg_... \
+impri inbox</code></pre></div>
+<p><strong>Security notes:</strong></p>
+<ul>
+<li>The key is never logged, never printed back in full, and never echoed during interactive input (masked with <code>*</code>).</li>
+<li>Any <code>--verbose</code> or debug output redacts the key to its prefix only: <code>im_XXXX****</code>.</li>
+<li>A missing config file produces a friendly error, not a stack trace.</li>
+</ul>
+<hr>
+<h2 id="commands">Commands</h2>
+<h3 id="impri-init"><code>impri init</code></h3>
+<div class="code-block"><pre><code class="hljs">impri init [--base-url &lt;url&gt;] [--cloud] [--signup] [--demo]</code></pre></div>
+<p>Interactive onboarding. Prompts for base URL and API key, validates credentials, and writes <code>~/.impri/config.json</code>.</p>
+<p>To supply the API key non-interactively, pipe it on stdin or set the <code>IMPRI_API_KEY</code> environment variable. The env var takes precedence over the prompt.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--cloud</code></td>
+<td>Set base URL to <code>https://api.impri.dev</code> and skip the URL prompt</td>
+</tr>
+<tr>
+<td><code>--signup</code></td>
+<td>Call <code>POST /v1/signup</code> (cloud + unauthenticated) to create a free project and print the <code>im_...</code> key once</td>
+</tr>
+<tr>
+<td><code>--demo</code></td>
+<td>After connecting, seed two sample actions (<code>demo.email</code>, <code>demo.publish</code>) so the inbox has content</td>
+</tr>
+<tr>
+<td><code>--base-url &lt;url&gt;</code></td>
+<td>Skip the URL prompt</td>
+</tr>
+</tbody></table>
+</div>
+<hr>
+<h3 id="impri-login"><code>impri login</code></h3>
+<div class="code-block"><pre><code class="hljs">impri login [--base-url &lt;url&gt;] [--cloud]</code></pre></div>
+<p>Alias for <code>impri init</code>. Re-run onboarding to rotate your key or switch between self-hosted and cloud without wiping other settings. Supply the key via the interactive prompt, piped stdin, or <code>IMPRI_API_KEY</code> env var.</p>
+<hr>
+<h3 id="impri-status"><code>impri status</code></h3>
+<div class="code-block"><pre><code class="hljs">impri status [--json]</code></pre></div>
+<p>Verify the active config by calling <code>GET /healthz</code> and <code>GET /v1/project</code>. Prints:</p>
+<ul>
+<li>Connected project name</li>
+<li>Base URL</li>
+<li>Key prefix (<code>im_xxxx****</code>)</li>
+<li>Current pending action count</li>
+</ul>
+<p>Exits 1 if the server is unreachable or the key is invalid.</p>
+<hr>
+<h2 id="approval-inbox">Approval Inbox</h2>
+<h3 id="impri-push"><code>impri push</code></h3>
+<div class="code-block"><pre><code class="hljs">impri push --kind &lt;kind&gt; --title &lt;title&gt; [options]</code></pre></div>
+<p>Create an action for human approval (<code>POST /v1/actions</code>). Preview body is read from <code>--body</code> or stdin when omitted, enabling pipe usage.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--kind &lt;kind&gt;</code></td>
+<td>Action kind, e.g. <code>email.send</code>, <code>db.exec</code>, <code>reddit.comment</code></td>
+</tr>
+<tr>
+<td><code>--title &lt;title&gt;</code></td>
+<td>Short description shown in the inbox card</td>
+</tr>
+<tr>
+<td><code>--body &lt;text&gt;</code></td>
+<td>Preview body text (or pipe from stdin)</td>
+</tr>
+<tr>
+<td><code>--format &lt;plain|markdown|diff&gt;</code></td>
+<td>Preview format (default: <code>plain</code>)</td>
+</tr>
+<tr>
+<td><code>--editable preview.body</code></td>
+<td>Allow the reviewer to edit the body before approving</td>
+</tr>
+<tr>
+<td><code>--target-url &lt;url&gt;</code></td>
+<td>Link to the resource being acted on</td>
+</tr>
+<tr>
+<td><code>--expires-in &lt;seconds&gt;</code></td>
+<td>Approval window (default: 259200 = 72 h; min: 300; max: 2592000)</td>
+</tr>
+<tr>
+<td><code>--wait</code></td>
+<td>Poll until decided; exit 0 on approval, exit 1 on rejection</td>
+</tr>
+<tr>
+<td><code>--timeout &lt;seconds&gt;</code></td>
+<td>Timeout for <code>--wait</code> (default: 300)</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>Print raw <code>ActionCreated</code> JSON</td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Examples:</strong></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Push a draft email for review</span>
+impri push --kind email.send \
+  --title <span class="hljs-string">&quot;Draft: Q3 newsletter&quot;</span> \
+  --body <span class="hljs-string">&quot;Hi everyone, ...&quot;</span> \
+  --format markdown \
+  --editable preview.body
+
+<span class="hljs-comment"># Read preview from stdin</span>
+<span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;<span class="hljs-variable">$QUERY</span>&quot;</span> | impri push --kind db.exec --title <span class="hljs-string">&quot;Run migration&quot;</span>
+
+<span class="hljs-comment"># Push and block until the human decides</span>
+impri push --kind reddit.comment \
+  --title <span class="hljs-string">&quot;Reply: self-hosting AI&quot;</span> \
+  --body <span class="hljs-string">&quot;<span class="hljs-subst">$(cat reply.md)</span>&quot;</span> \
+  --<span class="hljs-built_in">wait</span> --<span class="hljs-built_in">timeout</span> 600</code></pre></div>
+<hr>
+<h3 id="impri-inbox"><code>impri inbox</code></h3>
+<div class="code-block"><pre><code class="hljs">impri inbox [--kind &lt;kind&gt;] [--limit &lt;n&gt;] [--json]</code></pre></div>
+<p>Show only pending actions — shorthand for <code>impri list --status pending</code>. This is the primary human operator view.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">impri inbox
+impri inbox --kind email.send</code></pre></div>
+<hr>
+<h3 id="impri-list"><code>impri list</code></h3>
+<div class="code-block"><pre><code class="hljs">impri list [--status &lt;pending|approved|rejected|expired&gt;] [--kind &lt;kind&gt;] \
+           [--since &lt;iso-date&gt;] [--q &lt;search&gt;] [--limit &lt;n&gt;] [--json]</code></pre></div>
+<p>List actions newest-first in a tabular view (id, kind, title, status, age). Defaults to all statuses.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>--status</code></td>
+<td>Filter by status</td>
+</tr>
+<tr>
+<td><code>--kind</code></td>
+<td>Filter by action kind</td>
+</tr>
+<tr>
+<td><code>--since &lt;iso-date&gt;</code></td>
+<td>ISO-8601 date string, e.g. <code>2026-07-01</code> (converted internally to a Unix timestamp)</td>
+</tr>
+<tr>
+<td><code>--q &lt;search&gt;</code></td>
+<td>Free-text search on title and preview body (max 200 chars)</td>
+</tr>
+<tr>
+<td><code>--limit &lt;n&gt;</code></td>
+<td>Max results (default: 50)</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>Newline-delimited JSON records for scripting</td>
+</tr>
+</tbody></table>
+</div>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">impri list --status approved --since 2026-07-01
+impri list --q <span class="hljs-string">&quot;migration&quot;</span> --json | jq .<span class="hljs-built_in">id</span></code></pre></div>
+<hr>
+<h3 id="impri-get-ltaction-idgt"><code>impri get &lt;action-id&gt;</code></h3>
+<div class="code-block"><pre><code class="hljs">impri get &lt;action-id&gt; [--json]</code></pre></div>
+<p>Fetch a single action and print full detail: status, preview, editable fields, <code>expires_at</code>, and the decision (including <code>final_preview</code> and <code>diff</code>) when already decided.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">impri get act_abc123</code></pre></div>
+<hr>
+<h3 id="impri-approve-ltaction-idgt"><code>impri approve &lt;action-id&gt;</code></h3>
+<div class="code-block"><pre><code class="hljs">impri approve &lt;action-id&gt; [--edit &lt;new-body-text&gt;] [--json]</code></pre></div>
+<p>Approve an action (<code>POST /v1/actions/:id/decision</code>, <code>verdict=approve</code>).</p>
+<p><code>--edit</code> replaces the preview body before approving. The CLI fetches the action first and exits with an error if <code>preview.body</code> is not in the action&#39;s <code>editable</code> list.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">impri approve act_abc123
+
+<span class="hljs-comment"># Approve with an edited body</span>
+impri approve act_abc123 --edit <span class="hljs-string">&quot;<span class="hljs-subst">$(cat edited-reply.md)</span>&quot;</span></code></pre></div>
+<p>Exits 0 on success.</p>
+<hr>
+<h3 id="impri-reject-ltaction-idgt"><code>impri reject &lt;action-id&gt;</code></h3>
+<div class="code-block"><pre><code class="hljs">impri reject &lt;action-id&gt; [--json]</code></pre></div>
+<p>Reject an action (<code>POST /v1/actions/:id/decision</code>, <code>verdict=reject</code>). Prints the <code>DecisionResult</code>.</p>
+<p>Exits 0 on success; exits 2 on <code>ImpriConflict</code> (already decided).</p>
+<hr>
+<h3 id="impri-tail"><code>impri tail</code></h3>
+<div class="code-block"><pre><code class="hljs">impri tail [--kind &lt;kind&gt;] [--interval &lt;seconds&gt;] [--json]</code></pre></div>
+<p>Long-running watch mode for the human operator. Polls <code>GET /v1/actions?status=pending</code> every <code>--interval</code> seconds (default: 10, minimum: 5 to stay under rate limits) and prints newly-arrived pending actions as they appear. Tracks the latest <code>created_at</code> seen to avoid reprinting.</p>
+<p>Press <strong>Ctrl-C</strong> to exit.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Terminal 1 — tail the inbox</span>
+impri <span class="hljs-built_in">tail</span>
+
+<span class="hljs-comment"># Terminal 2 — decide on actions printed by tail</span>
+impri approve act_xyz789</code></pre></div>
+<p>With <code>--json</code>, each new action is streamed as a JSON line — useful for piping into other tools.</p>
+<hr>
+<h2 id="watchers">Watchers</h2>
+<h3 id="impri-presets"><code>impri presets</code></h3>
+<div class="code-block"><pre><code class="hljs">impri presets [--category &lt;Community|Developer|Content|Research|News|Monitoring&gt;] [--json]</code></pre></div>
+<p>List the 18 watcher preset templates (<code>GET /v1/watcher-presets</code>) in a grouped table showing preset ID, description, required params, and default schedule. Use the preset ID with <code>impri watch add</code>.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">impri presets
+impri presets --category Developer</code></pre></div>
+<p><strong>Available presets:</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Preset IDs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Community</td>
+<td><code>hn-front-page</code>, <code>hn-keyword</code>, <code>hn-show-ask</code>, <code>reddit-subreddit</code>, <code>reddit-keyword</code></td>
+</tr>
+<tr>
+<td>Developer</td>
+<td><code>github-releases</code>, <code>github-commits</code>, <code>npm-package</code>, <code>pypi-package</code>, <code>stackoverflow-tag</code></td>
+</tr>
+<tr>
+<td>Content</td>
+<td><code>rss-feed</code>, <code>blog-newsletter</code>, <code>youtube-channel</code></td>
+</tr>
+<tr>
+<td>Research</td>
+<td><code>arxiv-papers</code></td>
+</tr>
+<tr>
+<td>News</td>
+<td><code>google-news</code>, <code>product-hunt</code></td>
+</tr>
+<tr>
+<td>Monitoring</td>
+<td><code>url-changed</code>, <code>changelog-status</code></td>
+</tr>
+</tbody></table>
+</div>
+<hr>
+<h3 id="impri-watch-add-ltpreset-idgt"><code>impri watch add &lt;preset-id&gt;</code></h3>
+<div class="code-block"><pre><code class="hljs">impri watch add &lt;preset-id&gt; [--param key=value]... [--name &lt;name&gt;] [--schedule &lt;every&gt;] [--json]</code></pre></div>
+<p>Create a watcher from a named preset (<code>POST /v1/watchers/from-preset</code>). <code>--param</code> is repeatable.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># GitHub releases for fastify/fastify, polled hourly</span>
+impri watch add github-releases \
+  --param owner=fastify \
+  --param repo=fastify \
+  --schedule 1h
+
+<span class="hljs-comment"># Reddit keyword search with a custom name</span>
+impri watch add reddit-keyword \
+  --param <span class="hljs-string">&quot;query=self-hosting AI&quot;</span> \
+  --param subreddit=selfhosted \
+  --name <span class="hljs-string">&quot;SH AI mentions&quot;</span>
+
+<span class="hljs-comment"># Hacker News front page (no params required)</span>
+impri watch add hn-front-page</code></pre></div>
+<p>Prints the created watcher ID and <code>next_run_at</code> on success.</p>
+<hr>
+<h3 id="impri-watchers-list"><code>impri watchers list</code></h3>
+<div class="code-block"><pre><code class="hljs">impri watchers list [--status &lt;active|paused|degraded&gt;] [--kind &lt;rss|reddit_search|url_diff&gt;] [--json]</code></pre></div>
+<p>List all watchers with status, kind, schedule, <code>fail_count</code>, and <code>next_run_at</code>.</p>
+<hr>
+<h3 id="impri-watchers-get-ltwatcher-idgt"><code>impri watchers get &lt;watcher-id&gt;</code></h3>
+<div class="code-block"><pre><code class="hljs">impri watchers get &lt;watcher-id&gt; [--json]</code></pre></div>
+<p>Fetch a single watcher by ID, including <code>item_count</code> (total deduplicated items seen since creation).</p>
+<hr>
+<h3 id="impri-watchers-delete-ltwatcher-idgt"><code>impri watchers delete &lt;watcher-id&gt;</code></h3>
+<div class="code-block"><pre><code class="hljs">impri watchers delete &lt;watcher-id&gt; [--yes]</code></pre></div>
+<p>Permanently delete a watcher and its deduplication history. Pending inbox actions created by this watcher are <strong>not</strong> deleted.</p>
+<p><code>--yes</code> skips the interactive confirmation prompt — safe for scripting.</p>
+<hr>
+<h2 id="api-keys">API Keys</h2>
+<p>All key commands require <code>admin</code> scope.</p>
+<h3 id="impri-keys-list"><code>impri keys list</code></h3>
+<div class="code-block"><pre><code class="hljs">impri keys list [--json]</code></pre></div>
+<p>List all API keys: prefix, scopes, <code>created_at</code>, <code>last_used_at</code>, and revocation status. Raw key values are never returned by the server after creation.</p>
+<hr>
+<h3 id="impri-keys-create"><code>impri keys create</code></h3>
+<div class="code-block"><pre><code class="hljs">impri keys create --name &lt;name&gt; --scopes &lt;actions|watch|admin&gt;[,...]</code></pre></div>
+<p>Create a new API key (<code>POST /v1/keys</code>) and print the raw <code>im_...</code> value <strong>exactly once</strong>. The CLI displays the key prominently and warns it will not be shown again.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Per-agent key with minimal scope</span>
+impri keys create --name <span class="hljs-string">&quot;deploy-agent&quot;</span> --scopes actions
+
+<span class="hljs-comment"># Ops bot that can also manage watchers</span>
+impri keys create --name <span class="hljs-string">&quot;ops-bot&quot;</span> --scopes actions,watch</code></pre></div>
+<hr>
+<h3 id="impri-keys-revoke-ltkey-idgt"><code>impri keys revoke &lt;key-id&gt;</code></h3>
+<div class="code-block"><pre><code class="hljs">impri keys revoke &lt;key-id&gt; [--yes]</code></pre></div>
+<p>Revoke a key permanently (<code>DELETE /v1/keys/:id</code>). All subsequent requests with that key will be rejected with 401.</p>
+<p><code>--yes</code> skips the confirmation prompt.</p>
+<hr>
+<h2 id="human-operator-workflow">Human operator workflow</h2>
+<p>The typical setup for monitoring an active agent:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Terminal 1 — watch for new pending actions</span>
+impri <span class="hljs-built_in">tail</span>
+
+<span class="hljs-comment"># Terminal 2 — inspect and decide on a specific action</span>
+impri get act_abc123
+impri approve act_abc123
+<span class="hljs-comment"># or</span>
+impri reject act_abc123</code></pre></div>
+<p>For a lighter setup, poll the inbox on a loop:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">watch -n 30 impri inbox</code></pre></div>
+<p>Inspect then edit a draft before approving:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">impri get act_abc123         <span class="hljs-comment"># read the preview</span>
+<span class="hljs-variable">$EDITOR</span> /tmp/reply.md        <span class="hljs-comment"># edit locally</span>
+impri approve act_abc123 --edit <span class="hljs-string">&quot;<span class="hljs-subst">$(cat /tmp/reply.md)</span>&quot;</span></code></pre></div>
+<hr>
+<h2 id="exit-codes">Exit codes</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>Success</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Error (server unreachable, invalid key, action rejected on <code>--wait</code>)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Conflict — action already decided</td>
+</tr>
+</tbody></table>
+</div>
+<hr>
+<h2 id="build-reference">Build reference</h2>
+<div class="code-block"><pre><code class="hljs">cli/
+  src/cli.ts          Entry point — subcommands registered with commander
+  package.json        name: @impri/cli, version: 0.1.0, bin: { impri: ./dist/cli.js }
+  tsup.config.ts      Bundles SDK inline via noExternal: [/@impri/]; shebang injected
+  dist/cli.js         Compiled output (generated by npm run build)</code></pre></div>
+<p><strong>Build sequence for a clean checkout:</strong></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-built_in">cd</span> sdk/typescript &amp;&amp; npm install &amp;&amp; npm run build
+<span class="hljs-built_in">cd</span> ../cli &amp;&amp; npm install &amp;&amp; npm run build
+npm install -g ./cli</code></pre></div>
+<p>The bundle carries the shebang so the OS can execute <code>dist/cli.js</code> directly. No <code>node_modules/</code> needed at runtime beyond Node 18.</p>
+<hr>
+<p>See also:</p>
+<ul>
+<li><a href="sdk-typescript.html">TypeScript SDK reference</a> — for agents that push and poll programmatically</li>
+<li><a href="quickstart.html">Quickstart</a> — zero to first approved action in &lt; 5 min</li>
+<li><a href="watcher-presets.html">Watcher presets</a> — full preset catalog with param reference</li>
+<li><a href="inbox.html">Inbox UX</a> — keyboard shortcuts, bulk approve/reject, filters (web inbox)</li>
+</ul>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#install-local-pre-npm">Install (local, pre-npm)</a></li>
+<li class="ptoc-h2"><a href="#onboarding">Onboarding</a></li>
+<li class="ptoc-h2"><a href="#config-and-credentials">Config and credentials</a></li>
+<li class="ptoc-h2"><a href="#commands">Commands</a></li>
+<li class="ptoc-h3"><a href="#impri-init">impri init</a></li>
+<li class="ptoc-h3"><a href="#impri-login">impri login</a></li>
+<li class="ptoc-h3"><a href="#impri-status">impri status</a></li>
+<li class="ptoc-h2"><a href="#approval-inbox">Approval Inbox</a></li>
+<li class="ptoc-h3"><a href="#impri-push">impri push</a></li>
+<li class="ptoc-h3"><a href="#impri-inbox">impri inbox</a></li>
+<li class="ptoc-h3"><a href="#impri-list">impri list</a></li>
+<li class="ptoc-h3"><a href="#impri-get-ltaction-idgt">impri get &amp;lt;action-id&amp;gt;</a></li>
+<li class="ptoc-h3"><a href="#impri-approve-ltaction-idgt">impri approve &amp;lt;action-id&amp;gt;</a></li>
+<li class="ptoc-h3"><a href="#impri-reject-ltaction-idgt">impri reject &amp;lt;action-id&amp;gt;</a></li>
+<li class="ptoc-h3"><a href="#impri-tail">impri tail</a></li>
+<li class="ptoc-h2"><a href="#watchers">Watchers</a></li>
+<li class="ptoc-h3"><a href="#impri-presets">impri presets</a></li>
+<li class="ptoc-h3"><a href="#impri-watch-add-ltpreset-idgt">impri watch add &amp;lt;preset-id&amp;gt;</a></li>
+<li class="ptoc-h3"><a href="#impri-watchers-list">impri watchers list</a></li>
+<li class="ptoc-h3"><a href="#impri-watchers-get-ltwatcher-idgt">impri watchers get &amp;lt;watcher-id&amp;gt;</a></li>
+<li class="ptoc-h3"><a href="#impri-watchers-delete-ltwatcher-idgt">impri watchers delete &amp;lt;watcher-id&amp;gt;</a></li>
+<li class="ptoc-h2"><a href="#api-keys">API Keys</a></li>
+<li class="ptoc-h3"><a href="#impri-keys-list">impri keys list</a></li>
+<li class="ptoc-h3"><a href="#impri-keys-create">impri keys create</a></li>
+<li class="ptoc-h3"><a href="#impri-keys-revoke-ltkey-idgt">impri keys revoke &amp;lt;key-id&amp;gt;</a></li>
+<li class="ptoc-h2"><a href="#human-operator-workflow">Human operator workflow</a></li>
+<li class="ptoc-h2"><a href="#exit-codes">Exit codes</a></li>
+<li class="ptoc-h2"><a href="#build-reference">Build reference</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents.</span></div>
+</footer>
+</body>
+</html>
