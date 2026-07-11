@@ -316,3 +316,82 @@ export const UpdateRuleBody = z.object({
   outcome_params:     z.record(z.unknown()).optional(),
 }).superRefine(applyRuleOutcomeValidation);
 export type UpdateRuleBody = z.infer<typeof UpdateRuleBody>;
+
+// ---------------------------------------------------------------------------
+// Notification channel schemas
+// ---------------------------------------------------------------------------
+
+// http/https URL that also rejects private-IP literals at validation time.
+// DNS-based SSRF (hostname resolving to a private IP) is caught at fetch time
+// by fetchGuarded() in net-guard.ts.
+const httpUrlPublic = (label = 'URL') =>
+  z.string().url().refine(v => {
+    try {
+      const u = new URL(v);
+      if (!['http:', 'https:'].includes(u.protocol)) return false;
+      const host = u.hostname.replace(/^\[|\]$/g, '');
+      return !(isIP(host) && isPrivateIp(host));
+    } catch {
+      return false;
+    }
+  }, `Only http/https URLs to non-private addresses are allowed for ${label}`);
+
+export const SlackConfig = z.object({
+  url: httpUrlPublic('Slack webhook URL'),
+});
+export type SlackConfig = z.infer<typeof SlackConfig>;
+
+export const DiscordConfig = z.object({
+  url: httpUrlPublic('Discord webhook URL'),
+});
+export type DiscordConfig = z.infer<typeof DiscordConfig>;
+
+export const TelegramConfig = z.object({
+  // Validated against Telegram's format to prevent URL path injection when
+  // the token is interpolated into the API URL server-side.
+  bot_token: z.string().regex(/^\d+:[A-Za-z0-9_-]+$/, 'Invalid Telegram bot token format'),
+  // chat_id is not a secret and returned as-is.
+  chat_id: z.string().min(1).max(50),
+});
+export type TelegramConfig = z.infer<typeof TelegramConfig>;
+
+export const NtfyConfig = z.object({
+  url: httpUrlPublic('ntfy server URL'),
+  // Topic validated against /^[A-Za-z0-9_/-]{1,64}$/ — same constraint as the
+  // existing notifyNtfy — to prevent path traversal when assembling {url}/{topic}.
+  topic: z.string().regex(/^[A-Za-z0-9_\/-]{1,64}$/, 'Topic must be 1–64 alphanumeric/underscore/hyphen/slash chars'),
+});
+export type NtfyConfig = z.infer<typeof NtfyConfig>;
+
+export const EmailConfig = z.object({
+  address: z.string().email(),
+});
+export type EmailConfig = z.infer<typeof EmailConfig>;
+
+export const WebhookConfig = z.object({
+  url: httpUrlPublic('webhook URL'),
+  // hmac_secret is optional; when provided it must be 16–256 chars.
+  hmac_secret: z.string().min(16).max(256).optional(),
+});
+export type WebhookConfig = z.infer<typeof WebhookConfig>;
+
+export const ChannelType = z.enum(['slack', 'discord', 'telegram', 'ntfy', 'email', 'webhook']);
+export type ChannelType = z.infer<typeof ChannelType>;
+
+export const CreateChannelBody = z.object({
+  name:             z.string().min(1).max(200),
+  type:             ChannelType,
+  config:           z.record(z.unknown()),
+  enabled:          z.boolean().default(true),
+  // Digest window: coalesce notifications within this window. 10–3600 s.
+  digest_window_sec: z.number().int().min(10).max(3600).default(60),
+});
+export type CreateChannelBody = z.infer<typeof CreateChannelBody>;
+
+export const UpdateChannelBody = z.object({
+  name:             z.string().min(1).max(200).optional(),
+  config:           z.record(z.unknown()).optional(),
+  enabled:          z.boolean().optional(),
+  digest_window_sec: z.number().int().min(10).max(3600).optional(),
+});
+export type UpdateChannelBody = z.infer<typeof UpdateChannelBody>;

@@ -201,6 +201,31 @@ CREATE TABLE IF NOT EXISTS approval_rules (
 CREATE INDEX IF NOT EXISTS idx_approval_rules_project_priority
   ON approval_rules(project_id, priority)
   WHERE enabled = 1;
+
+CREATE TABLE IF NOT EXISTS notification_channels (
+  id                TEXT    PRIMARY KEY,
+  project_id        TEXT    NOT NULL REFERENCES projects(id),
+  name              TEXT    NOT NULL,
+  type              TEXT    NOT NULL
+                            CHECK(type IN ('slack','discord','telegram','ntfy','email','webhook')),
+  enabled           INTEGER NOT NULL DEFAULT 1,
+  config            TEXT    NOT NULL DEFAULT '{}',
+  digest_window_sec INTEGER NOT NULL DEFAULT 60,
+  last_fired_at     INTEGER,
+  digest_queue      TEXT    NOT NULL DEFAULT '[]',
+  fail_count        INTEGER NOT NULL DEFAULT 0,
+  last_error        TEXT,
+  created_at        INTEGER NOT NULL,
+  updated_at        INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_notification_channels_project
+  ON notification_channels(project_id)
+  WHERE enabled = 1;
+
+CREATE INDEX IF NOT EXISTS idx_notification_channels_digest_due
+  ON notification_channels(last_fired_at)
+  WHERE enabled = 1 AND digest_queue != '[]';
 `;
 
 // Idempotent column adds for DBs created before these columns existed.
@@ -251,6 +276,39 @@ function migrate(db: Db): void {
       CREATE INDEX idx_approval_rules_project_priority
         ON approval_rules(project_id, priority)
         WHERE enabled = 1;
+    `);
+  }
+
+  // notification_channels — per-project outbound notification channels.
+  // CREATE TABLE IF NOT EXISTS in SCHEMA_SQL handles new DBs; this guard
+  // handles existing DBs that predate this table.
+  const hasChannelsTable = db.prepare(
+    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='notification_channels'",
+  ).get();
+  if (!hasChannelsTable) {
+    db.exec(`
+      CREATE TABLE notification_channels (
+        id                TEXT    PRIMARY KEY,
+        project_id        TEXT    NOT NULL REFERENCES projects(id),
+        name              TEXT    NOT NULL,
+        type              TEXT    NOT NULL
+                                  CHECK(type IN ('slack','discord','telegram','ntfy','email','webhook')),
+        enabled           INTEGER NOT NULL DEFAULT 1,
+        config            TEXT    NOT NULL DEFAULT '{}',
+        digest_window_sec INTEGER NOT NULL DEFAULT 60,
+        last_fired_at     INTEGER,
+        digest_queue      TEXT    NOT NULL DEFAULT '[]',
+        fail_count        INTEGER NOT NULL DEFAULT 0,
+        last_error        TEXT,
+        created_at        INTEGER NOT NULL,
+        updated_at        INTEGER NOT NULL
+      );
+      CREATE INDEX idx_notification_channels_project
+        ON notification_channels(project_id)
+        WHERE enabled = 1;
+      CREATE INDEX idx_notification_channels_digest_due
+        ON notification_channels(last_fired_at)
+        WHERE enabled = 1 AND digest_queue != '[]';
     `);
   }
 }

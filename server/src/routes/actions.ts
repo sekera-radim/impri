@@ -4,7 +4,7 @@ import { genId, hashContent, nowSec, encodeCursor, decodeCursor } from '../db.js
 import { hasScope, checkRateLimit } from '../auth.js';
 import { approvalsLimitReached, getProjectBilling, TIER_LIMITS } from '../billing.js';
 import { scheduleWebhookDelivery } from '../webhooks.js';
-import { notifyAll } from '../notify.js';
+import { notifyAll, notifyChannels } from '../notify.js';
 import { notifyPush } from '../push.js';
 import { evaluateRules } from '../rules.js';
 import {
@@ -228,6 +228,16 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
         ...(escalateChannel ? { escalateChannel } : {}),
       }).catch(() => {});
       notifyPush(db, key.projectId, { title: body.title, body: 'New action pending your approval', url: inboxUrl }).catch(() => {});
+      // Fire per-project notification channels (Slack, Discord, Telegram, ntfy,
+      // email, generic webhook). Non-blocking — failures never delay the HTTP
+      // response or prevent action creation.
+      notifyChannels(db, key.projectId, {
+        actionId,
+        title: body.title,
+        kind: body.kind,
+        inboxUrl,
+        escalate: rule?.action === 'escalate',
+      }).catch(() => {});
     }
 
     reply.status(201);

@@ -13,9 +13,11 @@ import { registerSignupRoutes } from './routes/signup.js';
 import { registerAdminRoutes } from './routes/admin.js';
 import { registerRuleRoutes } from './routes/rules.js';
 import { registerWatcherPresetRoutes } from './routes/watcherPresets.js';
+import { registerNotificationChannelRoutes } from './routes/notification-channels.js';
 import { billingActive } from './billing.js';
 import { pushEnabled } from './push.js';
 import { runExpiryTick } from './webhooks.js';
+import { runChannelDigestTick } from './notify.js';
 import { runWatcherTick, startWatcherScheduler } from './scheduler.js';
 import { buildOpenApiDocument } from './openapi.js';
 import type { Db } from './db.js';
@@ -112,6 +114,9 @@ export async function createApp(db: Db) {
   // Watcher preset catalog + from-preset creation
   registerWatcherPresetRoutes(app, db);
 
+  // Per-project notification channels (Slack, Discord, Telegram, ntfy, email, webhook)
+  registerNotificationChannelRoutes(app, db);
+
   return app;
 }
 
@@ -146,10 +151,13 @@ async function main() {
 
   const app = await createApp(db);
 
-  // Expiry + webhook tick every 60s
+  // Expiry + webhook + channel digest tick every 60 s.
   setInterval(() => {
     runExpiryTick(db, WEBHOOK_SECRET).catch(err =>
       console.error('[tick] expiry/webhook tick failed', err),
+    );
+    runChannelDigestTick(db).catch(err =>
+      console.error('[tick] channel digest tick failed', err),
     );
   }, 60_000);
 
