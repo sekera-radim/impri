@@ -232,6 +232,17 @@
           class="mb-3"
         />
 
+        <!-- Setup guide: where to obtain the URL / tokens for the selected channel type -->
+        <v-alert v-if="setupGuide" type="info" variant="tonal" density="compact" class="mb-4">
+          <div class="text-caption font-weight-medium mb-1">{{ setupGuide.title }}</div>
+          <ol class="text-caption pl-4 mb-1">
+            <li v-for="step in setupGuide.steps" :key="step">{{ step }}</li>
+          </ol>
+          <a :href="setupGuide.docUrl" target="_blank" rel="noopener noreferrer" class="text-caption">
+            Full guide → {{ setupGuide.docUrl.replace('https://', '') }}
+          </a>
+        </v-alert>
+
         <!-- ── Slack ── -->
         <template v-if="form.type === 'slack'">
           <!-- Approval mode toggle -->
@@ -1148,6 +1159,86 @@ async function confirmDelete(): Promise<void> {
 }
 
 // ─── Create / Edit form ──────────────────────────────────────────────────────
+
+/** Per-type mini návod: kde vzít webhook URL / tokeny. Plné návody žijí v docs. */
+interface SetupGuide {
+  title: string
+  steps: string[]
+  docUrl: string
+}
+const setupGuide = computed<SetupGuide | null>(() => {
+  switch (form.type) {
+    case 'slack':
+      return form.configSlackApprovalMode
+        ? {
+            title: 'Where to get the Slack app credentials',
+            steps: [
+              'Go to api.slack.com/apps → Create New App → From scratch.',
+              'OAuth & Permissions → add the chat:write bot scope → Install to Workspace → copy the Bot User OAuth Token (xoxb-…).',
+              'Basic Information → App Credentials → copy the Signing Secret.',
+              'After saving this channel, Impri shows an Interactivity Request URL — paste it into the Slack app under Interactivity & Shortcuts.',
+            ],
+            docUrl: 'https://impri.dev/docs/slack-approval',
+          }
+        : {
+            title: 'Where to get the Slack webhook URL',
+            steps: [
+              'Go to api.slack.com/apps → Create New App (or open an existing one).',
+              'Enable "Incoming Webhooks" → Add New Webhook to Workspace → pick a channel.',
+              'Copy the generated URL (https://hooks.slack.com/services/…) and paste it below.',
+            ],
+            docUrl: 'https://impri.dev/docs/notifications',
+          }
+    case 'discord':
+      return form.configDiscordApprovalMode
+        ? {
+            title: 'Where to get the Discord bot credentials',
+            steps: [
+              'Go to discord.com/developers/applications → New Application.',
+              'Bot → Reset Token → copy the bot token; General Information → copy the Public Key.',
+              'After saving this channel, Impri shows an Interactions Endpoint URL — paste it into General Information.',
+            ],
+            docUrl: 'https://impri.dev/docs/discord-approval',
+          }
+        : {
+            title: 'Where to get the Discord webhook URL',
+            steps: [
+              'In your Discord server: Server Settings → Integrations → Webhooks → New Webhook.',
+              'Pick the target channel → Copy Webhook URL → paste it below.',
+            ],
+            docUrl: 'https://impri.dev/docs/notifications',
+          }
+    case 'telegram':
+      return {
+        title: 'Where to get the Telegram bot token and chat ID',
+        steps: [
+          'Message @BotFather in Telegram → /newbot → copy the bot token.',
+          'Send any message to your new bot, then open api.telegram.org/bot<TOKEN>/getUpdates and read chat.id (or ask @userinfobot).',
+        ],
+        docUrl: 'https://impri.dev/docs/telegram-approval',
+      }
+    case 'ntfy':
+      return {
+        title: 'How ntfy works',
+        steps: [
+          'Pick a hard-to-guess topic name — it acts as the password of the feed.',
+          'Install the ntfy app (or open ntfy.sh) and subscribe to the same topic. Keep https://ntfy.sh as server unless self-hosting.',
+        ],
+        docUrl: 'https://impri.dev/docs/notifications',
+      }
+    case 'webhook':
+      return {
+        title: 'What to use as the endpoint URL',
+        steps: [
+          'The HTTPS URL of your own endpoint that accepts POST requests (your app, a serverless function, or an automation platform).',
+          'Set an HMAC secret below and verify the X-Impri-Signature header on your side.',
+        ],
+        docUrl: 'https://impri.dev/docs/webhooks',
+      }
+    default:
+      return null
+  }
+})
 
 const channelTypeOptions: { title: string; value: ChannelType }[] = [
   { title: 'Slack', value: 'slack' },

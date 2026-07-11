@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "deploy:cloud": "VITE_API_BASE=https://api.impri.dev/v1 vite build && wrangler pages deploy dist --project-name=impri-app --branch main --commit-dirty=true",
+    "deploy:cloud": "VITE_API_BASE=https://api.impri.dev/v1 vite build && npx wrangler pages deploy dist --project-name=impri-app --branch main --commit-dirty=true",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint src tests",
     "test": "vitest run",
