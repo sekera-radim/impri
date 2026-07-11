@@ -1,0 +1,27 @@
+{
+  "name": "@impri/cli",
+  "version": "0.1.0",
+  "description": "CLI for the Impri human-in-the-loop approval API",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "impri": "./dist/cli.js" },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@impri/sdk": "file:../sdk/typescript",
+    "commander": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  },
+  "engines": { "node": ">=18" }
+}
