@@ -12,6 +12,7 @@ import { registerPushRoutes } from './routes/push.js';
 import { registerSignupRoutes } from './routes/signup.js';
 import { registerAdminRoutes } from './routes/admin.js';
 import { registerRuleRoutes } from './routes/rules.js';
+import { registerWatcherPresetRoutes } from './routes/watcherPresets.js';
 import { billingActive } from './billing.js';
 import { pushEnabled } from './push.js';
 import { runExpiryTick } from './webhooks.js';
@@ -107,6 +108,9 @@ export async function createApp(db: Db) {
 
   // Rules engine CRUD (admin scope)
   registerRuleRoutes(app, db);
+
+  // Watcher preset catalog + from-preset creation
+  registerWatcherPresetRoutes(app, db);
 
   return app;
 }
