@@ -7,7 +7,10 @@ import type {
   ApprovedAction,
   BulkDecisionRequest,
   BulkDecisionResponse,
+  ChannelTestResult,
+  ChannelType,
   CreateActionParams,
+  CreateNotificationChannelParams,
   CreateWatcherFromPresetParams,
   CreateWatcherParams,
   Decision,
@@ -15,11 +18,13 @@ import type {
   KeyScope,
   ListActionsParams,
   ListWatchersParams,
+  NotificationChannel,
   PagedResult,
   Preview,
   Project,
   ProjectExport,
   ResultAck,
+  UpdateNotificationChannelParams,
   UpdateProjectParams,
   UpdateWatcherParams,
   Watcher,
@@ -888,6 +893,133 @@ export class ImpriClient {
     return this._request<{ erased: true; actions: number; watchers: number }>(
       'DELETE',
       '/project/data',
+    )
+  }
+
+  // ─── Notification channels ─────────────────────────────────────────────────
+
+  /**
+   * GET /v1/notification-channels
+   *
+   * List all notification channels for the project.
+   * Config secrets (URL, bot_token, hmac_secret) are masked to '****{last4}'.
+   * digest_queue is internal and excluded from the response.
+   *
+   * Requires 'admin' scope.
+   */
+  async listNotificationChannels(): Promise<NotificationChannel[]> {
+    const res = await this._request<{ channels: NotificationChannel[] }>(
+      'GET',
+      '/notification-channels',
+    )
+    return res.channels
+  }
+
+  /**
+   * POST /v1/notification-channels
+   *
+   * Create a notification channel. The server validates config against the
+   * type-specific Zod schema (e.g. Slack requires an http/https URL with no
+   * private-IP literal; Telegram bot_token must match /^\d+:[A-Za-z0-9_-]+$/).
+   *
+   * Config secrets are masked in the returned channel object.
+   *
+   * Returns HTTP 201. Requires 'admin' scope.
+   *
+   * @param params.name             Human-readable channel name.
+   * @param params.type             Channel type: 'slack' | 'discord' | 'telegram' |
+   *                                'ntfy' | 'email' | 'webhook'.
+   * @param params.config           Type-specific config. Examples:
+   *   slack/discord: `{ url: 'https://hooks.slack.com/...' }`
+   *   telegram:      `{ bot_token: '123:ABC...', chat_id: '-100...' }`
+   *   ntfy:          `{ url: 'https://ntfy.sh', topic: 'my-topic' }`
+   *   email:         `{ address: 'ops@example.com' }`
+   *   webhook:       `{ url: 'https://example.com/hook', hmac_secret?: '...' }`
+   * @param params.enabled          Active by default (true).
+   * @param params.digest_window_sec Coalesce window 10–3600 s (default 60).
+   *
+   * @throws ImpriValidationError (400) — config fails the type-specific schema or
+   *                                       URL contains a private-IP literal.
+   * @throws ImpriUnauthorized (401/403) — key lacks 'admin' scope.
+   * @throws ImpriRateLimited (429)     — write rate limit (30/min) exhausted.
+   */
+  async createNotificationChannel(
+    params: CreateNotificationChannelParams,
+  ): Promise<NotificationChannel> {
+    return this._request<NotificationChannel>('POST', '/notification-channels', params)
+  }
+
+  /**
+   * GET /v1/notification-channels/:id
+   *
+   * Fetch a single notification channel by ID (project-scoped).
+   * Config secrets are masked to '****{last4}'.
+   *
+   * Requires 'admin' scope.
+   *
+   * @throws ImpriNotFound (404) — channel not found or belongs to a different project.
+   */
+  async getNotificationChannel(channelId: string): Promise<NotificationChannel> {
+    return this._request<NotificationChannel>('GET', `/notification-channels/${channelId}`)
+  }
+
+  /**
+   * PATCH /v1/notification-channels/:id
+   *
+   * Partially update a notification channel — only supplied fields change.
+   * When `config` is provided it is merged with the existing config and
+   * re-validated against the type-specific schema. Changing config resets
+   * `fail_count` to 0 and `last_error` to null.
+   *
+   * Returns the updated channel with masked config. Requires 'admin' scope.
+   *
+   * @throws ImpriNotFound (404)        — channel not found or wrong project.
+   * @throws ImpriValidationError (400) — merged config fails schema validation.
+   */
+  async updateNotificationChannel(
+    channelId: string,
+    params: UpdateNotificationChannelParams,
+  ): Promise<NotificationChannel> {
+    return this._request<NotificationChannel>(
+      'PATCH',
+      `/notification-channels/${channelId}`,
+      params,
+    )
+  }
+
+  /**
+   * DELETE /v1/notification-channels/:id
+   *
+   * Hard-delete the channel (leaf entity — no cascade). Returns void (204).
+   *
+   * Requires 'admin' scope.
+   *
+   * @throws ImpriNotFound (404) — channel not found or belongs to a different project.
+   */
+  async deleteNotificationChannel(channelId: string): Promise<void> {
+    await this._request<void>('DELETE', `/notification-channels/${channelId}`)
+  }
+
+  /**
+   * POST /v1/notification-channels/:id/test
+   *
+   * Send a test message through the channel immediately, bypassing the digest
+   * window. Does not update `last_fired_at`, `digest_queue`, or `fail_count`.
+   *
+   * Rate-limited to 5 requests/min per API key (separate from CRUD routes).
+   * Requires 'admin' scope.
+   *
+   * Returns `{ ok: true }` on success or `{ ok: false, error: string }` on
+   * delivery failure. The error message never contains raw secrets.
+   *
+   * @throws ImpriNotFound (404)        — channel not found or wrong project.
+   * @throws ImpriUnauthorized (401/403) — key lacks 'admin' scope.
+   * @throws ImpriRateLimited (429)     — test rate limit (5/min) exhausted.
+   */
+  async testNotificationChannel(channelId: string): Promise<ChannelTestResult> {
+    return this._request<ChannelTestResult>(
+      'POST',
+      `/notification-channels/${channelId}/test`,
     )
   }
 }

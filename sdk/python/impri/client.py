@@ -55,13 +55,18 @@ from .models import (
     BulkDecisionRequest,
     BulkDecisionResponse,
     BulkDecisionResult,
+    ChannelTestResult,
+    ChannelType,
+    CreateNotificationChannelParams,
     DecisionResult,
+    NotificationChannel,
     PagedResult,
     Preview,
     Project,
     ProjectExport,
     ResultAck,
     ScoringRule,
+    UpdateNotificationChannelParams,
     Watcher,
     WatcherConfig,
     WatcherKind,
@@ -939,6 +944,131 @@ class ImpriClient:
         Returns ``{"erased": True, "actions": int, "watchers": int}``.
         """
         return self._request("DELETE", "/project/data")  # type: ignore[return-value]
+
+    # ------------------------------------------------------------------
+    # Notification channels (admin scope)
+    # ------------------------------------------------------------------
+
+    def list_notification_channels(self) -> List[NotificationChannel]:
+        """List all notification channels for the project.
+
+        GET /v1/notification-channels (requires 'admin' scope).
+
+        Config secrets (URL, bot_token, hmac_secret) are masked to
+        '****{last4}' in all responses. digest_queue is not included.
+        """
+        data = self._request("GET", "/notification-channels")
+        return data.get("channels", [])  # type: ignore[return-value]
+
+    def create_notification_channel(
+        self,
+        name: str,
+        type: ChannelType,
+        config: Dict[str, Any],
+        *,
+        enabled: bool = True,
+        digest_window_sec: int = 60,
+    ) -> NotificationChannel:
+        """Create a notification channel.
+
+        POST /v1/notification-channels (requires 'admin' scope).
+
+        The server validates config against the type-specific schema (Zod).
+        URLs are checked for SSRF (no private-IP literals, http/https only).
+        Secrets (URL, bot_token, hmac_secret) are masked in the response.
+
+        Args:
+            name:              Human-readable channel name.
+            type:              Channel type: 'slack', 'discord', 'telegram',
+                               'ntfy', 'email', or 'webhook'.
+            config:            Type-specific config dict. Examples:
+                               slack/discord: {"url": "https://hooks.slack.com/..."}
+                               telegram:      {"bot_token": "123:ABC...", "chat_id": "-100..."}
+                               ntfy:          {"url": "https://ntfy.sh", "topic": "my-topic"}
+                               email:         {"address": "ops@example.com"}
+                               webhook:       {"url": "https://example.com/hook",
+                                               "hmac_secret": "...optional..."}
+            enabled:           Whether this channel is active (default True).
+            digest_window_sec: Coalesce window in seconds (10–3600, default 60).
+                               Notifications within the window are batched.
+
+        Returns the created channel with masked config. HTTP 201.
+        """
+        req_body: Dict[str, Any] = {
+            "name": name,
+            "type": type,
+            "config": config,
+            "enabled": enabled,
+            "digest_window_sec": digest_window_sec,
+        }
+        return self._request("POST", "/notification-channels", body=req_body)  # type: ignore[return-value]
+
+    def get_notification_channel(self, channel_id: str) -> NotificationChannel:
+        """Fetch a single notification channel by ID.
+
+        GET /v1/notification-channels/:id (requires 'admin' scope).
+
+        Returns 404 if the channel does not exist or belongs to a different project.
+        Config secrets are masked to '****{last4}'.
+        """
+        return self._request("GET", f"/notification-channels/{channel_id}")  # type: ignore[return-value]
+
+    def update_notification_channel(
+        self,
+        channel_id: str,
+        *,
+        name: Optional[str] = None,
+        config: Optional[Dict[str, Any]] = None,
+        enabled: Optional[bool] = None,
+        digest_window_sec: Optional[int] = None,
+    ) -> NotificationChannel:
+        """Partially update a notification channel.
+
+        PATCH /v1/notification-channels/:id (requires 'admin' scope).
+
+        Only supplied fields are changed. When config is provided it is merged
+        with the existing config and re-validated against the type schema.
+        Changing config resets fail_count to 0 and last_error to null.
+
+        Returns the updated channel with masked config.
+        """
+        req_body: Dict[str, Any] = {}
+        if name is not None:
+            req_body["name"] = name
+        if config is not None:
+            req_body["config"] = config
+        if enabled is not None:
+            req_body["enabled"] = enabled
+        if digest_window_sec is not None:
+            req_body["digest_window_sec"] = digest_window_sec
+        return self._request("PATCH", f"/notification-channels/{channel_id}", body=req_body)  # type: ignore[return-value]
+
+    def delete_notification_channel(self, channel_id: str) -> None:
+        """Permanently delete a notification channel.
+
+        DELETE /v1/notification-channels/:id (requires 'admin' scope).
+
+        Hard-delete with no cascade (leaf entity). Returns None (204).
+        Returns 404 if the channel does not exist or belongs to a different project.
+        """
+        self._request("DELETE", f"/notification-channels/{channel_id}")
+
+    def test_notification_channel(self, channel_id: str) -> ChannelTestResult:
+        """Send a test message through a notification channel immediately.
+
+        POST /v1/notification-channels/:id/test (requires 'admin' scope).
+
+        Bypasses the digest window and fires the channel adapter directly.
+        Does not update last_fired_at, digest_queue, or fail_count.
+
+        Rate-limited to 5 requests/min per API key (separate from CRUD routes).
+
+        Returns:
+            {"ok": True} on success.
+            {"ok": False, "error": "<reason>"} on delivery failure.
+            The error message never contains the raw secret.
+        """
+        return self._request("POST", f"/notification-channels/{channel_id}/test")  # type: ignore[return-value]
 
     # ------------------------------------------------------------------
     # Ergonomics: requires_approval decorator

@@ -293,6 +293,112 @@ export interface CreateWatcherFromPresetParams {
   schedule?: WatcherSchedule
 }
 
+// ─── Notification channels ───────────────────────────────────────────────────
+
+export type ChannelType = 'slack' | 'discord' | 'telegram' | 'ntfy' | 'email' | 'webhook'
+
+/** Slack incoming-webhook config. url is masked to '****{last4}' in API responses. */
+export interface SlackChannelConfig {
+  url: string
+}
+
+/** Discord incoming-webhook config. url is masked to '****{last4}' in API responses. */
+export interface DiscordChannelConfig {
+  url: string
+}
+
+/**
+ * Telegram bot config.
+ * bot_token is masked to '****{last4}' in API responses; chat_id returned as-is.
+ */
+export interface TelegramChannelConfig {
+  bot_token: string
+  chat_id: string
+}
+
+/**
+ * ntfy.sh or self-hosted ntfy config.
+ * url is masked to '****{last4}'; topic returned as-is.
+ */
+export interface NtfyChannelConfig {
+  url: string
+  topic: string
+}
+
+/** Email config. address is NOT a secret and returned as-is. */
+export interface EmailChannelConfig {
+  address: string
+}
+
+/**
+ * Generic outbound webhook config.
+ * Both url and hmac_secret (when present) are masked to '****{last4}'.
+ */
+export interface WebhookChannelConfig {
+  url: string
+  hmac_secret?: string
+}
+
+/** Union of all possible channel config shapes (as returned, with secrets masked). */
+export type ChannelConfig =
+  | SlackChannelConfig
+  | DiscordChannelConfig
+  | TelegramChannelConfig
+  | NtfyChannelConfig
+  | EmailChannelConfig
+  | WebhookChannelConfig
+  | Record<string, string>
+
+/**
+ * Notification channel resource.
+ *
+ * Config secrets (URL, bot_token, hmac_secret) are masked to '****{last4}'
+ * in all API responses. Email address and Telegram chat_id are not secrets
+ * and returned as-is. digest_queue is internal and never included.
+ */
+export interface NotificationChannel {
+  id: string
+  project_id: string
+  name: string
+  type: ChannelType
+  enabled: boolean
+  /** Type-specific config with secrets masked. */
+  config: ChannelConfig
+  /** Coalesce window in seconds (10–3600, default 60). */
+  digest_window_sec: number
+  /** Unix seconds of last successful outbound send; null if never fired. */
+  last_fired_at: number | null
+  /** Consecutive delivery failures since last success or config change. */
+  fail_count: number
+  /** Last failure reason — never contains raw secrets. */
+  last_error: string | null
+  created_at: number
+  updated_at: number
+}
+
+export interface CreateNotificationChannelParams {
+  name: string
+  type: ChannelType
+  config: Record<string, string>
+  enabled?: boolean
+  /** Coalesce window in seconds (10–3600, default 60). */
+  digest_window_sec?: number
+}
+
+export interface UpdateNotificationChannelParams {
+  name?: string
+  /** Partial config — merged with existing and re-validated. */
+  config?: Record<string, string>
+  enabled?: boolean
+  digest_window_sec?: number
+}
+
+export interface ChannelTestResult {
+  ok: boolean
+  /** Present only when ok is false. Never contains raw secrets. */
+  error?: string
+}
+
 // ─── Bulk decision ────────────────────────────────────────────────────────────
 
 export interface BulkDecisionRequest {

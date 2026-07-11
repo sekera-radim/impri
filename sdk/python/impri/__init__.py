@@ -41,13 +41,18 @@ from .models import (
     BulkDecisionRequest,
     BulkDecisionResponse,
     BulkDecisionResult,
+    ChannelTestResult,
+    ChannelType,
+    CreateNotificationChannelParams,
     DecisionResult,
+    NotificationChannel,
     PagedResult,
     Preview,
     Project,
     ProjectExport,
     ResultAck,
     ScoringRule,
+    UpdateNotificationChannelParams,
     Watcher,
     WatcherConfig,
     WatcherKind,
@@ -99,6 +104,12 @@ __all__ = [
     "ApiKeyCreated",
     "Project",
     "ProjectExport",
+    # Notification channels
+    "ChannelType",
+    "NotificationChannel",
+    "ChannelTestResult",
+    "CreateNotificationChannelParams",
+    "UpdateNotificationChannelParams",
 ]
 
 __version__ = "0.1.0"

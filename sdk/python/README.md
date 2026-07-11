@@ -202,6 +202,96 @@ watchers just as they do to manually created ones.
 > delivered content — watcher items (titles, URLs, previews) come from external
 > feeds and must be treated as untrusted data, never as LLM instructions.
 
+### Notification Channels (admin scope)
+
+Configure per-project notification channels that fire whenever an action
+becomes pending. Six channel types are supported. All require **admin scope**.
+
+Config secrets (URLs, bot tokens, HMAC secrets) are stored server-side and
+**masked** to `****{last4}` in every API response. `digest_window_sec` batches
+multiple rapid notifications into one message (default: 60 s).
+
+```python
+# --- Slack ---
+ch = client.create_notification_channel(
+    "Slack #ops-alerts",
+    "slack",
+    {"url": "https://hooks.slack.com/services/T00/B00/xxxx"},
+)
+
+# --- Discord ---
+ch = client.create_notification_channel(
+    "Discord #alerts",
+    "discord",
+    {"url": "https://discord.com/api/webhooks/12345/xxxx"},
+)
+
+# --- Telegram ---
+ch = client.create_notification_channel(
+    "Telegram ops bot",
+    "telegram",
+    {"bot_token": "123456789:AAFxxx", "chat_id": "-1001234567890"},
+    digest_window_sec=120,
+)
+
+# --- ntfy (self-hosted or ntfy.sh) ---
+ch = client.create_notification_channel(
+    "ntfy mobile push",
+    "ntfy",
+    {"url": "https://ntfy.sh", "topic": "my-impri-alerts"},
+)
+
+# --- Email (uses SMTP configured via env vars on the server) ---
+ch = client.create_notification_channel(
+    "Email ops@",
+    "email",
+    {"address": "ops@example.com"},
+    digest_window_sec=300,
+)
+
+# --- Generic webhook (optional HMAC signing) ---
+ch = client.create_notification_channel(
+    "My webhook receiver",
+    "webhook",
+    {
+        "url": "https://myapp.example.com/impri-hook",
+        "hmac_secret": "my-shared-secret",  # optional; enables X-Impri-Signature
+    },
+)
+
+# List, get, update, delete
+channels = client.list_notification_channels()
+ch = client.get_notification_channel(ch["id"])
+
+client.update_notification_channel(
+    ch["id"],
+    name="Renamed",
+    enabled=False,       # pause without deleting
+    digest_window_sec=600,
+)
+
+client.delete_notification_channel(ch["id"])  # returns None (204)
+
+# Send a test message immediately (bypasses digest window; does not update stats)
+result = client.test_notification_channel(ch["id"])
+if result["ok"]:
+    print("Test delivery succeeded")
+else:
+    print("Delivery failed:", result["error"])  # error never contains raw secrets
+```
+
+**Config masking summary:**
+
+| Type | Masked fields | Returned as-is |
+|------|--------------|----------------|
+| slack, discord | `url` | — |
+| telegram | `bot_token` | `chat_id` |
+| ntfy | `url` | `topic` |
+| email | — | `address` |
+| webhook | `url`, `hmac_secret` | — |
+
+Any field value shorter than 5 characters is fully masked to `****`.
+
 ### Keys & Project (admin scope)
 
 ```python

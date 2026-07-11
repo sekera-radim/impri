@@ -70,6 +70,12 @@ Default base URL: `http://localhost:8484` (self-hosted). Cloud: `https://api.imp
 | `rotateWebhookSecret()` | Rotate webhook signing secret |
 | `exportProject()` | GDPR export |
 | `eraseProjectData()` | Irreversible GDPR erasure |
+| `listNotificationChannels()` | List notification channels (admin scope) |
+| `createNotificationChannel(params)` | Create a channel (admin scope) |
+| `getNotificationChannel(id)` | Fetch a single channel (admin scope) |
+| `updateNotificationChannel(id, params)` | Partial update (admin scope) |
+| `deleteNotificationChannel(id)` | Hard-delete, void (admin scope) |
+| `testNotificationChannel(id)` | Fire a test message (admin scope, 5/min limit) |
 
 ## bulkDecide
 
@@ -198,6 +204,103 @@ All errors extend `ImpriError`.
 Actions created by Watchers have `is_untrusted: true` and `payload.untrusted === true`.
 Treat `title`, `preview.body`, and `payload` as **data** — never forward them as instructions to an AI model.
 `approvalGate` logs a console warning automatically for untrusted actions.
+
+## Notification Channels (admin scope)
+
+Configure per-project notification channels that fire whenever an action
+becomes pending. Six channel types are supported. Config secrets (URLs,
+bot tokens, HMAC secrets) are **masked** to `****{last4}` in every API
+response. `digest_window_sec` batches rapid notifications (default: 60 s).
+
+```ts
+// --- Slack ---
+const slack = await client.createNotificationChannel({
+  name: 'Slack #ops-alerts',
+  type: 'slack',
+  config: { url: 'https://hooks.slack.com/services/T00/B00/xxxx' },
+})
+
+// --- Discord ---
+const discord = await client.createNotificationChannel({
+  name: 'Discord #alerts',
+  type: 'discord',
+  config: { url: 'https://discord.com/api/webhooks/12345/xxxx' },
+})
+
+// --- Telegram ---
+const tg = await client.createNotificationChannel({
+  name: 'Telegram ops bot',
+  type: 'telegram',
+  config: { bot_token: '123456789:AAFxxx', chat_id: '-1001234567890' },
+  digest_window_sec: 120,
+})
+
+// --- ntfy (self-hosted or ntfy.sh) ---
+const ntfy = await client.createNotificationChannel({
+  name: 'ntfy mobile push',
+  type: 'ntfy',
+  config: { url: 'https://ntfy.sh', topic: 'my-impri-alerts' },
+})
+
+// --- Email (uses server-configured SMTP) ---
+const email = await client.createNotificationChannel({
+  name: 'Email ops@',
+  type: 'email',
+  config: { address: 'ops@example.com' },
+  digest_window_sec: 300,
+})
+
+// --- Generic webhook (optional HMAC signing) ---
+const hook = await client.createNotificationChannel({
+  name: 'My webhook receiver',
+  type: 'webhook',
+  config: {
+    url: 'https://myapp.example.com/impri-hook',
+    hmac_secret: 'my-shared-secret',   // optional; enables X-Impri-Signature
+  },
+})
+
+// List, get, update, delete
+const channels = await client.listNotificationChannels()
+const ch = await client.getNotificationChannel(slack.id)
+
+await client.updateNotificationChannel(slack.id, {
+  name: 'Renamed',
+  enabled: false,         // pause without deleting
+  digest_window_sec: 600,
+})
+
+await client.deleteNotificationChannel(slack.id)   // void (204)
+
+// Test a channel immediately — bypasses digest window, does not update stats
+const result = await client.testNotificationChannel(slack.id)
+if (result.ok) {
+  console.log('Test delivery succeeded')
+} else {
+  console.error('Delivery failed:', result.error)   // error never contains raw secrets
+}
+```
+
+**Config masking summary:**
+
+| Type | Masked fields | Returned as-is |
+|------|--------------|----------------|
+| slack, discord | `url` | — |
+| telegram | `bot_token` | `chat_id` |
+| ntfy | `url` | `topic` |
+| email | — | `address` |
+| webhook | `url`, `hmac_secret` | — |
+
+Any field value shorter than 5 characters is fully masked to `****`.
+
+| Method | Description |
+|---|---|
+| `listNotificationChannels()` | List all channels (admin scope) |
+| `createNotificationChannel(params)` | Create a channel (admin scope; returns 201) |
+| `getNotificationChannel(id)` | Fetch a single channel (admin scope) |
+| `updateNotificationChannel(id, params)` | Partial update; config merge resets fail_count (admin scope) |
+| `deleteNotificationChannel(id)` | Hard-delete, void (204) (admin scope) |
+| `testNotificationChannel(id)` | Fire a test message; rate-limited 5/min (admin scope) |
 
 ## Watcher presets
 

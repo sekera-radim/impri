@@ -321,6 +321,60 @@ class WatcherPresetList(TypedDict):
 
 
 # ---------------------------------------------------------------------------
+# Notification channel models
+# ---------------------------------------------------------------------------
+
+ChannelType = Literal["slack", "discord", "telegram", "ntfy", "email", "webhook"]
+
+
+class _NotificationChannelRequired(TypedDict):
+    id: str
+    project_id: str
+    name: str
+    type: str  # ChannelType — typed as str for forward-compat
+    enabled: bool
+    config: Dict[str, Any]  # Type-specific, secrets masked to '****{last4}'
+    digest_window_sec: int
+    fail_count: int
+    created_at: int
+    updated_at: int
+
+
+class NotificationChannel(_NotificationChannelRequired, total=False):
+    """Notification channel resource.
+
+    Config secrets (webhook/Slack/Discord URL, Telegram bot_token, ntfy URL,
+    webhook hmac_secret) are masked to '****{last4}' in all API responses.
+    Email address and Telegram chat_id are not secrets and returned as-is.
+    """
+    last_fired_at: Optional[int]
+    last_error: Optional[str]
+
+
+class ChannelTestResult(TypedDict):
+    """Response from POST /v1/notification-channels/:id/test."""
+    ok: bool
+    error: Optional[str]  # Present only when ok=False
+
+
+class CreateNotificationChannelParams(TypedDict, total=False):
+    """Request body for POST /v1/notification-channels."""
+    name: str           # required
+    type: str           # required: ChannelType
+    config: Dict[str, Any]   # required: type-specific config
+    enabled: bool       # default True
+    digest_window_sec: int   # default 60
+
+
+class UpdateNotificationChannelParams(TypedDict, total=False):
+    """Request body for PATCH /v1/notification-channels/:id."""
+    name: str
+    config: Dict[str, Any]
+    enabled: bool
+    digest_window_sec: int
+
+
+# ---------------------------------------------------------------------------
 # Ergonomics helpers
 # ---------------------------------------------------------------------------
 
