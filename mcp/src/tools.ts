@@ -268,3 +268,104 @@ export async function listWatchers(
   }
   return { text: lines.join("\n") };
 }
+
+// ─── impri_list_watcher_presets ───────────────────────────────────────────────
+
+export interface PresetParam {
+  name: string;
+  required: boolean;
+  description: string;
+  example: string;
+}
+
+export interface Preset {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  kind: string;
+  params: PresetParam[];
+  defaultScheduleEvery: string;
+}
+
+export async function listWatcherPresets(config: ImpriConfig): Promise<ToolResult> {
+  const raw = await apiRequest<unknown>(config, "GET", "/watcher-presets");
+  const resp = raw as { presets?: Preset[] };
+  const presets = resp.presets ?? [];
+
+  if (presets.length === 0) {
+    return { text: "No watcher presets available." };
+  }
+
+  // Group by category for readability
+  const byCategory = new Map<string, Preset[]>();
+  for (const p of presets) {
+    const cat = p.category ?? "Other";
+    if (!byCategory.has(cat)) byCategory.set(cat, []);
+    byCategory.get(cat)!.push(p);
+  }
+
+  const lines: string[] = [
+    `${presets.length} watcher preset${presets.length === 1 ? "" : "s"} available:`,
+  ];
+
+  for (const [category, items] of byCategory) {
+    lines.push(`\n${category}:`);
+    for (const p of items) {
+      const paramSig = p.params
+        .map((pr) => (pr.required ? pr.name : `[${pr.name}]`))
+        .join(", ");
+      lines.push(
+        `  - ${p.id}: "${p.title}" (${p.kind})${paramSig ? ` — params: ${paramSig}` : ""}`,
+      );
+      lines.push(`    ${p.description}`);
+      for (const pr of p.params) {
+        lines.push(
+          `    • ${pr.name}${pr.required ? " (required)" : " (optional)"}: ${pr.description} [example: ${pr.example}]`,
+        );
+      }
+    }
+  }
+
+  return { text: lines.join("\n") };
+}
+
+// ─── impri_create_watcher_from_preset ────────────────────────────────────────
+
+export interface CreateWatcherFromPresetArgs {
+  preset_id: string;
+  params: Record<string, string>;
+  name?: string;
+  schedule?: {
+    every?: string;
+    jitter?: string;
+    window?: string;
+  };
+}
+
+export async function createWatcherFromPreset(
+  config: ImpriConfig,
+  args: CreateWatcherFromPresetArgs,
+): Promise<ToolResult> {
+  const body: Record<string, unknown> = {
+    preset_id: args.preset_id,
+    params: args.params,
+  };
+  if (args.name !== undefined) body["name"] = args.name;
+  if (args.schedule !== undefined) body["schedule"] = args.schedule;
+
+  const watcher = await apiRequest<Watcher>(config, "POST", "/watchers/from-preset", body);
+  return {
+    text: JSON.stringify(
+      {
+        watcher_id: watcher.id,
+        name: watcher.name,
+        kind: watcher.kind,
+        status: watcher.status,
+        next_run_at: watcher.next_run_at,
+      },
+      null,
+      2,
+    ),
+  };
+}

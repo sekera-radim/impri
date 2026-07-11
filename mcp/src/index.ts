@@ -9,7 +9,9 @@ import { type ImpriConfig } from "./client.js";
 import {
   awaitDecision,
   createWatcher,
+  createWatcherFromPreset,
   inboxStatus,
+  listWatcherPresets,
   listWatchers,
   pushAction,
   reportResult,
@@ -230,6 +232,98 @@ Returns the watcher count and a summary line per watcher (id, name, kind, status
       required: [],
     },
   },
+  {
+    name: "impri_list_watcher_presets",
+    description: `List all available watcher presets with their parameters.
+
+Presets are pre-configured watcher templates for common sources (Hacker News, Reddit, GitHub, npm, YouTube, arXiv, etc.). Each preset has an id, a human-readable title, required and optional params, and a default schedule.
+
+Call this first to discover which preset fits your monitoring goal, then use impri_create_watcher_from_preset to create the watcher by supplying only the preset_id and param values. No deep knowledge of watcher config schemas is needed.
+
+Example output:
+  Community:
+    - hn-front-page: "Hacker News Front Page" (rss) — no params required
+    - reddit-keyword: "Reddit – Keyword Search" (reddit_search) — params: query, [subreddit]`,
+    inputSchema: {
+      type: "object" as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "impri_create_watcher_from_preset",
+    description: `Create a watcher from a preset template by supplying the preset id and param values.
+
+Presets handle all watcher config construction — URL building, keyword setup, SSRF validation — so you only provide the param values listed by impri_list_watcher_presets.
+
+The schedule defaults to the preset's recommended interval but can be overridden. The name defaults to "{preset title}: {primary param value}" if omitted.
+
+Returns { watcher_id, name, kind, status, next_run_at }.
+
+Examples:
+
+  Watch the HN front page (no params needed):
+    preset_id: "hn-front-page"
+    params: {}
+
+  Watch a subreddit for new posts:
+    preset_id: "reddit-subreddit"
+    params: { subreddit: "MachineLearning" }
+
+  Watch a GitHub repo for new releases, check every 2 hours:
+    preset_id: "github-releases"
+    params: { owner: "fastify", repo: "fastify" }
+    schedule: { every: "2h" }
+
+  Watch HN for keyword with a custom min_points threshold:
+    preset_id: "hn-keyword"
+    params: { keyword: "rust programming", min_points: "25" }`,
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        preset_id: {
+          type: "string",
+          description:
+            "Preset identifier from impri_list_watcher_presets (e.g. \"hn-front-page\", \"reddit-subreddit\", \"github-releases\").",
+        },
+        params: {
+          type: "object",
+          description:
+            "Key/value map of param values as strings. Required params must be present; optional params may be omitted to use preset defaults.",
+          additionalProperties: { type: "string" },
+        },
+        name: {
+          type: "string",
+          description:
+            "Optional display name for the watcher. Defaults to \"{preset title}: {primary param value}\" when omitted.",
+        },
+        schedule: {
+          type: "object",
+          description:
+            "Optional schedule override. Omit to use the preset's default schedule.",
+          properties: {
+            every: {
+              type: "string",
+              description:
+                "Run interval in duration format (e.g. \"30m\", \"1h\", \"6h\", \"1d\"). Must be at least 60s; tier minimums apply.",
+            },
+            jitter: {
+              type: "string",
+              description:
+                "Random delay added to each run to spread load (e.g. \"5m\"). Optional.",
+            },
+            window: {
+              type: "string",
+              description:
+                "Active time window in HH:MM-HH:MM format (e.g. \"06:00-22:00\"). Runs outside the window are skipped. Optional.",
+            },
+          },
+          required: [],
+        },
+      },
+      required: ["preset_id", "params"],
+    },
+  },
 ];
 
 // ─── MCP server ───────────────────────────────────────────────────────────────
@@ -310,6 +404,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "impri_list_watchers": {
         const result = await listWatchers(config, {
           status: args["status"] as string | undefined,
+        });
+        return {
+          content: [{ type: "text" as const, text: result.text }],
+          ...(result.isError ? { isError: true } : {}),
+        };
+      }
+
+      case "impri_list_watcher_presets": {
+        const result = await listWatcherPresets(config);
+        return {
+          content: [{ type: "text" as const, text: result.text }],
+          ...(result.isError ? { isError: true } : {}),
+        };
+      }
+
+      case "impri_create_watcher_from_preset": {
+        const result = await createWatcherFromPreset(config, {
+          preset_id: args["preset_id"] as string,
+          params: (args["params"] ?? {}) as Record<string, string>,
+          name: args["name"] as string | undefined,
+          schedule: args["schedule"] as
+            | { every?: string; jitter?: string; window?: string }
+            | undefined,
         });
         return {
           content: [{ type: "text" as const, text: result.text }],
