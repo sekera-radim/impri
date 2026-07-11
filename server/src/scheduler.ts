@@ -350,7 +350,25 @@ async function fetchRedditSearch(subreddit: string, query: string): Promise<Fetc
   const rssUrl =
     `https://www.reddit.com/r/${encodeURIComponent(subreddit)}/search.rss` +
     `?q=${encodeURIComponent(query)}&sort=new&restrict_sr=1&limit=25`;
-  return fetchRss(rssUrl);
+  try {
+    return await fetchRss(rssUrl);
+  } catch (err) {
+    // Reddit blocks most cloud/datacenter IPs (403 or dropped connections) and
+    // rate-limits RSS hard (429). Surface an actionable reason — this message is
+    // stored as the watcher's last_error and shown in the UI, where a bare
+    // "fetch failed" / "HTTP 403" reads like a bug instead of a platform limit.
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/HTTP (403|429) /.test(msg) || /fetch failed/i.test(msg)) {
+      throw Object.assign(
+        new Error(
+          `Reddit refused the request (${msg}). Reddit blocks most cloud/datacenter IPs ` +
+            'and rate-limits RSS — self-hosted instances on residential IPs usually work.',
+        ),
+        { backoffSec: (err as { backoffSec?: number }).backoffSec ?? 300 },
+      );
+    }
+    throw err;
+  }
 }
 
 async function fetchUrlDiff(url: string): Promise<FetchedItem> {
