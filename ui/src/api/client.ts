@@ -19,6 +19,11 @@ import type {
   PushSubscriptionBody,
   ListWatcherPresetsResponse,
   CreateWatcherFromPresetRequest,
+  NotificationChannel,
+  ListChannelsResponse,
+  CreateChannelRequest,
+  UpdateChannelRequest,
+  TestChannelResponse,
 } from '../types'
 
 export class ApiClientError extends Error {
@@ -179,5 +184,31 @@ export class ApiClient {
 
   async openPortal(): Promise<{ url: string }> {
     return this.request<{ url: string }>('POST', '/billing/portal')
+  }
+
+  // --- Notification channels (admin scope required) ---
+
+  async listChannels(): Promise<ListChannelsResponse> {
+    return this.request<ListChannelsResponse>('GET', '/notification-channels')
+  }
+
+  async createChannel(req: CreateChannelRequest): Promise<NotificationChannel> {
+    return this.request<NotificationChannel>('POST', '/notification-channels', req)
+  }
+
+  async getChannel(id: string): Promise<NotificationChannel> {
+    return this.request<NotificationChannel>('GET', `/notification-channels/${id}`)
+  }
+
+  async updateChannel(id: string, req: UpdateChannelRequest): Promise<NotificationChannel> {
+    return this.request<NotificationChannel>('PATCH', `/notification-channels/${id}`, req)
+  }
+
+  async deleteChannel(id: string): Promise<void> {
+    return this.request<void>('DELETE', `/notification-channels/${id}`)
+  }
+
+  async testChannel(id: string): Promise<TestChannelResponse> {
+    return this.request<TestChannelResponse>('POST', `/notification-channels/${id}/test`)
   }
 }

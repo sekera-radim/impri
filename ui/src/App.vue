@@ -62,6 +62,7 @@
               />
             </v-tab>
             <v-tab value="watchers">Watchers</v-tab>
+            <v-tab value="notifications">Notifications</v-tab>
             <v-tab value="billing">Billing</v-tab>
           </v-tabs>
         </template>
@@ -83,6 +84,10 @@
 
             <v-window-item value="watchers">
               <WatchersScreen />
+            </v-window-item>
+
+            <v-window-item value="notifications">
+              <NotificationsScreen />
             </v-window-item>
 
             <v-window-item value="billing">
@@ -107,13 +112,14 @@ import { useInboxStore } from './stores/inbox'
 import LoginScreen from './components/LoginScreen.vue'
 import InboxList from './components/InboxList.vue'
 import WatchersScreen from './components/WatchersScreen.vue'
+import NotificationsScreen from './components/NotificationsScreen.vue'
 import BillingScreen from './components/BillingScreen.vue'
 import GettingStarted from './components/GettingStarted.vue'
 
 const auth = useAuthStore()
 const inbox = useInboxStore()
 
-const activeTab = ref<'inbox' | 'watchers' | 'billing'>('inbox')
+const activeTab = ref<'inbox' | 'watchers' | 'notifications' | 'billing'>('inbox')
 const pendingTotal = computed(() => inbox.pendingTotal)
 
 // First-run onboarding (dismissible, re-openable via the app-bar help button).

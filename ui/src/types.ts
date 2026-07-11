@@ -223,6 +223,49 @@ export interface PushSubscriptionBody {
   }
 }
 
+// --- Notification channels ---
+
+export type ChannelType = 'slack' | 'discord' | 'telegram' | 'ntfy' | 'email' | 'webhook'
+
+export interface NotificationChannel {
+  id: string
+  name: string
+  type: ChannelType
+  enabled: boolean
+  /** Config values; secrets are masked to '****{last4}' in API responses. */
+  config: Record<string, string>
+  digest_window_sec: number
+  last_fired_at?: number | null
+  fail_count: number
+  last_error?: string | null
+  created_at: number
+  updated_at: number
+}
+
+export interface ListChannelsResponse {
+  items: NotificationChannel[]
+}
+
+export interface CreateChannelRequest {
+  name: string
+  type: ChannelType
+  config: Record<string, string>
+  enabled?: boolean
+  digest_window_sec?: number
+}
+
+export interface UpdateChannelRequest {
+  name?: string
+  config?: Record<string, string>
+  enabled?: boolean
+  digest_window_sec?: number
+}
+
+export interface TestChannelResponse {
+  ok: boolean
+  error?: string
+}
+
 // --- Billing ---
 
 export type Tier = 'free' | 'indie' | 'team'
