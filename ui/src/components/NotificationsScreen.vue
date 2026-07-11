@@ -120,6 +120,16 @@
               >
                 {{ ch.fail_count }} failure{{ ch.fail_count !== 1 ? 's' : '' }}
               </v-chip>
+              <v-chip
+                v-if="ch.type === 'telegram' && ch.config['approval_mode'] === true"
+                size="x-small"
+                color="info"
+                variant="tonal"
+                label
+              >
+                <v-icon start size="10">mdi-shield-check</v-icon>
+                approval mode
+              </v-chip>
               <span class="text-body-2 font-weight-medium">{{ ch.name }}</span>
             </div>
             <div class="d-flex flex-wrap gap-3 text-caption text-medium-emphasis">
@@ -296,6 +306,141 @@
             persistent-hint
             class="mb-4"
           />
+
+          <!-- ── Inline button approvals ── -->
+          <v-divider class="mb-4" />
+          <div class="d-flex align-center gap-2 mb-1">
+            <v-icon size="15" color="info">mdi-shield-check-outline</v-icon>
+            <span class="text-subtitle-2 font-weight-medium">Inline button approvals</span>
+          </div>
+          <p class="text-caption text-medium-emphasis mb-3">
+            When enabled, Telegram messages include Approve / Reject buttons.
+            Team members tap in Telegram instead of opening Impri.
+          </p>
+
+          <v-switch
+            v-model="form.configApprovalMode"
+            label="Enable approval mode"
+            color="primary"
+            inset
+            density="comfortable"
+            hide-details
+            class="mb-4"
+          />
+
+          <template v-if="form.configApprovalMode">
+            <!-- Authorized approver user IDs -->
+            <v-textarea
+              v-model="form.configAllowedApproverIds"
+              label="Authorized Telegram user IDs *"
+              variant="outlined"
+              density="comfortable"
+              placeholder="123456789
+987654321"
+              hint="One numeric Telegram user ID per line. Max 50. Only listed users can tap the buttons."
+              persistent-hint
+              rows="3"
+              auto-grow
+              class="mb-3"
+            />
+
+            <!-- HMAC signing secret (optional) -->
+            <v-text-field
+              v-model="form.configTelegramHmacSecret"
+              label="Signing secret (optional)"
+              variant="outlined"
+              density="comfortable"
+              :placeholder="
+                isEditing && secretsAlreadySet.hmacSecret && !form.configTelegramHmacSecret
+                  ? 'Leave blank to keep current value'
+                  : 'Leave blank to auto-generate (recommended)'
+              "
+              :hint="
+                isEditing && secretsAlreadySet.hmacSecret
+                  ? 'Already set — leave blank to keep, or enter a new value to rotate. Old buttons in chat become invalid after rotation.'
+                  : 'Auto-generated on save. Used to sign callback payloads and the Telegram webhook. 16–256 chars if supplying your own.'
+              "
+              persistent-hint
+              class="mb-4"
+            />
+
+            <!-- Public URL note -->
+            <v-alert
+              type="info"
+              variant="tonal"
+              density="compact"
+              icon="mdi-web"
+              class="mb-4"
+            >
+              <div class="text-body-2 font-weight-medium mb-1">Public URL required for webhook registration</div>
+              <div class="text-caption">
+                Telegram needs to reach your server to deliver button taps. Set
+                <code>BASE_URL=https://your-domain.com</code> in your server environment.
+                For local dev, expose your server via a tunnel (ngrok, cloudflared), then call
+                <code>POST /notification-channels/{id}/setup-webhook</code>.
+              </div>
+            </v-alert>
+
+            <!-- Setup instructions (collapsible) -->
+            <v-expansion-panels variant="accordion" class="mb-4" elevation="0">
+              <v-expansion-panel>
+                <v-expansion-panel-title class="text-body-2 px-3">
+                  <v-icon size="15" class="mr-2">mdi-book-open-outline</v-icon>
+                  How to set up Telegram approval — step by step
+                </v-expansion-panel-title>
+                <v-expansion-panel-text class="text-body-2 px-1">
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">1. Create a bot via @BotFather</div>
+                    <div class="text-medium-emphasis">
+                      Open Telegram and message <strong>@BotFather</strong>. Send <code>/newbot</code>
+                      and follow the prompts. You'll receive a token like
+                      <code>1234567890:AAFxxx…</code> — paste it into the Bot token field above.
+                    </div>
+                  </div>
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">2. Get your chat ID</div>
+                    <div class="text-medium-emphasis">
+                      <strong>Group:</strong> Add the bot to the group, send any message, then call
+                      <code>https://api.telegram.org/bot{TOKEN}/getUpdates</code> and find
+                      <code>message.chat.id</code>. Group IDs are negative (e.g. <code>-1001234567890</code>).<br>
+                      <strong>Personal DM:</strong> Start a DM with your bot (<code>/start</code>),
+                      then call <code>getUpdates</code> — look for <code>message.chat.id</code>.<br>
+                      <strong>Channel:</strong> Add the bot as an admin, post anything, and find
+                      <code>channel_post.chat.id</code> in <code>getUpdates</code>.
+                    </div>
+                  </div>
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">3. Collect approver Telegram user IDs</div>
+                    <div class="text-medium-emphasis">
+                      Each approver sends any message in the group (or to the bot directly). Call
+                      <code>getUpdates</code> and note each person's <code>message.from.id</code>
+                      — a permanent positive integer. Alternatively, each person can message
+                      <strong>@userinfobot</strong> to see their own ID. Enter one ID per line above.
+                    </div>
+                  </div>
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">4. Webhook registration</div>
+                    <div class="text-medium-emphasis">
+                      If your server's <code>BASE_URL</code> is a public HTTPS URL, Impri registers
+                      the Telegram webhook automatically when you save this channel. Check your
+                      server logs for <code>[telegram-approval] setWebhook ok</code>.<br>
+                      For local dev or self-hosted behind NAT: start a tunnel
+                      (<code>ngrok http 8484</code>), update <code>BASE_URL</code>, then call
+                      <code>POST /v1/notification-channels/{id}/setup-webhook</code>.
+                    </div>
+                  </div>
+                  <div class="setup-step">
+                    <div class="font-weight-medium mb-1">5. Verify</div>
+                    <div class="text-medium-emphasis">
+                      After saving, use the <strong>Send test</strong> button on the channel card.
+                      The bot posts a message with Approve / Reject buttons. Tapping a button on a
+                      test message returns "Action not found" — that's expected and harmless.
+                    </div>
+                  </div>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
+          </template>
         </template>
 
         <!-- ── ntfy ── -->
@@ -501,8 +646,25 @@ function formatRelative(ts: number): string {
 }
 
 /** Returns true when the config value is a masked secret (starts with ****). */
-function isMasked(v: string | undefined): boolean {
+function isMasked(v: unknown): boolean {
   return typeof v === 'string' && v.startsWith('****')
+}
+
+/**
+ * Parses a textarea of Telegram user IDs (one per line, or comma/space-separated)
+ * into a number[]. Returns null if any token is not a positive integer.
+ */
+function parseApproverIds(raw: string): number[] | null {
+  if (!raw.trim()) return []
+  const tokens = raw.split(/[\n,\s]+/).map(t => t.trim()).filter(t => t.length > 0)
+  const ids: number[] = []
+  for (const token of tokens) {
+    if (!/^\d+$/.test(token)) return null
+    const n = parseInt(token, 10)
+    if (!Number.isSafeInteger(n) || n <= 0) return null
+    ids.push(n)
+  }
+  return ids
 }
 
 // ─── Toggle enabled ──────────────────────────────────────────────────────────
@@ -601,6 +763,16 @@ interface FormState {
   configBotToken: string
   /** Telegram chat_id (not secret) */
   configChatId: string
+  /** Telegram: enable inline Approve/Reject buttons */
+  configApprovalMode: boolean
+  /** Telegram: newline-separated list of authorized approver Telegram user IDs */
+  configAllowedApproverIds: string
+  /**
+   * Telegram: optional HMAC signing secret for approval mode.
+   * Leave blank on create to let the server auto-generate one.
+   * On edit, leave blank to keep the existing value.
+   */
+  configTelegramHmacSecret: string
   /** ntfy topic (not secret) */
   configTopic: string
   /** Email address (not secret) */
@@ -618,6 +790,9 @@ function emptyForm(): FormState {
     configUrl: '',
     configBotToken: '',
     configChatId: '',
+    configApprovalMode: false,
+    configAllowedApproverIds: '',
+    configTelegramHmacSecret: '',
     configTopic: '',
     configAddress: '',
     configHmacSecret: '',
@@ -662,22 +837,28 @@ function openEdit(ch: NotificationChannel): void {
   switch (ch.type) {
     case 'slack':
     case 'discord':
-      secretsAlreadySet.value.url = isMasked(ch.config.url)
+      secretsAlreadySet.value.url = isMasked(ch.config['url'])
       break
     case 'telegram':
-      secretsAlreadySet.value.botToken = isMasked(ch.config.bot_token)
-      form.configChatId = ch.config.chat_id ?? ''
+      secretsAlreadySet.value.botToken = isMasked(ch.config['bot_token'])
+      form.configChatId = typeof ch.config['chat_id'] === 'string' ? ch.config['chat_id'] : ''
+      form.configApprovalMode = ch.config['approval_mode'] === true
+      form.configAllowedApproverIds = Array.isArray(ch.config['allowed_approver_user_ids'])
+        ? (ch.config['allowed_approver_user_ids'] as number[]).join('\n')
+        : ''
+      // hmacSecret tracker is reused: set when telegram approval_mode hmac_secret is already stored
+      secretsAlreadySet.value.hmacSecret = isMasked(ch.config['hmac_secret'])
       break
     case 'ntfy':
-      secretsAlreadySet.value.url = isMasked(ch.config.url)
-      form.configTopic = ch.config.topic ?? ''
+      secretsAlreadySet.value.url = isMasked(ch.config['url'])
+      form.configTopic = typeof ch.config['topic'] === 'string' ? ch.config['topic'] : ''
       break
     case 'email':
-      form.configAddress = ch.config.address ?? ''
+      form.configAddress = typeof ch.config['address'] === 'string' ? ch.config['address'] : ''
       break
     case 'webhook':
-      secretsAlreadySet.value.url = isMasked(ch.config.url)
-      secretsAlreadySet.value.hmacSecret = isMasked(ch.config.hmac_secret)
+      secretsAlreadySet.value.url = isMasked(ch.config['url'])
+      secretsAlreadySet.value.hmacSecret = isMasked(ch.config['hmac_secret'])
       break
   }
 
@@ -707,6 +888,19 @@ function validateForm(): string | null {
         return 'Bot token must be in the format 12345:ABCDE…'
       if (!form.configChatId.trim()) return 'Chat ID is required'
       if (form.configChatId.trim().length > 50) return 'Chat ID must be 50 characters or fewer'
+      if (form.configApprovalMode) {
+        const ids = parseApproverIds(form.configAllowedApproverIds)
+        if (ids === null)
+          return 'Approver IDs must be positive integers (one per line)'
+        if (ids.length === 0)
+          return 'At least one Telegram user ID is required when approval mode is enabled'
+        if (ids.length > 50)
+          return 'Maximum 50 approver user IDs allowed'
+        if (form.configTelegramHmacSecret.trim()) {
+          const len = form.configTelegramHmacSecret.trim().length
+          if (len < 16 || len > 256) return 'Signing secret must be 16–256 characters'
+        }
+      }
       break
     }
     case 'ntfy': {
@@ -746,27 +940,39 @@ function validateForm(): string | null {
  * For edit (PATCH): secret fields only included when the user typed a new value;
  * non-secret fields always included so they can be updated independently.
  */
-function buildConfig(): Record<string, string> {
-  const config: Record<string, string> = {}
+function buildConfig(): Record<string, unknown> {
+  const config: Record<string, unknown> = {}
   switch (form.type) {
     case 'slack':
     case 'discord':
-      if (form.configUrl.trim()) config.url = form.configUrl.trim()
+      if (form.configUrl.trim()) config['url'] = form.configUrl.trim()
       break
-    case 'telegram':
-      if (form.configBotToken.trim()) config.bot_token = form.configBotToken.trim()
-      config.chat_id = form.configChatId.trim()
+    case 'telegram': {
+      if (form.configBotToken.trim()) config['bot_token'] = form.configBotToken.trim()
+      config['chat_id'] = form.configChatId.trim()
+      // Always send approval_mode so toggling it off is persisted correctly
+      config['approval_mode'] = form.configApprovalMode
+      if (form.configApprovalMode) {
+        const ids = parseApproverIds(form.configAllowedApproverIds)
+        config['allowed_approver_user_ids'] = ids ?? []
+        // Only send hmac_secret when the operator typed a new value;
+        // blank = auto-generate on create / keep existing on edit
+        if (form.configTelegramHmacSecret.trim()) {
+          config['hmac_secret'] = form.configTelegramHmacSecret.trim()
+        }
+      }
       break
+    }
     case 'ntfy':
-      if (form.configUrl.trim()) config.url = form.configUrl.trim()
-      config.topic = form.configTopic.trim()
+      if (form.configUrl.trim()) config['url'] = form.configUrl.trim()
+      config['topic'] = form.configTopic.trim()
       break
     case 'email':
-      config.address = form.configAddress.trim()
+      config['address'] = form.configAddress.trim()
       break
     case 'webhook':
-      if (form.configUrl.trim()) config.url = form.configUrl.trim()
-      if (form.configHmacSecret.trim()) config.hmac_secret = form.configHmacSecret.trim()
+      if (form.configUrl.trim()) config['url'] = form.configUrl.trim()
+      if (form.configHmacSecret.trim()) config['hmac_secret'] = form.configHmacSecret.trim()
       break
   }
   return config
@@ -840,4 +1046,12 @@ onMounted(() => {
 .gap-1 { gap: 4px; }
 .gap-2 { gap: 8px; }
 .gap-3 { gap: 12px; }
+
+/* Setup instruction steps inside the expansion panel */
+.setup-step code {
+  background: rgba(128, 128, 128, 0.12);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 0.82em;
+}
 </style>

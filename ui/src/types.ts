@@ -232,8 +232,12 @@ export interface NotificationChannel {
   name: string
   type: ChannelType
   enabled: boolean
-  /** Config values; secrets are masked to '****{last4}' in API responses. */
-  config: Record<string, string>
+  /**
+   * Config values; secrets are masked to '****{last4}' in API responses.
+   * Telegram channels with approval_mode carry boolean and number[] values
+   * alongside strings, so this is typed as Record<string, unknown>.
+   */
+  config: Record<string, unknown>
   digest_window_sec: number
   last_fired_at?: number | null
   fail_count: number
@@ -249,14 +253,14 @@ export interface ListChannelsResponse {
 export interface CreateChannelRequest {
   name: string
   type: ChannelType
-  config: Record<string, string>
+  config: Record<string, unknown>
   enabled?: boolean
   digest_window_sec?: number
 }
 
 export interface UpdateChannelRequest {
   name?: string
-  config?: Record<string, string>
+  config?: Record<string, unknown>
   enabled?: boolean
   digest_window_sec?: number
 }
