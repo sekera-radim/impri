@@ -121,7 +121,7 @@
                 {{ ch.fail_count }} failure{{ ch.fail_count !== 1 ? 's' : '' }}
               </v-chip>
               <v-chip
-                v-if="ch.type === 'telegram' && ch.config['approval_mode'] === true"
+                v-if="ch.config['approval_mode'] === true"
                 size="x-small"
                 color="info"
                 variant="tonal"
@@ -234,46 +234,429 @@
 
         <!-- ── Slack ── -->
         <template v-if="form.type === 'slack'">
-          <v-text-field
-            v-model="form.configUrl"
-            label="Incoming webhook URL *"
-            variant="outlined"
+          <!-- Approval mode toggle -->
+          <v-divider class="mb-4" />
+          <div class="d-flex align-center gap-2 mb-1">
+            <v-icon size="15" color="info">mdi-shield-check-outline</v-icon>
+            <span class="text-subtitle-2 font-weight-medium">Inline button approvals</span>
+          </div>
+          <p class="text-caption text-medium-emphasis mb-3">
+            When enabled, Slack messages include Approve / Reject buttons.
+            Team members decide in Slack without opening Impri.
+          </p>
+          <v-switch
+            v-model="form.configSlackApprovalMode"
+            label="Enable approval mode"
+            color="primary"
+            inset
             density="comfortable"
-            :placeholder="
-              isEditing && secretsAlreadySet.url && !form.configUrl
-                ? 'Leave blank to keep current value'
-                : 'https://hooks.slack.com/services/...'
-            "
-            :hint="
-              isEditing && secretsAlreadySet.url
-                ? 'Already set — leave blank to keep, or paste a new URL to replace.'
-                : 'From Slack API → Incoming Webhooks. Stored securely.'
-            "
-            persistent-hint
+            hide-details
             class="mb-4"
           />
+
+          <!-- Simple webhook (approval mode off) -->
+          <template v-if="!form.configSlackApprovalMode">
+            <v-text-field
+              v-model="form.configUrl"
+              label="Incoming webhook URL *"
+              variant="outlined"
+              density="comfortable"
+              :placeholder="
+                isEditing && secretsAlreadySet.url && !form.configUrl
+                  ? 'Leave blank to keep current value'
+                  : 'https://hooks.slack.com/services/...'
+              "
+              :hint="
+                isEditing && secretsAlreadySet.url
+                  ? 'Already set — leave blank to keep, or paste a new URL to replace.'
+                  : 'From Slack API → Incoming Webhooks. Stored securely.'
+              "
+              persistent-hint
+              class="mb-4"
+            />
+          </template>
+
+          <!-- Approval mode fields -->
+          <template v-if="form.configSlackApprovalMode">
+            <v-text-field
+              v-model="form.configSlackBotToken"
+              label="Bot token *"
+              variant="outlined"
+              density="comfortable"
+              :placeholder="
+                isEditing && secretsAlreadySet.slackBotToken && !form.configSlackBotToken
+                  ? 'Leave blank to keep current value'
+                  : 'xoxb-...'
+              "
+              :hint="
+                isEditing && secretsAlreadySet.slackBotToken
+                  ? 'Already set — leave blank to keep, or paste a new token to replace.'
+                  : 'From Slack API → OAuth & Permissions → Bot User OAuth Token. Starts with xoxb-. Stored securely.'
+              "
+              persistent-hint
+              class="mb-3"
+            />
+            <v-text-field
+              v-model="form.configSlackSigningSecret"
+              label="Signing secret *"
+              variant="outlined"
+              density="comfortable"
+              :placeholder="
+                isEditing && secretsAlreadySet.slackSigningSecret && !form.configSlackSigningSecret
+                  ? 'Leave blank to keep current value'
+                  : '32-char hex from Basic Information → App Credentials'
+              "
+              :hint="
+                isEditing && secretsAlreadySet.slackSigningSecret
+                  ? 'Already set — leave blank to keep, or paste a new secret to replace.'
+                  : 'From Slack API → Basic Information → Signing Secret. Used to verify interaction requests. Stored securely.'
+              "
+              persistent-hint
+              class="mb-3"
+            />
+            <v-text-field
+              v-model="form.configSlackChannelId"
+              label="Channel ID *"
+              variant="outlined"
+              density="comfortable"
+              placeholder="C0XXXXXXXX"
+              hint="The Slack channel or group ID where approval messages are posted. Starts with C or G."
+              persistent-hint
+              class="mb-3"
+            />
+            <v-textarea
+              v-model="form.configSlackAllowedApproverIds"
+              label="Authorized Slack user IDs *"
+              variant="outlined"
+              density="comfortable"
+              placeholder="U0XXXXXXXX
+U1XXXXXXXX"
+              hint="One Slack user ID per line. Starts with U. Max 50. Only listed users can tap Approve / Reject."
+              persistent-hint
+              rows="3"
+              auto-grow
+              class="mb-3"
+            />
+
+            <!-- Interactivity Request URL info -->
+            <v-alert
+              type="info"
+              variant="tonal"
+              density="compact"
+              icon="mdi-web"
+              class="mb-4"
+            >
+              <div class="text-body-2 font-weight-medium mb-1">Set your Interactivity Request URL</div>
+              <div class="text-caption">
+                In your Slack app → <strong>Interactivity &amp; Shortcuts</strong>, enable Interactivity
+                and set the Request URL to:<br>
+                <code v-if="isEditing && editingChannel">{{ slackInteractivityUrl }}</code>
+                <code v-else>{BASE_URL}/v1/integrations/slack/interactions/<em>{channelId}</em></code>
+                <template v-if="!isEditing"> — the channel ID is shown after saving.</template>
+              </div>
+            </v-alert>
+
+            <!-- Setup instructions (collapsible) -->
+            <v-expansion-panels variant="accordion" class="mb-4" elevation="0">
+              <v-expansion-panel>
+                <v-expansion-panel-title class="text-body-2 px-3">
+                  <v-icon size="15" class="mr-2">mdi-book-open-outline</v-icon>
+                  How to set up Slack approval — step by step
+                </v-expansion-panel-title>
+                <v-expansion-panel-text class="text-body-2 px-1">
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">1. Create a Slack app</div>
+                    <div class="text-medium-emphasis">
+                      Go to <strong>api.slack.com/apps</strong> → <em>Create New App → From Scratch</em>.
+                      Give it a name and select your workspace.
+                    </div>
+                  </div>
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">2. Add bot scope and install</div>
+                    <div class="text-medium-emphasis">
+                      Under <strong>OAuth &amp; Permissions → Bot Token Scopes</strong>, add
+                      <code>chat:write</code> (add <code>chat:write.public</code> if the bot needs to post
+                      to channels it hasn't joined). Click <strong>Install to Workspace</strong>. Copy the
+                      <strong>Bot User OAuth Token</strong> (<code>xoxb-…</code>) — that's the bot token above.
+                    </div>
+                  </div>
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">3. Copy the signing secret</div>
+                    <div class="text-medium-emphasis">
+                      Under <strong>Basic Information → App Credentials</strong>, copy the
+                      <strong>Signing Secret</strong> (32 lowercase hex characters) — that's the signing secret above.
+                    </div>
+                  </div>
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">4. Invite the bot and get the channel ID</div>
+                    <div class="text-medium-emphasis">
+                      In Slack, invite the bot to the target channel: <code>/invite @your-bot-name</code>.<br>
+                      To find the <strong>channel ID</strong>: right-click the channel name → <em>Copy Link</em>
+                      — the last path segment (e.g. <code>C0XXXXXXXX</code>) is the ID. Or open the channel's
+                      About pane; the ID appears at the bottom.
+                    </div>
+                  </div>
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">5. Get approver Slack user IDs</div>
+                    <div class="text-medium-emphasis">
+                      In any user's profile, click the <strong>⋯</strong> menu → <em>Copy Member ID</em>
+                      (starts with <code>U</code>). Enter one ID per line above. Max 50 users.
+                    </div>
+                  </div>
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">6. Save and get your channel ID</div>
+                    <div class="text-medium-emphasis">
+                      Save this channel. Copy the Impri <strong>channel ID</strong>
+                      (format: <code>nchan_…</code>) from the channel card.
+                    </div>
+                  </div>
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">7. Enable Interactivity in Slack</div>
+                    <div class="text-medium-emphasis">
+                      In the Slack app → <strong>Interactivity &amp; Shortcuts</strong>, toggle Interactivity on.
+                      Set the <strong>Request URL</strong> to:<br>
+                      <code>{BASE_URL}/v1/integrations/slack/interactions/{channelId}</code><br>
+                      Replace <code>{BASE_URL}</code> with your Impri server's public HTTPS URL
+                      and <code>{channelId}</code> with the ID from step 6.
+                      For local dev, expose your server via a tunnel (<code>ngrok http 8484</code>).
+                    </div>
+                  </div>
+                  <div class="setup-step">
+                    <div class="font-weight-medium mb-1">8. Verify</div>
+                    <div class="text-medium-emphasis">
+                      Use the <strong>Send test</strong> button on the channel card. The bot posts a message
+                      with Approve / Reject buttons. Tapping them returns "Action not found" — expected and harmless.
+                    </div>
+                  </div>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
+          </template>
         </template>
 
         <!-- ── Discord ── -->
         <template v-if="form.type === 'discord'">
-          <v-text-field
-            v-model="form.configUrl"
-            label="Webhook URL *"
-            variant="outlined"
+          <!-- Approval mode toggle -->
+          <v-divider class="mb-4" />
+          <div class="d-flex align-center gap-2 mb-1">
+            <v-icon size="15" color="info">mdi-shield-check-outline</v-icon>
+            <span class="text-subtitle-2 font-weight-medium">Inline button approvals</span>
+          </div>
+          <p class="text-caption text-medium-emphasis mb-3">
+            When enabled, Discord messages include Approve / Reject buttons.
+            Team members decide in Discord without opening Impri.
+          </p>
+          <v-switch
+            v-model="form.configDiscordApprovalMode"
+            label="Enable approval mode"
+            color="primary"
+            inset
             density="comfortable"
-            :placeholder="
-              isEditing && secretsAlreadySet.url && !form.configUrl
-                ? 'Leave blank to keep current value'
-                : 'https://discord.com/api/webhooks/...'
-            "
-            :hint="
-              isEditing && secretsAlreadySet.url
-                ? 'Already set — leave blank to keep, or paste a new URL to replace.'
-                : 'From Discord → Server Settings → Integrations → Webhooks.'
-            "
-            persistent-hint
+            hide-details
             class="mb-4"
           />
+
+          <!-- Simple webhook (approval mode off) -->
+          <template v-if="!form.configDiscordApprovalMode">
+            <v-text-field
+              v-model="form.configUrl"
+              label="Webhook URL *"
+              variant="outlined"
+              density="comfortable"
+              :placeholder="
+                isEditing && secretsAlreadySet.url && !form.configUrl
+                  ? 'Leave blank to keep current value'
+                  : 'https://discord.com/api/webhooks/...'
+              "
+              :hint="
+                isEditing && secretsAlreadySet.url
+                  ? 'Already set — leave blank to keep, or paste a new URL to replace.'
+                  : 'From Discord → Server Settings → Integrations → Webhooks.'
+              "
+              persistent-hint
+              class="mb-4"
+            />
+          </template>
+
+          <!-- Approval mode fields -->
+          <template v-if="form.configDiscordApprovalMode">
+            <v-text-field
+              v-model="form.configDiscordBotToken"
+              label="Bot token *"
+              variant="outlined"
+              density="comfortable"
+              :placeholder="
+                isEditing && secretsAlreadySet.discordBotToken && !form.configDiscordBotToken
+                  ? 'Leave blank to keep current value'
+                  : 'MT...'
+              "
+              :hint="
+                isEditing && secretsAlreadySet.discordBotToken
+                  ? 'Already set — leave blank to keep, or paste a new token to replace.'
+                  : 'From Discord Developer Portal → Bot → Reset Token. Stored securely.'
+              "
+              persistent-hint
+              class="mb-3"
+            />
+            <v-text-field
+              v-model="form.configDiscordPublicKey"
+              label="Public key *"
+              variant="outlined"
+              density="comfortable"
+              :placeholder="
+                isEditing && secretsAlreadySet.discordPublicKey && !form.configDiscordPublicKey
+                  ? 'Leave blank to keep current value'
+                  : '64-character hex string'
+              "
+              :hint="
+                isEditing && secretsAlreadySet.discordPublicKey
+                  ? 'Already set — leave blank to keep, or paste a new key to replace.'
+                  : 'From Discord Developer Portal → General Information → Public Key. Used to verify interaction signatures.'
+              "
+              persistent-hint
+              class="mb-3"
+            />
+            <v-text-field
+              v-model="form.configDiscordApplicationId"
+              label="Application ID *"
+              variant="outlined"
+              density="comfortable"
+              placeholder="123456789012345678"
+              hint="From Discord Developer Portal → General Information → Application ID (numeric snowflake)."
+              persistent-hint
+              class="mb-3"
+            />
+            <v-text-field
+              v-model="form.configDiscordChannelId"
+              label="Channel ID *"
+              variant="outlined"
+              density="comfortable"
+              placeholder="987654321098765432"
+              hint="The Discord channel snowflake ID where approval messages are posted. Enable Developer Mode to copy IDs."
+              persistent-hint
+              class="mb-3"
+            />
+            <v-textarea
+              v-model="form.configDiscordAllowedApproverIds"
+              label="Authorized Discord user IDs *"
+              variant="outlined"
+              density="comfortable"
+              placeholder="123456789012345678
+987654321098765432"
+              hint="One Discord user ID (numeric snowflake) per line. Max 50. Enable Developer Mode to copy user IDs."
+              persistent-hint
+              rows="3"
+              auto-grow
+              class="mb-3"
+            />
+            <v-text-field
+              v-model="form.configDiscordHmacSecret"
+              label="HMAC secret (optional)"
+              variant="outlined"
+              density="comfortable"
+              :placeholder="
+                isEditing && secretsAlreadySet.discordHmacSecret && !form.configDiscordHmacSecret
+                  ? 'Leave blank to keep current value'
+                  : 'Leave blank to auto-generate (recommended)'
+              "
+              :hint="
+                isEditing && secretsAlreadySet.discordHmacSecret
+                  ? 'Already set — leave blank to keep, or enter a new value to rotate. Old buttons become invalid after rotation.'
+                  : 'Auto-generated on save. Signs button payloads to prevent forgery. 16–256 chars if supplying your own.'
+              "
+              persistent-hint
+              class="mb-3"
+            />
+
+            <!-- Interactions Endpoint URL info -->
+            <v-alert
+              type="info"
+              variant="tonal"
+              density="compact"
+              icon="mdi-web"
+              class="mb-4"
+            >
+              <div class="text-body-2 font-weight-medium mb-1">Set your Interactions Endpoint URL</div>
+              <div class="text-caption">
+                In the Discord Developer Portal → <strong>General Information</strong>, set the
+                <strong>Interactions Endpoint URL</strong> to:<br>
+                <code v-if="isEditing && editingChannel">{{ discordInteractionsUrl }}</code>
+                <code v-else>{BASE_URL}/v1/integrations/discord/interactions/<em>{channelId}</em></code>
+                <template v-if="!isEditing"> — the channel ID is shown after saving.</template><br>
+                Discord sends a PING immediately to verify the URL. Impri verifies the Ed25519 signature
+                and responds with <code>{"type":1}</code>.
+              </div>
+            </v-alert>
+
+            <!-- Setup instructions (collapsible) -->
+            <v-expansion-panels variant="accordion" class="mb-4" elevation="0">
+              <v-expansion-panel>
+                <v-expansion-panel-title class="text-body-2 px-3">
+                  <v-icon size="15" class="mr-2">mdi-book-open-outline</v-icon>
+                  How to set up Discord approval — step by step
+                </v-expansion-panel-title>
+                <v-expansion-panel-text class="text-body-2 px-1">
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">1. Create a Discord application</div>
+                    <div class="text-medium-emphasis">
+                      Go to <strong>discord.com/developers/applications</strong> → <em>New Application</em>.
+                      Under <strong>General Information</strong>, copy the <strong>Application ID</strong>
+                      and <strong>Public Key</strong> (64-char hex) — paste them into the fields above.
+                    </div>
+                  </div>
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">2. Add a bot and copy its token</div>
+                    <div class="text-medium-emphasis">
+                      Under <strong>Bot</strong>, click <em>Add Bot</em>. Then click <em>Reset Token</em>
+                      and copy it — that's the bot token above. No Privileged Gateway Intents are needed.
+                    </div>
+                  </div>
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">3. Invite the bot to your server</div>
+                    <div class="text-medium-emphasis">
+                      Under <strong>OAuth2 → URL Generator</strong>, select scope <code>bot</code>
+                      and permission <em>Send Messages</em>. Open the generated URL to invite the bot.
+                    </div>
+                  </div>
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">4. Get channel and user IDs</div>
+                    <div class="text-medium-emphasis">
+                      Enable <strong>Developer Mode</strong> in Discord: User Settings → Advanced → Developer Mode.<br>
+                      Right-click the target channel → <em>Copy Channel ID</em> (numeric snowflake) — channel ID above.<br>
+                      Right-click each approver's name → <em>Copy User ID</em> (numeric snowflake) — enter one per line above.
+                    </div>
+                  </div>
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">5. Save and get your channel ID</div>
+                    <div class="text-medium-emphasis">
+                      Save this channel in Impri. Copy the <strong>channel ID</strong>
+                      (<code>nchan_…</code>) from the channel card.
+                    </div>
+                  </div>
+                  <div class="setup-step mb-3">
+                    <div class="font-weight-medium mb-1">6. Set the Interactions Endpoint URL</div>
+                    <div class="text-medium-emphasis">
+                      In the Discord Developer Portal → <strong>General Information</strong>,
+                      set <strong>Interactions Endpoint URL</strong> to:<br>
+                      <code>{BASE_URL}/v1/integrations/discord/interactions/{channelId}</code><br>
+                      Replace <code>{BASE_URL}</code> with your Impri server's public HTTPS URL
+                      and <code>{channelId}</code> with the ID from step 5.
+                      Discord sends a PING immediately; Impri verifies the Ed25519 signature and
+                      responds with <code>{"type":1}</code>. For local dev, use a tunnel
+                      (<code>ngrok http 8484</code>).
+                    </div>
+                  </div>
+                  <div class="setup-step">
+                    <div class="font-weight-medium mb-1">7. Verify</div>
+                    <div class="text-medium-emphasis">
+                      Use the <strong>Send test</strong> button on the channel card. The bot posts a message
+                      with Approve / Reject buttons. Tapping them returns "Action not found" — expected and harmless.
+                    </div>
+                  </div>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
+          </template>
         </template>
 
         <!-- ── Telegram ── -->
@@ -602,7 +985,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import type { NotificationChannel, ChannelType, UpdateChannelRequest } from '../types'
 import { useChannelsStore } from '../stores/channels'
 import { ApiClientError } from '../api/client'
@@ -663,6 +1046,38 @@ function parseApproverIds(raw: string): number[] | null {
     const n = parseInt(token, 10)
     if (!Number.isSafeInteger(n) || n <= 0) return null
     ids.push(n)
+  }
+  return ids
+}
+
+/**
+ * Parses a textarea of Slack user IDs (one per line) into a string[].
+ * Valid Slack user IDs start with U followed by uppercase alphanumerics.
+ * Returns null if any token is not in the expected format.
+ */
+function parseSlackApproverIds(raw: string): string[] | null {
+  if (!raw.trim()) return []
+  const tokens = raw.split(/[\n,\s]+/).map(t => t.trim()).filter(t => t.length > 0)
+  const ids: string[] = []
+  for (const token of tokens) {
+    if (!/^U[A-Z0-9]{6,}$/.test(token)) return null
+    ids.push(token)
+  }
+  return ids
+}
+
+/**
+ * Parses a textarea of Discord user IDs (one per line) into a string[].
+ * Valid Discord user IDs are numeric snowflakes.
+ * Returns null if any token is not a numeric string.
+ */
+function parseDiscordApproverIds(raw: string): string[] | null {
+  if (!raw.trim()) return []
+  const tokens = raw.split(/[\n,\s]+/).map(t => t.trim()).filter(t => t.length > 0)
+  const ids: string[] = []
+  for (const token of tokens) {
+    if (!/^\d+$/.test(token)) return null
+    ids.push(token)
   }
   return ids
 }
@@ -757,7 +1172,7 @@ interface FormState {
   type: ChannelType
   enabled: boolean
   digestWindowSec: number
-  /** Slack / Discord / ntfy / Webhook URL field */
+  /** Slack simple mode / ntfy / Webhook URL field */
   configUrl: string
   /** Telegram bot token (secret) */
   configBotToken: string
@@ -779,6 +1194,36 @@ interface FormState {
   configAddress: string
   /** Webhook optional HMAC secret */
   configHmacSecret: string
+  // ── Slack approval mode ──────────────────────────────────────────────────
+  /** Slack: enable inline Approve/Reject buttons */
+  configSlackApprovalMode: boolean
+  /** Slack: Bot User OAuth Token (secret, starts with xoxb-) */
+  configSlackBotToken: string
+  /** Slack: Signing Secret used to verify interaction requests (secret) */
+  configSlackSigningSecret: string
+  /** Slack: channel or group ID (not secret, starts with C or G) */
+  configSlackChannelId: string
+  /** Slack: newline-separated list of authorized approver Slack user IDs (start with U) */
+  configSlackAllowedApproverIds: string
+  // ── Discord approval mode ────────────────────────────────────────────────
+  /** Discord: enable inline Approve/Reject buttons */
+  configDiscordApprovalMode: boolean
+  /** Discord: bot token (secret) */
+  configDiscordBotToken: string
+  /** Discord: Ed25519 public key (64-char hex) used to verify interaction signatures */
+  configDiscordPublicKey: string
+  /** Discord: application snowflake ID (not secret) */
+  configDiscordApplicationId: string
+  /** Discord: channel snowflake ID where approval messages are posted (not secret) */
+  configDiscordChannelId: string
+  /**
+   * Discord: optional HMAC secret for signing button custom_id values.
+   * Leave blank on create to let the server auto-generate one.
+   * On edit, leave blank to keep the existing value.
+   */
+  configDiscordHmacSecret: string
+  /** Discord: newline-separated list of authorized approver Discord user IDs (numeric snowflakes) */
+  configDiscordAllowedApproverIds: string
 }
 
 function emptyForm(): FormState {
@@ -796,6 +1241,18 @@ function emptyForm(): FormState {
     configTopic: '',
     configAddress: '',
     configHmacSecret: '',
+    configSlackApprovalMode: false,
+    configSlackBotToken: '',
+    configSlackSigningSecret: '',
+    configSlackChannelId: '',
+    configSlackAllowedApproverIds: '',
+    configDiscordApprovalMode: false,
+    configDiscordBotToken: '',
+    configDiscordPublicKey: '',
+    configDiscordApplicationId: '',
+    configDiscordChannelId: '',
+    configDiscordHmacSecret: '',
+    configDiscordAllowedApproverIds: '',
   }
 }
 
@@ -807,14 +1264,58 @@ const formError = ref<string | null>(null)
 const saving = ref(false)
 
 /** Tracks which secret fields are already set in edit mode so we can show hints. */
-const secretsAlreadySet = ref({ url: false, botToken: false, hmacSecret: false })
+const secretsAlreadySet = ref({
+  // Generic (Slack simple / Discord simple / ntfy / webhook URL)
+  url: false,
+  // Telegram
+  botToken: false,
+  hmacSecret: false,
+  // Slack approval mode
+  slackBotToken: false,
+  slackSigningSecret: false,
+  // Discord approval mode
+  discordBotToken: false,
+  discordPublicKey: false,
+  discordHmacSecret: false,
+})
+
+/**
+ * Best-effort Interactivity Request URL for an existing Slack channel.
+ * Uses window.location.origin — correct for same-origin deployments.
+ * If VITE_API_BASE points to a different host, the operator must adjust BASE_URL manually.
+ */
+const slackInteractivityUrl = computed(() => {
+  const id = editingChannel.value?.id ?? '{channelId}'
+  return `${window.location.origin}/v1/integrations/slack/interactions/${id}`
+})
+
+/**
+ * Best-effort Interactions Endpoint URL for an existing Discord channel.
+ */
+const discordInteractionsUrl = computed(() => {
+  const id = editingChannel.value?.id ?? '{channelId}'
+  return `${window.location.origin}/v1/integrations/discord/interactions/${id}`
+})
+
+function resetSecrets(): typeof secretsAlreadySet.value {
+  return {
+    url: false,
+    botToken: false,
+    hmacSecret: false,
+    slackBotToken: false,
+    slackSigningSecret: false,
+    discordBotToken: false,
+    discordPublicKey: false,
+    discordHmacSecret: false,
+  }
+}
 
 function openCreate(): void {
   Object.assign(form, emptyForm())
   isEditing.value = false
   editingChannel.value = null
   formError.value = null
-  secretsAlreadySet.value = { url: false, botToken: false, hmacSecret: false }
+  secretsAlreadySet.value = resetSecrets()
   showDialog.value = true
 }
 
@@ -830,14 +1331,42 @@ function openEdit(ch: NotificationChannel): void {
   form.enabled = ch.enabled
   form.digestWindowSec = ch.digest_window_sec
 
-  // Reset secret trackers
-  secretsAlreadySet.value = { url: false, botToken: false, hmacSecret: false }
+  secretsAlreadySet.value = resetSecrets()
 
-  // Pre-fill non-secret fields; track which secrets are already set (masked)
   switch (ch.type) {
     case 'slack':
+      if (ch.config['approval_mode'] === true) {
+        form.configSlackApprovalMode = true
+        secretsAlreadySet.value.slackBotToken = isMasked(ch.config['bot_token'])
+        secretsAlreadySet.value.slackSigningSecret = isMasked(ch.config['signing_secret'])
+        form.configSlackChannelId = typeof ch.config['channel_id'] === 'string'
+          ? ch.config['channel_id']
+          : ''
+        form.configSlackAllowedApproverIds = Array.isArray(ch.config['allowed_approver_slack_user_ids'])
+          ? (ch.config['allowed_approver_slack_user_ids'] as string[]).join('\n')
+          : ''
+      } else {
+        secretsAlreadySet.value.url = isMasked(ch.config['url'])
+      }
+      break
     case 'discord':
-      secretsAlreadySet.value.url = isMasked(ch.config['url'])
+      if (ch.config['approval_mode'] === true) {
+        form.configDiscordApprovalMode = true
+        secretsAlreadySet.value.discordBotToken = isMasked(ch.config['bot_token'])
+        secretsAlreadySet.value.discordPublicKey = isMasked(ch.config['public_key'])
+        secretsAlreadySet.value.discordHmacSecret = isMasked(ch.config['hmac_secret'])
+        form.configDiscordApplicationId = typeof ch.config['application_id'] === 'string'
+          ? ch.config['application_id']
+          : ''
+        form.configDiscordChannelId = typeof ch.config['channel_id'] === 'string'
+          ? ch.config['channel_id']
+          : ''
+        form.configDiscordAllowedApproverIds = Array.isArray(ch.config['allowed_approver_discord_user_ids'])
+          ? (ch.config['allowed_approver_discord_user_ids'] as string[]).join('\n')
+          : ''
+      } else {
+        secretsAlreadySet.value.url = isMasked(ch.config['url'])
+      }
       break
     case 'telegram':
       secretsAlreadySet.value.botToken = isMasked(ch.config['bot_token'])
@@ -846,7 +1375,6 @@ function openEdit(ch: NotificationChannel): void {
       form.configAllowedApproverIds = Array.isArray(ch.config['allowed_approver_user_ids'])
         ? (ch.config['allowed_approver_user_ids'] as number[]).join('\n')
         : ''
-      // hmacSecret tracker is reused: set when telegram approval_mode hmac_secret is already stored
       secretsAlreadySet.value.hmacSecret = isMasked(ch.config['hmac_secret'])
       break
     case 'ntfy':
@@ -873,12 +1401,67 @@ function validateForm(): string | null {
   if (!form.name.trim()) return 'Name is required'
 
   switch (form.type) {
-    case 'slack':
+    case 'slack': {
+      if (form.configSlackApprovalMode) {
+        const botRequired = !isEditing.value || !secretsAlreadySet.value.slackBotToken
+        if (botRequired && !form.configSlackBotToken.trim()) return 'Bot token is required'
+        if (form.configSlackBotToken.trim() && !form.configSlackBotToken.trim().startsWith('xoxb-'))
+          return 'Bot token must start with xoxb-'
+        const sigRequired = !isEditing.value || !secretsAlreadySet.value.slackSigningSecret
+        if (sigRequired && !form.configSlackSigningSecret.trim()) return 'Signing secret is required'
+        if (form.configSlackSigningSecret.trim()) {
+          const len = form.configSlackSigningSecret.trim().length
+          if (len < 16 || len > 256) return 'Signing secret must be 16–256 characters'
+        }
+        if (!form.configSlackChannelId.trim()) return 'Channel ID is required'
+        if (!/^[CG][A-Z0-9]{6,}$/.test(form.configSlackChannelId.trim()))
+          return 'Channel ID must start with C or G followed by uppercase letters and digits (e.g. C0XXXXXXXX)'
+        const ids = parseSlackApproverIds(form.configSlackAllowedApproverIds)
+        if (ids === null)
+          return 'Approver IDs must be valid Slack user IDs starting with U (e.g. U0XXXXXXXX)'
+        if (ids.length === 0)
+          return 'At least one Slack user ID is required when approval mode is enabled'
+        if (ids.length > 50)
+          return 'Maximum 50 approver user IDs allowed'
+      } else {
+        const required = !isEditing.value || !secretsAlreadySet.value.url
+        if (required && !form.configUrl.trim()) return 'Webhook URL is required'
+        if (form.configUrl.trim() && !/^https?:\/\//i.test(form.configUrl.trim()))
+          return 'Webhook URL must start with http:// or https://'
+      }
+      break
+    }
     case 'discord': {
-      const required = !isEditing.value || !secretsAlreadySet.value.url
-      if (required && !form.configUrl.trim()) return 'Webhook URL is required'
-      if (form.configUrl.trim() && !/^https?:\/\//i.test(form.configUrl.trim()))
-        return 'Webhook URL must start with http:// or https://'
+      if (form.configDiscordApprovalMode) {
+        const botRequired = !isEditing.value || !secretsAlreadySet.value.discordBotToken
+        if (botRequired && !form.configDiscordBotToken.trim()) return 'Bot token is required'
+        const pkRequired = !isEditing.value || !secretsAlreadySet.value.discordPublicKey
+        if (pkRequired && !form.configDiscordPublicKey.trim()) return 'Public key is required'
+        if (form.configDiscordPublicKey.trim() && !/^[0-9a-f]{64}$/.test(form.configDiscordPublicKey.trim()))
+          return 'Public key must be a 64-character lowercase hex string'
+        if (!form.configDiscordApplicationId.trim()) return 'Application ID is required'
+        if (!/^\d+$/.test(form.configDiscordApplicationId.trim()))
+          return 'Application ID must be a numeric snowflake ID'
+        if (!form.configDiscordChannelId.trim()) return 'Channel ID is required'
+        if (!/^\d+$/.test(form.configDiscordChannelId.trim()))
+          return 'Channel ID must be a numeric snowflake ID'
+        const ids = parseDiscordApproverIds(form.configDiscordAllowedApproverIds)
+        if (ids === null)
+          return 'Approver IDs must be numeric Discord user IDs (snowflakes)'
+        if (ids.length === 0)
+          return 'At least one Discord user ID is required when approval mode is enabled'
+        if (ids.length > 50)
+          return 'Maximum 50 approver user IDs allowed'
+        if (form.configDiscordHmacSecret.trim()) {
+          const len = form.configDiscordHmacSecret.trim().length
+          if (len < 16 || len > 256) return 'HMAC secret must be 16–256 characters'
+        }
+      } else {
+        const required = !isEditing.value || !secretsAlreadySet.value.url
+        if (required && !form.configUrl.trim()) return 'Webhook URL is required'
+        if (form.configUrl.trim() && !/^https?:\/\//i.test(form.configUrl.trim()))
+          return 'Webhook URL must start with http:// or https://'
+      }
       break
     }
     case 'telegram': {
@@ -944,8 +1527,30 @@ function buildConfig(): Record<string, unknown> {
   const config: Record<string, unknown> = {}
   switch (form.type) {
     case 'slack':
+      if (form.configSlackApprovalMode) {
+        config['approval_mode'] = true
+        if (form.configSlackBotToken.trim()) config['bot_token'] = form.configSlackBotToken.trim()
+        if (form.configSlackSigningSecret.trim()) config['signing_secret'] = form.configSlackSigningSecret.trim()
+        config['channel_id'] = form.configSlackChannelId.trim()
+        config['allowed_approver_slack_user_ids'] = parseSlackApproverIds(form.configSlackAllowedApproverIds) ?? []
+      } else {
+        config['approval_mode'] = false
+        if (form.configUrl.trim()) config['url'] = form.configUrl.trim()
+      }
+      break
     case 'discord':
-      if (form.configUrl.trim()) config['url'] = form.configUrl.trim()
+      if (form.configDiscordApprovalMode) {
+        config['approval_mode'] = true
+        if (form.configDiscordBotToken.trim()) config['bot_token'] = form.configDiscordBotToken.trim()
+        if (form.configDiscordPublicKey.trim()) config['public_key'] = form.configDiscordPublicKey.trim()
+        config['application_id'] = form.configDiscordApplicationId.trim()
+        config['channel_id'] = form.configDiscordChannelId.trim()
+        if (form.configDiscordHmacSecret.trim()) config['hmac_secret'] = form.configDiscordHmacSecret.trim()
+        config['allowed_approver_discord_user_ids'] = parseDiscordApproverIds(form.configDiscordAllowedApproverIds) ?? []
+      } else {
+        config['approval_mode'] = false
+        if (form.configUrl.trim()) config['url'] = form.configUrl.trim()
+      }
       break
     case 'telegram': {
       if (form.configBotToken.trim()) config['bot_token'] = form.configBotToken.trim()
