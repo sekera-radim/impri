@@ -1,3 +1,2 @@
-/docs/self-hosting  /docs  302
-/docs/quickstart    /docs  302
-/docs/webhooks      /docs  302
+# Doc pages are now real generated files under /docs/ (scripts/build-docs.mjs).
+# No redirects needed — Cloudflare Pages serves them (clean URLs for /docs/*.html).
