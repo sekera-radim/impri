@@ -58,9 +58,10 @@ Auth: `Authorization: Bearer im_<key>`
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/v1/actions` | Push a new action for approval |
-| GET | `/v1/actions` | List actions (`?status=pending`) |
+| GET | `/v1/actions` | List actions (`?status=pending&q=…&kind=…&since=…`) |
 | GET | `/v1/actions/:id` | Get action detail + decision |
-| POST | `/v1/actions/:id/decision` | Approve or reject |
+| POST | `/v1/actions/:id/decision` | Approve or reject (single) |
+| POST | `/v1/actions/bulk-decision` | Approve or reject up to 50 actions at once |
 | POST | `/v1/actions/:id/result` | Report execution result |
 | GET | `/v1/openapi.json` | OpenAPI spec |
 
@@ -130,6 +131,7 @@ npx @impri/mcp                     # MCP server (published)
 - [How to add human approval to an AI agent](docs/how-to-add-human-approval-to-an-ai-agent.md)
 - [Self-hosting](docs/self-hosting.md) — Docker, env vars, backups, reverse proxy
 - [Webhooks](docs/webhooks.md) — HMAC verification, retries, polling fallback
+- [Inbox UX & Bulk API](docs/inbox.md) — keyboard shortcuts, bulk approve/reject, search/filter parameters, `POST /v1/actions/bulk-decision` reference
 - [Watcher presets](docs/watcher-presets.md) — 18 ready-to-use templates (HN, Reddit, GitHub, npm, arXiv, …); REST + SDK + MCP usage
 - [`llms.txt`](docs/llms.txt) — machine-readable index for AI assistants
 

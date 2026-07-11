@@ -35,9 +35,10 @@ On first server start, a bootstrap admin key and project are printed to stdout. 
 
 ```
 POST   /v1/actions                  Create an action for approval
-GET    /v1/actions                  List actions (filter by status, kind, since)
+GET    /v1/actions                  List actions (filter by status, kind, since, q)
 GET    /v1/actions/:id              Get a single action with its decision
-POST   /v1/actions/:id/decision     Approve or reject (used by the web inbox)
+POST   /v1/actions/:id/decision     Approve or reject a single action
+POST   /v1/actions/bulk-decision    Approve or reject up to 50 actions in one request
 POST   /v1/actions/:id/result       Report execution outcome (executed | execute_failed)
 ```
 
@@ -88,7 +89,19 @@ Use `decision.final_preview` for execution — it carries the human-edited conte
 
 **Idempotency**: repeating a POST with the same `idempotency_key` returns the existing action (200). Without a key, an identical (kind, title, preview hash) pending action returns 200 with `duplicate_of`.
 
-**Rate limit**: 60 POST /v1/actions per minute per API key.
+**Rate limit**: 60 POST /v1/actions per minute per API key. `POST /v1/actions/bulk-decision`: 10 req/min per key (up to 50 IDs each = 500 effective decisions/min).
+
+**Bulk decision body:**
+```json
+{
+  "ids":     ["act_aaa", "act_bbb"],
+  "verdict": "approve",
+  "comment": "optional, max 500 chars"
+}
+```
+Response is HTTP 200 with per-item `results[]` even on partial failure. Each result has `id`, `ok` (bool), `status` on success, or `error` (`"not_found"` | `"already_decided"` | `"internal"`) on failure. Actions with `editable.length > 0` must use the single-decision endpoint; bulk intentionally omits per-item edits.
+
+**GET /v1/actions filter parameters**: `status`, `kind`, `since` (unix timestamp), `q` (free-text search on title and preview body, max 200 chars), `limit` (1–100, default 50), `cursor` (pagination).
 
 ### API keys
 
@@ -240,6 +253,7 @@ Untrusted flag: actions delivered by Watchers have payload.untrusted=true (Pytho
 
 ## Documentation
 
+- Inbox UX, keyboard shortcuts, bulk approve/reject, filters: docs/inbox.md
 - Quickstart (zero to first approved action): docs/quickstart.md
 - How to add human approval to an AI agent: docs/how-to-add-human-approval-to-an-ai-agent.md
 - Python SDK reference: docs/sdk-python.md
