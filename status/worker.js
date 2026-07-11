@@ -9,6 +9,13 @@
  * Vedlejší efekt cron pingů: drží scale-to-zero API stroj teplý (žádné cold starty).
  */
 
+/** Brand ikonka: Impri checkmark na indigo dlaždici + zelená status tečka. */
+const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#6366f1"/>
+  <path d="M17 33.5l10.5 10.5L47 22" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="50" cy="50" r="10" fill="#22c55e" stroke="#0d0e14" stroke-width="4"/>
+</svg>`;
+
 const TARGETS = [
   { id: 'api', name: 'API (api.impri.dev)', url: 'https://api.impri.dev/healthz', expect: 200 },
   { id: 'app', name: 'App (app.impri.dev)', url: 'https://app.impri.dev/', expect: 200 },
@@ -128,6 +135,7 @@ function renderHtml(latest, history) {
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Impri Status</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta http-equiv="refresh" content="120">
 <style>
   :root{color-scheme:dark}
@@ -165,6 +173,12 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const latest = await env.STATUS_KV.get('latest', 'json');
+
+    if (url.pathname === '/favicon.svg') {
+      return new Response(FAVICON_SVG, {
+        headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400' },
+      });
+    }
 
     if (url.pathname === '/api/status') {
       const history = await loadHistory(env);
