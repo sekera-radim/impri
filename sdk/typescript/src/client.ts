@@ -5,6 +5,8 @@ import type {
   ApiKey,
   ApiKeyCreated,
   ApprovedAction,
+  BulkDecisionRequest,
+  BulkDecisionResponse,
   CreateActionParams,
   CreateWatcherFromPresetParams,
   CreateWatcherParams,
@@ -342,6 +344,7 @@ export class ImpriClient {
       status: rest.status,
       kind: rest.kind,
       since: rest.since,
+      q: rest.q,
       limit: rest.limit,
       cursor: rest.cursor,
     })
@@ -383,6 +386,46 @@ export class ImpriClient {
     if (opts.edited !== undefined) body.edited = opts.edited
     if (opts.channel !== undefined) body.channel = opts.channel
     return this._request<DecisionResult>('POST', `/actions/${actionId}/decision`, body)
+  }
+
+  /**
+   * POST /v1/actions/bulk-decision
+   *
+   * Approve or reject up to 50 actions in one request. Each item is decided in
+   * its own transaction — failures on one ID do not roll back successes on
+   * others. The response is always HTTP 200; check each `result.ok` for
+   * per-item outcomes.
+   *
+   * Actions with `editable.length > 0` must be decided individually via
+   * `decide()` so per-item field edits can be applied. The UI prevents
+   * selecting such actions for bulk, and the server omits the `edited` field
+   * from bulk requests entirely.
+   *
+   * Rate limit: 10 requests/min per key (net ceiling: 500 decisions/min).
+   * Requires 'actions' scope.
+   *
+   * @param ids     1–50 action IDs. The server deduplicates before processing.
+   * @param verdict 'approve' or 'reject'
+   * @param opts.comment Optional comment stored per succeeded decision (max 500 chars).
+   *
+   * @example
+   * ```ts
+   * const { results, succeeded, failed } = await client.bulkDecide(
+   *   ['act_aaa', 'act_bbb', 'act_ccc'],
+   *   'approve',
+   *   { comment: 'Batch-approved after review' },
+   * )
+   * const errors = results.filter(r => !r.ok)
+   * ```
+   */
+  async bulkDecide(
+    ids: string[],
+    verdict: 'approve' | 'reject',
+    opts: { comment?: string } = {},
+  ): Promise<BulkDecisionResponse> {
+    const body: BulkDecisionRequest = { ids, verdict }
+    if (opts.comment !== undefined) body.comment = opts.comment
+    return this._request<BulkDecisionResponse>('POST', '/actions/bulk-decision', body)
   }
 
   /**

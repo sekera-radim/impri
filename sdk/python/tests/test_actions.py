@@ -298,6 +298,23 @@ class TestListActions(unittest.TestCase):
         client.list_actions(cursor="c1")
         self.assertEqual(t.calls[1]["query"]["cursor"], "c1")
 
+    def test_q_filter_sent_in_query(self):
+        client, t = make_client((200, {"items": [], "has_more": False}))
+        client.list_actions(q="weekly digest")
+        self.assertEqual(t.calls[0]["query"]["q"], "weekly digest")
+
+    def test_q_none_not_sent(self):
+        client, t = make_client((200, {"items": [], "has_more": False}))
+        client.list_actions()
+        self.assertNotIn("q", t.calls[0]["query"])
+
+    def test_q_passed_through_iter_actions(self):
+        client, t = make_client(
+            (200, {"items": [ACTION_PENDING], "has_more": False}),
+        )
+        list(client.iter_actions(q="email"))
+        self.assertEqual(t.calls[0]["query"]["q"], "email")
+
     def test_iter_actions_auto_pages(self):
         client, t = make_client(
             (200, {"items": [ACTION_PENDING, {**ACTION_PENDING, "id": "act_2"}], "has_more": True, "next_cursor": "c1"}),
@@ -458,3 +475,132 @@ class TestAwaitDecision(unittest.TestCase):
         action = client.await_decision("act_abc", poll_interval_s=0)
         self.assertIsNotNone(action.get("decision"))
         self.assertEqual(action["decision"]["final_preview"]["body"], "Hello Alice (edited)")
+
+
+# ---------------------------------------------------------------------------
+# bulk_decide
+# ---------------------------------------------------------------------------
+
+BULK_RESPONSE_ALL_OK = {
+    "results": [
+        {"id": "act_1", "ok": True, "status": "approved"},
+        {"id": "act_2", "ok": True, "status": "approved"},
+    ],
+    "succeeded": 2,
+    "failed": 0,
+}
+
+BULK_RESPONSE_PARTIAL = {
+    "results": [
+        {"id": "act_1", "ok": True, "status": "approved"},
+        {"id": "act_2", "ok": False, "error": "already_decided", "current_status": "rejected"},
+        {"id": "act_3", "ok": False, "error": "not_found"},
+        {"id": "act_4", "ok": False, "error": "internal"},
+    ],
+    "succeeded": 1,
+    "failed": 3,
+}
+
+BULK_RESPONSE_REJECT = {
+    "results": [
+        {"id": "act_1", "ok": True, "status": "rejected"},
+    ],
+    "succeeded": 1,
+    "failed": 0,
+}
+
+
+class TestBulkDecide(unittest.TestCase):
+
+    def test_sends_correct_method_and_path(self):
+        client, t = make_client((200, BULK_RESPONSE_ALL_OK))
+        client.bulk_decide(["act_1", "act_2"], "approve")
+        self.assertEqual(t.calls[0]["method"], "POST")
+        self.assertEqual(t.calls[0]["path"], "/v1/actions/bulk-decision")
+
+    def test_sends_bearer_auth(self):
+        client, t = make_client((200, BULK_RESPONSE_ALL_OK))
+        client.bulk_decide(["act_1", "act_2"], "approve")
+        self.assertEqual(t.calls[0]["headers"]["Authorization"], f"Bearer {API_KEY}")
+
+    def test_body_contains_ids_and_verdict(self):
+        client, t = make_client((200, BULK_RESPONSE_ALL_OK))
+        client.bulk_decide(["act_1", "act_2"], "approve")
+        body = t.calls[0]["body"]
+        self.assertEqual(body["ids"], ["act_1", "act_2"])
+        self.assertEqual(body["verdict"], "approve")
+
+    def test_reject_verdict_forwarded(self):
+        client, t = make_client((200, BULK_RESPONSE_REJECT))
+        client.bulk_decide(["act_1"], "reject")
+        self.assertEqual(t.calls[0]["body"]["verdict"], "reject")
+
+    def test_comment_forwarded_when_set(self):
+        client, t = make_client((200, BULK_RESPONSE_ALL_OK))
+        client.bulk_decide(["act_1", "act_2"], "approve", comment="Batch reviewed")
+        self.assertEqual(t.calls[0]["body"]["comment"], "Batch reviewed")
+
+    def test_comment_omitted_when_none(self):
+        client, t = make_client((200, BULK_RESPONSE_ALL_OK))
+        client.bulk_decide(["act_1", "act_2"], "approve")
+        self.assertNotIn("comment", t.calls[0]["body"])
+
+    def test_returns_bulk_decision_response(self):
+        client, _ = make_client((200, BULK_RESPONSE_ALL_OK))
+        resp = client.bulk_decide(["act_1", "act_2"], "approve")
+        self.assertEqual(resp["succeeded"], 2)
+        self.assertEqual(resp["failed"], 0)
+        self.assertEqual(len(resp["results"]), 2)
+
+    def test_all_results_ok_true(self):
+        client, _ = make_client((200, BULK_RESPONSE_ALL_OK))
+        resp = client.bulk_decide(["act_1", "act_2"], "approve")
+        for r in resp["results"]:
+            self.assertTrue(r["ok"])
+            self.assertEqual(r["status"], "approved")
+
+    def test_partial_success_counts_correct(self):
+        client, _ = make_client((200, BULK_RESPONSE_PARTIAL))
+        resp = client.bulk_decide(["act_1", "act_2", "act_3", "act_4"], "approve")
+        self.assertEqual(resp["succeeded"], 1)
+        self.assertEqual(resp["failed"], 3)
+
+    def test_already_decided_includes_current_status(self):
+        client, _ = make_client((200, BULK_RESPONSE_PARTIAL))
+        resp = client.bulk_decide(["act_1", "act_2", "act_3", "act_4"], "approve")
+        already_decided = next(r for r in resp["results"] if r.get("error") == "already_decided")
+        self.assertEqual(already_decided["current_status"], "rejected")
+        self.assertFalse(already_decided["ok"])
+
+    def test_not_found_result(self):
+        client, _ = make_client((200, BULK_RESPONSE_PARTIAL))
+        resp = client.bulk_decide(["act_1", "act_2", "act_3", "act_4"], "approve")
+        not_found = next(r for r in resp["results"] if r.get("error") == "not_found")
+        self.assertFalse(not_found["ok"])
+
+    def test_raises_validation_error_on_400(self):
+        client, _ = make_client((400, {"error": "Bad Request", "issues": [{"code": "too_big"}]}))
+        with self.assertRaises(ImpriValidationError) as ctx:
+            client.bulk_decide([], "approve")
+        self.assertEqual(len(ctx.exception.issues), 1)
+
+    def test_raises_unauthorized_on_403(self):
+        client, _ = make_client((403, {"error": "Forbidden", "message": "Scope \"actions\" required"}))
+        with self.assertRaises(ImpriUnauthorized):
+            client.bulk_decide(["act_1"], "approve")
+
+    def test_raises_rate_limited_on_429(self):
+        client, _ = make_client((429, {"error": "Too Many Requests", "message": "Rate limit: 10 requests/min", "retry_after": 30}))
+        with self.assertRaises(ImpriRateLimited) as ctx:
+            client.bulk_decide(["act_1"], "approve")
+        self.assertEqual(ctx.exception.retry_after, 30)
+
+    def test_single_id_list_accepted(self):
+        client, t = make_client((200, {
+            "results": [{"id": "act_solo", "ok": True, "status": "approved"}],
+            "succeeded": 1,
+            "failed": 0,
+        }))
+        resp = client.bulk_decide(["act_solo"], "approve")
+        self.assertEqual(t.calls[0]["body"]["ids"], ["act_solo"])
+        self.assertEqual(resp["succeeded"], 1)

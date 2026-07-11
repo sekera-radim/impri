@@ -12,6 +12,7 @@ import {
   ImpriTimeout,
   ImpriUnauthorized,
   ImpriValidationError,
+  type BulkDecisionResponse,
   type WatcherPreset,
 } from '../src/index.js'
 
@@ -1115,5 +1116,212 @@ describe('createWatcherFromPreset', () => {
 
     const init = mockFetch.mock.calls[0][1] as RequestInit
     expect((init.headers as Record<string, string>).Authorization).toBe(`Bearer ${TEST_KEY}`)
+  })
+})
+
+// ─── bulkDecide ───────────────────────────────────────────────────────────────
+
+function bulkResp(
+  results: Array<{ id: string; ok: boolean; status?: string; error?: string; current_status?: string }>,
+): BulkDecisionResponse {
+  return {
+    results,
+    succeeded: results.filter(r => r.ok).length,
+    failed: results.filter(r => !r.ok).length,
+  } as BulkDecisionResponse
+}
+
+describe('bulkDecide', () => {
+  it('POSTs to /v1/actions/bulk-decision with ids and verdict', async () => {
+    const ids = ['act_aaa', 'act_bbb']
+    const body = bulkResp([
+      { id: 'act_aaa', ok: true, status: 'approved' },
+      { id: 'act_bbb', ok: true, status: 'approved' },
+    ])
+    const mockFetch = vi.fn().mockResolvedValue(resp(200, body))
+    vi.stubGlobal('fetch', mockFetch)
+
+    const result = await client().bulkDecide(ids, 'approve')
+
+    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe(`${TEST_BASE}/v1/actions/bulk-decision`)
+    expect(init.method).toBe('POST')
+
+    const reqBody = JSON.parse(init.body as string)
+    expect(reqBody.ids).toEqual(['act_aaa', 'act_bbb'])
+    expect(reqBody.verdict).toBe('approve')
+
+    expect(result.succeeded).toBe(2)
+    expect(result.failed).toBe(0)
+    expect(result.results).toHaveLength(2)
+    expect(result.results[0].ok).toBe(true)
+  })
+
+  it('sends reject verdict correctly', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      resp(200, bulkResp([{ id: 'act_zzz', ok: true, status: 'rejected' }])),
+    )
+    vi.stubGlobal('fetch', mockFetch)
+
+    await client().bulkDecide(['act_zzz'], 'reject')
+
+    const reqBody = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string)
+    expect(reqBody.verdict).toBe('reject')
+  })
+
+  it('includes comment in request body when provided', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      resp(200, bulkResp([{ id: 'act_1', ok: true, status: 'approved' }])),
+    )
+    vi.stubGlobal('fetch', mockFetch)
+
+    await client().bulkDecide(['act_1'], 'approve', { comment: 'Looks good' })
+
+    const reqBody = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string)
+    expect(reqBody.comment).toBe('Looks good')
+  })
+
+  it('omits comment key when not provided', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      resp(200, bulkResp([{ id: 'act_1', ok: true, status: 'approved' }])),
+    )
+    vi.stubGlobal('fetch', mockFetch)
+
+    await client().bulkDecide(['act_1'], 'approve')
+
+    const reqBody = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string)
+    expect('comment' in reqBody).toBe(false)
+  })
+
+  it('returns partial failure results with error and current_status', async () => {
+    const body = bulkResp([
+      { id: 'act_aaa', ok: true, status: 'approved' },
+      { id: 'act_bbb', ok: false, error: 'already_decided', current_status: 'rejected' },
+      { id: 'act_ccc', ok: false, error: 'not_found' },
+    ])
+    const mockFetch = vi.fn().mockResolvedValue(resp(200, body))
+    vi.stubGlobal('fetch', mockFetch)
+
+    const result = await client().bulkDecide(['act_aaa', 'act_bbb', 'act_ccc'], 'approve')
+
+    expect(result.succeeded).toBe(1)
+    expect(result.failed).toBe(2)
+
+    const already = result.results.find(r => r.id === 'act_bbb')
+    expect(already?.ok).toBe(false)
+    expect(already?.error).toBe('already_decided')
+    expect(already?.current_status).toBe('rejected')
+
+    const notFound = result.results.find(r => r.id === 'act_ccc')
+    expect(notFound?.ok).toBe(false)
+    expect(notFound?.error).toBe('not_found')
+  })
+
+  it('includes Bearer token in Authorization header', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      resp(200, bulkResp([{ id: 'act_1', ok: true, status: 'approved' }])),
+    )
+    vi.stubGlobal('fetch', mockFetch)
+
+    await client().bulkDecide(['act_1'], 'approve')
+
+    const init = mockFetch.mock.calls[0][1] as RequestInit
+    expect((init.headers as Record<string, string>).Authorization).toBe(`Bearer ${TEST_KEY}`)
+  })
+
+  it('throws ImpriRateLimited on 429', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(resp(429, { message: 'Too many requests' }, { 'retry-after': '6' })),
+    )
+    await expect(client().bulkDecide(['act_1'], 'approve')).rejects.toBeInstanceOf(ImpriRateLimited)
+  })
+
+  it('throws ImpriUnauthorized on 403', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(resp(403, { message: 'Forbidden' })))
+    await expect(client().bulkDecide(['act_1'], 'approve')).rejects.toBeInstanceOf(ImpriUnauthorized)
+  })
+
+  it('throws ImpriValidationError on 400 (e.g. ids array too large)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        resp(400, {
+          message: 'Validation error',
+          issues: [{ path: ['ids'], message: 'Array must contain at most 50 element(s)' }],
+        }),
+      ),
+    )
+    const oversizedIds = Array.from({ length: 51 }, (_, i) => `act_${i}`)
+    await expect(client().bulkDecide(oversizedIds, 'approve')).rejects.toBeInstanceOf(
+      ImpriValidationError,
+    )
+  })
+
+  it('all-failed response has succeeded=0 and failed=N', async () => {
+    const body = bulkResp([
+      { id: 'act_x', ok: false, error: 'not_found' },
+      { id: 'act_y', ok: false, error: 'internal' },
+    ])
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(resp(200, body)))
+
+    const result = await client().bulkDecide(['act_x', 'act_y'], 'reject')
+    expect(result.succeeded).toBe(0)
+    expect(result.failed).toBe(2)
+  })
+})
+
+// ─── listActions q filter ─────────────────────────────────────────────────────
+
+describe('listActions q filter', () => {
+  it('includes q param in query string when provided', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(resp(200, { items: [], has_more: false }))
+    vi.stubGlobal('fetch', mockFetch)
+
+    await client().listActions({ q: 'send newsletter' })
+
+    const url = mockFetch.mock.calls[0][0] as string
+    expect(url).toContain('q=send+newsletter')
+  })
+
+  it('combines q with kind and since in query string', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(resp(200, { items: [], has_more: false }))
+    vi.stubGlobal('fetch', mockFetch)
+
+    await client().listActions({ q: 'drop table', kind: 'db.exec', since: 1720000000 })
+
+    const url = mockFetch.mock.calls[0][0] as string
+    expect(url).toContain('q=drop+table')
+    expect(url).toContain('kind=db.exec')
+    expect(url).toContain('since=1720000000')
+  })
+
+  it('does not include q param when undefined', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(resp(200, { items: [], has_more: false }))
+    vi.stubGlobal('fetch', mockFetch)
+
+    await client().listActions({ status: 'pending' })
+
+    const url = mockFetch.mock.calls[0][0] as string
+    expect(url).not.toContain('q=')
+  })
+
+  it('passes q through autoPaginate correctly on the first page request', async () => {
+    const page1 = { items: [pendingAction('act_1')], has_more: true, next_cursor: 'cur1' }
+    const page2 = { items: [pendingAction('act_2')], has_more: false }
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(resp(200, page1))
+      .mockResolvedValueOnce(resp(200, page2))
+    vi.stubGlobal('fetch', mockFetch)
+
+    const result = await client().listActions({ q: 'hello', autoPaginate: true })
+
+    expect(result.items).toHaveLength(2)
+    const firstUrl = mockFetch.mock.calls[0][0] as string
+    expect(firstUrl).toContain('q=hello')
+    const secondUrl = mockFetch.mock.calls[1][0] as string
+    expect(secondUrl).toContain('q=hello')
+    expect(secondUrl).toContain('cursor=cur1')
   })
 })

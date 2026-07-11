@@ -90,10 +90,44 @@ page = client.list_actions(status="pending", limit=20)
 for a in page["items"]:
     print(a["id"], a["title"], a["is_untrusted"])
 
-# Auto-paginate
-for action in client.iter_actions(status="approved"):
+# Full-text search over title + preview body
+page = client.list_actions(q="weekly digest", status="pending")
+
+# Filter by kind and time range
+import time
+since_7d = int(time.time()) - 7 * 86400
+page = client.list_actions(kind="email.send", since=since_7d)
+
+# Auto-paginate (supports the same filters)
+for action in client.iter_actions(status="approved", q="receipt"):
     print(action["id"])
 ```
+
+### Bulk decisions
+
+Approve or reject multiple actions in a single API call:
+
+```python
+resp = client.bulk_decide(
+    ids=["act_aaa", "act_bbb", "act_ccc"],
+    verdict="approve",
+    comment="Batch approved by review script",  # optional, max 500 chars
+)
+print(f"Succeeded: {resp['succeeded']}, failed: {resp['failed']}")
+for r in resp["results"]:
+    if not r["ok"]:
+        # error: "not_found" | "already_decided" | "internal"
+        print(f"  {r['id']}: {r['error']}")
+        if r.get("error") == "already_decided":
+            print(f"    current status: {r['current_status']}")
+```
+
+- Up to **50 IDs** per request (Zod-enforced server-side).
+- Rate limit: **10 requests/min** (effective 500 decisions/min).
+- HTTP 200 is returned even on partial failure — always inspect each
+  `result["ok"]` individually.
+- Actions with non-empty `editable` lists must be decided via `decide()` so
+  per-item field edits pass whitelist validation.
 
 ### Watchers
 

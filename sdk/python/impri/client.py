@@ -52,6 +52,9 @@ from .models import (
     ApiKey,
     ApiKeyCreated,
     ApprovedAction,
+    BulkDecisionRequest,
+    BulkDecisionResponse,
+    BulkDecisionResult,
     DecisionResult,
     PagedResult,
     Preview,
@@ -374,6 +377,7 @@ class ImpriClient:
         status: Optional[str] = None,
         kind: Optional[str] = None,
         since: Optional[int] = None,
+        q: Optional[str] = None,
         limit: int = 50,
         cursor: Optional[str] = None,
     ) -> PagedResult:
@@ -383,8 +387,11 @@ class ImpriClient:
 
         Args:
             status: Filter by action status (e.g. ``"pending"``).
-            kind:   Filter by kind string.
+            kind:   Filter by kind string (exact match).
             since:  Unix timestamp — only actions created at or after this time.
+            q:      Free-text search over action title and preview body (max 200
+                    chars). Matched using SQL LIKE against title and
+                    ``preview.body``; case-insensitive on most deployments.
             limit:  Page size (1–100; default 50).
             cursor: Opaque cursor from ``next_cursor`` for pagination.
 
@@ -394,7 +401,14 @@ class ImpriClient:
         data = self._request(
             "GET",
             "/actions",
-            params={"status": status, "kind": kind, "since": since, "limit": limit, "cursor": cursor},
+            params={
+                "status": status,
+                "kind": kind,
+                "since": since,
+                "q": q,
+                "limit": limit,
+                "cursor": cursor,
+            },
         )
         items = [_deserialize_action(a) for a in data.get("items", [])]
         return {**data, "items": items}  # type: ignore[return-value]
@@ -405,12 +419,20 @@ class ImpriClient:
         status: Optional[str] = None,
         kind: Optional[str] = None,
         since: Optional[int] = None,
+        q: Optional[str] = None,
         limit: int = 50,
     ) -> Iterator[Action]:
         """Auto-paginating iterator over all matching actions.
 
         Transparently fetches subsequent pages using next_cursor until has_more
         is False. Each yielded item is a fully deserialized Action dict.
+
+        Args:
+            status: Filter by action status.
+            kind:   Filter by kind string.
+            since:  Unix timestamp lower bound.
+            q:      Free-text search (title + preview body).
+            limit:  Page size per fetch (1–100; default 50).
 
         Usage::
 
@@ -420,7 +442,7 @@ class ImpriClient:
         cursor: Optional[str] = None
         while True:
             page = self.list_actions(
-                status=status, kind=kind, since=since, limit=limit, cursor=cursor
+                status=status, kind=kind, since=since, q=q, limit=limit, cursor=cursor
             )
             yield from page.get("items", [])
             if not page.get("has_more"):
@@ -459,6 +481,69 @@ class ImpriClient:
         if channel is not None:
             req_body["channel"] = channel
         return self._request("POST", f"/actions/{action_id}/decision", body=req_body)  # type: ignore[return-value]
+
+    def bulk_decide(
+        self,
+        ids: List[str],
+        verdict: Literal["approve", "reject"],
+        *,
+        comment: Optional[str] = None,
+    ) -> BulkDecisionResponse:
+        """Submit the same approve/reject verdict for multiple actions at once.
+
+        POST /v1/actions/bulk-decision (requires 'actions' scope).
+
+        Rate limit: 10 requests/min per key.  Each request can cover up to 50
+        action IDs, giving an effective ceiling of 500 decisions/min.
+
+        The server processes each item independently — a failure on one ID does
+        NOT roll back successes on others.  HTTP 200 is returned even when some
+        items fail; inspect each ``BulkDecisionResult`` individually.
+
+        Args:
+            ids:     1–50 action IDs to decide.  Duplicates are deduplicated
+                     server-side.
+            verdict: ``"approve"`` or ``"reject"`` — applied to every ID.
+            comment: Optional comment stored with each decision (max 500 chars).
+                     Applied uniformly; per-item comments are not supported.
+
+        Returns a BulkDecisionResponse:
+            ``results``   — one entry per input ID.
+            ``succeeded`` — count of items where ``ok=True``.
+            ``failed``    — count of items where ``ok=False``.
+
+        Per-item error values in result["error"]:
+            ``"not_found"``       — ID unknown or belongs to a different project.
+            ``"already_decided"`` — action is not pending; ``current_status`` provided.
+            ``"internal"``        — unexpected server error (logged server-side).
+
+        Raises:
+            ImpriValidationError (400) — ``ids`` empty, exceeds 50, or
+                                          ``verdict`` not in ``{"approve","reject"}``.
+            ImpriUnauthorized (401/403) — key lacks the ``"actions"`` scope.
+            ImpriRateLimited (429)      — bulk rate limit (10/min) exhausted.
+
+        Note:
+            Actions with non-empty ``editable`` lists must be decided via
+            :meth:`decide` so per-item edits pass whitelist validation.
+            The bulk endpoint intentionally omits the ``edited`` field.
+
+        Usage::
+
+            resp = client.bulk_decide(["act_1", "act_2", "act_3"], "approve",
+                                      comment="Batch approved by review script")
+            print(f"Succeeded: {resp['succeeded']}, failed: {resp['failed']}")
+            for r in resp["results"]:
+                if not r["ok"]:
+                    print(f"  {r['id']}: {r['error']}")
+        """
+        req_body: Dict[str, Any] = {
+            "ids": ids,
+            "verdict": verdict,
+        }
+        if comment is not None:
+            req_body["comment"] = comment
+        return self._request("POST", "/actions/bulk-decision", body=req_body)  # type: ignore[return-value]
 
     def report_result(
         self,

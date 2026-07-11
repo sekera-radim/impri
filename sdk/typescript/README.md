@@ -48,8 +48,9 @@ Default base URL: `http://localhost:8484` (self-hosted). Cloud: `https://api.imp
 |---|---|
 | `createAction(params)` | Submit an action for human approval |
 | `getAction(id)` | Poll current status and decision |
-| `listActions(params?)` | Paginated list; supports `autoPaginate: true` |
-| `decide(id, verdict, opts?)` | Programmatic approve/reject |
+| `listActions(params?)` | Paginated list; supports `autoPaginate: true`, `status`, `kind`, `since`, and `q` (text search) |
+| `decide(id, verdict, opts?)` | Programmatic approve/reject a single action |
+| `bulkDecide(ids, verdict, opts?)` | Approve or reject up to 50 actions in one request; returns per-item results |
 | `reportResult(id, status, opts?)` | Report execution outcome after approval |
 | `awaitDecision(id, opts?)` | Long-poll until decided (throws `ImpriRejected` / `ImpriExpired` / `ImpriTimeout`) |
 | `approvalGate(opts)` | Inline gate — returns `{ actionId, decision, finalPreview }` |
@@ -69,6 +70,54 @@ Default base URL: `http://localhost:8484` (self-hosted). Cloud: `https://api.imp
 | `rotateWebhookSecret()` | Rotate webhook signing secret |
 | `exportProject()` | GDPR export |
 | `eraseProjectData()` | Irreversible GDPR erasure |
+
+## bulkDecide
+
+Approve or reject up to 50 pending actions in a single request. Each item is decided independently — a failure on one ID does not roll back successes on others. The response is always HTTP 200; inspect `result.ok` per item.
+
+```ts
+const { results, succeeded, failed } = await client.bulkDecide(
+  ['act_aaa', 'act_bbb', 'act_ccc'],
+  'approve',
+  { comment: 'Batch-approved after daily review' },
+)
+
+const errors = results.filter(r => !r.ok)
+// r.error values: 'not_found' | 'already_decided' | 'internal'
+// r.current_status is present when error === 'already_decided'
+```
+
+**Constraints**:
+- Max 50 IDs per call (server enforces; throws `ImpriValidationError` on excess).
+- Rate limit: 10 requests/min per key (net ceiling 500 decisions/min).
+- Actions with `editable.length > 0` must be decided via `decide()` — bulk intentionally omits per-item edits.
+- Requires `'actions'` scope (same as single-decision).
+
+## listActions filters
+
+`listActions()` supports four server-side filter parameters:
+
+```ts
+// Text search across title and preview body
+await client.listActions({ q: 'send newsletter' })
+
+// Narrow by action kind
+await client.listActions({ kind: 'email.send' })
+
+// Only actions created after a unix timestamp
+await client.listActions({ since: Math.floor(Date.now() / 1000) - 86_400 })
+
+// Combine: pending email actions from the last 7 days matching a query
+await client.listActions({
+  status: 'pending',
+  kind: 'email.send',
+  since: Math.floor(Date.now() / 1000) - 604_800,
+  q: 'newsletter',
+})
+
+// Auto-paginate all matching pages
+await client.listActions({ q: 'deploy', autoPaginate: true })
+```
 
 ## requiresApproval wrapper
 

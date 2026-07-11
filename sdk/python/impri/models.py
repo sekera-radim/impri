@@ -114,6 +114,54 @@ class DecisionResult(TypedDict, total=False):
     diff: Optional[str]
 
 
+class _BulkDecisionResultRequired(TypedDict):
+    id: str
+    ok: bool
+
+
+class BulkDecisionResult(_BulkDecisionResultRequired, total=False):
+    """Per-item outcome in a BulkDecisionResponse.
+
+    When ok=True, status is present (the new action status after the decision).
+    When ok=False, error is present; current_status is also present when
+    error="already_decided".
+
+    error values:
+      "not_found"       — ID unknown or belongs to a different project.
+      "already_decided" — action.status != "pending"; current_status provided.
+      "internal"        — unexpected server error (logged server-side).
+    """
+    status: str           # Present when ok=True
+    error: str            # Present when ok=False: "not_found"|"already_decided"|"internal"
+    current_status: str   # Present when error="already_decided"
+
+
+class _BulkDecisionRequestRequired(TypedDict):
+    ids: List[str]
+    verdict: Literal["approve", "reject"]
+
+
+class BulkDecisionRequest(_BulkDecisionRequestRequired, total=False):
+    """Request body for POST /v1/actions/bulk-decision.
+
+    ids:     1–50 action IDs; server deduplicates before processing.
+    verdict: Applied uniformly to all IDs.
+    comment: Optional comment stored per decision (max 500 chars).
+    """
+    comment: str
+
+
+class BulkDecisionResponse(TypedDict):
+    """Response from POST /v1/actions/bulk-decision.
+
+    HTTP 200 is returned even on partial failure.  Check each item in results[]
+    individually — succeeded + failed always sum to len(results).
+    """
+    results: List[BulkDecisionResult]
+    succeeded: int
+    failed: int
+
+
 class ResultAck(TypedDict):
     """Response from POST /v1/actions/:id/result."""
     id: str

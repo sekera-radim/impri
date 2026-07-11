@@ -85,6 +85,11 @@ export interface ListActionsParams {
   kind?: string
   /** Unix timestamp — return only actions created after this. */
   since?: number
+  /**
+   * Free-text search across action title and preview body (max 200 chars).
+   * Matched server-side with LIKE; combine with kind/since to narrow results.
+   */
+  q?: string
   /** Max per page (server cap 100, default 50). */
   limit?: number
   cursor?: string
@@ -286,6 +291,39 @@ export interface CreateWatcherFromPresetParams {
   name?: string
   /** Defaults to `{ every: preset.defaultScheduleEvery }` when omitted. */
   schedule?: WatcherSchedule
+}
+
+// ─── Bulk decision ────────────────────────────────────────────────────────────
+
+export interface BulkDecisionRequest {
+  /** 1–50 action IDs. The server deduplicates before processing. */
+  ids: string[]
+  verdict: 'approve' | 'reject'
+  /** Optional comment stored per decision row (max 500 chars). */
+  comment?: string
+}
+
+/**
+ * Per-item outcome inside a `BulkDecisionResponse`.
+ *
+ * When `ok` is false, `error` is one of:
+ * - `"not_found"` — ID does not exist in this project (also used for cross-project IDs)
+ * - `"already_decided"` — action.status !== 'pending'; `current_status` carries the actual status
+ * - `"internal"` — unexpected server error; logged server-side
+ */
+export interface BulkDecisionResult {
+  id: string
+  ok: boolean
+  status?: ActionStatus
+  error?: 'not_found' | 'already_decided' | 'internal'
+  /** Present when `error` is `"already_decided"`. */
+  current_status?: ActionStatus
+}
+
+export interface BulkDecisionResponse {
+  results: BulkDecisionResult[]
+  succeeded: number
+  failed: number
 }
 
 // ─── Ergonomics ───────────────────────────────────────────────────────────────
