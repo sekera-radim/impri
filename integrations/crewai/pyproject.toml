@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "impri-crewai"
+version = "0.1.0"
+description = "Human-in-the-loop approval gate for CrewAI agents via Impri"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["impri", "crewai", "human-in-the-loop", "hitl", "ai-agents", "approval"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Libraries",
+]
+# Core has zero runtime dependencies beyond stdlib.
+dependencies = []
+
+[project.optional-dependencies]
+# Install crewai alongside this package.
+crewai = ["crewai>=0.28"]
+# Full dev environment: crewai + test runner.
+dev = ["crewai>=0.28", "pytest>=8"]
+
+[project.urls]
+Homepage = "https://impri.dev"
+Documentation = "https://impri.dev/docs"
+Source = "https://gitlab.com/sekera.radim/impri"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["impri_crewai*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

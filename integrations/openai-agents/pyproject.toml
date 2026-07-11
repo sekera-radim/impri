@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "impri-openai"
+version = "0.1.0"
+description = "Impri human-approval integration for the OpenAI Agents SDK"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+keywords = ["impri", "openai-agents", "human-in-the-loop", "approval", "ai-safety"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+# Install this extra to use make_guardrail() and InputGuardrail integration
+openai-agents = [
+    "openai-agents>=0.0.3",
+]
+
+# For running the test suite
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+]
+
+[project.urls]
+Homepage = "https://impri.dev"
+Repository = "https://gitlab.com/sekera.radim/impri"
+Documentation = "https://impri.dev/docs"
+
+[tool.hatch.build.targets.wheel]
+packages = ["impri_openai"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100

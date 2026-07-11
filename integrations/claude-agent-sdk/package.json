@@ -1,0 +1,62 @@
+{
+  "name": "@impri/claude-agent-sdk",
+  "version": "0.1.0",
+  "description": "Impri human-in-the-loop approval gate for Claude Agent SDK tool calls",
+  "keywords": [
+    "impri",
+    "claude",
+    "anthropic",
+    "human-in-the-loop",
+    "approval",
+    "ai-agent",
+    "tool-use"
+  ],
+  "license": "MIT",
+  "author": "Radim Sekera",
+  "homepage": "https://impri.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/sekera.radim/impri.git",
+    "directory": "integrations/claude-agent-sdk"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src test",
+    "check": "npm run typecheck && npm run test"
+  },
+  "peerDependencies": {
+    "@anthropic-ai/sdk": ">=0.20.0"
+  },
+  "peerDependenciesMeta": {
+    "@anthropic-ai/sdk": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.55.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}
