@@ -203,7 +203,8 @@
                     <template #prepend>
                       <v-icon size="14" color="success" class="mr-2">mdi-check</v-icon>
                     </template>
-                    <v-list-item-title class="text-body-2">{{ feature }}</v-list-item-title>
+                    <!-- text-wrap: dlouhé featury („Checks as often as…") se zalomí místo ořezu ellipsis -->
+                    <v-list-item-title class="text-body-2 text-wrap">{{ feature }}</v-list-item-title>
                   </v-list-item>
                 </v-list>
 
