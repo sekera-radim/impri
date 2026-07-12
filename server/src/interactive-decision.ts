@@ -45,6 +45,10 @@ export function commitInteractiveDecision(
   channel: string,     // 'telegram' | 'slack' | 'discord'
   projectId: string,
   requestIp: string | null,
+  // Human-readable actor for the audit trail (e.g. "Radim Sekera (@radim)").
+  // decisions.decided_by keeps the machine ID; only audit_log.actor uses this so
+  // the UI shows WHO decided, not a raw platform user ID. Defaults to decidedBy.
+  actorLabel?: string,
 ): DecisionOutcome {
   if (action.status !== 'pending') {
     return { kind: 'already_decided', currentStatus: action.status };
@@ -67,7 +71,7 @@ export function commitInteractiveDecision(
     ).run(newStatus, now, action.id);
     db.prepare(
       'INSERT INTO audit_log (project_id, action_id, event, actor, channel, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-    ).run(projectId, action.id, eventName, decidedBy, channel, now);
+    ).run(projectId, action.id, eventName, actorLabel ?? decidedBy, channel, now);
     // IP is PII — separate erasable table (PLAYBOOK F), not the immutable audit trail.
     db.prepare(
       'INSERT INTO pii_log (project_id, action_id, event, ip, created_at) VALUES (?, ?, ?, ?, ?)',

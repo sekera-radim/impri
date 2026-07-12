@@ -317,14 +317,14 @@ The audit trail stays intact; only the PII disappears.</p>
 <td><code>action.approved</code></td>
 <td>Yes — <code>actions.ts:580</code> (single) / <code>actions.ts:388</code> (bulk)</td>
 <td>set</td>
-<td>key ID</td>
+<td>key ID (API/web) or human name (chat)</td>
 <td>—</td>
 </tr>
 <tr>
 <td><code>action.rejected</code></td>
 <td>Yes — same locations</td>
 <td>set</td>
-<td>key ID</td>
+<td>key ID (API/web) or human name (chat)</td>
 <td>—</td>
 </tr>
 <tr>
@@ -351,7 +351,12 @@ The audit trail stays intact; only the PII disappears.</p>
 </tbody></table>
 </div>
 <p>The <code>channel</code> column on decision events distinguishes <code>api</code> (single decision),
-<code>web</code> (single decision via inbox), <code>bulk-api</code>, and <code>bulk-web</code>.</p>
+<code>web</code> (single decision via inbox), <code>bulk-api</code>, <code>bulk-web</code>, and the chat channels
+<code>slack</code> / <code>discord</code> / <code>telegram</code>.</p>
+<p>For decisions made via chat buttons, <code>actor</code> holds a <strong>human-readable name</strong> taken
+from the platform payload (e.g. <code>radim (Slack)</code>, <code>Radim (Discord)</code>, <code>@radim (Telegram)</code>) so the audit trail shows <em>who</em> clicked, not a raw platform user ID.
+The machine-parseable id (<code>sl:{id}</code> / <code>dc:{id}</code> / <code>tg:{id}</code>) is still kept in
+<code>decisions.decided_by</code> for programmatic use.</p>
 <h3 id="key-management">Key management</h3>
 <div class="table-wrap"><table>
 <thead>

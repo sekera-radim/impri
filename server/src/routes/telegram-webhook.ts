@@ -209,6 +209,7 @@ export function registerTelegramWebhookRoutes(app: FastifyInstance, db: Db): voi
       }
 
       // --- Steps 11–13: Idempotent decision commit via shared helper ---
+      const tgName = cq.from.username ? `@${cq.from.username}` : cq.from.first_name;
       const outcome = commitInteractiveDecision(
         db,
         action,
@@ -217,6 +218,7 @@ export function registerTelegramWebhookRoutes(app: FastifyInstance, db: Db): voi
         'telegram',
         channel.project_id,
         request.ip ?? null,
+        tgName ? `${tgName} (Telegram)` : `tg:${userId}`,
       );
 
       switch (outcome.kind) {

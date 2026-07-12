@@ -55,6 +55,7 @@ interface DiscordChannelRow {
 interface DiscordInteractionUser {
   id?: string;
   username?: string;
+  global_name?: string;
 }
 
 interface DiscordInteraction {
@@ -176,9 +177,10 @@ export function registerDiscordInteractionRoutes(app: FastifyInstance, db: Db): 
       // 9. Authorize user (Layer 3).
       // member.user.id for guild interactions; user.id for DM interactions.
       // Set by Discord's infrastructure — non-spoofable after Layer 1 passes.
-      const discordUserId = String(
-        interaction.member?.user?.id ?? interaction.user?.id ?? '',
-      );
+      const discordUser = interaction.member?.user ?? interaction.user;
+      const discordUserId = String(discordUser?.id ?? '');
+      const discordName = discordUser?.global_name ?? discordUser?.username;
+      const actorLabel = discordName ? `${discordName} (Discord)` : `dc:${discordUserId}`;
       const allowedIds = (config.allowed_approver_discord_user_ids as string[] | undefined) ?? [];
 
       if (!discordUserId || !allowedIds.includes(discordUserId)) {
@@ -215,6 +217,7 @@ export function registerDiscordInteractionRoutes(app: FastifyInstance, db: Db): 
         'discord',
         channel.project_id,
         request.ip ?? null,
+        actorLabel,
       );
 
       if (outcome.kind === 'already_decided' || outcome.kind === 'concurrent') {

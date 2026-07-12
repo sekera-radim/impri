@@ -424,8 +424,12 @@ export function registerSlackOAuthRoutes(app: FastifyInstance, db: Db): void {
     }
 
     // Authorize the clicking user against the channel's allowed-approver list
-    const slackUser   = payload.user as { id?: string } | undefined;
+    const slackUser   = payload.user as { id?: string; name?: string; username?: string } | undefined;
     const slackUserId = String(slackUser?.id ?? '');
+    // Human-readable label for the audit trail — Slack sends the name in-payload,
+    // no extra API call needed. e.g. "Radim Sekera (@radim, Slack)".
+    const slackName    = slackUser?.name ?? slackUser?.username;
+    const actorLabel   = slackName ? `${slackName} (Slack)` : `sl:${slackUserId}`;
     const allowedIds  = config.allowed_approver_slack_user_ids ?? [];
 
     if (!slackUserId || !allowedIds.includes(slackUserId)) {
@@ -458,6 +462,7 @@ export function registerSlackOAuthRoutes(app: FastifyInstance, db: Db): void {
       'slack',
       channel.project_id,
       request.ip ?? null,
+      actorLabel,
     );
 
     if (outcome.kind === 'already_decided' || outcome.kind === 'concurrent') {

@@ -137,8 +137,10 @@ export function registerSlackInteractionRoutes(app: FastifyInstance, db: Db): vo
       // 8. Authorize user (Layer 3).
       // payload.user.id is set by Slack's servers from the authenticated session
       // of whoever clicked; non-spoofable after Layer 1 passes.
-      const slackUser = payload.user as { id?: string } | undefined;
+      const slackUser = payload.user as { id?: string; name?: string; username?: string } | undefined;
       const slackUserId = String(slackUser?.id ?? '');
+      const slackName = slackUser?.name ?? slackUser?.username;
+      const actorLabel = slackName ? `${slackName} (Slack)` : `sl:${slackUserId}`;
       const allowedIds = (config.allowed_approver_slack_user_ids as string[] | undefined) ?? [];
 
       if (!slackUserId || !allowedIds.includes(slackUserId)) {
@@ -171,6 +173,7 @@ export function registerSlackInteractionRoutes(app: FastifyInstance, db: Db): vo
         'slack',
         channel.project_id,
         request.ip ?? null,
+        actorLabel,
       );
 
       if (outcome.kind === 'already_decided' || outcome.kind === 'concurrent') {

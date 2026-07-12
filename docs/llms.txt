@@ -192,7 +192,10 @@ Slack interaction receiver (public):
   `POST /v1/integrations/slack/interactions/:channelId`
   5-layer security: Slack HMAC-SHA256 v0 signature with 5-min timestamp window (timingSafeEqual) + button value HMAC sl: prefix + user-id allowlist + project_id binding + UNIQUE constraint.
   Set this URL in Slack app → Interactivity & Shortcuts → Request URL.
-  `decided_by` stored as `sl:{slack_user_id}` in audit_log.
+  `decisions.decided_by` = `sl:{slack_user_id}` (machine id); `audit_log.actor` = human-readable
+  name from the Slack payload (e.g. `radim (Slack)`) so the audit shows WHO decided.
+  Shared official app (one-click Add to Slack): `POST /v1/integrations/slack/interactions`
+  (no :channelId) verifies via the app-level signing secret; channel looked up by team_id+channel_id.
 
 ### Discord approval bot
 
@@ -207,7 +210,8 @@ Discord interaction receiver (public):
   Set this URL in Discord Developer Portal → General Information → Interactions Endpoint URL.
   Discord sends a PING (type 1) on save; Impri verifies the Ed25519 signature and returns {"type":1}.
   Interaction responses use type 7 (UPDATE_MESSAGE) — replaces the message within 3 seconds; no deferred response needed.
-  `decided_by` stored as `dc:{discord_user_id}` in audit_log.
+  `decisions.decided_by` = `dc:{discord_user_id}` (machine id); `audit_log.actor` = readable
+  name (global_name/username, e.g. `Radim (Discord)`).
 
 ### Project & GDPR
 

@@ -59,14 +59,21 @@ The audit trail stays intact; only the PII disappears.
 |-------|----------|-------------|---------|--------|
 | `action.created` | Yes — `actions.ts:181` | set | key ID | — |
 | `action.rule_applied` | Yes — `actions.ts:186` | set | NULL | `{rule_id, rule_name, outcome}` |
-| `action.approved` | Yes — `actions.ts:580` (single) / `actions.ts:388` (bulk) | set | key ID | — |
-| `action.rejected` | Yes — same locations | set | key ID | — |
+| `action.approved` | Yes — `actions.ts:580` (single) / `actions.ts:388` (bulk) | set | key ID (API/web) or human name (chat) | — |
+| `action.rejected` | Yes — same locations | set | key ID (API/web) or human name (chat) | — |
 | `action.expired` | Yes — `webhooks.ts:176`, atomically with the status UPDATE | set | NULL (system) | — |
 | `action.executed` | Yes — `actions.ts:650` | set | NULL | `{detail}` |
 | `action.execute_failed` | Yes — `actions.ts:650` | set | NULL | `{detail}` |
 
 The `channel` column on decision events distinguishes `api` (single decision),
-`web` (single decision via inbox), `bulk-api`, and `bulk-web`.
+`web` (single decision via inbox), `bulk-api`, `bulk-web`, and the chat channels
+`slack` / `discord` / `telegram`.
+
+For decisions made via chat buttons, `actor` holds a **human-readable name** taken
+from the platform payload (e.g. `radim (Slack)`, `Radim (Discord)`, `@radim
+(Telegram)`) so the audit trail shows *who* clicked, not a raw platform user ID.
+The machine-parseable id (`sl:{id}` / `dc:{id}` / `tg:{id}`) is still kept in
+`decisions.decided_by` for programmatic use.
 
 ### Key management
 
