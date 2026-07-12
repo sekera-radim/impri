@@ -48,34 +48,44 @@ async function runChecks(env) {
   const now = Date.now();
   const results = {};
   for (const t of TARGETS) {
-    const r = await checkTarget(t);
-    results[t.id] = { ...r, ts: now };
-    const key = `agg:${t.id}:${dateKey(now)}`;
-    const agg = (await env.STATUS_KV.get(key, 'json')) ?? { n: 0, fail: 0, msSum: 0 };
-    agg.n += 1;
-    if (!r.ok) agg.fail += 1;
-    agg.msSum += r.ms;
-    await env.STATUS_KV.put(key, JSON.stringify(agg), { expirationTtl: AGG_TTL_SEC });
+    results[t.id] = { ...(await checkTarget(t)), ts: now };
   }
+  // One combined daily-aggregate KV entry (all targets nested) instead of one
+  // key per target. The 5-min cron would otherwise do 4 writes/run × 288 =
+  // 1152 writes/day, over the Workers KV free-tier budget (1k writes/day).
+  // This keeps it at 2 writes/run (agg + latest) = 576/day, with 5-min
+  // resolution and the warm-keeping side effect intact.
+  const aggKey = `agg:${dateKey(now)}`;
+  const agg = (await env.STATUS_KV.get(aggKey, 'json')) ?? {};
+  for (const t of TARGETS) {
+    const cell = agg[t.id] ?? { n: 0, fail: 0, msSum: 0 };
+    cell.n += 1;
+    if (!results[t.id].ok) cell.fail += 1;
+    cell.msSum += results[t.id].ms;
+    agg[t.id] = cell;
+  }
+  await env.STATUS_KV.put(aggKey, JSON.stringify(agg), { expirationTtl: AGG_TTL_SEC });
   await env.STATUS_KV.put('latest', JSON.stringify({ ts: now, results }));
   return results;
 }
 
 async function loadHistory(env) {
   const out = {};
+  for (const t of TARGETS) out[t.id] = [];
   const today = Date.now();
-  for (const t of TARGETS) {
-    const days = [];
-    for (let i = DAYS_SHOWN - 1; i >= 0; i--) {
-      const d = dateKey(today - i * 86400_000);
-      const agg = await env.STATUS_KV.get(`agg:${t.id}:${d}`, 'json');
-      days.push({
+  // One KV read per day (all targets in one entry) instead of one per target
+  // per day — 60 reads/pageview instead of 180.
+  for (let i = DAYS_SHOWN - 1; i >= 0; i--) {
+    const d = dateKey(today - i * 86400_000);
+    const agg = await env.STATUS_KV.get(`agg:${d}`, 'json');
+    for (const t of TARGETS) {
+      const cell = agg?.[t.id];
+      out[t.id].push({
         date: d,
-        uptime: agg && agg.n > 0 ? (1 - agg.fail / agg.n) : null,
-        avgMs: agg && agg.n > 0 ? Math.round(agg.msSum / agg.n) : null,
+        uptime: cell && cell.n > 0 ? (1 - cell.fail / cell.n) : null,
+        avgMs: cell && cell.n > 0 ? Math.round(cell.msSum / cell.n) : null,
       });
     }
-    out[t.id] = days;
   }
   return out;
 }
