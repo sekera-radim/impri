@@ -1,14 +1,21 @@
 {
   "name": "@impri/mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "mcpName": "io.github.sekera-radim/impri",
   "description": "Impri MCP server — human-in-the-loop approval inbox for AI agents",
-  "keywords": ["mcp", "impri", "human-in-the-loop", "approval", "ai-agent"],
+  "keywords": [
+    "mcp",
+    "impri",
+    "human-in-the-loop",
+    "approval",
+    "ai-agent"
+  ],
   "license": "MIT",
   "author": "Radim Sekera",
   "homepage": "https://impri.dev",
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/sekera.radim/impri.git",
+    "url": "git+https://gitlab.com/sekera.radim/impri.git",
     "directory": "mcp"
   },
   "publishConfig": {
@@ -21,9 +28,12 @@
     "./webhook": "./dist/webhook.js"
   },
   "bin": {
-    "impri-mcp": "./dist/index.js"
+    "impri-mcp": "dist/index.js"
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "engines": {
     "node": ">=18"
   },

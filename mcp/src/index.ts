@@ -21,18 +21,20 @@ import {
 
 const apiKey = process.env["IMPRI_API_KEY"];
 if (!apiKey) {
+  // Don't exit — start anyway so clients and registries (e.g. Glama) can
+  // introspect the tool list before a key is configured. Tool *calls* return
+  // a clear error until IMPRI_API_KEY is set (see the CallTool handler).
   process.stderr.write(
     [
-      "Error: IMPRI_API_KEY is not set.",
+      "Warning: IMPRI_API_KEY is not set — tool calls will fail until it is.",
       "Obtain an API key at https://impri.dev and pass it via environment variable.",
       "Example: IMPRI_API_KEY=im_... npx @impri/mcp",
     ].join("\n") + "\n",
   );
-  process.exit(1);
 }
 
 const config: ImpriConfig = {
-  apiKey,
+  apiKey: apiKey ?? "",
   baseUrl: process.env["IMPRI_BASE_URL"] ?? "http://localhost:8484",
 };
 
@@ -340,6 +342,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: rawArgs } = request.params;
   const args = (rawArgs ?? {}) as Record<string, unknown>;
+
+  if (!apiKey) {
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: "Error: IMPRI_API_KEY is not set. Get a key at https://impri.dev and set it in your MCP client config for this server.",
+        },
+      ],
+      isError: true,
+    };
+  }
 
   try {
     switch (name) {
