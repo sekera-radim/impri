@@ -1,6 +1,8 @@
 # Status page pro Impri — Cloudflare Worker (status.impri.dev).
-# Cron každých 5 min pinguje API/app/web, výsledky agreguje do KV,
+# Cron každých 10 min pinguje API/app/web, výsledky agreguje do KV,
 # fetch handler servíruje HTML stránku + /api/status JSON.
+# (10 min místo 5: 2 KV writes/běh × 144 běhů = 288 zápisů/den, komfortně
+#  pod free-tier limitem 1000/den.)
 name = "impri-status"
 main = "worker.js"
 compatibility_date = "2026-07-01"
@@ -11,7 +13,7 @@ kv_namespaces = [
 ]
 
 [triggers]
-crons = ["*/5 * * * *"]
+crons = ["*/10 * * * *"]
 
 [[routes]]
 pattern = "status.impri.dev"

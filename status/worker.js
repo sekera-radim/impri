@@ -1,7 +1,7 @@
 /**
  * Impri status page — samostatný Cloudflare Worker (žádná externí služba).
  *
- * scheduled (cron každých 5 min): změří všechny targety a zapíše do KV
+ * scheduled (cron každých 10 min): změří všechny targety a zapíše do KV
  *   - "latest"                → aktuální stav (pro hlavičku stránky)
  *   - "agg:<target>:<date>"   → denní agregát { n, fail, msSum } (90 dní TTL)
  * fetch: HTML stránka + GET /api/status (JSON).
@@ -171,7 +171,7 @@ function renderHtml(latest, history) {
     <span class="muted">Updated ${updated}</span>
   </div>
   ${sections}
-  <footer>Checks run every 5 minutes from Cloudflare's network. JSON: <a href="/api/status">/api/status</a></footer>
+  <footer>Checks run every 10 minutes from Cloudflare's network. JSON: <a href="/api/status">/api/status</a></footer>
 </div></body></html>`;
 }
 
