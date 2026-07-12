@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Operator / Multi-tenant Self-hosting — Impri Docs</title>
-<meta name="description" content="When you run Impri as a shared platform for multiple teams or users, you need visibility into the whole instance — not just your own project. The operator endpoint provides platform-wide stats without">
+<title>Privacy Policy — Impri Docs</title>
+<meta name="description" content="Last updated: 2026-07-12">
 <meta name="theme-color" content="#06070d">
-<meta property="og:title" content="Operator / Multi-tenant Self-hosting — Impri Docs">
-<meta property="og:description" content="When you run Impri as a shared platform for multiple teams or users, you need visibility into the whole instance — not just your own project. The operator endpoint provides platform-wide stats without">
+<meta property="og:title" content="Privacy Policy — Impri Docs">
+<meta property="og:description" content="Last updated: 2026-07-12">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="../styles.css">
@@ -139,8 +139,8 @@ pre code.hljs{display:block;overflow-x:auto}
 <a href="../docs/audit-log.html" class="sl">Audit log</a>
 <a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
 <a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
-<a href="../docs/privacy.html" class="sl">Privacy policy</a>
-<a href="../docs/operator.html" class="sl active">Operator / admin</a>
+<a href="../docs/privacy.html" class="sl active">Privacy policy</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
 </div>
 <div class="sg">
 <div class="sg-label">SDKs</div>
@@ -175,150 +175,94 @@ pre code.hljs{display:block;overflow-x:auto}
       <span class="bc-sep">/</span>
       <span>API reference</span>
       <span class="bc-sep">/</span>
-      <span>Operator / Multi-tenant Self-hosting</span>
+      <span>Privacy Policy</span>
     </nav>
-    <h1>Operator / Multi-tenant Self-hosting</h1>
-<p>When you run Impri as a shared platform for multiple teams or users, you need visibility into the whole instance — not just your own project. The operator endpoint provides platform-wide stats without exposing individual project data.</p>
-<hr>
-<h2 id="setup">Setup</h2>
-<p>Set the <code>OPERATOR_PROJECT_ID</code> environment variable to the ID of the project whose admin key you will use for operator calls:</p>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">OPERATOR_PROJECT_ID=prj_your_project_id</code></pre></div>
-<p>Any admin key belonging to that project can call the operator stats endpoint. All other keys (including admin keys from other projects) receive <code>404 Not Found</code> — the endpoint is invisible to non-operators.</p>
-<hr>
-<h2 id="get-v1adminstats-platform-totals"><code>GET /v1/admin/stats</code> — platform totals</h2>
-<div class="code-block"><span class="code-lang">http</span><pre><code class="hljs"><span class="hljs-keyword">GET</span> <span class="hljs-string">/v1/admin/stats</span> <span class="hljs-meta">HTTP/1.1</span>
-<span class="hljs-attribute">Authorization</span><span class="hljs-punctuation">: </span>Bearer im_&lt;operator-admin-key&gt;</code></pre></div>
-<p>Response:</p>
-<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
-  <span class="hljs-attr">&quot;signups&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
-    <span class="hljs-attr">&quot;total&quot;</span><span class="hljs-punctuation">:</span>   <span class="hljs-number">142</span><span class="hljs-punctuation">,</span>
-    <span class="hljs-attr">&quot;last_24h&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">3</span><span class="hljs-punctuation">,</span>
-    <span class="hljs-attr">&quot;last_7d&quot;</span><span class="hljs-punctuation">:</span>  <span class="hljs-number">18</span><span class="hljs-punctuation">,</span>
-    <span class="hljs-attr">&quot;last_30d&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">61</span>
-  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;by_tier&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
-    <span class="hljs-attr">&quot;free&quot;</span><span class="hljs-punctuation">:</span>  <span class="hljs-number">115</span><span class="hljs-punctuation">,</span>
-    <span class="hljs-attr">&quot;indie&quot;</span><span class="hljs-punctuation">:</span>  <span class="hljs-number">22</span><span class="hljs-punctuation">,</span>
-    <span class="hljs-attr">&quot;team&quot;</span><span class="hljs-punctuation">:</span>    <span class="hljs-number">5</span>
-  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;paid&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">27</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;activity&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
-    <span class="hljs-attr">&quot;actions_total&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">9842</span><span class="hljs-punctuation">,</span>
-    <span class="hljs-attr">&quot;actions_7d&quot;</span><span class="hljs-punctuation">:</span>    <span class="hljs-number">1203</span><span class="hljs-punctuation">,</span>
-    <span class="hljs-attr">&quot;watchers&quot;</span><span class="hljs-punctuation">:</span>       <span class="hljs-number">88</span>
-  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;ts&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1720000000</span>
-<span class="hljs-punctuation">}</span></code></pre></div>
-<p>Fields:</p>
+    <h1>Privacy Policy</h1>
+<p><em>Last updated: 2026-07-12</em></p>
+<p>Impri is built to be privacy-friendly by default: <strong>self-hosting sends no telemetry and nothing phones home</strong>, and the hosted cloud collects no account email, no password, and runs no analytics or tracking. This policy explains what the hosted cloud (<code>app.impri.dev</code> / <code>api.impri.dev</code>) does with data. If you self-host, you are the data controller and this policy is for reference only.</p>
+<h2 id="who-we-are">Who we are</h2>
+<p>The data controller for the hosted cloud is <strong>Radim Sekera</strong>. Contact: <a href="https://sekera.dev" target="_blank" rel="noopener">sekera.dev</a>. Data is stored in the EU (Fly.io, Frankfurt).</p>
+<h2 id="what-we-collect-and-why">What we collect and why</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-<th>Field</th>
-<th>Description</th>
+<th>Data</th>
+<th>Why</th>
+<th>Erasable</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><code>signups.total</code></td>
-<td>Total number of projects (one per signup)</td>
+<td>Project name (optional, you provide it)</td>
+<td>Label your project</td>
+<td>Preserved with the account</td>
 </tr>
 <tr>
-<td><code>signups.last_24h/7d/30d</code></td>
-<td>Projects created in the last N days</td>
+<td>Content you send — action titles, previews, payloads, and your decisions</td>
+<td>To provide the approval service (the core function)</td>
+<td>Yes</td>
 </tr>
 <tr>
-<td><code>by_tier</code></td>
-<td>Breakdown of projects by current tier</td>
+<td>Notification channel config — e.g. Slack/Discord/Telegram bot tokens, channel IDs</td>
+<td>To deliver approvals to your chat</td>
+<td>Yes (masked in API responses, never logged)</td>
 </tr>
 <tr>
-<td><code>paid</code></td>
-<td>Count of indie + team projects</td>
+<td>Request IP addresses</td>
+<td>Security and abuse prevention</td>
+<td>Yes (stored in a separate <code>pii_log</code>, erased on request)</td>
 </tr>
 <tr>
-<td><code>activity.actions_total</code></td>
-<td>Total actions ever created across all projects</td>
+<td>API key hashes (argon2) and prefixes</td>
+<td>Authentication</td>
+<td>Preserved for account continuity</td>
 </tr>
 <tr>
-<td><code>activity.actions_7d</code></td>
-<td>Actions created in the last 7 days</td>
-</tr>
-<tr>
-<td><code>activity.watchers</code></td>
-<td>Active (non-paused) watchers across all projects</td>
-</tr>
-<tr>
-<td><code>ts</code></td>
-<td>Unix timestamp of the response</td>
+<td>Stripe customer / subscription IDs</td>
+<td>Billing</td>
+<td>Preserved while the account exists</td>
 </tr>
 </tbody></table>
 </div>
-<hr>
-<h2 id="security-notes">Security notes</h2>
+<p>We only ever receive the content your agents choose to push. We do not scan, sell, or share it.</p>
+<h2 id="what-we-do-not-collect">What we do <strong>not</strong> collect</h2>
 <ul>
-<li>Returns <code>404 Not Found</code> for all keys that do not belong to <code>OPERATOR_PROJECT_ID</code>, regardless of scope. The endpoint is not discoverable.</li>
-<li>No individual project data is exposed — only platform-level aggregate counts.</li>
-<li>Even operator keys cannot read another project&#39;s actions, decisions, or audit log.</li>
-<li>Set <code>OPERATOR_PROJECT_ID</code> to a dedicated operator project — do not reuse a user-facing project for this.</li>
+<li><strong>No email or password</strong> at sign-up (a project is created anonymously and identified by an API key).</li>
+<li><strong>No analytics, tracking pixels, or telemetry.</strong> The self-hosted server makes no outbound calls home.</li>
+<li><strong>No card data.</strong> Payments are processed by Stripe; card numbers never touch our servers — we store only Stripe&#39;s customer and subscription identifiers.</li>
 </ul>
-<hr>
-<h2 id="usage-example-python">Usage example (Python)</h2>
-<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> os
-<span class="hljs-keyword">from</span> impri <span class="hljs-keyword">import</span> ImpriClient
-
-operator_key = os.environ[<span class="hljs-string">&quot;OPERATOR_API_KEY&quot;</span>]  <span class="hljs-comment"># admin key for OPERATOR_PROJECT_ID</span>
-client = ImpriClient(api_key=operator_key, base_url=<span class="hljs-string">&quot;http://localhost:8484&quot;</span>)
-
-<span class="hljs-comment"># The SDK doesn&#x27;t have a dedicated method — call the raw endpoint</span>
-<span class="hljs-keyword">import</span> urllib.request, json, os
-
-req = urllib.request.Request(
-    <span class="hljs-string">&quot;http://localhost:8484/v1/admin/stats&quot;</span>,
-    headers={<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{operator_key}</span>&quot;</span>},
-)
-<span class="hljs-keyword">with</span> urllib.request.urlopen(req) <span class="hljs-keyword">as</span> resp:
-    stats = json.loads(resp.read())
-
-<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Total signups: <span class="hljs-subst">{stats[<span class="hljs-string">&#x27;signups&#x27;</span>][<span class="hljs-string">&#x27;total&#x27;</span>]}</span>&quot;</span>)
-<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Paid projects: <span class="hljs-subst">{stats[<span class="hljs-string">&#x27;paid&#x27;</span>]}</span>&quot;</span>)
-<span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Actions this week: <span class="hljs-subst">{stats[<span class="hljs-string">&#x27;activity&#x27;</span>][<span class="hljs-string">&#x27;actions_7d&#x27;</span>]}</span>&quot;</span>)</code></pre></div>
-<hr>
-<h2 id="environment-variables-for-multi-tenant-operation">Environment variables for multi-tenant operation</h2>
-<div class="table-wrap"><table>
-<thead>
-<tr>
-<th>Variable</th>
-<th>Purpose</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><code>OPERATOR_PROJECT_ID</code></td>
-<td>Unlocks <code>GET /v1/admin/stats</code> for that project&#39;s admin keys</td>
-</tr>
-<tr>
-<td><code>ALLOW_SIGNUP</code></td>
-<td>When set to <code>1</code> or <code>true</code>, enables <code>POST /v1/signup</code> for self-serve project creation</td>
-</tr>
-<tr>
-<td><code>DB_PATH</code></td>
-<td>SQLite database path (default: <code>data/impri.db</code>)</td>
-</tr>
-<tr>
-<td><code>BASE_URL</code></td>
-<td>Public base URL shown in inbox links</td>
-</tr>
-</tbody></table>
-</div>
-<p>See <a href="self-hosting.html">Self-hosting</a> for the full environment variable reference.</p>
+<h2 id="cookies-and-local-storage">Cookies and local storage</h2>
+<p>The web app stores your API key in the browser&#39;s <strong>localStorage</strong> so you stay signed in. This is functional, not tracking, and never leaves your browser except as the <code>Authorization</code> header on API calls. We set no third-party or advertising cookies.</p>
+<h2 id="subprocessors">Subprocessors</h2>
+<p>The hosted cloud relies on:</p>
+<ul>
+<li><strong>Fly.io</strong> — application hosting (EU, Frankfurt)</li>
+<li><strong>Tigris</strong> — encrypted off-site database backups (continuous replication)</li>
+<li><strong>Cloudflare</strong> — static delivery of the web app and marketing site (Pages)</li>
+<li><strong>Stripe</strong> — payment processing</li>
+</ul>
+<h2 id="retention">Retention</h2>
+<p>Your content is kept until you erase it (<code>DELETE /v1/project/data</code>) or the account is deleted. Audit rows are kept indefinitely by default; operators can enable automatic purging after N days. See <a href="gdpr.html">GDPR & Data Management</a> for the export and erasure endpoints.</p>
+<h2 id="your-rights">Your rights</h2>
+<p>You can access, export, rectify, or erase your data at any time using the self-service <code>GET /v1/project/export</code> and <code>DELETE /v1/project/data</code> endpoints, or by contacting us at <a href="https://sekera.dev" target="_blank" rel="noopener">sekera.dev</a>. We aim to respond within 30 days.</p>
+<h2 id="changes">Changes</h2>
+<p>Material changes to this policy will be reflected here with an updated date.</p>
+<h2 id="contact">Contact</h2>
+<p>Questions about privacy or your data: <a href="https://sekera.dev" target="_blank" rel="noopener">sekera.dev</a>.</p>
 
   </main>
 
   <aside aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#setup">Setup</a></li>
-<li class="ptoc-h2"><a href="#get-v1adminstats-platform-totals">GET /v1/admin/stats — platform totals</a></li>
-<li class="ptoc-h2"><a href="#security-notes">Security notes</a></li>
-<li class="ptoc-h2"><a href="#usage-example-python">Usage example (Python)</a></li>
-<li class="ptoc-h2"><a href="#environment-variables-for-multi-tenant-operation">Environment variables for multi-tenant operation</a></li></ul>
+<ul><li class="ptoc-h2"><a href="#who-we-are">Who we are</a></li>
+<li class="ptoc-h2"><a href="#what-we-collect-and-why">What we collect and why</a></li>
+<li class="ptoc-h2"><a href="#what-we-do-not-collect">What we do not collect</a></li>
+<li class="ptoc-h2"><a href="#cookies-and-local-storage">Cookies and local storage</a></li>
+<li class="ptoc-h2"><a href="#subprocessors">Subprocessors</a></li>
+<li class="ptoc-h2"><a href="#retention">Retention</a></li>
+<li class="ptoc-h2"><a href="#your-rights">Your rights</a></li>
+<li class="ptoc-h2"><a href="#changes">Changes</a></li>
+<li class="ptoc-h2"><a href="#contact">Contact</a></li></ul>
 </nav>
   </aside>
 </div>

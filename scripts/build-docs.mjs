@@ -49,6 +49,7 @@ const NAV = [
       { slug: 'audit-log',         title: 'Audit log' },
       { slug: 'billing',           title: 'Billing & tiers' },
       { slug: 'gdpr',              title: 'GDPR & data export' },
+      { slug: 'privacy',           title: 'Privacy policy' },
       { slug: 'operator',          title: 'Operator / admin' },
     ],
   },
@@ -344,6 +345,7 @@ function buildFooter() {
     <a href="/docs.html">Docs</a>
     <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
     <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+    <a href="/docs/privacy.html">Privacy</a>
     <a href="https://sekera.dev">Contact</a>
   </div>
 </div>
