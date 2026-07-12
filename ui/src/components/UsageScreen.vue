@@ -371,12 +371,16 @@ const store = useUsageStore()
 
 const actionStats = computed(() => {
   if (!store.usage) return []
-  const { pending, approved, rejected, expired } = store.usage.actions
+  // All six statuses so the tiles sum exactly to created_this_period. Missing
+  // executed/failed previously made the breakdown look like it didn't add up.
+  const { pending, approved, rejected, expired, executed, execute_failed } = store.usage.actions
   return [
-    { label: 'pending',  value: pending,  color: 'primary', textColor: 'rgb(var(--v-theme-primary))' },
-    { label: 'approved', value: approved, color: 'success', textColor: 'rgb(var(--v-theme-success))' },
-    { label: 'rejected', value: rejected, color: 'error',   textColor: 'rgb(var(--v-theme-error))' },
-    { label: 'expired',  value: expired,  color: 'warning', textColor: 'rgb(var(--v-theme-warning))' },
+    { label: 'pending',  value: pending,        color: 'primary', textColor: 'rgb(var(--v-theme-primary))' },
+    { label: 'approved', value: approved,       color: 'success', textColor: 'rgb(var(--v-theme-success))' },
+    { label: 'executed', value: executed,       color: 'info',    textColor: 'rgb(var(--v-theme-info))' },
+    { label: 'rejected', value: rejected,       color: 'error',   textColor: 'rgb(var(--v-theme-error))' },
+    { label: 'failed',   value: execute_failed, color: 'error',   textColor: 'rgb(var(--v-theme-error))' },
+    { label: 'expired',  value: expired,        color: 'warning', textColor: 'rgb(var(--v-theme-warning))' },
   ]
 })
 

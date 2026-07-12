@@ -51,9 +51,13 @@ export function registerUsageRoutes(app: FastifyInstance, db: Db): void {
       'SELECT COUNT(*) AS cnt FROM actions WHERE project_id = ? AND created_at >= ?',
     ).get(projectId, periodStart) as { cnt: number }).cnt;
 
+    // Period-scoped so the per-status counts sum exactly to created_this_period
+    // (every action created this period is in exactly one status). Without the
+    // created_at filter the breakdown counted all-time actions and no longer
+    // added up to "created this period".
     const actionsByStatus = (db.prepare(
-      'SELECT status, COUNT(*) AS cnt FROM actions WHERE project_id = ? GROUP BY status',
-    ).all(projectId) as { status: string; cnt: number }[]).reduce(
+      'SELECT status, COUNT(*) AS cnt FROM actions WHERE project_id = ? AND created_at >= ? GROUP BY status',
+    ).all(projectId, periodStart) as { status: string; cnt: number }[]).reduce(
       (acc, row) => { acc[row.status] = row.cnt; return acc; },
       {} as Record<string, number>,
     );
@@ -108,6 +112,8 @@ export function registerUsageRoutes(app: FastifyInstance, db: Db): void {
         approved: actionsByStatus['approved'] ?? 0,
         rejected: actionsByStatus['rejected'] ?? 0,
         expired: actionsByStatus['expired'] ?? 0,
+        executed: actionsByStatus['executed'] ?? 0,
+        execute_failed: actionsByStatus['execute_failed'] ?? 0,
       },
 
       approvals: {

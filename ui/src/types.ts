@@ -305,6 +305,8 @@ export interface UsageActions {
   approved: number
   rejected: number
   expired: number
+  executed: number
+  execute_failed: number
 }
 
 export interface UsageApprovals {
