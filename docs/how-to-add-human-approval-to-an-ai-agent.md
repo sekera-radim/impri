@@ -32,7 +32,7 @@ Agent                         Impri                          Human
   └── POST /v1/actions/:id/result (executed | execute_failed)
 ```
 
-The key property: the agent never calls "send" without first seeing `status: "approved"` from the API. The gate is in the data, not in a prompt.
+The key property: what gates execution is a data dependency — the API returning `status: "approved"` — not a "please confirm" line in a prompt that a model can talk itself past. Be precise about what that does and does not guarantee. It is a real gate only as long as the approved path is the agent's **only** path to the side effect. Wrap the target tool so its executor cannot run without the approved decision (see [the SDK integrations](integrations.md)) and that wrapper is a genuine chokepoint. Leave the agent holding the raw credential to call the service directly and it can route around Impri. Impri is a chokepoint you confine the agent to, not a network-level interceptor of every egress.
 
 ---
 

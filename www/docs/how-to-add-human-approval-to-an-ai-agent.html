@@ -201,7 +201,7 @@ pre code.hljs{display:block;overflow-x:auto}
   │   with final_preview        │
   │                             │
   └── POST /v1/actions/:id/result (executed | execute_failed)</code></pre></div>
-<p>The key property: the agent never calls &quot;send&quot; without first seeing <code>status: &quot;approved&quot;</code> from the API. The gate is in the data, not in a prompt.</p>
+<p>The key property: what gates execution is a data dependency — the API returning <code>status: &quot;approved&quot;</code> — not a &quot;please confirm&quot; line in a prompt that a model can talk itself past. Be precise about what that does and does not guarantee. It is a real gate only as long as the approved path is the agent&#39;s <strong>only</strong> path to the side effect. Wrap the target tool so its executor cannot run without the approved decision (see <a href="integrations.html">the SDK integrations</a>) and that wrapper is a genuine chokepoint. Leave the agent holding the raw credential to call the service directly and it can route around Impri. Impri is a chokepoint you confine the agent to, not a network-level interceptor of every egress.</p>
 <hr>
 <h2 id="minimal-integration-rest">Minimal integration — REST</h2>
 <p>Any HTTP client works. The agent needs three calls.</p>
