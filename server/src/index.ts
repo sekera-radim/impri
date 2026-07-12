@@ -20,6 +20,7 @@ import { registerSlackInteractionRoutes } from './routes/slack-interactions.js';
 import { registerDiscordInteractionRoutes } from './routes/discord-interactions.js';
 import { registerAuditRoutes } from './routes/audit.js';
 import { registerUsageRoutes } from './routes/usage.js';
+import { registerRecoveryRoutes } from './routes/recovery.js';
 import { billingActive } from './billing.js';
 import { pushEnabled } from './push.js';
 import { runExpiryTick } from './webhooks.js';
@@ -284,6 +285,9 @@ export async function createApp(db: Db) {
 
   // Usage snapshot — current period actions/approvals, watchers, tier limits
   registerUsageRoutes(app, db);
+
+  // Recovery code rotation + project recovery (public /v1/recover, authed /v1/recovery-code)
+  registerRecoveryRoutes(app, db);
 
   return app;
 }

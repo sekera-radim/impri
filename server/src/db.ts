@@ -318,6 +318,12 @@ function migrate(db: Db): void {
   if (!columns('actions').has('color')) {
     db.exec('ALTER TABLE actions ADD COLUMN color TEXT');
   }
+
+  // Account recovery code hash — nullable; existing projects get it via
+  // POST /v1/recovery-code once the user sets one from the dashboard.
+  if (!project.has('recovery_hash')) {
+    db.exec('ALTER TABLE projects ADD COLUMN recovery_hash TEXT');
+  }
 }
 
 export function createDb(path: string): Db {

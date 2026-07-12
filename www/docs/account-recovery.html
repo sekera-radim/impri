@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>API Keys — Impri Docs</title>
-<meta name="description" content="Every request to the Impri API is authenticated with a Bearer token that looks like im_&amp;lt;base64url&amp;gt;. Keys are project-scoped, have one or more scopes, and are stored as argon2 hashes — the raw va">
+<title>Account Recovery — Impri Docs</title>
+<meta name="description" content="Impri is intentionally anonymous — no email address, no password. Your API key is the only credential. If you lose all your keys, this guide explains how to recover access using a recovery code.">
 <meta name="theme-color" content="#06070d">
-<meta property="og:title" content="API Keys — Impri Docs">
-<meta property="og:description" content="Every request to the Impri API is authenticated with a Bearer token that looks like im_&amp;lt;base64url&amp;gt;. Keys are project-scoped, have one or more scopes, and are stored as argon2 hashes — the raw va">
+<meta property="og:title" content="Account Recovery — Impri Docs">
+<meta property="og:description" content="Impri is intentionally anonymous — no email address, no password. Your API key is the only credential. If you lose all your keys, this guide explains how to recover access using a recovery code.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="../styles.css">
@@ -129,7 +129,7 @@ pre code.hljs{display:block;overflow-x:auto}
 </div>
 <div class="sg">
 <div class="sg-label">API reference</div>
-<a href="../docs/api-keys.html" class="sl active">API keys &amp; scopes</a>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
 <a href="../docs/rules.html" class="sl">Rules engine</a>
 <a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
 <a href="../docs/notifications.html" class="sl">Notification channels</a>
@@ -142,7 +142,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <a href="../docs/privacy.html" class="sl">Privacy policy</a>
 <a href="../docs/terms.html" class="sl">Terms of service</a>
 <a href="../docs/operator.html" class="sl">Operator / admin</a>
-<a href="../docs/account-recovery.html" class="sl">Account recovery</a>
+<a href="../docs/account-recovery.html" class="sl active">Account recovery</a>
 </div>
 <div class="sg">
 <div class="sg-label">SDKs</div>
@@ -177,134 +177,122 @@ pre code.hljs{display:block;overflow-x:auto}
       <span class="bc-sep">/</span>
       <span>API reference</span>
       <span class="bc-sep">/</span>
-      <span>API Keys</span>
+      <span>Account Recovery</span>
     </nav>
-    <h1>API Keys</h1>
-<p>Every request to the Impri API is authenticated with a Bearer token that looks like <code>im_&lt;base64url&gt;</code>. Keys are project-scoped, have one or more scopes, and are stored as argon2 hashes — the raw value is shown <strong>exactly once</strong> at creation and never stored in plain text.</p>
-<hr>
-<h2 id="scopes">Scopes</h2>
+    <h1>Account Recovery</h1>
+<p>Impri is intentionally anonymous — no email address, no password. Your API key is the only credential. If you lose all your keys, this guide explains how to recover access using a <strong>recovery code</strong>.</p>
+<h2 id="how-it-works">How it works</h2>
+<p>When a project is created (via <code>POST /v1/signup</code> or first-run bootstrap), a recovery code is generated alongside the API key. Both are printed <strong>once</strong> and never stored in plaintext.</p>
+<p>The recovery code lets you call <code>POST /v1/recover</code> to:</p>
+<ol>
+<li>Verify your identity without needing an API key.</li>
+<li>Mint a new admin key.</li>
+<li>Rotate the recovery code (so the used code is immediately invalidated).</li>
+</ol>
+<p>Both the new key and a new recovery code are returned in the response — <strong>store them before closing the response</strong>.</p>
+<h2 id="recovery-code-format">Recovery code format</h2>
+<div class="code-block"><pre><code class="hljs">imr_&lt;32-character base64url random string&gt;</code></pre></div>
+<p>Example: <code>imr_ABcDEfgHiJkLmNopQrStUvwX</code></p>
+<h2 id="getting-a-recovery-code">Getting a recovery code</h2>
+<h3 id="at-signup">At signup</h3>
+<p><code>POST /v1/signup</code> returns <code>recovery_code</code> alongside <code>key</code>:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;key&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_…&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;project_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;proj_…&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;recovery_code&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;imr_…&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;note&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Store this key and recovery code securely — they will not be shown again.&quot;</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<h3 id="via-the-dashboard">Via the dashboard</h3>
+<p>Open the dashboard, click the <strong>shield icon</strong> in the top-right header, or dismiss the setup banner that appears when no recovery code is set.</p>
+<h3 id="via-the-api">Via the API</h3>
+<div class="code-block"><span class="code-lang">http</span><pre><code class="hljs">POST /v1/recovery-code
+<span class="hljs-attribute">Authorization</span><span class="hljs-punctuation">: </span>Bearer im_&lt;admin-key&gt;</code></pre></div>
+<p>Response:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;recovery_code&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;imr_…&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;note&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Store this code securely…&quot;</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>Generating a new code <strong>invalidates</strong> any previous code. Requires <code>admin</code> scope.</p>
+<h2 id="recovering-access">Recovering access</h2>
+<h3 id="via-the-login-screen">Via the login screen</h3>
+<p>Click <strong>&quot;Lost your key?&quot;</strong> on the login screen, enter your project ID and recovery code, and click <strong>&quot;Recover access&quot;</strong>. The UI will display a new API key and a new recovery code — save both.</p>
+<h3 id="via-the-api-2">Via the API</h3>
+<div class="code-block"><span class="code-lang">http</span><pre><code class="hljs">POST /v1/recover
+<span class="hljs-attribute">Content-Type</span><span class="hljs-punctuation">: </span>application/json
+
+{
+  &quot;project_id&quot;: &quot;proj_…&quot;,
+  &quot;recovery_code&quot;: &quot;imr_…&quot;
+}</code></pre></div>
+<p>Response (200):</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;key&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_…&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;recovery_code&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;imr_…&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;project_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;proj_…&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;note&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Store the new key and recovery code securely — they will not be shown again.&quot;</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>This endpoint is <strong>public</strong> (no <code>Authorization</code> header needed).</p>
+<h3 id="what-happens-to-existing-keys">What happens to existing keys?</h3>
+<p>Recovery does <strong>not</strong> revoke your existing keys. If you lost them, that is fine — they are still valid if you did not compromise them. The recovery endpoint simply mints a new admin key alongside your existing ones. If you believe your keys were compromised, revoke them via <code>DELETE /v1/keys/:id</code> after recovering.</p>
+<h2 id="rate-limits">Rate limits</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
+<th>Endpoint</th>
+<th>Limit</th>
 <th>Scope</th>
-<th>What it unlocks</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><code>actions</code></td>
-<td>Create and poll actions (<code>POST /v1/actions</code>, <code>GET /v1/actions</code>, <code>GET /v1/actions/:id</code>, <code>POST /v1/actions/:id/decision</code>, <code>POST /v1/actions/bulk-decision</code>, <code>POST /v1/actions/:id/result</code>). Also required for web push subscribe/unsubscribe.</td>
+<td><code>POST /v1/recover</code></td>
+<td>5/min per IP</td>
+<td>public</td>
 </tr>
 <tr>
-<td><code>watch</code></td>
-<td>Manage watchers and presets (<code>POST/GET/PATCH/DELETE /v1/watchers</code>, <code>GET /v1/watcher-presets</code>, <code>POST /v1/watchers/from-preset</code>).</td>
+<td><code>POST /v1/recover</code></td>
+<td>5/min per project_id</td>
+<td>public</td>
 </tr>
 <tr>
-<td><code>admin</code></td>
-<td>Key management, project settings, rules, notification channels, audit log, billing, GDPR export/erase. <strong>Implies <code>actions</code> and <code>watch</code>.</strong></td>
+<td><code>POST /v1/recovery-code</code></td>
+<td>10/min per API key</td>
+<td>admin</td>
 </tr>
 </tbody></table>
 </div>
-<p>Use the narrowest scope for each purpose:</p>
-<ul>
-<li>Agent loops that only submit and poll actions → <code>actions</code></li>
-<li>Watcher management scripts → <code>watch</code></li>
-<li>Admin tooling, dashboards, or CLI sessions → <code>admin</code></li>
-</ul>
-<hr>
-<h2 id="bootstrap-key">Bootstrap key</h2>
-<p>On the very first server start, Impri prints a bootstrap admin key and project ID to stdout:</p>
-<div class="code-block"><pre><code class="hljs">[impri] Bootstrap complete.
-  project: prj_...
-  admin key: im_...   ← copy this now; it is printed once</code></pre></div>
-<p>The raw key value is shown once and never again. Store it immediately. If you lose it, create a new key via the web inbox settings or the CLI.</p>
-<hr>
-<h2 id="api-reference">API reference</h2>
-<p>All key endpoints require the <strong><code>admin</code></strong> scope.</p>
-<h3 id="post-v1keys-create-a-key"><code>POST /v1/keys</code> — create a key</h3>
-<div class="code-block"><span class="code-lang">http</span><pre><code class="hljs"><span class="hljs-keyword">POST</span> <span class="hljs-string">/v1/keys</span> <span class="hljs-meta">HTTP/1.1</span>
-<span class="hljs-attribute">Authorization</span><span class="hljs-punctuation">: </span>Bearer im_...
-<span class="hljs-attribute">Content-Type</span><span class="hljs-punctuation">: </span>application/json
-
-<span class="language-prolog">{
-  <span class="hljs-string">&quot;name&quot;</span>: <span class="hljs-string">&quot;CI deploy key&quot;</span>,
-  <span class="hljs-string">&quot;scopes&quot;</span>: [<span class="hljs-string">&quot;actions&quot;</span>]
-}</span></code></pre></div>
-<p><code>name</code>: human-readable label (required). <code>scopes</code>: one or more of <code>&quot;actions&quot;</code>, <code>&quot;watch&quot;</code>, <code>&quot;admin&quot;</code> (required).</p>
-<p>Response <code>201</code>:</p>
-<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
-  <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span>         <span class="hljs-string">&quot;key_abc123&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span>       <span class="hljs-string">&quot;CI deploy key&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;key&quot;</span><span class="hljs-punctuation">:</span>        <span class="hljs-string">&quot;im_...&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;prefix&quot;</span><span class="hljs-punctuation">:</span>     <span class="hljs-string">&quot;im_A1B2C3D4&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;scopes&quot;</span><span class="hljs-punctuation">:</span>     <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;actions&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;project_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;prj_...&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;created_at&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1720000000</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;note&quot;</span><span class="hljs-punctuation">:</span>       <span class="hljs-string">&quot;Store this key securely — it will not be shown again.&quot;</span>
-<span class="hljs-punctuation">}</span></code></pre></div>
-<p>The <code>key</code> field contains the raw <code>im_...</code> value. <strong>This is the only time it is returned.</strong> Save it to a secrets manager or environment variable immediately. Only <code>prefix</code> (first 16 characters) is stored after this point.</p>
-<p>An <code>key.created</code> audit event is recorded (stores key ID, name, scopes — never the raw value).</p>
-<hr>
-<h3 id="get-v1keys-list-keys"><code>GET /v1/keys</code> — list keys</h3>
-<div class="code-block"><span class="code-lang">http</span><pre><code class="hljs"><span class="hljs-keyword">GET</span> <span class="hljs-string">/v1/keys</span> <span class="hljs-meta">HTTP/1.1</span>
-<span class="hljs-attribute">Authorization</span><span class="hljs-punctuation">: </span>Bearer im_...</code></pre></div>
-<p>Response:</p>
-<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
-  <span class="hljs-attr">&quot;items&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
-    <span class="hljs-punctuation">{</span>
-      <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span>          <span class="hljs-string">&quot;key_abc123&quot;</span><span class="hljs-punctuation">,</span>
-      <span class="hljs-attr">&quot;project_id&quot;</span><span class="hljs-punctuation">:</span>  <span class="hljs-string">&quot;prj_...&quot;</span><span class="hljs-punctuation">,</span>
-      <span class="hljs-attr">&quot;prefix&quot;</span><span class="hljs-punctuation">:</span>      <span class="hljs-string">&quot;im_A1B2C3D4&quot;</span><span class="hljs-punctuation">,</span>
-      <span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span>        <span class="hljs-string">&quot;CI deploy key&quot;</span><span class="hljs-punctuation">,</span>
-      <span class="hljs-attr">&quot;scopes&quot;</span><span class="hljs-punctuation">:</span>      <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;actions&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
-      <span class="hljs-attr">&quot;created_at&quot;</span><span class="hljs-punctuation">:</span>  <span class="hljs-number">1720000000</span><span class="hljs-punctuation">,</span>
-      <span class="hljs-attr">&quot;last_used_at&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1720100000</span><span class="hljs-punctuation">,</span>
-      <span class="hljs-attr">&quot;revoked&quot;</span><span class="hljs-punctuation">:</span>     <span class="hljs-literal"><span class="hljs-keyword">false</span></span>
-    <span class="hljs-punctuation">}</span>
-  <span class="hljs-punctuation">]</span>
-<span class="hljs-punctuation">}</span></code></pre></div>
-<p>Revoked keys are included in the list with <code>&quot;revoked&quot;: true</code>. Raw key values are never returned.</p>
-<hr>
-<h3 id="delete-v1keysid-revoke-a-key"><code>DELETE /v1/keys/:id</code> — revoke a key</h3>
-<div class="code-block"><span class="code-lang">http</span><pre><code class="hljs"><span class="hljs-keyword">DELETE</span> <span class="hljs-string">/v1/keys/key_abc123</span> <span class="hljs-meta">HTTP/1.1</span>
-<span class="hljs-attribute">Authorization</span><span class="hljs-punctuation">: </span>Bearer im_...</code></pre></div>
-<p>Returns <code>204 No Content</code>. The key is permanently invalidated — subsequent requests using it receive <code>401</code>. A <code>key.revoked</code> audit event is recorded.</p>
-<p>Returns <code>404</code> if the key does not exist, already has been revoked, or belongs to a different project.</p>
-<hr>
-<h2 id="key-lifecycle">Key lifecycle</h2>
-<div class="code-block"><pre><code class="hljs">Created (raw key shown once)
-  → In use (last_used_at updated on each request)
-  → Revoked (DELETE /v1/keys/:id)</code></pre></div>
-<p>There is no &quot;suspend&quot; state — keys are either active or permanently revoked. To rotate, create a new key, update your deployments, then revoke the old one.</p>
-<hr>
+<h2 id="self-hosted-instances">Self-hosted instances</h2>
+<p>On a self-hosted single-tenant instance you also have direct database access. If you lose both your API key and recovery code:</p>
+<ol>
+<li>Open the SQLite database (default: <code>impri.db</code>).</li>
+<li>Run: <code>SELECT id, name FROM projects;</code> to find your project.</li>
+<li>Use the bootstrap flow: if there are no active keys, the server prints a new admin key on startup — but only when the <code>api_keys</code> table is empty. You can revoke all keys via SQL and restart.</li>
+</ol>
+<p>Or use the Impri CLI (if installed): <code>impri reset-key --project proj_…</code>.</p>
 <h2 id="security-notes">Security notes</h2>
 <ul>
-<li>Keys are stored as <strong>argon2</strong> hashes. Even with full database access, the raw key cannot be recovered.</li>
-<li>The prefix (<code>im_A1B2C3D4</code>) is stored in plain text for display purposes only — it is not enough to authenticate.</li>
-<li>Every key creation and revocation is recorded in the audit log with the acting key&#39;s ID.</li>
-<li>Key material never appears in audit log rows, notification channel config, or error responses.</li>
-<li>The <code>admin</code> scope gives full control of the project — including the ability to create new admin keys. Treat admin keys with the same care as database credentials.</li>
+<li>The recovery code is hashed with argon2 in the database — the plaintext is never stored or logged.</li>
+<li>The <code>/v1/recover</code> endpoint is protected against project enumeration: a wrong code, a non-existent project, or a project with no recovery code all return the identical <code>401</code> response.</li>
+<li>Each use of a recovery code rotates it to a fresh one, so the used code can never be replayed.</li>
 </ul>
-<hr>
-<h2 id="cli">CLI</h2>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">impri keys list                            <span class="hljs-comment"># list all keys</span>
-impri keys create --name <span class="hljs-string">&quot;bot&quot;</span> --scopes actions
-impri keys revoke key_abc123 [--<span class="hljs-built_in">yes</span>]      <span class="hljs-comment"># skip confirmation prompt with --yes</span></code></pre></div>
-<p>See <a href="cli.html">CLI reference</a> for full options.</p>
 
   </main>
 
   <aside aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#scopes">Scopes</a></li>
-<li class="ptoc-h2"><a href="#bootstrap-key">Bootstrap key</a></li>
-<li class="ptoc-h2"><a href="#api-reference">API reference</a></li>
-<li class="ptoc-h3"><a href="#post-v1keys-create-a-key">POST /v1/keys — create a key</a></li>
-<li class="ptoc-h3"><a href="#get-v1keys-list-keys">GET /v1/keys — list keys</a></li>
-<li class="ptoc-h3"><a href="#delete-v1keysid-revoke-a-key">DELETE /v1/keys/:id — revoke a key</a></li>
-<li class="ptoc-h2"><a href="#key-lifecycle">Key lifecycle</a></li>
-<li class="ptoc-h2"><a href="#security-notes">Security notes</a></li>
-<li class="ptoc-h2"><a href="#cli">CLI</a></li></ul>
+<ul><li class="ptoc-h2"><a href="#how-it-works">How it works</a></li>
+<li class="ptoc-h2"><a href="#recovery-code-format">Recovery code format</a></li>
+<li class="ptoc-h2"><a href="#getting-a-recovery-code">Getting a recovery code</a></li>
+<li class="ptoc-h3"><a href="#at-signup">At signup</a></li>
+<li class="ptoc-h3"><a href="#via-the-dashboard">Via the dashboard</a></li>
+<li class="ptoc-h3"><a href="#via-the-api">Via the API</a></li>
+<li class="ptoc-h2"><a href="#recovering-access">Recovering access</a></li>
+<li class="ptoc-h3"><a href="#via-the-login-screen">Via the login screen</a></li>
+<li class="ptoc-h3"><a href="#via-the-api-2">Via the API</a></li>
+<li class="ptoc-h3"><a href="#what-happens-to-existing-keys">What happens to existing keys?</a></li>
+<li class="ptoc-h2"><a href="#rate-limits">Rate limits</a></li>
+<li class="ptoc-h2"><a href="#self-hosted-instances">Self-hosted instances</a></li>
+<li class="ptoc-h2"><a href="#security-notes">Security notes</a></li></ul>
 </nav>
   </aside>
 </div>

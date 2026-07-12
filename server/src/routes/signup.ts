@@ -52,7 +52,8 @@ export function registerSignupRoutes(app: FastifyInstance, db: Db): void {
     return {
       key: result.key,
       project_id: result.projectId,
-      note: 'Store this key securely — it will not be shown again.',
+      recovery_code: result.recoveryCode,
+      note: 'Store this key and recovery code securely — they will not be shown again.',
     };
   });
 }

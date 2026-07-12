@@ -30,6 +30,14 @@
             @click="openHelp"
           />
           <v-btn
+            icon="mdi-shield-key-outline"
+            title="Recovery code"
+            aria-label="Recovery code"
+            variant="text"
+            size="small"
+            @click="recoveryCodeDialogOpen = true"
+          />
+          <v-btn
             icon="mdi-cellphone-link"
             title="Connect a device"
             aria-label="Connect a device"
@@ -80,6 +88,31 @@
 
       <v-main>
         <v-container max-width="800" class="py-6">
+          <!-- Recovery code setup banner — shown when no recovery code is set.
+               Dismissible within the session; banner reappears on next login until code is set. -->
+          <v-alert
+            v-if="showRecoveryBanner"
+            type="warning"
+            variant="tonal"
+            density="compact"
+            closable
+            class="mb-4"
+            @click:close="recoveryBannerDismissed = true"
+          >
+            <span>
+              Set up a recovery code so you don't lose access to this project if you lose your API key.
+            </span>
+            <v-btn
+              size="small"
+              variant="text"
+              color="warning"
+              class="ml-2"
+              @click="recoveryCodeDialogOpen = true"
+            >
+              Set up
+            </v-btn>
+          </v-alert>
+
           <v-window v-model="activeTab">
             <!-- Inbox tab: eager so polling runs regardless of active tab -->
             <v-window-item value="inbox" eager>
@@ -118,6 +151,11 @@
 
     <ConnectDeviceDialog :open="connectDeviceOpen" @close="connectDeviceOpen = false" />
 
+    <RecoveryCodeDialog
+      v-model="recoveryCodeDialogOpen"
+      @generated="onRecoveryCodeGenerated"
+    />
+
     <v-snackbar v-model="snackbar" :timeout="5000" :color="snackbarColor" location="top">
       {{ snackbarText }}
     </v-snackbar>
@@ -125,10 +163,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useTheme } from 'vuetify'
 import { useAuthStore } from './stores/auth'
 import { useInboxStore } from './stores/inbox'
+import { useUsageStore } from './stores/usage'
 import LoginScreen from './components/LoginScreen.vue'
 import InboxList from './components/InboxList.vue'
 import WatchersScreen from './components/WatchersScreen.vue'
@@ -138,9 +177,11 @@ import UsageScreen from './components/UsageScreen.vue'
 import GettingStarted from './components/GettingStarted.vue'
 import AuditScreen from './components/AuditScreen.vue'
 import ConnectDeviceDialog from './components/ConnectDeviceDialog.vue'
+import RecoveryCodeDialog from './components/RecoveryCodeDialog.vue'
 
 const auth = useAuthStore()
 const inbox = useInboxStore()
+const usageStore = useUsageStore()
 
 const activeTab = ref<'inbox' | 'watchers' | 'notifications' | 'billing' | 'usage' | 'audit'>('inbox')
 const pendingTotal = computed(() => inbox.pendingTotal)
@@ -166,6 +207,28 @@ const snackbar = ref(false)
 const snackbarText = ref('')
 const snackbarColor = ref<'success' | 'info'>('success')
 const connectDeviceOpen = ref(false)
+const recoveryCodeDialogOpen = ref(false)
+const recoveryBannerDismissed = ref(false)
+
+// Show the banner when logged in and usage confirms no recovery code is set.
+const showRecoveryBanner = computed(
+  () => auth.isLoggedIn
+    && !recoveryBannerDismissed.value
+    && usageStore.usage !== null
+    && usageStore.usage.has_recovery_code === false,
+)
+
+// Fetch usage when we log in (needed to know whether to show the banner).
+watch(() => auth.isLoggedIn, (loggedIn) => {
+  if (loggedIn) {
+    void usageStore.fetchUsage()
+  }
+}, { immediate: true })
+
+function onRecoveryCodeGenerated(): void {
+  // Refresh usage so has_recovery_code flips to true and the banner disappears.
+  void usageStore.fetchUsage()
+}
 
 onMounted(() => {
   const checkout = new URLSearchParams(window.location.search).get('checkout')

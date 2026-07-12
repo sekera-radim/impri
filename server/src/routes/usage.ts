@@ -94,8 +94,13 @@ export function registerUsageRoutes(app: FastifyInstance, db: Db): void {
 
     const ts = nowSec();
 
+    const hasRecoveryCode = (db.prepare(
+      'SELECT recovery_hash FROM projects WHERE id = ?',
+    ).get(projectId) as { recovery_hash: string | null } | undefined)?.recovery_hash != null;
+
     return {
       project_id: projectId,
+      has_recovery_code: hasRecoveryCode,
       billing_active: billingActive(),
       tier,
       subscription_status: billing.subscription_status,

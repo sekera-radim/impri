@@ -348,7 +348,23 @@ export interface UsageResponse {
   watchers: UsageWatchers
   limits: UsageLimits
   webhook_delivery: UsageWebhookDelivery
+  /** Whether a recovery code is currently set for this project. */
+  has_recovery_code: boolean
   ts: number
+}
+
+/** Response from POST /v1/recover — new key and rotated recovery code (shown once). */
+export interface RecoverResponse {
+  key: string
+  recovery_code: string
+  project_id: string
+  note: string
+}
+
+/** Response from POST /v1/recovery-code — new plaintext recovery code (shown once). */
+export interface RecoveryCodeResponse {
+  recovery_code: string
+  note: string
 }
 
 // --- Billing ---

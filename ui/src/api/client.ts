@@ -26,6 +26,8 @@ import type {
   UpdateChannelRequest,
   TestChannelResponse,
   UsageResponse,
+  RecoverResponse,
+  RecoveryCodeResponse,
 } from '../types'
 
 export class ApiClientError extends Error {
@@ -239,6 +241,31 @@ export class ApiClient {
     if (params.cursor) query.set('cursor', params.cursor)
     const qs = query.toString()
     return this.request<ListAuditResponse>('GET', `/audit${qs ? `?${qs}` : ''}`)
+  }
+
+  // --- Account recovery ---
+
+  /** Rotate the recovery code for the current project (admin scope). Returns plaintext once. */
+  async generateRecoveryCode(): Promise<RecoveryCodeResponse> {
+    return this.request<RecoveryCodeResponse>('POST', '/recovery-code')
+  }
+
+  /**
+   * Exchange a recovery code for a new admin key (public — no Bearer token needed).
+   * Mints a new admin key and rotates the recovery code atomically.
+   */
+  async recover(projectId: string, recoveryCode: string): Promise<RecoverResponse> {
+    const baseUrl = (import.meta.env.VITE_API_BASE as string | undefined) ?? '/v1'
+    const response = await fetch(`${baseUrl}/recover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project_id: projectId, recovery_code: recoveryCode }),
+    })
+    const json = await response.json() as RecoverResponse | ApiError
+    if (!response.ok) {
+      throw new ApiClientError(response.status, json as ApiError)
+    }
+    return json as RecoverResponse
   }
 
   async exportAudit(params: {

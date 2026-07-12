@@ -52,6 +52,7 @@ const NAV = [
       { slug: 'privacy',           title: 'Privacy policy' },
       { slug: 'terms',             title: 'Terms of service' },
       { slug: 'operator',          title: 'Operator / admin' },
+      { slug: 'account-recovery',  title: 'Account recovery' },
     ],
   },
   {

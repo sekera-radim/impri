@@ -23,7 +23,7 @@ Open-core (MIT), self-hostable. Source: https://gitlab.com/sekera.radim/impri  D
 
 ## Authentication
 
-All API endpoints (except /healthz, /v1/openapi.json, /v1/push/vapid-public-key, /v1/billing/webhook, /v1/integrations/telegram/webhook/:id, /v1/integrations/slack/interactions/:id, and /v1/integrations/discord/interactions/:id) require:
+All API endpoints (except /healthz, /v1/openapi.json, /v1/push/vapid-public-key, /v1/billing/webhook, /v1/signup, /v1/recover, /v1/integrations/telegram/webhook/:id, /v1/integrations/slack/interactions/:id, and /v1/integrations/discord/interactions/:id) require:
 
   Authorization: Bearer im_<key>
 
@@ -289,7 +289,9 @@ GET    /readyz           Readiness probe (public; no auth; checks DB reachable +
 GET    /metrics          Prometheus text metrics (opt-in: METRICS_ENABLED=1; optional bearer METRICS_TOKEN)
 GET    /v1/usage         Per-project usage snapshot (admin scope; 60/min)
 GET    /v1/openapi.json  Live OpenAPI 3.1 specification (public; no auth)
-POST   /v1/signup        Create project + admin key (public; gated on ALLOW_SIGNUP env var)
+POST   /v1/signup        Create project + admin key (public; gated on ALLOW_SIGNUP env var); returns recovery_code
+POST   /v1/recovery-code Rotate recovery code (admin scope; 10/min); returns new plaintext code once
+POST   /v1/recover       Regain access via recovery code (public; 5/min/IP, 5/min/project); returns new admin key + new recovery code
 ```
 
 /metrics env vars: METRICS_ENABLED=1 (required to activate), METRICS_TOKEN (bearer token; omit to skip token check but restrict at network layer), METRICS_HOST (bind address for separate listener), METRICS_PORT (separate port — if set, a second Fastify instance on METRICS_HOST:METRICS_PORT serves /metrics only).

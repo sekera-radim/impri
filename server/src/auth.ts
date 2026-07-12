@@ -116,6 +116,16 @@ export function hasScope(scopes: string[], scope: string): boolean {
 export interface BootstrapResult {
   key: string;
   projectId: string;
+  recoveryCode: string;
+}
+
+// Mint a one-time recovery code: `imr_` prefix + 24 random bytes (base64url).
+// Returns the plaintext (returned to caller once, never stored) and the argon2
+// hash (stored in projects.recovery_hash). Never log the plaintext.
+export async function mintRecoveryCode(): Promise<{ plaintext: string; hash: string }> {
+  const plaintext = `imr_${randomBytes(24).toString('base64url')}`;
+  const hash = await argon2.hash(plaintext);
+  return { plaintext, hash };
 }
 
 // Create a fresh project with its own webhook secret and a single admin key.
@@ -123,10 +133,14 @@ export interface BootstrapResult {
 export async function createProjectWithAdminKey(db: Db, projectName: string): Promise<BootstrapResult> {
   const projectId = genId('proj_');
   const webhookSecret = randomBytes(32).toString('base64url');
-  db.prepare('INSERT INTO projects (id, name, webhook_secret, created_at) VALUES (?, ?, ?, ?)').run(
+
+  const recovery = await mintRecoveryCode();
+
+  db.prepare('INSERT INTO projects (id, name, webhook_secret, recovery_hash, created_at) VALUES (?, ?, ?, ?, ?)').run(
     projectId,
     projectName,
     webhookSecret,
+    recovery.hash,
     nowSec(),
   );
 
@@ -140,7 +154,7 @@ export async function createProjectWithAdminKey(db: Db, projectName: string): Pr
     'INSERT INTO api_keys (id, project_id, key_hash, key_prefix, name, scopes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
   ).run(keyId, projectId, hash, prefix, 'Admin Key', JSON.stringify(['admin']), nowSec());
 
-  return { key, projectId };
+  return { key, projectId, recoveryCode: recovery.plaintext };
 }
 
 export async function bootstrapAdminKey(db: Db): Promise<BootstrapResult | null> {
