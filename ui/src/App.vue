@@ -38,6 +38,14 @@
             @click="recoveryCodeDialogOpen = true"
           />
           <v-btn
+            icon="mdi-message-text-outline"
+            title="Send feedback"
+            aria-label="Send feedback"
+            variant="text"
+            size="small"
+            @click="feedbackOpen = true"
+          />
+          <v-btn
             icon="mdi-cellphone-link"
             title="Connect a device"
             aria-label="Connect a device"
@@ -150,6 +158,7 @@
     </template>
 
     <ConnectDeviceDialog :open="connectDeviceOpen" @close="connectDeviceOpen = false" />
+    <FeedbackDialog :open="feedbackOpen" @close="feedbackOpen = false" />
 
     <RecoveryCodeDialog
       v-model="recoveryCodeDialogOpen"
@@ -177,6 +186,7 @@ import UsageScreen from './components/UsageScreen.vue'
 import GettingStarted from './components/GettingStarted.vue'
 import AuditScreen from './components/AuditScreen.vue'
 import ConnectDeviceDialog from './components/ConnectDeviceDialog.vue'
+import FeedbackDialog from './components/FeedbackDialog.vue'
 import RecoveryCodeDialog from './components/RecoveryCodeDialog.vue'
 
 const auth = useAuthStore()
@@ -207,6 +217,7 @@ const snackbar = ref(false)
 const snackbarText = ref('')
 const snackbarColor = ref<'success' | 'info'>('success')
 const connectDeviceOpen = ref(false)
+const feedbackOpen = ref(false)
 const recoveryCodeDialogOpen = ref(false)
 const recoveryBannerDismissed = ref(false)
 

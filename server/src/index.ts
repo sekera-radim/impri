@@ -11,6 +11,7 @@ import { registerBillingRoutes } from './routes/billing.js';
 import { registerPushRoutes } from './routes/push.js';
 import { registerSignupRoutes } from './routes/signup.js';
 import { registerAdminRoutes } from './routes/admin.js';
+import { registerFeedbackRoutes } from './routes/feedback.js';
 import { registerRuleRoutes } from './routes/rules.js';
 import { registerWatcherPresetRoutes } from './routes/watcherPresets.js';
 import { registerNotificationChannelRoutes } from './routes/notification-channels.js';
@@ -255,6 +256,7 @@ export async function createApp(db: Db) {
 
   // Operator-only platform stats (gated on OPERATOR_PROJECT_ID)
   registerAdminRoutes(app, db);
+  registerFeedbackRoutes(app, db);
 
   // Rules engine CRUD (admin scope)
   registerRuleRoutes(app, db);

@@ -117,6 +117,15 @@ export class ApiClient {
     return this.request<Action>('POST', '/actions', body)
   }
 
+  async submitFeedback(body: {
+    message: string
+    rating?: number
+    contact?: string
+    context?: string
+  }): Promise<{ ok: boolean }> {
+    return this.request<{ ok: boolean }>('POST', '/feedback', body)
+  }
+
   async listKeys(): Promise<{ items: ApiKey[] }> {
     return this.request<{ items: ApiKey[] }>('GET', '/keys')
   }

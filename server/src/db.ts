@@ -226,6 +226,16 @@ CREATE INDEX IF NOT EXISTS idx_notification_channels_project
 CREATE INDEX IF NOT EXISTS idx_notification_channels_digest_due
   ON notification_channels(last_fired_at)
   WHERE enabled = 1 AND digest_queue != '[]';
+
+CREATE TABLE IF NOT EXISTS feedback (
+  id         TEXT PRIMARY KEY,
+  project_id TEXT REFERENCES projects(id),
+  message    TEXT NOT NULL,
+  rating     INTEGER,
+  contact    TEXT,
+  context    TEXT,
+  created_at INTEGER NOT NULL
+);
 `;
 
 // Idempotent column adds for DBs created before these columns existed.
