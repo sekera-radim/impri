@@ -65,6 +65,7 @@ interface WatcherRow {
   next_run_at: number;
   created_at: number;
   updated_at: number;
+  color: string | null;
 }
 
 // --- Pure helper functions (exported for unit testing) ---
@@ -407,6 +408,7 @@ function createWatcherAction(
   matchedKeywords: string[],
   isUrlDiff: boolean,
   prevSizeBytes?: number,
+  watcherColor: string | null = null,
 ): void {
   const actionId = genId('act_');
   const now = nowSec();
@@ -438,8 +440,8 @@ function createWatcherAction(
   db.prepare(`
     INSERT INTO actions
       (id, project_id, kind, title, preview, payload, target_url,
-       expires_at, editable, status, preview_hash, created_at, updated_at)
-    VALUES (?, ?, 'watcher.triage', ?, ?, ?, ?, ?, '[]', 'pending', ?, ?, ?)
+       expires_at, editable, status, preview_hash, created_at, updated_at, color)
+    VALUES (?, ?, 'watcher.triage', ?, ?, ?, ?, ?, '[]', 'pending', ?, ?, ?, ?)
   `).run(
     actionId,
     projectId,
@@ -461,6 +463,7 @@ function createWatcherAction(
     previewHash,
     now,
     now,
+    watcherColor,
   );
 
   db.prepare(
@@ -667,6 +670,7 @@ export async function processWatcher(db: Db, watcher: WatcherRow, log: Logger = 
       s.matchedKeywords,
       isUrlDiff,
       prevSizeBytes,
+      watcher.color,
     );
     incCounter('impri_watcher_hits_total', { kind: watcher.kind });
   }

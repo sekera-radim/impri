@@ -31,6 +31,7 @@ function serializeAction(row: Record<string, unknown>) {
     status: row.status,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    color: (row.color as string | null) ?? null,
   };
 }
 

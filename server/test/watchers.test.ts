@@ -702,3 +702,187 @@ describe('Scheduler — paused watcher not processed', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
+
+// --- Watcher color tests ---
+
+describe('Watcher color — create and update', () => {
+  it('creates watcher with color and returns it', async () => {
+    const { app, adminKey } = await setup();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/watchers',
+      headers: { Authorization: `Bearer ${adminKey}` },
+      payload: {
+        name: 'Colored watcher',
+        kind: 'rss',
+        config: { url: 'https://example.com/feed.xml' },
+        schedule: { every: '1h' },
+        color: '#ef4444',
+      },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.json().color).toBe('#ef4444');
+  });
+
+  it('creates watcher without color — color is null', async () => {
+    const { app, adminKey } = await setup();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/watchers',
+      headers: { Authorization: `Bearer ${adminKey}` },
+      payload: {
+        name: 'No color watcher',
+        kind: 'rss',
+        config: { url: 'https://example.com/feed.xml' },
+        schedule: { every: '1h' },
+      },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.json().color).toBeNull();
+  });
+
+  it('rejects invalid hex color with 400', async () => {
+    const { app, adminKey } = await setup();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/watchers',
+      headers: { Authorization: `Bearer ${adminKey}` },
+      payload: {
+        name: 'Bad color',
+        kind: 'rss',
+        config: { url: 'https://example.com/feed.xml' },
+        schedule: { every: '1h' },
+        color: 'red',
+      },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('PATCH updates color on an existing watcher', async () => {
+    const { app, adminKey } = await setup();
+    const create = await app.inject({
+      method: 'POST',
+      url: '/v1/watchers',
+      headers: { Authorization: `Bearer ${adminKey}` },
+      payload: {
+        name: 'Patch color test',
+        kind: 'rss',
+        config: { url: 'https://example.com/feed.xml' },
+        schedule: { every: '1h' },
+      },
+    });
+    const { id } = create.json();
+
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `/v1/watchers/${id}`,
+      headers: { Authorization: `Bearer ${adminKey}` },
+      payload: { color: '#6366f1' },
+    });
+    expect(patch.statusCode).toBe(200);
+    expect(patch.json().color).toBe('#6366f1');
+  });
+
+  it('PATCH resets color to null', async () => {
+    const { app, adminKey } = await setup();
+    const create = await app.inject({
+      method: 'POST',
+      url: '/v1/watchers',
+      headers: { Authorization: `Bearer ${adminKey}` },
+      payload: {
+        name: 'Reset color test',
+        kind: 'rss',
+        config: { url: 'https://example.com/feed.xml' },
+        schedule: { every: '1h' },
+        color: '#a855f7',
+      },
+    });
+    const { id } = create.json();
+
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `/v1/watchers/${id}`,
+      headers: { Authorization: `Bearer ${adminKey}` },
+      payload: { color: null },
+    });
+    expect(patch.statusCode).toBe(200);
+    expect(patch.json().color).toBeNull();
+  });
+
+  it('PATCH with invalid hex color returns 400', async () => {
+    const { app, adminKey } = await setup();
+    const create = await app.inject({
+      method: 'POST',
+      url: '/v1/watchers',
+      headers: { Authorization: `Bearer ${adminKey}` },
+      payload: {
+        name: 'Bad hex patch',
+        kind: 'rss',
+        config: { url: 'https://example.com/feed.xml' },
+        schedule: { every: '1h' },
+      },
+    });
+    const { id } = create.json();
+
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: `/v1/watchers/${id}`,
+      headers: { Authorization: `Bearer ${adminKey}` },
+      payload: { color: '#zzzzzz' },
+    });
+    expect(patch.statusCode).toBe(400);
+  });
+});
+
+describe('Scheduler — watcher color propagates to action', () => {
+  let fetchSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(makeFetchMock(RSS_SAMPLE));
+  });
+  afterEach(() => {
+    fetchSpy.mockRestore();
+  });
+
+  it('action created by watcher inherits watcher color', async () => {
+    const { db, app, adminKey } = await setup();
+    await createWatcher(app, adminKey, { color: '#22c55e' });
+    const watcherId = (db.prepare('SELECT id FROM watchers LIMIT 1').get() as { id: string }).id;
+
+    // Baseline run
+    await runWatcherTick(db);
+
+    // Clear seen items and re-schedule to simulate new feed items
+    db.prepare('DELETE FROM watcher_items').run();
+    db.prepare('UPDATE watchers SET next_run_at = ? WHERE id = ?').run(nowSec() - 1, watcherId);
+
+    await runWatcherTick(db);
+
+    const actions = db.prepare(
+      "SELECT color FROM actions WHERE kind = 'watcher.triage'",
+    ).all() as { color: string | null }[];
+    expect(actions.length).toBeGreaterThan(0);
+    expect(actions.every(a => a.color === '#22c55e')).toBe(true);
+  });
+
+  it('action created by watcher without color has null color', async () => {
+    const { db, app, adminKey } = await setup();
+    // createWatcher helper does not pass color — defaults to null
+    await createWatcher(app, adminKey);
+    const watcherId = (db.prepare('SELECT id FROM watchers LIMIT 1').get() as { id: string }).id;
+
+    // Baseline run
+    await runWatcherTick(db);
+
+    db.prepare('DELETE FROM watcher_items').run();
+    db.prepare('UPDATE watchers SET next_run_at = ? WHERE id = ?').run(nowSec() - 1, watcherId);
+
+    await runWatcherTick(db);
+
+    const actions = db.prepare(
+      "SELECT color FROM actions WHERE kind = 'watcher.triage'",
+    ).all() as { color: string | null }[];
+    expect(actions.length).toBeGreaterThan(0);
+    expect(actions.every(a => a.color === null)).toBe(true);
+  });
+});

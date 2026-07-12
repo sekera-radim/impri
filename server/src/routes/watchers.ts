@@ -25,6 +25,7 @@ function serializeWatcher(row: Record<string, unknown>) {
     next_run_at: row.next_run_at,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    color: (row.color as string | null) ?? null,
   };
 }
 
@@ -78,8 +79,8 @@ export function registerWatcherRoutes(app: FastifyInstance, db: Db): void {
     db.prepare(`
       INSERT INTO watchers
         (id, project_id, name, kind, config, keywords, keywords_none, min_score,
-         schedule, status, fail_count, first_run_done, next_run_at, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, 0, ?, ?, ?)
+         schedule, status, fail_count, first_run_done, next_run_at, created_at, updated_at, color)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, 0, ?, ?, ?, ?)
     `).run(
       id,
       key.projectId,
@@ -93,6 +94,7 @@ export function registerWatcherRoutes(app: FastifyInstance, db: Db): void {
       nextRunAt,
       now,
       now,
+      body.color ?? null,
     );
 
     // Audit: watcher.created — id, kind, name only; config may contain URLs.
@@ -242,7 +244,7 @@ export function registerWatcherRoutes(app: FastifyInstance, db: Db): void {
       UPDATE watchers
       SET name = ?, config = ?, keywords = ?, keywords_none = ?, min_score = ?,
           schedule = ?, status = ?, fail_count = ?, degraded_since = ?,
-          next_run_at = ?, updated_at = ?
+          next_run_at = ?, updated_at = ?, color = ?
       WHERE id = ?
     `).run(
       body.name ?? existing.name,
@@ -256,6 +258,7 @@ export function registerWatcherRoutes(app: FastifyInstance, db: Db): void {
       degradedSince,
       nextRunAt,
       now,
+      'color' in body ? (body.color ?? null) : (existing.color as string | null ?? null),
       request.params.id,
     );
 

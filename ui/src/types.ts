@@ -40,6 +40,7 @@ export interface Action {
   status: ActionStatus
   created_at: number
   updated_at: number
+  color?: string | null
   decision?: Decision
   webhook_delivery?: WebhookDelivery
 }
@@ -124,6 +125,7 @@ export interface Watcher {
   last_error?: string
   created_at: number
   updated_at: number
+  color?: string | null
 }
 
 export interface ListWatchersResponse {
@@ -140,6 +142,7 @@ export interface CreateWatcherRequest {
   keywords_none?: string[]
   min_score?: number
   schedule: WatcherSchedule
+  color?: string | null
 }
 
 export interface UpdateWatcherRequest {
@@ -150,6 +153,7 @@ export interface UpdateWatcherRequest {
   keywords_none?: string[]
   min_score?: number
   schedule?: WatcherSchedule
+  color?: string | null
 }
 
 // --- Watcher Presets ---

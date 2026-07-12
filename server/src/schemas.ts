@@ -149,6 +149,7 @@ export const CreateWatcherBody = z.object({
   keywords_none: z.array(keywordPattern).default([]),
   min_score: z.number().int().min(0).default(1),
   schedule: WatcherSchedule,
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
 }).superRefine((data, ctx) => {
   if (data.kind === 'rss' || data.kind === 'url_diff') {
     if (!data.config.url) {
@@ -212,6 +213,7 @@ export const UpdateWatcherBody = z.object({
   schedule: WatcherSchedule.optional(),
   // Only active/paused allowed via API; degraded is set by the scheduler
   status: z.enum(['active', 'paused']).optional(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
 });
 export type UpdateWatcherBody = z.infer<typeof UpdateWatcherBody>;
 

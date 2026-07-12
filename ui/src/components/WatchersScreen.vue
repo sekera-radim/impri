@@ -79,6 +79,7 @@
       :key="w.id"
       variant="outlined"
       class="watcher-card mb-2"
+      :style="w.color ? { borderLeftColor: w.color } : {}"
     >
       <v-card-text class="py-3 px-4">
         <div class="d-flex align-start gap-3">
@@ -88,6 +89,11 @@
               <v-chip :color="statusColor(w.status)" size="x-small" variant="tonal" label>
                 {{ w.status }}
               </v-chip>
+              <span
+                v-if="w.color"
+                class="watcher-color-dot"
+                :style="{ background: w.color }"
+              />
               <span class="text-body-2 font-weight-medium">{{ w.name }}</span>
             </div>
             <div class="d-flex flex-wrap gap-3 text-caption text-medium-emphasis">
@@ -313,6 +319,25 @@
           </div>
         </v-expand-transition>
 
+        <!-- Color picker -->
+        <div class="text-caption text-medium-emphasis mb-2 mt-3">Color (optional)</div>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <div
+            v-for="swatch in colorSwatches"
+            :key="swatch.value ?? 'none'"
+            class="color-swatch"
+            :class="{ 'color-swatch--selected': form.color === swatch.value }"
+            :style="swatch.value ? { background: swatch.value } : {}"
+            :title="swatch.label"
+            :aria-label="swatch.label"
+            :aria-pressed="form.color === swatch.value"
+            role="button"
+            @click="form.color = swatch.value"
+          >
+            <v-icon v-if="!swatch.value" size="14" color="grey">mdi-cancel</v-icon>
+          </div>
+        </div>
+
         <!-- Validation error -->
         <v-alert
           v-if="formError"
@@ -456,6 +481,17 @@ const frequencyOptions = [
   { title: 'Custom…', value: 'custom' },
 ]
 
+const colorSwatches: { label: string; value: string | null }[] = [
+  { label: 'None', value: null },
+  { label: 'Red', value: '#ef4444' },
+  { label: 'Amber', value: '#f59e0b' },
+  { label: 'Green', value: '#22c55e' },
+  { label: 'Cyan', value: '#06b6d4' },
+  { label: 'Indigo', value: '#6366f1' },
+  { label: 'Purple', value: '#a855f7' },
+  { label: 'Pink', value: '#ec4899' },
+]
+
 const kindHelpText: Record<WatcherKind, string> = {
   reddit_search: 'Checks a subreddit for posts matching your search and sends new matches to your inbox to review.',
   rss: 'Checks an RSS/Atom feed and sends new entries to your inbox to review.',
@@ -474,6 +510,7 @@ interface FormState {
   scheduleWindow: string
   keywordTags: string[]
   keywordsNone: string[]
+  color: string | null
 }
 
 function emptyForm(): FormState {
@@ -489,6 +526,7 @@ function emptyForm(): FormState {
     scheduleWindow: '',
     keywordTags: [],
     keywordsNone: [],
+    color: null,
   }
 }
 
@@ -553,6 +591,7 @@ function openEdit(w: Watcher): void {
   form.scheduleWindow = w.schedule.window ?? ''
   form.keywordTags = (w.keywords ?? []).map((k) => k.pattern)
   form.keywordsNone = [...(w.keywords_none ?? [])]
+  form.color = w.color ?? null
   showAdvanced.value = Boolean(w.schedule.jitter || w.schedule.window || form.keywordsNone.length > 0)
   formError.value = null
   showCreate.value = true
@@ -629,6 +668,7 @@ async function submitCreate(): Promise<void> {
         keywords_none: keywordsNone,
         min_score: keywords.length > 0 ? 1 : 0,
         schedule,
+        color: form.color,
       })
     } else {
       await store.createWatcher({
@@ -640,6 +680,7 @@ async function submitCreate(): Promise<void> {
         // Require at least one keyword match when keywords are given; otherwise accept everything.
         min_score: keywords.length > 0 ? 1 : 0,
         schedule,
+        color: form.color,
       })
     }
 
@@ -678,4 +719,35 @@ onMounted(() => {
 .gap-1 { gap: 4px; }
 .gap-2 { gap: 8px; }
 .gap-3 { gap: 12px; }
+
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, transform 0.1s;
+  background: rgba(var(--v-theme-surface-variant), 0.4);
+}
+
+.color-swatch:hover {
+  transform: scale(1.15);
+}
+
+.color-swatch--selected {
+  border-color: currentColor;
+  outline: 2px solid rgba(var(--v-theme-primary), 0.6);
+  outline-offset: 2px;
+}
+
+.watcher-color-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
 </style>

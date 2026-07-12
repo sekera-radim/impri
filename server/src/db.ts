@@ -311,6 +311,13 @@ function migrate(db: Db): void {
         WHERE enabled = 1 AND digest_queue != '[]';
     `);
   }
+
+  if (!columns('watchers').has('color')) {
+    db.exec('ALTER TABLE watchers ADD COLUMN color TEXT');
+  }
+  if (!columns('actions').has('color')) {
+    db.exec('ALTER TABLE actions ADD COLUMN color TEXT');
+  }
 }
 
 export function createDb(path: string): Db {

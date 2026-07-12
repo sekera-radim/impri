@@ -8,6 +8,7 @@
       'action-card--focused': focused,
       'action-card--selected': selected,
     }"
+    :style="leftBorderStyle"
     :tabindex="focused ? 0 : -1"
     :aria-selected="selected"
     @click="onCardClick"
@@ -126,6 +127,16 @@ const emit = defineEmits<{
 
 const isUntrusted = computed(() => isUntrustedPayload(props.action.payload))
 const hasEditable = computed(() => props.action.editable.length > 0)
+
+// When a watcher action has a color, use it for the left border instead of the
+// generic warning color — lets the user identify which watcher created this action.
+// When focused the primary border takes precedence (no inline style applied).
+const leftBorderStyle = computed(() => {
+  if (props.action.color && !props.focused) {
+    return { borderLeft: `3px solid ${props.action.color}` }
+  }
+  return {}
+})
 
 function onCardClick(): void {
   if (!props.bulkMode) {
