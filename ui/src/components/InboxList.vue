@@ -85,14 +85,9 @@
       />
     </div>
 
-    <!-- Thin progress bar during background polling refresh -->
-    <v-progress-linear
-      v-if="inbox.loading && inbox.actions.length > 0"
-      indeterminate
-      color="primary"
-      height="2"
-      class="mb-1"
-    />
+    <!-- Background polling refresh is indicated by the spinner on the refresh
+         button (see toolbar); no inline progress bar here, because inserting it
+         above the list shifts every row down and makes the page visibly jump. -->
 
     <!-- Error state -->
     <v-alert
