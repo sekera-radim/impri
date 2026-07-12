@@ -336,6 +336,30 @@
           >
             <v-icon v-if="!swatch.value" size="14" color="grey">mdi-cancel</v-icon>
           </div>
+
+          <!-- Custom color: full picker in a menu; the swatch shows the chosen
+               colour and is highlighted when the selection isn't a preset. -->
+          <v-menu :close-on-content-click="false" location="bottom">
+            <template #activator="{ props: menuProps }">
+              <div
+                class="color-swatch color-swatch--custom"
+                :class="{ 'color-swatch--selected': isCustomColor }"
+                :style="isCustomColor && form.color ? { background: form.color } : {}"
+                title="Custom color"
+                aria-label="Custom color"
+                role="button"
+                v-bind="menuProps"
+              >
+                <v-icon v-if="!isCustomColor" size="14" color="grey">mdi-eyedropper-variant</v-icon>
+              </div>
+            </template>
+            <v-color-picker
+              :model-value="form.color ?? '#6366f1'"
+              mode="hex"
+              :modes="['hex']"
+              @update:model-value="onCustomColor"
+            />
+          </v-menu>
         </div>
 
         <!-- Validation error -->
@@ -491,6 +515,15 @@ const colorSwatches: { label: string; value: string | null }[] = [
   { label: 'Purple', value: '#a855f7' },
   { label: 'Pink', value: '#ec4899' },
 ]
+
+const presetColorValues = colorSwatches.map((s) => s.value).filter((v): v is string => v !== null)
+/** True when form.color is set but isn't one of the preset swatches → came from the custom picker. */
+const isCustomColor = computed(() => form.color !== null && !presetColorValues.includes(form.color))
+
+/** v-color-picker can emit #rrggbbaa; normalise to #rrggbb so it matches the server's hex validation. */
+function onCustomColor(hex: unknown): void {
+  form.color = typeof hex === 'string' && hex ? hex.slice(0, 7) : null
+}
 
 const kindHelpText: Record<WatcherKind, string> = {
   reddit_search: 'Checks a subreddit for posts matching your search and sends new matches to your inbox to review.',
@@ -741,6 +774,11 @@ onMounted(() => {
   border-color: currentColor;
   outline: 2px solid rgba(var(--v-theme-primary), 0.6);
   outline-offset: 2px;
+}
+
+/* Custom "pick any colour" swatch — rainbow hint when no custom colour is chosen. */
+.color-swatch--custom:not(.color-swatch--selected) {
+  background: conic-gradient(#ef4444, #f59e0b, #22c55e, #06b6d4, #6366f1, #a855f7, #ec4899, #ef4444);
 }
 
 .watcher-color-dot {
