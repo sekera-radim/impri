@@ -179,6 +179,14 @@ pre code.hljs{display:block;overflow-x:auto}
     <h1>GDPR &amp; Data Management</h1>
 <p>Impri provides two GDPR-compliant data management endpoints under your project&#39;s admin scope: a full data export and a hard erasure. Both are project-scoped — cross-project data access is impossible regardless of the key used.</p>
 <hr>
+<h2 id="data-controller-amp-contact">Data controller &amp; contact</h2>
+<p><strong>Self-hosted:</strong> you run the server, so <strong>you are the data controller</strong>. Impri sends no telemetry and nothing phones home; all data stays on your machine or VPS.</p>
+<p><strong>Hosted cloud</strong> (<code>app.impri.dev</code> / <code>api.impri.dev</code>): the data controller is <strong>Radim Sekera</strong>. Data is stored in the EU (Fly.io, Frankfurt). To exercise your data-subject rights (access, rectification, erasure, portability) you can use the self-service <code>GET /v1/project/export</code> and <code>DELETE /v1/project/data</code> endpoints below, or reach out:</p>
+<ul>
+<li><strong>Contact:</strong> <a href="https://sekera.dev" target="_blank" rel="noopener">sekera.dev</a></li>
+</ul>
+<p>We aim to respond to data-subject requests within 30 days.</p>
+<hr>
 <h2 id="data-export">Data export</h2>
 <p><code>GET /v1/project/export</code> returns a JSON snapshot of everything stored under your project.</p>
 <div class="code-block"><span class="code-lang">http</span><pre><code class="hljs"><span class="hljs-keyword">GET</span> <span class="hljs-string">/v1/project/export</span> <span class="hljs-meta">HTTP/1.1</span>
@@ -343,7 +351,8 @@ counts = client.erase_project_data()
   <aside aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#data-export">Data export</a></li>
+<ul><li class="ptoc-h2"><a href="#data-controller-amp-contact">Data controller &amp;amp; contact</a></li>
+<li class="ptoc-h2"><a href="#data-export">Data export</a></li>
 <li class="ptoc-h3"><a href="#using-the-export">Using the export</a></li>
 <li class="ptoc-h2"><a href="#data-erasure">Data erasure</a></li>
 <li class="ptoc-h3"><a href="#sdk">SDK</a></li>

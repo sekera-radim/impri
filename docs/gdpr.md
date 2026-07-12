@@ -4,6 +4,18 @@ Impri provides two GDPR-compliant data management endpoints under your project's
 
 ---
 
+## Data controller & contact
+
+**Self-hosted:** you run the server, so **you are the data controller**. Impri sends no telemetry and nothing phones home; all data stays on your machine or VPS.
+
+**Hosted cloud** (`app.impri.dev` / `api.impri.dev`): the data controller is **Radim Sekera**. Data is stored in the EU (Fly.io, Frankfurt). To exercise your data-subject rights (access, rectification, erasure, portability) you can use the self-service `GET /v1/project/export` and `DELETE /v1/project/data` endpoints below, or reach out:
+
+- **Contact:** [sekera.dev](https://sekera.dev)
+
+We aim to respond to data-subject requests within 30 days.
+
+---
+
 ## Data export
 
 `GET /v1/project/export` returns a JSON snapshot of everything stored under your project.
