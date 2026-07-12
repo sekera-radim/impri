@@ -30,6 +30,14 @@
             @click="openHelp"
           />
           <v-btn
+            icon="mdi-cellphone-link"
+            title="Connect a device"
+            aria-label="Connect a device"
+            variant="text"
+            size="small"
+            @click="connectDeviceOpen = true"
+          />
+          <v-btn
             :icon="isDark ? 'mdi-weather-sunny' : 'mdi-weather-night'"
             :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
             :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
@@ -108,6 +116,8 @@
       </v-main>
     </template>
 
+    <ConnectDeviceDialog :open="connectDeviceOpen" @close="connectDeviceOpen = false" />
+
     <v-snackbar v-model="snackbar" :timeout="5000" :color="snackbarColor" location="top">
       {{ snackbarText }}
     </v-snackbar>
@@ -127,6 +137,7 @@ import BillingScreen from './components/BillingScreen.vue'
 import UsageScreen from './components/UsageScreen.vue'
 import GettingStarted from './components/GettingStarted.vue'
 import AuditScreen from './components/AuditScreen.vue'
+import ConnectDeviceDialog from './components/ConnectDeviceDialog.vue'
 
 const auth = useAuthStore()
 const inbox = useInboxStore()
@@ -154,6 +165,7 @@ function toggleTheme() {
 const snackbar = ref(false)
 const snackbarText = ref('')
 const snackbarColor = ref<'success' | 'info'>('success')
+const connectDeviceOpen = ref(false)
 
 onMounted(() => {
   const checkout = new URLSearchParams(window.location.search).get('checkout')

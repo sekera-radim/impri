@@ -4,8 +4,29 @@ import { ApiClient, ApiClientError } from '../api/client'
 
 const STORAGE_KEY = 'impri_api_key'
 
+/**
+ * Device pairing via QR: the key rides in the URL FRAGMENT (#k=…), never the
+ * query string, so it is not sent to the server or written to access logs. We
+ * read it once on load, persist it, and immediately strip it from the URL so it
+ * doesn't linger in history or a shared screenshot.
+ */
+function readKeyFromHash(): string | null {
+  const m = /[#&]k=([^&]+)/.exec(window.location.hash)
+  if (!m) return null
+  let key: string
+  try {
+    key = decodeURIComponent(m[1])
+  } catch {
+    return null
+  }
+  history.replaceState(null, '', window.location.pathname + window.location.search)
+  return key
+}
+
 export const useAuthStore = defineStore('auth', () => {
-  const apiKey = ref<string | null>(localStorage.getItem(STORAGE_KEY))
+  const pairedKey = readKeyFromHash()
+  if (pairedKey) localStorage.setItem(STORAGE_KEY, pairedKey)
+  const apiKey = ref<string | null>(pairedKey ?? localStorage.getItem(STORAGE_KEY))
   const loginError = ref<string | null>(null)
   const loggingIn = ref(false)
 
