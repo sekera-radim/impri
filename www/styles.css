@@ -272,7 +272,7 @@ section { position: relative; }
 .tok-ok { color: var(--green); }
 
 /* ---------- pricing ---------- */
-.pricing { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.pricing { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
 .price {
   position: relative; padding: 28px 24px; border-radius: var(--radius);
   background: var(--surface); border: 1px solid var(--border);
