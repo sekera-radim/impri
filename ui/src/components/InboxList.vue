@@ -175,8 +175,8 @@
       v-if="isBulkMode"
       :selected-count="selectedCount"
       :verdict-loading="bulkLoading"
-      @bulk-approve="executeBulk('approve')"
-      @bulk-reject="executeBulk('reject')"
+      @bulk-approve="askBulkConfirm('approve')"
+      @bulk-reject="askBulkConfirm('reject')"
       @deselect-all="deselectAll"
     />
   </div>
@@ -192,6 +192,35 @@
 
   <!-- Shortcut help dialog -->
   <ShortcutHelpDialog v-model="showShortcuts" />
+
+  <!-- Bulk confirm dialog -->
+  <v-dialog v-model="showBulkConfirm" max-width="420">
+    <v-card>
+      <v-card-title class="text-h6">
+        {{ pendingBulkVerdict === 'approve' ? 'Approve' : 'Reject' }} {{ bulkConfirmCount }} action{{ bulkConfirmCount !== 1 ? 's' : '' }}?
+      </v-card-title>
+      <v-card-text>
+        <template v-if="pendingBulkVerdict === 'approve'">
+          {{ bulkConfirmCount }} pending action{{ bulkConfirmCount !== 1 ? 's' : '' }} will be approved as-is. Editable drafts are approved without edits — open one individually to tweak it first.
+        </template>
+        <template v-else>
+          {{ bulkConfirmCount }} pending action{{ bulkConfirmCount !== 1 ? 's' : '' }} will be rejected. This can't be undone.
+        </template>
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer />
+        <v-btn variant="text" :disabled="bulkLoading !== null" @click="showBulkConfirm = false">Cancel</v-btn>
+        <v-btn
+          :color="pendingBulkVerdict === 'approve' ? 'success' : 'error'"
+          variant="flat"
+          :loading="bulkLoading !== null"
+          @click="confirmBulk"
+        >
+          {{ pendingBulkVerdict === 'approve' ? 'Approve' : 'Reject' }} {{ bulkConfirmCount }}
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 
   <!-- Bulk result snackbar -->
   <v-snackbar
@@ -346,6 +375,27 @@ async function executeBulk(verdict: 'approve' | 'reject'): Promise<void> {
   }
 }
 
+// Confirm step before a bulk decision — bulk approve/reject touches many actions at
+// once, so require an explicit confirm. Count is snapshotted when the dialog opens.
+const showBulkConfirm = ref(false)
+const pendingBulkVerdict = ref<'approve' | 'reject' | null>(null)
+const bulkConfirmCount = ref(0)
+
+function askBulkConfirm(verdict: 'approve' | 'reject'): void {
+  if (selectedIds.value.size === 0) return
+  pendingBulkVerdict.value = verdict
+  bulkConfirmCount.value = selectedIds.value.size
+  showBulkConfirm.value = true
+}
+
+async function confirmBulk(): Promise<void> {
+  const verdict = pendingBulkVerdict.value
+  if (!verdict) return
+  await executeBulk(verdict)
+  showBulkConfirm.value = false
+  pendingBulkVerdict.value = null
+}
+
 // ── Shortcut help ─────────────────────────────────────────────────────────────
 
 const showShortcuts = ref(false)
@@ -436,18 +486,18 @@ function onKeydown(e: KeyboardEvent): void {
       break
 
     case 'A':
-      // Shift+A → bulk approve
+      // Shift+A → bulk approve (goes through the same confirm dialog as the button)
       if (e.shiftKey && !isFormFieldFocused() && isBulkMode.value) {
         e.preventDefault()
-        void executeBulk('approve')
+        askBulkConfirm('approve')
       }
       break
 
     case 'R':
-      // Shift+R → bulk reject
+      // Shift+R → bulk reject (goes through the same confirm dialog as the button)
       if (e.shiftKey && !isFormFieldFocused() && isBulkMode.value) {
         e.preventDefault()
-        void executeBulk('reject')
+        askBulkConfirm('reject')
       }
       break
 
