@@ -52,11 +52,13 @@ export const useInboxStore = defineStore('inbox', () => {
     }
   }
 
-  async function fetchActions(): Promise<void> {
+  async function fetchActions(silent = false): Promise<void> {
     const client = auth.client
     if (!client) return
     try {
-      loading.value = true
+      // Background polls (silent=true) skip the loading state so an empty or steady
+      // inbox doesn't flash the skeleton/spinner every few seconds. Data still updates.
+      if (!silent) loading.value = true
       error.value = null
       const res = await client.listActions({
         status: statusFilter.value,
@@ -83,7 +85,7 @@ export const useInboxStore = defineStore('inbox', () => {
         error.value = err instanceof Error ? err.message : 'Unknown error loading inbox'
       }
     } finally {
-      loading.value = false
+      if (!silent) loading.value = false
     }
   }
 
@@ -172,7 +174,7 @@ export const useInboxStore = defineStore('inbox', () => {
       clearInterval(pollTimer)
     }
     pollTimer = setInterval(() => {
-      void fetchActions()
+      void fetchActions(true)
       if (statusFilter.value !== 'pending') {
         void refreshPendingTotal()
       }
@@ -183,7 +185,7 @@ export const useInboxStore = defineStore('inbox', () => {
     void fetchActions()
     void refreshPendingTotal()
     pollTimer = setInterval(() => {
-      void fetchActions()
+      void fetchActions(true)
       if (statusFilter.value !== 'pending') {
         void refreshPendingTotal()
       }

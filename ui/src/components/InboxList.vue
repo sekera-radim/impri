@@ -85,9 +85,11 @@
       />
     </div>
 
-    <!-- Background polling refresh is indicated by the spinner on the refresh
-         button (see toolbar); no inline progress bar here, because inserting it
-         above the list shifts every row down and makes the page visibly jump. -->
+    <!-- Background polls refresh silently (no skeleton/spinner) so a steady or empty
+         inbox doesn't flash every few seconds — freshness shows via the "Updated"
+         timestamp above. A manual refresh (button) still shows the spinner. No inline
+         progress bar here either, because inserting it above the list shifts every
+         row down and makes the page visibly jump. -->
 
     <!-- Error state -->
     <v-alert
