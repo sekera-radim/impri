@@ -10,3 +10,15 @@ build/
 *.db-wal
 .env
 .env.local
+
+# Internal dev / build / launch / research docs — never commit.
+# These are AI-generated working notes and business/strategy docs kept locally
+# only. Public product docs (docs/*.md that build impri.dev/docs), the root
+# README and component READMEs stay tracked.
+/ARCHITECTURE.md
+/MONETIZATION.md
+/PLAYBOOK.md
+/SPEC.md
+/REVIEW-*.md
+/docs/launch/
+/docs/research-*.md
