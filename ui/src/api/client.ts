@@ -169,6 +169,10 @@ export class ApiClient {
     return this.request<void>('DELETE', `/watchers/${id}`)
   }
 
+  async runWatcher(id: string): Promise<Watcher> {
+    return this.request<Watcher>('POST', `/watchers/${id}/run`)
+  }
+
   async getBilling(): Promise<Billing> {
     return this.request<Billing>('GET', '/billing')
   }

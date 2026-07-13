@@ -114,6 +114,17 @@
           <!-- Actions -->
           <div class="d-flex gap-1 flex-shrink-0">
             <v-btn
+              v-if="w.status !== 'paused'"
+              icon="mdi-play-circle-outline"
+              size="x-small"
+              variant="text"
+              color="primary"
+              title="Run now"
+              aria-label="Run watcher now"
+              :loading="running.has(w.id)"
+              @click="runNow(w)"
+            />
+            <v-btn
               v-if="w.status === 'paused'"
               icon="mdi-play"
               size="x-small"
@@ -447,6 +458,18 @@ function formatNextRun(nextRunAt: number): string {
 // ─── Toggle (pause / activate) ───────────────────────────────────────────────
 
 const toggling = ref(new Set<string>())
+const running = ref(new Set<string>())
+
+async function runNow(w: Watcher): Promise<void> {
+  running.value.add(w.id)
+  try {
+    await store.runWatcher(w.id)
+  } catch (err) {
+    store.error = err instanceof Error ? err.message : 'Failed to run watcher'
+  } finally {
+    running.value.delete(w.id)
+  }
+}
 
 async function toggleStatus(w: Watcher, target: 'active' | 'paused'): Promise<void> {
   toggling.value.add(w.id)

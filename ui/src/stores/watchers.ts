@@ -75,6 +75,13 @@ export const useWatchersStore = defineStore('watchers', () => {
     watchers.value = watchers.value.filter((w) => w.id !== id)
   }
 
+  async function runWatcher(id: string): Promise<void> {
+    const client = auth.client
+    if (!client) return
+    const updated = await client.runWatcher(id)
+    replaceWatcher(updated)
+  }
+
   function replaceWatcher(updated: Watcher): void {
     const idx = watchers.value.findIndex((w) => w.id === updated.id)
     if (idx !== -1) {
@@ -93,5 +100,6 @@ export const useWatchersStore = defineStore('watchers', () => {
     pauseWatcher,
     activateWatcher,
     deleteWatcher,
+    runWatcher,
   }
 })

@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Db } from '../db.js';
 import { genId, nowSec, encodeCursor, decodeCursor } from '../db.js';
 import { hasScope, checkRateLimit } from '../auth.js';
-import { computeNextRunAt } from '../scheduler.js';
+import { computeNextRunAt, processWatcher, type WatcherRow } from '../scheduler.js';
 import { billingActive, watcherLimitReached, getProjectBilling, TIER_LIMITS } from '../billing.js';
 import { CreateWatcherBody, UpdateWatcherBody, ListWatchersQuery, durationToSec } from '../schemas.js';
 
@@ -266,6 +266,37 @@ export function registerWatcherRoutes(app: FastifyInstance, db: Db): void {
     db.prepare(
       'INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, \'watcher.updated\', ?, ?, ?)',
     ).run(key.projectId, key.keyId, JSON.stringify({ watcher_id: request.params.id }), now);
+
+    const updated = db.prepare('SELECT * FROM watchers WHERE id = ?').get(
+      request.params.id,
+    ) as Record<string, unknown>;
+    return serializeWatcher(updated);
+  });
+
+  // POST /v1/watchers/:id/run — manual "run now": spustí watcher hned přes stejnou cestu jako
+  // scheduler tick (fetch, score, dedup, publish do inboxu). Úspěch resetuje next_run_at, takže
+  // se "Next run" timer restartuje od teď. Rate-limitované, ať to nejde spamovat.
+  app.post<{ Params: { id: string } }>('/v1/watchers/:id/run', async (request, reply) => {
+    const key = request.apiKey;
+    if (!key || !hasScope(key.scopes, 'watch')) {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Scope "watch" required' });
+    }
+
+    if (!(await checkRateLimit(db, key.keyId, 'watchers:run', 20))) {
+      return reply.status(429).send({ error: 'Too Many Requests', message: 'Rate limit: 20 requests/min per key' });
+    }
+
+    const row = db.prepare('SELECT * FROM watchers WHERE id = ? AND project_id = ?').get(
+      request.params.id,
+      key.projectId,
+    ) as WatcherRow | undefined;
+    if (!row) return reply.status(404).send({ error: 'Not Found' });
+
+    await processWatcher(db, row, request.log);
+
+    db.prepare(
+      'INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, \'watcher.run_manual\', ?, ?, ?)',
+    ).run(key.projectId, key.keyId, JSON.stringify({ watcher_id: request.params.id }), nowSec());
 
     const updated = db.prepare('SELECT * FROM watchers WHERE id = ?').get(
       request.params.id,

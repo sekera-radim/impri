@@ -47,7 +47,7 @@ interface ScoringRule {
   points: number;
 }
 
-interface WatcherRow {
+export interface WatcherRow {
   id: string;
   project_id: string;
   name: string;
