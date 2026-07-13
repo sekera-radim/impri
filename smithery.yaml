@@ -1,0 +1,22 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    required:
+      - impriApiKey
+    properties:
+      impriApiKey:
+        type: string
+        description: "Impri API key (im_...). Get one at impri.dev or from your self-hosted server's first-run logs."
+      impriBaseUrl:
+        type: string
+        description: "Base URL of a self-hosted Impri server (e.g. http://localhost:8484). Defaults to the hosted cloud."
+  commandFunction: |-
+    (config) => ({
+      command: "npx",
+      args: ["-y", "@impri/mcp"],
+      env: {
+        IMPRI_API_KEY: config.impriApiKey,
+        ...(config.impriBaseUrl ? { IMPRI_BASE_URL: config.impriBaseUrl } : {})
+      }
+    })
