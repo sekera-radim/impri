@@ -17,6 +17,9 @@ export const useInboxStore = defineStore('inbox', () => {
   const kindFilter = ref('')
   const sinceFilter = ref<SinceOption>('all')
   const loading = ref(false)
+  // Any fetch in flight, including silent background polls — drives the small refresh
+  // icon spinner, independent of `loading` (which drives the full skeleton).
+  const refreshing = ref(false)
   const error = ref<string | null>(null)
   const lastFetchedAt = ref<number | null>(null)
   const hasMore = ref(false)
@@ -56,8 +59,10 @@ export const useInboxStore = defineStore('inbox', () => {
     const client = auth.client
     if (!client) return
     try {
-      // Background polls (silent=true) skip the loading state so an empty or steady
-      // inbox doesn't flash the skeleton/spinner every few seconds. Data still updates.
+      // Every fetch spins the small refresh icon (refreshing). Background polls
+      // (silent=true) skip `loading` so an empty/steady inbox doesn't flash the full
+      // skeleton every few seconds. Data still updates either way.
+      refreshing.value = true
       if (!silent) loading.value = true
       error.value = null
       const res = await client.listActions({
@@ -85,6 +90,7 @@ export const useInboxStore = defineStore('inbox', () => {
         error.value = err instanceof Error ? err.message : 'Unknown error loading inbox'
       }
     } finally {
+      refreshing.value = false
       if (!silent) loading.value = false
     }
   }
@@ -273,6 +279,7 @@ export const useInboxStore = defineStore('inbox', () => {
     kindFilter,
     sinceFilter,
     loading,
+    refreshing,
     error,
     lastFetchedAt,
     pendingCount,

@@ -64,7 +64,7 @@
         size="small"
         title="Refresh"
         aria-label="Refresh"
-        :loading="inbox.loading && inbox.actions.length > 0"
+        :loading="inbox.refreshing"
         @click="inbox.fetchActions()"
       />
     </div>
