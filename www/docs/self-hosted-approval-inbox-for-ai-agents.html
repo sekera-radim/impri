@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Terms of Service — Impri Docs</title>
-<meta name="description" content="Last updated: 2026-07-12">
+<title>A Self-Hosted Approval Inbox for AI Agents — Impri Docs</title>
+<meta name="description" content="Run your own approval inbox for AI agents — Impri&amp;#39;s MIT core is self-hostable in minutes, with the same REST API and MCP server as the cloud.">
 <meta name="theme-color" content="#06070d">
-<meta property="og:title" content="Terms of Service — Impri Docs">
-<meta property="og:description" content="Last updated: 2026-07-12">
+<meta property="og:title" content="A Self-Hosted Approval Inbox for AI Agents — Impri Docs">
+<meta property="og:description" content="Run your own approval inbox for AI agents — Impri&amp;#39;s MIT core is self-hostable in minutes, with the same REST API and MCP server as the cloud.">
 <meta property="og:type" content="article">
-<meta property="og:url" content="https://impri.dev/docs/terms">
+<meta property="og:url" content="https://impri.dev/docs/self-hosted-approval-inbox-for-ai-agents">
 <meta name="twitter:card" content="summary">
-<link rel="canonical" href="https://impri.dev/docs/terms">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Terms of Service","description":"Last updated: 2026-07-12","url":"https://impri.dev/docs/terms","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="canonical" href="https://impri.dev/docs/self-hosted-approval-inbox-for-ai-agents">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"A Self-Hosted Approval Inbox for AI Agents","description":"Run your own approval inbox for AI agents — Impri&#39;s MIT core is self-hostable in minutes, with the same REST API and MCP server as the cloud.","url":"https://impri.dev/docs/self-hosted-approval-inbox-for-ai-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="../styles.css">
 <style>
@@ -144,7 +144,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
 <a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
 <a href="../docs/privacy.html" class="sl">Privacy policy</a>
-<a href="../docs/terms.html" class="sl active">Terms of service</a>
+<a href="../docs/terms.html" class="sl">Terms of service</a>
 <a href="../docs/operator.html" class="sl">Operator / admin</a>
 <a href="../docs/account-recovery.html" class="sl">Account recovery</a>
 </div>
@@ -179,59 +179,142 @@ pre code.hljs{display:block;overflow-x:auto}
     <nav class="breadcrumb" aria-label="Breadcrumb">
       <a href="../docs.html">Docs</a>
       <span class="bc-sep">/</span>
-      <span>API reference</span>
+      <span>Reference</span>
       <span class="bc-sep">/</span>
-      <span>Terms of Service</span>
+      <span>A Self-Hosted Approval Inbox for AI Agents</span>
     </nav>
-    <h1>Terms of Service</h1>
-<p><em>Last updated: 2026-07-12</em></p>
-<p>Plain-language terms for the hosted Impri cloud (<code>app.impri.dev</code> / <code>api.impri.dev</code>). The self-hosted server is separate — it is licensed under the <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a> and these terms do not apply to it. Impri is an early-stage product; this is a starting-point agreement, not exhaustive legal boilerplate.</p>
-<h2 id="1-acceptance">1. Acceptance</h2>
-<p>By creating a project or using the hosted service, you agree to these terms. If you don&#39;t agree, don&#39;t use the hosted service (self-hosting is always an option).</p>
-<h2 id="2-the-service">2. The service</h2>
-<p>Impri is a human-in-the-loop approval gate for AI agents: an agent proposes an action, a human approves or rejects it, and the agent executes only after approval. The hosted service provides this as a managed instance.</p>
-<h2 id="3-beta-status-provided-quotas-isquot">3. Beta status — provided &quot;as is&quot;</h2>
-<p>The hosted service is in <strong>early beta</strong>. It is provided <strong>as is</strong>, without warranties of any kind. We do our best to keep it available and correct, but we do not guarantee uptime, and there is no SLA during beta. For anything critical, self-host — you keep full control and your data stays on your infrastructure.</p>
-<h2 id="4-your-account-and-api-keys">4. Your account and API keys</h2>
-<ul>
-<li>A project is identified by an <strong>API key</strong> — there is no email or password. <strong>The key is your only credential; keep it secret.</strong></li>
-<li>You are responsible for all activity under your keys and for the content your agents push.</li>
-<li>We recommend creating a <strong>second key as a backup</strong> and storing keys in a password manager. Losing all of your keys for an anonymous project may mean the project cannot be recovered (see <a href="privacy.html">Privacy</a> and <a href="gdpr.html">GDPR</a>).</li>
-</ul>
-<h2 id="5-acceptable-use">5. Acceptable use</h2>
-<p>Don&#39;t use the service to store or transmit illegal content, to abuse or overload the infrastructure, or to attempt to break project isolation or security. We may suspend or terminate accounts that do.</p>
-<h2 id="6-approvals-are-your-decision">6. Approvals are your decision</h2>
-<p>Impri holds a proposed action until a human approves it, then hands the decision back to your agent. <strong>Once you approve an action, the action and its consequences are yours.</strong> Impri is a tool that surfaces and gates decisions; it does not make them for you and is not responsible for what an approved action does.</p>
-<h2 id="7-billing">7. Billing</h2>
-<p>Paid tiers are processed by <strong>Stripe</strong>. You can cancel at any time; access continues until the end of the current billing period. Card data is handled by Stripe and never stored by us.</p>
-<h2 id="8-limitation-of-liability">8. Limitation of liability</h2>
-<p>To the maximum extent permitted by law, Impri and its operator are not liable for any indirect, incidental, or consequential damages, or for loss of data, revenue, or profits. Total liability for any claim is limited to the fees you paid for the service in the three months before the claim.</p>
-<h2 id="9-termination">9. Termination</h2>
-<p>You can stop using the service at any time and erase your data (<code>DELETE /v1/project/data</code>). We may suspend or terminate access for violations of these terms or to protect the service.</p>
-<h2 id="10-changes">10. Changes</h2>
-<p>We may update these terms; material changes will be reflected here with a new date. Continued use after a change means you accept it.</p>
-<h2 id="11-governing-law">11. Governing law</h2>
-<p>These terms are governed by the laws of the Czech Republic, where the operator is based.</p>
-<h2 id="12-contact">12. Contact</h2>
-<p>Questions about these terms: <a href="https://sekera.dev" target="_blank" rel="noopener">sekera.dev</a>.</p>
+    <h1>A Self-Hosted Approval Inbox for AI Agents</h1>
+<p>Run your own approval inbox for AI agents — Impri&#39;s MIT core is self-hostable in minutes, with the same REST API and MCP server as the cloud.</p>
+<hr>
+<h2 id="why-run-it-yourself">Why run it yourself</h2>
+<p>The cloud at impri.dev is the fastest way to get started. But there are reasons to prefer running Impri on your own infrastructure:</p>
+<p><strong>Data stays internal.</strong> Every action pushed to Impri includes the draft content your agent produced — an email body, a database query, a file to be modified. For agents working with internal documents, customer records, or anything under compliance review, you may not want that content leaving your network at all.</p>
+<p><strong>No per-seat or per-action cost at scale.</strong> If you run a high-volume agent loop that produces hundreds of approval requests per day, self-hosting removes that ceiling.</p>
+<p><strong>Integration with internal tooling.</strong> Running on-prem means you can put Impri behind your VPN, use your own SSO, and configure notification channels that point to internal Slack or ntfy instances.</p>
+<p>Impri is open-core: the server that handles the approval inbox, the REST API, the MCP server, and the web UI is MIT-licensed and available at <a href="https://github.com/sekera-radim/impri" target="_blank" rel="noopener">github.com/sekera-radim/impri</a>. The hosted version at impri.dev runs the same code with managed infrastructure on top.</p>
+<hr>
+<h2 id="running-the-server">Running the server</h2>
+<p>The server is distributed as a Docker image. A single container handles the REST API and the web inbox.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">docker run -d \
+  --name impri \
+  --restart unless-stopped \
+  -p 8484:8484 \
+  -v impri_data:/data \
+  -e SECRET_KEY=$(openssl rand -hex 32) \
+  ghcr.io/sekera-radim/impri:latest</code></pre></div>
+<p>The server starts on port 8484. The <code>/data</code> volume persists actions, decisions, and audit records across container restarts. <code>SECRET_KEY</code> signs sessions — generate once and store it somewhere safe (not in the command history for production use).</p>
+<p>After the container is running, open <code>http://localhost:8484</code> to create your first API key via the web UI. You&#39;ll use that key in the <code>Authorization: Bearer im_...</code> header the same way you would with the cloud.</p>
+<p>For a compose file, reverse proxy config, and production hardening notes, see <a href="self-hosting.html">self-hosting</a>.</p>
+<hr>
+<h2 id="pointing-your-agents-at-the-local-instance">Pointing your agents at the local instance</h2>
+<p>Wherever you set <code>IMPRI_BASE_URL</code>, switch it to your instance&#39;s address. The rest of the API is identical.</p>
+<p><strong>MCP server</strong> (Claude Code, Claude Desktop, or any MCP client):</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;mcpServers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;impri&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">&quot;command&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;npx&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;args&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;@impri/mcp&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;env&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">&quot;IMPRI_API_KEY&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_your_local_key&quot;</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">&quot;IMPRI_BASE_URL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;http://localhost:8484&quot;</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>The MCP server reads <code>IMPRI_BASE_URL</code> and routes all tool calls — <code>impri_push_action</code>, <code>impri_await_decision</code>, <code>impri_report_result</code> — to your instance instead of the cloud. No code changes needed in the agent.</p>
+<p><strong>REST directly</strong> — useful for testing that the instance is up and accepting requests:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Verify connectivity</span>
+curl http://localhost:8484/v1/actions \
+  -H <span class="hljs-string">&quot;Authorization: Bearer im_your_local_key&quot;</span>
+
+<span class="hljs-comment"># Push a test action — here an internal database migration awaiting sign-off</span>
+curl -X POST http://localhost:8484/v1/actions \
+  -H <span class="hljs-string">&quot;Authorization: Bearer im_your_local_key&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{
+    &quot;kind&quot;: &quot;db.migration&quot;,
+    &quot;title&quot;: &quot;Run migration: add_user_preferences_table&quot;,
+    &quot;preview&quot;: {
+      &quot;format&quot;: &quot;markdown&quot;,
+      &quot;body&quot;: &quot;```sql\nALTER TABLE users ADD COLUMN preferences JSONB;\nCREATE INDEX idx_user_preferences ON users(id)\n  WHERE preferences IS NOT NULL;\n```&quot;
+    },
+    &quot;expires_in&quot;: 3600,
+    &quot;editable&quot;: []
+  }&#x27;</span></code></pre></div>
+<p>The response is <code>{ id, status: &quot;pending&quot;, inbox_url }</code> — the same shape as the cloud. Poll <code>GET /v1/actions/:id</code> until <code>status</code> is no longer <code>&quot;pending&quot;</code>, then execute only on <code>&quot;approved&quot;</code>.</p>
+<hr>
+<h2 id="what-you-get-vs-the-cloud">What you get vs. the cloud</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Self-hosted (MIT core)</th>
+<th>Cloud (impri.dev)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>REST API (<code>/v1/actions</code>)</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>MCP server (<code>@impri/mcp</code>)</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Web inbox</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Audit log</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Notifications (email, ntfy, web push)</td>
+<td>Yes — configure your own SMTP/ntfy</td>
+<td>Managed</td>
+</tr>
+<tr>
+<td>Slack / Telegram / Discord approval</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Infrastructure management</td>
+<td>You</td>
+<td>Managed</td>
+</tr>
+<tr>
+<td>Uptime SLA</td>
+<td>Your infra</td>
+<td>Covered</td>
+</tr>
+</tbody></table>
+</div>
+<p>The split is operational, not functional. A self-hosted instance accepts the same requests, stores decisions in the same schema, and exposes the same inbox UI. You configure your own notification channels — see <a href="notifications.html">notifications</a> for the available options.</p>
+<hr>
+<h2 id="honesty-about-what-impri-is-and-is-not">Honesty about what Impri is and is not</h2>
+<p>Running Impri yourself doesn&#39;t change what it does. It stores the proposed action, notifies the designated human, and holds the decision. It does not interpret what the agent is doing, does not generate or modify content, and does not execute anything.</p>
+<p>The gate is real only when the agent&#39;s path to the side effect runs through the Impri response. If you run the server behind your firewall but your agent also holds direct credentials to the target system, the gate does not enforce anything — it just records what was proposed.</p>
+<p>Impri is a focused tool: one human, one decision, one proposed action at a time. It is not a workflow engine with branching or scheduling (look at n8n or Temporal for those), and it is not an agent-to-agent coordination layer. You can embed it as one step inside a larger workflow. For compliance-sensitive environments, pair it with <a href="audit-log.html">audit-log</a> to export decision records.</p>
+<hr>
+<h2 id="next-step">Next step</h2>
+<p>Follow the <a href="self-hosting.html">self-hosting</a> guide for compose file, reverse proxy, and environment variable reference. To wire up your first agent, start with the <a href="quickstart.html">quickstart</a> (the examples work against either the cloud or a local instance — just set <code>IMPRI_BASE_URL</code>). To use the MCP server with Claude Code or Claude Desktop, see <a href="mcp.html">mcp</a>.</p>
 
   </main>
 
   <aside aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#1-acceptance">1. Acceptance</a></li>
-<li class="ptoc-h2"><a href="#2-the-service">2. The service</a></li>
-<li class="ptoc-h2"><a href="#3-beta-status-provided-quotas-isquot">3. Beta status — provided &quot;as is&quot;</a></li>
-<li class="ptoc-h2"><a href="#4-your-account-and-api-keys">4. Your account and API keys</a></li>
-<li class="ptoc-h2"><a href="#5-acceptable-use">5. Acceptable use</a></li>
-<li class="ptoc-h2"><a href="#6-approvals-are-your-decision">6. Approvals are your decision</a></li>
-<li class="ptoc-h2"><a href="#7-billing">7. Billing</a></li>
-<li class="ptoc-h2"><a href="#8-limitation-of-liability">8. Limitation of liability</a></li>
-<li class="ptoc-h2"><a href="#9-termination">9. Termination</a></li>
-<li class="ptoc-h2"><a href="#10-changes">10. Changes</a></li>
-<li class="ptoc-h2"><a href="#11-governing-law">11. Governing law</a></li>
-<li class="ptoc-h2"><a href="#12-contact">12. Contact</a></li></ul>
+<ul><li class="ptoc-h2"><a href="#why-run-it-yourself">Why run it yourself</a></li>
+<li class="ptoc-h2"><a href="#running-the-server">Running the server</a></li>
+<li class="ptoc-h2"><a href="#pointing-your-agents-at-the-local-instance">Pointing your agents at the local instance</a></li>
+<li class="ptoc-h2"><a href="#what-you-get-vs-the-cloud">What you get vs. the cloud</a></li>
+<li class="ptoc-h2"><a href="#honesty-about-what-impri-is-and-is-not">Honesty about what Impri is and is not</a></li>
+<li class="ptoc-h2"><a href="#next-step">Next step</a></li></ul>
 </nav>
   </aside>
 </div>

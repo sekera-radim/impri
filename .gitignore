@@ -22,3 +22,7 @@ build/
 /REVIEW-*.md
 /docs/launch/
 /docs/research-*.md
+
+# Internal SEO content engine (topic queue, generation brief) — kept local only.
+# The generated docs/*.md pages ARE public; only the machinery stays private.
+/scripts/seo/

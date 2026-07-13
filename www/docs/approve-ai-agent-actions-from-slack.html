@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Approve AI Agent Actions From Slack — Impri Docs</title>
+<meta name="description" content="Connect Impri to Slack and your AI agent&amp;#39;s proposed actions land in a channel where you can approve or reject them with a single tap — no dashboard required.">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Approve AI Agent Actions From Slack — Impri Docs">
+<meta property="og:description" content="Connect Impri to Slack and your AI agent&amp;#39;s proposed actions land in a channel where you can approve or reject them with a single tap — no dashboard required.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://impri.dev/docs/approve-ai-agent-actions-from-slack">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://impri.dev/docs/approve-ai-agent-actions-from-slack">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Approve AI Agent Actions From Slack","description":"Connect Impri to Slack and your AI agent&#39;s proposed actions land in a channel where you can approve or reject them with a single tap — no dashboard required.","url":"https://impri.dev/docs/approve-ai-agent-actions-from-slack","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+<a href="../docs/observability.html" class="sl">Observability</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval.html" class="sl">Slack approval</a>
+<a href="../docs/discord-approval.html" class="sl">Discord approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/privacy.html" class="sl">Privacy policy</a>
+<a href="../docs/terms.html" class="sl">Terms of service</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+<a href="../docs/account-recovery.html" class="sl">Account recovery</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Reference</span>
+      <span class="bc-sep">/</span>
+      <span>Approve AI Agent Actions From Slack</span>
+    </nav>
+    <h1>Approve AI Agent Actions From Slack</h1>
+<p>Connect Impri to Slack and your AI agent&#39;s proposed actions land in a channel where you can approve or reject them with a single tap — no dashboard required.</p>
+<hr>
+<h2 id="how-it-works">How it works</h2>
+<p>When an agent pushes a proposed action to Impri, Impri routes the approval notification to wherever you&#39;ve configured it — including a Slack channel. The agent then polls for the decision. If you approve in Slack, the agent proceeds; if you reject, it stops. The agent code is identical regardless of which channel you use for approvals. What changes is the notification routing, which you configure once in the Impri dashboard.</p>
+<p>The action card that arrives in Slack shows the action title, a preview of the content (formatted as the agent sent it), and Approve / Reject buttons. Clicking either one records the decision immediately and unblocks the polling agent.</p>
+<hr>
+<h2 id="setting-up-slack-notifications">Setting up Slack notifications</h2>
+<p>Connect your Slack workspace once via the Impri notifications settings. The full walk-through — including creating the Slack app, OAuth scopes, and which channel gets which actions — is in the <a href="slack-approval.html">Slack approval guide</a>. Once connected, every action your agent pushes will trigger a Slack notification automatically.</p>
+<p>If you want different agents to route to different channels, configure separate API keys and assign each key a distinct notification target in the dashboard.</p>
+<hr>
+<h2 id="the-agent-side">The agent side</h2>
+<p>The agent code follows the same push → poll → execute pattern regardless of approval channel. Here&#39;s a complete Python example for an agent that drafts a LinkedIn update and waits for your tap in Slack before posting it.</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> time
+<span class="hljs-keyword">import</span> httpx
+
+IMPRI_API_KEY = <span class="hljs-string">&quot;im_your_key_here&quot;</span>
+IMPRI_BASE = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">propose_and_wait</span>(<span class="hljs-params">draft: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">dict</span> | <span class="hljs-literal">None</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Push a social post draft for approval. Returns the decision or None on rejection/expiry.&quot;&quot;&quot;</span>
+
+    <span class="hljs-comment"># 1. Push the proposed action</span>
+    resp = httpx.post(
+        <span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions&quot;</span>,
+        headers={<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{IMPRI_API_KEY}</span>&quot;</span>},
+        json={
+            <span class="hljs-string">&quot;kind&quot;</span>: <span class="hljs-string">&quot;social.post&quot;</span>,
+            <span class="hljs-string">&quot;title&quot;</span>: <span class="hljs-string">&quot;LinkedIn post: Q3 product update&quot;</span>,
+            <span class="hljs-string">&quot;preview&quot;</span>: {
+                <span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>,
+                <span class="hljs-string">&quot;body&quot;</span>: draft,
+            },
+            <span class="hljs-string">&quot;expires_in&quot;</span>: <span class="hljs-number">3600</span>,      <span class="hljs-comment"># 1 hour — stale social posts aren&#x27;t worth sending</span>
+            <span class="hljs-string">&quot;editable&quot;</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],  <span class="hljs-comment"># let the reviewer fix wording before approving</span>
+        },
+        timeout=<span class="hljs-number">10</span>,
+    )
+    resp.raise_for_status()
+    action = resp.json()
+    action_id = action[<span class="hljs-string">&quot;id&quot;</span>]
+
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Action pending — check Slack. ID: <span class="hljs-subst">{action_id}</span>&quot;</span>)
+
+    <span class="hljs-comment"># 2. Poll until a human decides in Slack (or until expiry)</span>
+    <span class="hljs-keyword">while</span> <span class="hljs-literal">True</span>:
+        result = httpx.get(
+            <span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>&quot;</span>,
+            headers={<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{IMPRI_API_KEY}</span>&quot;</span>},
+            timeout=<span class="hljs-number">10</span>,
+        ).json()
+
+        status = result[<span class="hljs-string">&quot;status&quot;</span>]
+        <span class="hljs-keyword">if</span> status != <span class="hljs-string">&quot;pending&quot;</span>:
+            <span class="hljs-keyword">break</span>
+        time.sleep(<span class="hljs-number">10</span>)
+
+    <span class="hljs-keyword">if</span> status != <span class="hljs-string">&quot;approved&quot;</span>:
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Not proceeding — decision: <span class="hljs-subst">{status}</span>&quot;</span>)
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">None</span>
+
+    <span class="hljs-comment"># 3. Return the final content (may include human edits made before approving)</span>
+    <span class="hljs-keyword">return</span> result[<span class="hljs-string">&quot;decision&quot;</span>][<span class="hljs-string">&quot;final_preview&quot;</span>]
+
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">post_to_linkedin</span>(<span class="hljs-params">content: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-literal">None</span>:
+    <span class="hljs-comment"># your actual LinkedIn posting code here</span>
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Posting: <span class="hljs-subst">{content}</span>&quot;</span>)
+
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">run_agent</span>(<span class="hljs-params">draft: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-literal">None</span>:
+    decision = propose_and_wait(draft)
+    <span class="hljs-keyword">if</span> decision <span class="hljs-keyword">is</span> <span class="hljs-literal">None</span>:
+        <span class="hljs-keyword">return</span>  <span class="hljs-comment"># rejected or expired — nothing to post</span>
+
+    post_to_linkedin(decision[<span class="hljs-string">&quot;body&quot;</span>])
+
+    <span class="hljs-comment"># 4. Report result back to Impri (closes the audit record)</span>
+    httpx.post(
+        <span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>/result&quot;</span>,  <span class="hljs-comment"># reuse action_id from outer scope</span>
+        headers={<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{IMPRI_API_KEY}</span>&quot;</span>},
+        json={<span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;executed&quot;</span>},
+        timeout=<span class="hljs-number">10</span>,
+    )</code></pre></div>
+<p>A few things worth noting:</p>
+<ul>
+<li><code>expires_in: 3600</code> keeps the approval window tight. A LinkedIn post about a product update that sat unapproved for two hours is probably no longer timely. Adjust this to match how quickly actions become stale.</li>
+<li><code>editable: [&quot;preview.body&quot;]</code> lets you rewrite the draft in Slack before tapping Approve. The approved version comes back in <code>decision.final_preview.body</code> — always use that, not the original draft.</li>
+<li>A rejected or expired action returns from <code>propose_and_wait</code> as <code>None</code>. The posting code is never reached. That is the gate.</li>
+</ul>
+<hr>
+<h2 id="what-the-slack-card-shows">What the Slack card shows</h2>
+<p>When the notification arrives in Slack, the card includes:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Action title</td>
+<td><code>title</code> from your push call</td>
+</tr>
+<tr>
+<td>Preview body</td>
+<td><code>preview.body</code>, rendered as markdown</td>
+</tr>
+<tr>
+<td>Expiry time</td>
+<td>derived from <code>expires_in</code></td>
+</tr>
+<tr>
+<td>Approve / Reject buttons</td>
+<td>always present</td>
+</tr>
+<tr>
+<td>Edit before approving</td>
+<td>available when <code>editable</code> paths are set</td>
+</tr>
+</tbody></table>
+</div>
+<p>You can approve from the Slack mobile app, desktop app, or web — whichever is in reach when the notification arrives.</p>
+<hr>
+<h2 id="when-slack-approval-fits">When Slack approval fits</h2>
+<p>Slack is a natural fit when you or your team already have Slack open and want approvals to arrive in the same place as other work notifications. It is especially useful for:</p>
+<ul>
+<li>Social media drafts where timing matters (short <code>expires_in</code>)</li>
+<li>Outreach emails where one person on the team should review before send</li>
+<li>Publishing pipelines where a content team needs sign-off</li>
+</ul>
+<p>If you need approvals routed to a mobile push with no app required, see <a href="notifications.html">notifications</a> for ntfy and web push options. If your team uses Telegram instead, the setup is covered in the <a href="telegram-approval.html">Telegram approval docs</a>.</p>
+<hr>
+<h2 id="next-steps">Next steps</h2>
+<p>Set up Slack as your notification channel: <a href="slack-approval.html">Slack approval guide</a>.</p>
+<p>For a full explanation of the push → approve → execute pattern and how to make the gate genuinely binding, see <a href="how-to-add-human-approval-to-an-ai-agent.html">How to Add Human Approval to an AI Agent</a>.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#how-it-works">How it works</a></li>
+<li class="ptoc-h2"><a href="#setting-up-slack-notifications">Setting up Slack notifications</a></li>
+<li class="ptoc-h2"><a href="#the-agent-side">The agent side</a></li>
+<li class="ptoc-h2"><a href="#what-the-slack-card-shows">What the Slack card shows</a></li>
+<li class="ptoc-h2"><a href="#when-slack-approval-fits">When Slack approval fits</a></li>
+<li class="ptoc-h2"><a href="#next-steps">Next steps</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+    <a href="/docs/privacy.html">Privacy</a>
+    <a href="/docs/terms.html">Terms</a>
+    <a href="https://sekera.dev">Contact</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>.</span></div>
+</footer>
+</body>
+</html>

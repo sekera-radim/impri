@@ -167,6 +167,14 @@ function addHeadingIds(html) {
   });
 }
 
+/** Decode the handful of HTML entities marked emits, so TOC text is clean. */
+function decodeEntities(s) {
+  return s
+    .replace(/&#39;/g, "'").replace(/&#x27;/gi, "'")
+    .replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+}
+
 /** Extract { level, id, text } for each h2/h3 heading in rendered HTML. */
 function extractHeadings(html) {
   const headings = [];
@@ -176,7 +184,7 @@ function extractHeadings(html) {
     headings.push({
       level: parseInt(m[1], 10),
       id:    m[2],
-      text:  m[3].replace(/<[^>]+>/g, ''),
+      text:  decodeEntities(m[3].replace(/<[^>]+>/g, '')),
     });
   }
   return headings;
@@ -359,6 +367,19 @@ function buildFooter() {
 // ── Page template (individual doc pages) ─────────────────────────────────
 
 function renderDocPage({ slug, title, desc, section, contentHtml, sidebarHtml, pageTocHtml, root }) {
+  // Cloudflare Pages serves the clean URL (/docs/slug) and 308-redirects the
+  // .html form to it, so canonical/OG/JSON-LD must point at the clean URL.
+  const canonical = `https://impri.dev/docs/${slug}`;
+  const jsonLd = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: title,
+    description: desc,
+    url: canonical,
+    inLanguage: 'en',
+    author:    { '@type': 'Organization', name: 'Impri', url: 'https://impri.dev' },
+    publisher: { '@type': 'Organization', name: 'Impri', url: 'https://impri.dev' },
+  });
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -369,7 +390,11 @@ function renderDocPage({ slug, title, desc, section, contentHtml, sidebarHtml, p
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="${escHtml(title)} — Impri Docs">
 <meta property="og:description" content="${escHtml(desc)}">
-<meta property="og:type" content="website">
+<meta property="og:type" content="article">
+<meta property="og:url" content="${canonical}">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="${canonical}">
+<script type="application/ld+json">${jsonLd}</script>
 <link rel="icon" href="${FAVICON}">
 <link rel="stylesheet" href="${root}styles.css">
 <style>
@@ -553,7 +578,46 @@ function main() {
   writeFileSync(join(DOCS_OUT, 'index.html'), hubIndexHtml, 'utf8');
   console.log(`  ✓  docs/index.html`);
 
-  console.log(`\nDone — ${rendered} doc pages + hub index.`);
+  // ── sitemap.xml ──────────────────────────────────────────────────────────
+  // So search engines discover every doc page, including unlisted SEO pages
+  // that are not in the NAV sidebar.
+  const lastmod = new Date().toISOString().slice(0, 10);
+  const urls = ['https://impri.dev/', 'https://impri.dev/docs'];
+  for (const slug of pageIndex.keys()) {
+    urls.push(`https://impri.dev/docs/${slug}`);
+  }
+  const sitemap =
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    urls.map(u => `  <url><loc>${u}</loc><lastmod>${lastmod}</lastmod></url>`).join('\n') +
+    `\n</urlset>\n`;
+  writeFileSync(join(WWW, 'sitemap.xml'), sitemap, 'utf8');
+  console.log(`  ✓  sitemap.xml (${urls.length} urls)`);
+
+  // ── llms.txt: keep an auto-generated index of use-case guides (unlisted pages) ──
+  // Curated content above the marker is preserved; the marker section to EOF is
+  // regenerated each build so new SEO/use-case pages stay discoverable to AI crawlers.
+  const GUIDES_MARKER = '## Use-case guides (auto-generated)';
+  try {
+    const llmsPath = join(WWW, 'llms.txt');
+    let llms = readFileSync(llmsPath, 'utf8');
+    const cut = llms.indexOf(GUIDES_MARKER);
+    if (cut !== -1) llms = llms.slice(0, cut);
+    const guideLines = [];
+    for (const [slug, info] of pageIndex.entries()) {
+      if (PAGE_MAP.has(slug)) continue; // NAV pages already listed in the curated section
+      guideLines.push(`- ${info.title}: https://impri.dev/docs/${slug}.html`);
+    }
+    if (guideLines.length) {
+      llms = llms.replace(/\s+$/, '') + `\n\n${GUIDES_MARKER}\n` + guideLines.sort().join('\n') + '\n';
+      writeFileSync(llmsPath, llms, 'utf8');
+      console.log(`  ✓  llms.txt (+${guideLines.length} guide links)`);
+    }
+  } catch (e) {
+    console.log(`  note: llms.txt not updated (${e.message})`);
+  }
+
+  console.log(`\nDone — ${rendered} doc pages + hub index + sitemap + llms index.`);
 }
 
 main();
