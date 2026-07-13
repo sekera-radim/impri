@@ -23,11 +23,10 @@
         >
           <v-checkbox
             :model-value="selected"
-            :disabled="hasEditable"
             density="compact"
             hide-details
             class="card-checkbox"
-            :title="hasEditable ? 'Cannot bulk-select actions with editable fields' : undefined"
+            :title="hasEditable ? 'Editable — bulk-approve uses the draft as-is; open it to edit before approving' : undefined"
             @update:model-value="onCheckboxChange"
           />
         </div>
@@ -142,17 +141,14 @@ function onCardClick(): void {
   if (!props.bulkMode) {
     emit('click')
   } else {
-    // In bulk mode, clicking the card body toggles selection (unless editable)
-    if (!hasEditable.value) {
-      emit('toggle-select', props.action.id)
-    }
+    // In bulk mode, clicking the card body toggles selection. Editable actions are
+    // included — bulk-approve uses the draft as-is (open outside bulk to edit first).
+    emit('toggle-select', props.action.id)
   }
 }
 
 function onCheckboxChange(): void {
-  if (!hasEditable.value) {
-    emit('toggle-select', props.action.id)
-  }
+  emit('toggle-select', props.action.id)
 }
 
 // ── Highlight helpers ─────────────────────────────────────────────────────────

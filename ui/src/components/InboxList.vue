@@ -284,11 +284,12 @@ const {
 
 // ── Bulk selection helpers ────────────────────────────────────────────────────
 
-/** Action IDs that are eligible for bulk (no editable fields) */
+/** Action IDs eligible for bulk. Editable actions are included too — bulk-approve
+ * uses the stored draft as-is (same as approving one without editing); to tweak the
+ * wording first, open the action and approve it there. Backend /bulk-decision already
+ * decides on the original preview regardless of editable fields. */
 const bulkEligibleIds = computed(() =>
-  inbox.actions
-    .filter((a) => a.editable.length === 0)
-    .map((a) => a.id),
+  inbox.actions.map((a) => a.id),
 )
 
 const allVisibleSelected = computed(
