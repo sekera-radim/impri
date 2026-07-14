@@ -26,3 +26,5 @@ build/
 # Internal SEO content engine (topic queue, generation brief) — kept local only.
 # The generated docs/*.md pages ARE public; only the machinery stays private.
 /scripts/seo/
+# Internal outreach engine (Reddit find & reply, Dev.to cross-post) — local only.
+/scripts/outreach/
