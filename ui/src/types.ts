@@ -43,6 +43,12 @@ export interface Action {
   color?: string | null
   decision?: Decision
   webhook_delivery?: WebhookDelivery
+  /** Whether re-executing this action is safe. true = idempotent, false = not idempotent (show warning), absent = unknown. */
+  idempotent?: boolean
+  /** Plain-English description of how to undo this action, if applicable. */
+  undo?: string
+  /** Free-form execution receipt returned via POST /result. Present only on executed/execute_failed actions. */
+  result_payload?: Record<string, unknown>
 }
 
 export interface ListActionsResponse {

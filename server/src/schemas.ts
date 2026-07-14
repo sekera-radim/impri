@@ -26,6 +26,11 @@ export const CreateActionBody = z.object({
   expires_in: z.number().int().min(300).max(30 * 24 * 3600).default(72 * 3600),
   idempotency_key: z.string().max(255).optional(),
   editable: z.array(z.string()).default([]),
+  // Optional hint: is re-executing this action safe (idempotent)?
+  // true = yes, false = no (UI shows a warning badge), absent = unknown.
+  idempotent: z.boolean().optional(),
+  // Optional plain-English description of how to undo this action.
+  undo: z.string().max(2000).optional(),
 });
 export type CreateActionBody = z.infer<typeof CreateActionBody>;
 
@@ -48,6 +53,9 @@ export type DecisionBody = z.infer<typeof DecisionBody>;
 export const ResultBody = z.object({
   status: z.enum(['executed', 'execute_failed']),
   detail: z.string().optional(),
+  // Optional free-form execution receipt (e.g. { ids: [...], urls: [...] }).
+  // Capped at ~16 KB serialized; stored as result_payload on the action.
+  payload: z.record(z.unknown()).optional(),
 });
 export type ResultBody = z.infer<typeof ResultBody>;
 

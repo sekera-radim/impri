@@ -32,6 +32,16 @@ function serializeAction(row: Record<string, unknown>) {
     created_at: row.created_at,
     updated_at: row.updated_at,
     color: (row.color as string | null) ?? null,
+    // Feature: idempotent flag — SQLite INTEGER 0/1/NULL → boolean/undefined.
+    idempotent: row.idempotent !== null && row.idempotent !== undefined
+      ? Boolean(row.idempotent)
+      : undefined,
+    // Feature: undo hint.
+    undo: (row.undo as string | null) ?? undefined,
+    // Feature: result payload receipt — stored as JSON text, returned parsed.
+    result_payload: row.result_payload
+      ? (JSON.parse(row.result_payload as string) as Record<string, unknown>)
+      : undefined,
   };
 }
 
@@ -144,8 +154,9 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
       db.prepare(`
         INSERT INTO actions
           (id, project_id, kind, title, preview, payload, target_url, callback_url,
-           expires_at, idempotency_key, editable, status, preview_hash, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           expires_at, idempotency_key, editable, status, preview_hash, created_at, updated_at,
+           idempotent, undo)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         actionId,
         key.projectId,
@@ -162,6 +173,8 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
         previewHash,
         now,
         now,
+        body.idempotent !== undefined ? (body.idempotent ? 1 : 0) : null,
+        body.undo ?? null,
       );
 
       // For auto-decisions, insert a synthetic decision row so GET /v1/actions/:id
@@ -676,8 +689,26 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
       });
     }
 
+    // Cap result_payload at ~16 KB to prevent oversized receipts from bloating the DB.
+    let resultPayloadStr: string | null = null;
+    if (body.payload !== undefined) {
+      resultPayloadStr = JSON.stringify(body.payload);
+      if (resultPayloadStr.length > 16 * 1024) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'result payload exceeds 16 KB limit',
+        });
+      }
+    }
+
     const now = nowSec();
-    db.prepare("UPDATE actions SET status = ?, updated_at = ? WHERE id = ?").run(body.status, now, action.id);
+    if (resultPayloadStr !== null) {
+      db.prepare("UPDATE actions SET status = ?, result_payload = ?, updated_at = ? WHERE id = ?").run(
+        body.status, resultPayloadStr, now, action.id,
+      );
+    } else {
+      db.prepare("UPDATE actions SET status = ?, updated_at = ? WHERE id = ?").run(body.status, now, action.id);
+    }
 
     db.prepare(
       "INSERT INTO audit_log (project_id, action_id, event, data, created_at) VALUES (?, ?, ?, ?, ?)",

@@ -94,6 +94,47 @@
               {{ createdLabel }}
             </span>
           </div>
+
+          <!-- Feature 1: not-idempotent warning badge -->
+          <v-chip
+            v-if="action.idempotent === false"
+            size="x-small"
+            variant="tonal"
+            color="error"
+            label
+            class="mt-1"
+            prepend-icon="mdi-repeat-off"
+          >
+            Not idempotent — retrying may duplicate this action
+          </v-chip>
+
+          <!-- Feature 3: undo hint -->
+          <p
+            v-if="action.undo"
+            class="text-caption text-medium-emphasis mt-1 mb-0 d-flex align-start gap-1"
+          >
+            <v-icon size="12" class="mt-px">mdi-undo</v-icon>
+            <span><strong>How to undo:</strong> {{ action.undo }}</span>
+          </p>
+
+          <!-- Feature 2: result payload receipt -->
+          <div
+            v-if="(action.status === 'executed' || action.status === 'execute_failed') && action.result_payload"
+            class="result-receipt mt-2"
+          >
+            <p class="text-caption font-weight-medium mb-1 d-flex align-center gap-1">
+              <v-icon size="12">mdi-receipt-text-outline</v-icon>
+              Result
+            </p>
+            <div
+              v-for="(val, key) in action.result_payload"
+              :key="key"
+              class="text-caption text-medium-emphasis result-receipt-row"
+            >
+              <span class="font-weight-medium">{{ key }}:</span>
+              {{ Array.isArray(val) ? val.join(', ') : String(val) }}
+            </div>
+          </div>
         </div>
 
         <!-- Status chip -->
@@ -300,6 +341,20 @@ const statusColor = computed(() => {
   border-radius: 2px;
   padding: 0 1px;
   font-style: normal;
+}
+
+.result-receipt {
+  background: rgba(var(--v-theme-surface-variant), 0.5);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+.result-receipt-row {
+  word-break: break-all;
+}
+
+.mt-px {
+  margin-top: 1px;
 }
 
 .gap-1 { gap: 4px; }

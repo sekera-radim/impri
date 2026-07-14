@@ -49,7 +49,10 @@ CREATE TABLE IF NOT EXISTS actions (
   status          TEXT NOT NULL DEFAULT 'pending',
   preview_hash    TEXT NOT NULL,
   created_at      INTEGER NOT NULL,
-  updated_at      INTEGER NOT NULL
+  updated_at      INTEGER NOT NULL,
+  idempotent      INTEGER,
+  undo            TEXT,
+  result_payload  TEXT
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_actions_idempotency
@@ -325,8 +328,20 @@ function migrate(db: Db): void {
   if (!columns('watchers').has('color')) {
     db.exec('ALTER TABLE watchers ADD COLUMN color TEXT');
   }
-  if (!columns('actions').has('color')) {
+
+  const action = columns('actions');
+  if (!action.has('color')) {
     db.exec('ALTER TABLE actions ADD COLUMN color TEXT');
+  }
+  // Feature additions (backward-compatible; absent = existing behavior unchanged).
+  if (!action.has('idempotent')) {
+    db.exec('ALTER TABLE actions ADD COLUMN idempotent INTEGER');
+  }
+  if (!action.has('undo')) {
+    db.exec('ALTER TABLE actions ADD COLUMN undo TEXT');
+  }
+  if (!action.has('result_payload')) {
+    db.exec('ALTER TABLE actions ADD COLUMN result_payload TEXT');
   }
 
   // Account recovery code hash — nullable; existing projects get it via

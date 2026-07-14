@@ -191,6 +191,40 @@ In your agent, treat `expired` the same as `rejected` — do not execute and opt
 
 ---
 
+## Optional fields for richer context
+
+`POST /v1/actions` accepts three optional fields that add context without changing the core approval flow. Omitting them is fine — existing behaviour is byte-for-byte unchanged.
+
+**`idempotent`** (`boolean | absent`): signals whether re-executing the action is safe.
+
+- `true` — safe to retry (e.g. a read-only lookup, a PUT that is naturally idempotent).
+- `false` — **not** idempotent (e.g. sending an email, charging a card). The approval inbox shows a warning badge: "Not idempotent — retrying may duplicate this action".
+- absent (default) — unknown; no badge shown.
+
+**`undo`** (`string`, max 2000 chars): plain-English description of how to undo the action if the agent later needs to roll it back. Displayed on the approval card so the reviewer knows the escape hatch before approving. Example: `"Delete the created record via DELETE /api/posts/123"`.
+
+**`result.payload`** (`object`, max ~16 KB): free-form execution receipt sent with `POST /v1/actions/:id/result`. Use it to return structured data that the issuer or dashboard may need (e.g. `{"ids": [42, 43], "url": "https://..."}"`). The receipt is shown on the card after execution and returned from `GET /v1/actions/:id` as `result_payload`.
+
+```bash
+# Create with context hints
+curl -X POST https://api.impri.dev/v1/actions \
+  -H "Authorization: Bearer $IMPRI_API_KEY" \
+  -d '{
+    "kind": "record.create",
+    "title": "Create customer record: Acme Corp",
+    "preview": { "format": "plain", "body": "Name: Acme Corp, plan: indie" },
+    "idempotent": false,
+    "undo": "DELETE /api/customers/acme-corp"
+  }'
+
+# Report result with receipt
+curl -X POST https://api.impri.dev/v1/actions/$ACTION_ID/result \
+  -H "Authorization: Bearer $IMPRI_API_KEY" \
+  -d '{"status": "executed", "payload": {"customer_id": 99, "url": "https://app.example.com/customers/99"}}'
+```
+
+---
+
 ## Security considerations
 
 **Rate limit**: `POST /v1/actions` is rate-limited to 60 requests per minute per API key. An agent caught in a loop will be throttled.
