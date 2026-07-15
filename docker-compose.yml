@@ -15,7 +15,11 @@ services:
       WEBHOOK_SECRET: "${WEBHOOK_SECRET:-change-me-in-production}"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8484/healthz"]
+      # 127.0.0.1, not localhost: in the alpine container `localhost` resolves to ::1
+      # (IPv6) first, but the server binds IPv4 (0.0.0.0) only — so a `localhost`
+      # probe gets ECONNREFUSED, the server stays "unhealthy", and the ui service
+      # (depends_on: service_healthy) never starts. Pinning IPv4 fixes the healthcheck.
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8484/healthz"]
       interval: 10s
       timeout: 5s
       retries: 3
