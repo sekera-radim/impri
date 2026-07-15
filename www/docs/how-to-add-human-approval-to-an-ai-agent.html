@@ -344,6 +344,32 @@ ACTION_ID=$(<span class="hljs-built_in">echo</span> <span class="hljs-variable">
 <p>This is intentional. A draft reply to a Reddit thread that is two days old is not worth sending. Expiry is a correctness feature, not just a cleanup mechanism.</p>
 <p>In your agent, treat <code>expired</code> the same as <code>rejected</code> — do not execute and optionally create a new action if the task is still relevant.</p>
 <hr>
+<h2 id="optional-fields-for-richer-context">Optional fields for richer context</h2>
+<p><code>POST /v1/actions</code> accepts three optional fields that add context without changing the core approval flow. Omitting them is fine — existing behaviour is byte-for-byte unchanged.</p>
+<p><strong><code>idempotent</code></strong> (<code>boolean | absent</code>): signals whether re-executing the action is safe.</p>
+<ul>
+<li><code>true</code> — safe to retry (e.g. a read-only lookup, a PUT that is naturally idempotent).</li>
+<li><code>false</code> — <strong>not</strong> idempotent (e.g. sending an email, charging a card). The approval inbox shows a warning badge: &quot;Not idempotent — retrying may duplicate this action&quot;.</li>
+<li>absent (default) — unknown; no badge shown.</li>
+</ul>
+<p><strong><code>undo</code></strong> (<code>string</code>, max 2000 chars): plain-English description of how to undo the action if the agent later needs to roll it back. Displayed on the approval card so the reviewer knows the escape hatch before approving. Example: <code>&quot;Delete the created record via DELETE /api/posts/123&quot;</code>.</p>
+<p><strong><code>result.payload</code></strong> (<code>object</code>, max ~16 KB): free-form execution receipt sent with <code>POST /v1/actions/:id/result</code>. Use it to return structured data that the issuer or dashboard may need (e.g. <code>{&quot;ids&quot;: [42, 43], &quot;url&quot;: &quot;https://...&quot;}&quot;</code>). The receipt is shown on the card after execution and returned from <code>GET /v1/actions/:id</code> as <code>result_payload</code>.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Create with context hints</span>
+curl -X POST https://api.impri.dev/v1/actions \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -d <span class="hljs-string">&#x27;{
+    &quot;kind&quot;: &quot;record.create&quot;,
+    &quot;title&quot;: &quot;Create customer record: Acme Corp&quot;,
+    &quot;preview&quot;: { &quot;format&quot;: &quot;plain&quot;, &quot;body&quot;: &quot;Name: Acme Corp, plan: indie&quot; },
+    &quot;idempotent&quot;: false,
+    &quot;undo&quot;: &quot;DELETE /api/customers/acme-corp&quot;
+  }&#x27;</span>
+
+<span class="hljs-comment"># Report result with receipt</span>
+curl -X POST https://api.impri.dev/v1/actions/<span class="hljs-variable">$ACTION_ID</span>/result \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;status&quot;: &quot;executed&quot;, &quot;payload&quot;: {&quot;customer_id&quot;: 99, &quot;url&quot;: &quot;https://app.example.com/customers/99&quot;}}&#x27;</span></code></pre></div>
+<hr>
 <h2 id="security-considerations">Security considerations</h2>
 <p><strong>Rate limit</strong>: <code>POST /v1/actions</code> is rate-limited to 60 requests per minute per API key. An agent caught in a loop will be throttled.</p>
 <p><strong>Prompt injection from external sources</strong>: if your agent reads from RSS, web pages, or social media before constructing the action, those sources may contain adversarial instructions. Impri does not interpret action content — it presents it to you visually as a card. But you should still treat any external text as data, not instructions, in your agent&#39;s system prompt.</p>
@@ -361,6 +387,7 @@ ACTION_ID=$(<span class="hljs-built_in">echo</span> <span class="hljs-variable">
 <li class="ptoc-h2"><a href="#what-impri-provides-what-it-doesn39t">What Impri provides, what it doesn't</a></li>
 <li class="ptoc-h2"><a href="#handling-edits-made-by-the-human-reviewer">Handling edits made by the human reviewer</a></li>
 <li class="ptoc-h2"><a href="#expiry-and-what-to-do-about-it">Expiry and what to do about it</a></li>
+<li class="ptoc-h2"><a href="#optional-fields-for-richer-context">Optional fields for richer context</a></li>
 <li class="ptoc-h2"><a href="#security-considerations">Security considerations</a></li></ul>
 </nav>
   </aside>

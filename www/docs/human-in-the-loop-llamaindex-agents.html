@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Human-in-the-Loop for LlamaIndex Agents — Impri Docs</title>
+<meta name="description" content="LlamaIndex agents that write back to your knowledge base need a human check first — gate the publish step with Impri before any page is overwritten.">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Human-in-the-Loop for LlamaIndex Agents — Impri Docs">
+<meta property="og:description" content="LlamaIndex agents that write back to your knowledge base need a human check first — gate the publish step with Impri before any page is overwritten.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://impri.dev/docs/human-in-the-loop-llamaindex-agents">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://impri.dev/docs/human-in-the-loop-llamaindex-agents">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human-in-the-Loop for LlamaIndex Agents","description":"LlamaIndex agents that write back to your knowledge base need a human check first — gate the publish step with Impri before any page is overwritten.","url":"https://impri.dev/docs/human-in-the-loop-llamaindex-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+<a href="../docs/observability.html" class="sl">Observability</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval.html" class="sl">Slack approval</a>
+<a href="../docs/discord-approval.html" class="sl">Discord approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/privacy.html" class="sl">Privacy policy</a>
+<a href="../docs/terms.html" class="sl">Terms of service</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+<a href="../docs/account-recovery.html" class="sl">Account recovery</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Reference</span>
+      <span class="bc-sep">/</span>
+      <span>Human-in-the-Loop for LlamaIndex Agents</span>
+    </nav>
+    <h1>Human-in-the-Loop for LlamaIndex Agents</h1>
+<p>LlamaIndex agents that write back to your knowledge base need a human check first — gate the publish step with Impri before any page is overwritten.</p>
+<hr>
+<h2 id="when-agentic-rag-wants-to-write-back">When agentic RAG wants to write back</h2>
+<p>Most LlamaIndex agents are read-only: they retrieve chunks from an index and answer a question. Give the same agent a tool that can also <em>write</em> — update a wiki page, correct a stale runbook, patch a Confluence doc — and the retrieval half stays safe while the write half needs a gate. The agent noticing a doc is wrong is useful; the agent silently overwriting it is not.</p>
+<p>A concrete version: a support-docs agent indexed over your internal wiki. When a user asks a question and the agent finds the matching page is out of date, it should draft the correction and hand it to a human, not publish over the source of truth on its own judgment.</p>
+<hr>
+<h2 id="gate-the-write-with-a-functiontool">Gate the write with a FunctionTool</h2>
+<p>Keep your existing retrieval tool unrestricted — reads have no side effect — and add a second tool that only ever proposes a change. The propose → poll → publish sequence is the same one used everywhere in Impri, wrapped here in TypeScript for LlamaIndex.TS:</p>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">FunctionTool</span>, <span class="hljs-title class_">OpenAIAgent</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;llamaindex&quot;</span>;
+
+<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">IMPRI_BASE</span> = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>;
+<span class="hljs-keyword">const</span> headers = {
+  <span class="hljs-title class_">Authorization</span>: <span class="hljs-string">`Bearer <span class="hljs-subst">${process.env.IMPRI_API_KEY}</span>`</span>,
+  <span class="hljs-string">&quot;Content-Type&quot;</span>: <span class="hljs-string">&quot;application/json&quot;</span>,
+};
+
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">proposeWikiUpdate</span>(<span class="hljs-params"><span class="hljs-attr">input</span>: {
+  pageId: <span class="hljs-built_in">string</span>;
+  title: <span class="hljs-built_in">string</span>;
+  newBody: <span class="hljs-built_in">string</span>;
+  reason: <span class="hljs-built_in">string</span>;
+}</span>) {
+  <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${IMPRI_BASE}</span>/v1/actions`</span>, {
+    <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>,
+    headers,
+    <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({
+      <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;wiki.page.update&quot;</span>,
+      <span class="hljs-attr">title</span>: <span class="hljs-string">`Update wiki page: <span class="hljs-subst">${input.title}</span>`</span>,
+      <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: <span class="hljs-string">`**Reason:** <span class="hljs-subst">${input.reason}</span>\n\n---\n\n<span class="hljs-subst">${input.newBody}</span>`</span> },
+      <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
+      <span class="hljs-attr">expires_in</span>: <span class="hljs-number">259200</span>, <span class="hljs-comment">// 3 days -- a doc correction is not urgent</span>
+      <span class="hljs-attr">idempotent</span>: <span class="hljs-literal">true</span>,   <span class="hljs-comment">// publishing the same content twice is harmless</span>
+    }),
+  }).<span class="hljs-title function_">then</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> r.<span class="hljs-title function_">json</span>());
+
+  <span class="hljs-keyword">let</span> state = action;
+  <span class="hljs-keyword">while</span> (state.<span class="hljs-property">status</span> === <span class="hljs-string">&quot;pending&quot;</span>) {
+    <span class="hljs-keyword">await</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Promise</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> <span class="hljs-built_in">setTimeout</span>(r, <span class="hljs-number">15_000</span>));
+    state = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">${action.id}</span>`</span>, { headers }).<span class="hljs-title function_">then</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> r.<span class="hljs-title function_">json</span>());
+  }
+  <span class="hljs-keyword">if</span> (state.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;approved&quot;</span>) {
+    <span class="hljs-keyword">return</span> <span class="hljs-string">`Not published -- reviewer <span class="hljs-subst">${state.status}</span> the update.`</span>;
+  }
+
+  <span class="hljs-keyword">const</span> finalBody = state.<span class="hljs-property">decision</span>.<span class="hljs-property">final_preview</span>.<span class="hljs-property">body</span>;
+  <span class="hljs-keyword">const</span> page = <span class="hljs-keyword">await</span> <span class="hljs-title function_">publishToWiki</span>(input.<span class="hljs-property">pageId</span>, finalBody); <span class="hljs-comment">// your wiki client</span>
+
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">${action.id}</span>/result`</span>, {
+    <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>,
+    headers,
+    <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({
+      <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span>,
+      <span class="hljs-attr">payload</span>: { <span class="hljs-attr">pageId</span>: page.<span class="hljs-property">id</span>, <span class="hljs-attr">url</span>: page.<span class="hljs-property">url</span>, <span class="hljs-attr">revision</span>: page.<span class="hljs-property">revision</span> },
+    }),
+  });
+  <span class="hljs-keyword">return</span> <span class="hljs-string">`Published revision <span class="hljs-subst">${page.revision}</span>: <span class="hljs-subst">${page.url}</span>`</span>;
+}</code></pre></div>
+<p><code>editable: [&quot;preview.body&quot;]</code> matters more here than in most gates — a reviewer who knows the doc will often fix a word rather than reject a mostly-right draft outright. Always publish <code>state.decision.final_preview.body</code>, not the <code>newBody</code> the agent proposed, since that is the version the human signed off on.</p>
+<hr>
+<h2 id="wiring-the-tool-into-the-agent">Wiring the tool into the agent</h2>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">const</span> updateTool = <span class="hljs-title class_">FunctionTool</span>.<span class="hljs-title function_">from</span>(proposeWikiUpdate, {
+  <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;propose_wiki_update&quot;</span>,
+  <span class="hljs-attr">description</span>:
+    <span class="hljs-string">&quot;Propose a correction to an internal wiki page. The page is not changed until a human approves it.&quot;</span>,
+  <span class="hljs-attr">parameters</span>: {
+    <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;object&quot;</span>,
+    <span class="hljs-attr">properties</span>: {
+      <span class="hljs-attr">pageId</span>: { <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;string&quot;</span> },
+      <span class="hljs-attr">title</span>: { <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;string&quot;</span> },
+      <span class="hljs-attr">newBody</span>: { <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;string&quot;</span>, <span class="hljs-attr">description</span>: <span class="hljs-string">&quot;Corrected page content, in markdown.&quot;</span> },
+      <span class="hljs-attr">reason</span>: { <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;string&quot;</span>, <span class="hljs-attr">description</span>: <span class="hljs-string">&quot;Why the current page is stale or wrong.&quot;</span> },
+    },
+    <span class="hljs-attr">required</span>: [<span class="hljs-string">&quot;pageId&quot;</span>, <span class="hljs-string">&quot;title&quot;</span>, <span class="hljs-string">&quot;newBody&quot;</span>, <span class="hljs-string">&quot;reason&quot;</span>],
+  },
+});
+
+<span class="hljs-keyword">const</span> agent = <span class="hljs-keyword">new</span> <span class="hljs-title class_">OpenAIAgent</span>({
+  <span class="hljs-attr">tools</span>: [searchTool, updateTool], <span class="hljs-comment">// searchTool is your existing read-only retrieval tool</span>
+  <span class="hljs-attr">systemPrompt</span>:
+    <span class="hljs-string">&quot;Answer questions from the indexed docs. If a page you retrieved is stale or wrong, &quot;</span> +
+    <span class="hljs-string">&quot;call propose_wiki_update instead of only saying so in the chat response.&quot;</span>,
+});
+
+<span class="hljs-keyword">const</span> response = <span class="hljs-keyword">await</span> agent.<span class="hljs-title function_">chat</span>({ <span class="hljs-attr">message</span>: <span class="hljs-string">&quot;Is the on-call escalation doc still accurate?&quot;</span> });</code></pre></div>
+<p>The agent answers the user immediately from what it retrieved — the approval wait happens independently, and the correction lands whenever a human gets to it.</p>
+<hr>
+<h2 id="reporting-what-happened-back-to-the-card">Reporting what happened back to the card</h2>
+<p>The <code>payload</code> field on <code>POST /v1/actions/:id/result</code> is what turns &quot;approved&quot; into a receipt. Here it carries the published page&#39;s id, URL, and new revision number — all three show up on the Impri card and come back from <code>GET /v1/actions/:id</code> as <code>result_payload</code>. Without it you would know the update was approved but still have to go dig up the resulting page yourself.</p>
+<hr>
+<h2 id="keep-search-and-write-on-separate-tools">Keep search and write on separate tools</h2>
+<p>A few things worth being deliberate about:</p>
+<ul>
+<li><strong>Don&#39;t gate retrieval.</strong> Wrapping the read-only search tool in the same flow adds latency to every question and trains reviewers to rubber-stamp cards.</li>
+<li><strong>Long expiry, not short.</strong> A wiki correction is not time-sensitive the way a refund or an incident reply is; three days beats forcing same-hour review.</li>
+<li><strong>One write tool per side effect.</strong> A raw wiki API key handed to the agent &quot;just in case&quot; turns this gate decorative.</li>
+</ul>
+<hr>
+<h2 id="what-impri-is-not-doing-here">What Impri is not doing here</h2>
+<p>Impri stores the proposed page content, notifies a reviewer, and holds the decision — it does not read the wiki or know if the correction is factually right, and it never calls your wiki API. <code>publishToWiki(...)</code> is still your code, called only after <code>state.status === &quot;approved&quot;</code>. Impri is the gate; judging the content is still the human&#39;s job, same as reviewing a pull request.</p>
+<hr>
+<h2 id="next-step">Next step</h2>
+<p>Get an API key with the <code>actions</code> scope from the <a href="quickstart.html">quickstart</a>, swap the raw <code>fetch</code> calls above for the <a href="sdk-typescript.html">TypeScript SDK</a> once this leaves prototype stage, and see <a href="webhooks.html">webhooks</a> if polling every 15 seconds is too chatty for a background job.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#when-agentic-rag-wants-to-write-back">When agentic RAG wants to write back</a></li>
+<li class="ptoc-h2"><a href="#gate-the-write-with-a-functiontool">Gate the write with a FunctionTool</a></li>
+<li class="ptoc-h2"><a href="#wiring-the-tool-into-the-agent">Wiring the tool into the agent</a></li>
+<li class="ptoc-h2"><a href="#reporting-what-happened-back-to-the-card">Reporting what happened back to the card</a></li>
+<li class="ptoc-h2"><a href="#keep-search-and-write-on-separate-tools">Keep search and write on separate tools</a></li>
+<li class="ptoc-h2"><a href="#what-impri-is-not-doing-here">What Impri is not doing here</a></li>
+<li class="ptoc-h2"><a href="#next-step">Next step</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+    <a href="/docs/privacy.html">Privacy</a>
+    <a href="/docs/terms.html">Terms</a>
+    <a href="https://sekera.dev">Contact</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>.</span></div>
+</footer>
+</body>
+</html>
