@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>How to Add Human Approval to an AI Agent — Impri Docs</title>
-<meta name="description" content="AI agents are good at drafting. They are bad at knowing when to stop and ask. This guide explains how to wire a human checkpoint into an agent so it can propose actions but never execute them without ">
+<meta name="description" content="AI agents are good at drafting. They are bad at knowing when to stop and ask. This guide shows the pattern: your agent proposes an action, a human says yes or no, and only then does the agent act.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="How to Add Human Approval to an AI Agent — Impri Docs">
-<meta property="og:description" content="AI agents are good at drafting. They are bad at knowing when to stop and ask. This guide explains how to wire a human checkpoint into an agent so it can propose actions but never execute them without ">
+<meta property="og:description" content="AI agents are good at drafting. They are bad at knowing when to stop and ask. This guide shows the pattern: your agent proposes an action, a human says yes or no, and only then does the agent act.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent">
 <meta name="twitter:card" content="summary">
 <link rel="canonical" href="https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"How to Add Human Approval to an AI Agent","description":"AI agents are good at drafting. They are bad at knowing when to stop and ask. This guide explains how to wire a human checkpoint into an agent so it can propose actions but never execute them without ","url":"https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"How to Add Human Approval to an AI Agent","description":"AI agents are good at drafting. They are bad at knowing when to stop and ask. This guide shows the pattern: your agent proposes an action, a human says yes or no, and only then does the agent act.","url":"https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="../styles.css">
 <style>
@@ -184,28 +184,8 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>How to Add Human Approval to an AI Agent</span>
     </nav>
     <h1>How to Add Human Approval to an AI Agent</h1>
-<p>AI agents are good at drafting. They are bad at knowing when to stop and ask. This guide explains how to wire a human checkpoint into an agent so it can propose actions but never execute them without an explicit human decision.</p>
-<hr>
-<h2 id="the-problem">The problem</h2>
-<p>An agent that can send emails, post comments, publish content, or make API calls needs a gate. Without one, a prompt injection, a misread context, or simply a bad draft goes out immediately.</p>
-<p>The naive solution — &quot;just add a confirmation step in the prompt&quot; — doesn&#39;t work reliably. The agent still has to be trusted to actually pause, and there is no audit record.</p>
-<p>What you need instead is a pattern where the agent can only <em>propose</em> an action and must poll for an external decision before proceeding. The execution code is never reached without that decision.</p>
-<hr>
-<h2 id="the-push-approve-execute-pattern">The push → approve → execute pattern</h2>
-<div class="code-block"><pre><code class="hljs">Agent                         Impri                          Human
-  │                             │                              │
-  ├── POST /v1/actions ─────────▶ stores action, notifies ────▶ inbox card
-  │   (kind, title, preview,    │                              │
-  │    payload, editable)       │                              ├── approves / rejects
-  │                             │◀─────────────────────────────┘
-  ├── GET /v1/actions/:id ──────▶ returns status + decision
-  │   (polling until decided)   │
-  │                             │
-  ├── [if approved] execute     │
-  │   with final_preview        │
-  │                             │
-  └── POST /v1/actions/:id/result (executed | execute_failed)</code></pre></div>
-<p>The key property: what gates execution is a data dependency — the API returning <code>status: &quot;approved&quot;</code> — not a &quot;please confirm&quot; line in a prompt that a model can talk itself past. Be precise about what that does and does not guarantee. It is a real gate only as long as the approved path is the agent&#39;s <strong>only</strong> path to the side effect. Wrap the target tool so its executor cannot run without the approved decision (see <a href="integrations.html">the SDK integrations</a>) and that wrapper is a genuine chokepoint. Leave the agent holding the raw credential to call the service directly and it can route around Impri. Impri is a chokepoint you confine the agent to, not a network-level interceptor of every egress.</p>
+<p>AI agents are good at drafting. They are bad at knowing when to stop and ask. This guide shows the pattern: your agent proposes an action, a human says yes or no, and only then does the agent act.</p>
+<p>Three calls, either over REST or MCP. Code first, the reasoning behind it further down.</p>
 <hr>
 <h2 id="minimal-integration-rest">Minimal integration — REST</h2>
 <p>Any HTTP client works. The agent needs three calls.</p>
@@ -250,6 +230,7 @@ ACTION_ID=$(<span class="hljs-built_in">echo</span> <span class="hljs-variable">
     -d <span class="hljs-string">&#x27;{&quot;status&quot;: &quot;executed&quot;}&#x27;</span>
 <span class="hljs-keyword">fi</span></code></pre></div>
 <p>A rejected or expired action is never executed — the polling loop exits and the execution block is never reached.</p>
+<p>New to Impri? <a href="quickstart.html">Quickstart</a> walks through getting a key first (cloud or self-host).</p>
 <hr>
 <h2 id="minimal-integration-mcp">Minimal integration — MCP</h2>
 <p>For agents running inside Claude Code, Claude Desktop, or any MCP client, the Impri MCP server wraps the REST calls into tool calls. The agent handles the flow without writing any HTTP code.</p>
@@ -286,6 +267,24 @@ ACTION_ID=$(<span class="hljs-built_in">echo</span> <span class="hljs-variable">
 
 4. impri_report_result(action_id=&quot;act_xyz&quot;, status=&quot;executed&quot;)</code></pre></div>
 <p>If the decision is <code>rejected</code> or <code>expired</code>, <code>impri_await_decision</code> returns that status and the agent stops without publishing.</p>
+<hr>
+<h2 id="how-this-actually-gates-execution">How this actually gates execution</h2>
+<p>An agent that can send emails, post comments, publish content, or make API calls needs a gate. Without one, a prompt injection, a misread context, or simply a bad draft goes out immediately.</p>
+<p>The naive solution — &quot;just add a confirmation step in the prompt&quot; — doesn&#39;t work reliably. The agent still has to be trusted to actually pause, and there is no audit record. What the three calls above give you instead is a pattern where the agent can only <em>propose</em> an action and must poll for an external decision before proceeding. The execution code is never reached without that decision:</p>
+<div class="code-block"><pre><code class="hljs">Agent                         Impri                          Human
+  │                             │                              │
+  ├── POST /v1/actions ─────────▶ stores action, notifies ────▶ inbox card
+  │   (kind, title, preview,    │                              │
+  │    payload, editable)       │                              ├── approves / rejects
+  │                             │◀─────────────────────────────┘
+  ├── GET /v1/actions/:id ──────▶ returns status + decision
+  │   (polling until decided)   │
+  │                             │
+  ├── [if approved] execute     │
+  │   with final_preview        │
+  │                             │
+  └── POST /v1/actions/:id/result (executed | execute_failed)</code></pre></div>
+<p>The key property: what gates execution is a data dependency — the API returning <code>status: &quot;approved&quot;</code> — not a &quot;please confirm&quot; line in a prompt that a model can talk itself past. Be precise about what that does and does not guarantee, though. It is a real gate only as long as the approved path is the agent&#39;s <strong>only</strong> path to the side effect. Wrap the target tool so its executor cannot run without the approved decision (see <a href="integrations.html">the SDK integrations</a>) — that wrapper is the genuine chokepoint. Leave the agent holding the raw credential to call the service directly and it can route around Impri. Impri is a chokepoint you confine the agent to, not a network-level interceptor of every egress.</p>
 <hr>
 <h2 id="what-impri-provides-what-it-doesn39t">What Impri provides, what it doesn&#39;t</h2>
 <p>Impri is focused on one thing: the approval gate. It stores the proposed action, notifies the human, and holds the decision. It does not generate content, does not interpret what the action does, and never executes anything itself.</p>
@@ -380,10 +379,9 @@ curl -X POST https://api.impri.dev/v1/actions/<span class="hljs-variable">$ACTIO
   <aside aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#the-problem">The problem</a></li>
-<li class="ptoc-h2"><a href="#the-push-approve-execute-pattern">The push → approve → execute pattern</a></li>
-<li class="ptoc-h2"><a href="#minimal-integration-rest">Minimal integration — REST</a></li>
+<ul><li class="ptoc-h2"><a href="#minimal-integration-rest">Minimal integration — REST</a></li>
 <li class="ptoc-h2"><a href="#minimal-integration-mcp">Minimal integration — MCP</a></li>
+<li class="ptoc-h2"><a href="#how-this-actually-gates-execution">How this actually gates execution</a></li>
 <li class="ptoc-h2"><a href="#what-impri-provides-what-it-doesn39t">What Impri provides, what it doesn't</a></li>
 <li class="ptoc-h2"><a href="#handling-edits-made-by-the-human-reviewer">Handling edits made by the human reviewer</a></li>
 <li class="ptoc-h2"><a href="#expiry-and-what-to-do-about-it">Expiry and what to do about it</a></li>

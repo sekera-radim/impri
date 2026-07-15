@@ -1,38 +1,8 @@
 # How to Add Human Approval to an AI Agent
 
-AI agents are good at drafting. They are bad at knowing when to stop and ask. This guide explains how to wire a human checkpoint into an agent so it can propose actions but never execute them without an explicit human decision.
+AI agents are good at drafting. They are bad at knowing when to stop and ask. This guide shows the pattern: your agent proposes an action, a human says yes or no, and only then does the agent act.
 
----
-
-## The problem
-
-An agent that can send emails, post comments, publish content, or make API calls needs a gate. Without one, a prompt injection, a misread context, or simply a bad draft goes out immediately.
-
-The naive solution — "just add a confirmation step in the prompt" — doesn't work reliably. The agent still has to be trusted to actually pause, and there is no audit record.
-
-What you need instead is a pattern where the agent can only *propose* an action and must poll for an external decision before proceeding. The execution code is never reached without that decision.
-
----
-
-## The push → approve → execute pattern
-
-```
-Agent                         Impri                          Human
-  │                             │                              │
-  ├── POST /v1/actions ─────────▶ stores action, notifies ────▶ inbox card
-  │   (kind, title, preview,    │                              │
-  │    payload, editable)       │                              ├── approves / rejects
-  │                             │◀─────────────────────────────┘
-  ├── GET /v1/actions/:id ──────▶ returns status + decision
-  │   (polling until decided)   │
-  │                             │
-  ├── [if approved] execute     │
-  │   with final_preview        │
-  │                             │
-  └── POST /v1/actions/:id/result (executed | execute_failed)
-```
-
-The key property: what gates execution is a data dependency — the API returning `status: "approved"` — not a "please confirm" line in a prompt that a model can talk itself past. Be precise about what that does and does not guarantee. It is a real gate only as long as the approved path is the agent's **only** path to the side effect. Wrap the target tool so its executor cannot run without the approved decision (see [the SDK integrations](integrations.md)) and that wrapper is a genuine chokepoint. Leave the agent holding the raw credential to call the service directly and it can route around Impri. Impri is a chokepoint you confine the agent to, not a network-level interceptor of every egress.
+Three calls, either over REST or MCP. Code first, the reasoning behind it further down.
 
 ---
 
@@ -94,6 +64,8 @@ fi
 
 A rejected or expired action is never executed — the polling loop exits and the execution block is never reached.
 
+New to Impri? [Quickstart](quickstart.md) walks through getting a key first (cloud or self-host).
+
 ---
 
 ## Minimal integration — MCP
@@ -142,6 +114,32 @@ The `IMPRI_BASE_URL` defaults to `http://localhost:8484`. For the cloud API set 
 ```
 
 If the decision is `rejected` or `expired`, `impri_await_decision` returns that status and the agent stops without publishing.
+
+---
+
+## How this actually gates execution
+
+An agent that can send emails, post comments, publish content, or make API calls needs a gate. Without one, a prompt injection, a misread context, or simply a bad draft goes out immediately.
+
+The naive solution — "just add a confirmation step in the prompt" — doesn't work reliably. The agent still has to be trusted to actually pause, and there is no audit record. What the three calls above give you instead is a pattern where the agent can only *propose* an action and must poll for an external decision before proceeding. The execution code is never reached without that decision:
+
+```
+Agent                         Impri                          Human
+  │                             │                              │
+  ├── POST /v1/actions ─────────▶ stores action, notifies ────▶ inbox card
+  │   (kind, title, preview,    │                              │
+  │    payload, editable)       │                              ├── approves / rejects
+  │                             │◀─────────────────────────────┘
+  ├── GET /v1/actions/:id ──────▶ returns status + decision
+  │   (polling until decided)   │
+  │                             │
+  ├── [if approved] execute     │
+  │   with final_preview        │
+  │                             │
+  └── POST /v1/actions/:id/result (executed | execute_failed)
+```
+
+The key property: what gates execution is a data dependency — the API returning `status: "approved"` — not a "please confirm" line in a prompt that a model can talk itself past. Be precise about what that does and does not guarantee, though. It is a real gate only as long as the approved path is the agent's **only** path to the side effect. Wrap the target tool so its executor cannot run without the approved decision (see [the SDK integrations](integrations.md)) — that wrapper is the genuine chokepoint. Leave the agent holding the raw credential to call the service directly and it can route around Impri. Impri is a chokepoint you confine the agent to, not a network-level interceptor of every egress.
 
 ---
 

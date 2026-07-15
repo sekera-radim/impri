@@ -185,55 +185,31 @@ pre code.hljs{display:block;overflow-x:auto}
     </nav>
     <h1>Quickstart</h1>
 <p>From zero to your first approved action in under 5 minutes.</p>
-<h2 id="prerequisites">Prerequisites</h2>
+<p>Two ways to run Impri — pick one:</p>
 <ul>
-<li>Docker and Docker Compose installed</li>
-<li><code>curl</code> available in your terminal</li>
+<li><strong><a href="#option-a--cloud-no-install">Option A — Cloud</a></strong>: no install, a hosted key in one request. Fastest way to try it.</li>
+<li><strong><a href="#option-b--self-host-docker">Option B — Self-host</a></strong>: <code>docker compose up</code>, your own data, still free.</li>
 </ul>
+<p>Both use the exact same three calls from your agent: push an action, wait for a decision, execute and report back.</p>
 <hr>
-<h2 id="step-1-start-impri">Step 1 — Start Impri</h2>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">git <span class="hljs-built_in">clone</span> https://gitlab.com/sekera.radim/impri.git
-<span class="hljs-built_in">cd</span> impri
-
-<span class="hljs-comment"># Set a strong webhook secret before starting</span>
-<span class="hljs-built_in">export</span> WEBHOOK_SECRET=$(openssl rand -hex 32)
-
-docker compose up -d</code></pre></div>
-<p>The server starts on <strong>port 8484</strong> (API) and the web inbox on <strong>port 8080</strong>.</p>
-<p><strong>On the very first start</strong>, a bootstrap admin key is printed to the server log:</p>
-<div class="code-block"><pre><code class="hljs">╔══════════════════════════════════════════════════════╗
-║            IMPRI — FIRST RUN BOOTSTRAP               ║
-╠══════════════════════════════════════════════════════╣
-║  Admin API Key: im_&lt;your-key-here&gt;
-║  Project ID:    proj_&lt;your-project-id&gt;
-║  Store this key securely — it will not be shown again.║
-╚══════════════════════════════════════════════════════╝</code></pre></div>
-<p>Grab it now — it is shown once and is hashed in the database.</p>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># View the bootstrap output</span>
-docker compose logs server | grep <span class="hljs-string">&quot;Admin API Key&quot;</span></code></pre></div>
-<p>Store the key in your environment:</p>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-built_in">export</span> ADMIN_KEY=<span class="hljs-string">&quot;im_&lt;your-key-from-the-log&gt;&quot;</span></code></pre></div>
-<hr>
-<h2 id="step-2-create-an-api-key-for-your-agent">Step 2 — Create an API key for your agent</h2>
-<p>The bootstrap key has <code>admin</code> scope. Create a dedicated key with <code>actions</code> scope for your agent so you can rotate it independently:</p>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST http://localhost:8484/v1/keys \
-  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$ADMIN_KEY</span>&quot;</span> \
+<h2 id="option-a-cloud-no-install">Option A — Cloud (no install)</h2>
+<h3 id="1-create-a-project-and-get-a-key">1. Create a project and get a key</h3>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST https://api.impri.dev/v1/signup \
   -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
-  -d <span class="hljs-string">&#x27;{&quot;name&quot;: &quot;my-agent&quot;, &quot;scopes&quot;: [&quot;actions&quot;]}&#x27;</span> | <span class="hljs-built_in">tee</span> /dev/stderr | jq .key</code></pre></div>
-<p>Response:</p>
+  -d <span class="hljs-string">&#x27;{&quot;name&quot;: &quot;my-agent&quot;}&#x27;</span></code></pre></div>
+<p>Response (<code>201 Created</code>):</p>
 <div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
-  <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;key_...&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;my-agent&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;key&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_&lt;agent-key&gt;&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;scopes&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;actions&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;key&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_&lt;your-key&gt;&quot;</span><span class="hljs-punctuation">,</span>
   <span class="hljs-attr">&quot;project_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;proj_...&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;note&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Store this key securely — it will not be shown again.&quot;</span>
+  <span class="hljs-attr">&quot;recovery_code&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;...&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;note&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Store this key and recovery code securely — they will not be shown again.&quot;</span>
 <span class="hljs-punctuation">}</span></code></pre></div>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-built_in">export</span> AGENT_KEY=<span class="hljs-string">&quot;im_&lt;agent-key&gt;&quot;</span></code></pre></div>
-<hr>
-<h2 id="step-3-submit-an-action-for-approval">Step 3 — Submit an action for approval</h2>
+<p>Save both — the key is shown once. (Prefer clicking through instead? Go to <a href="https://app.impri.dev" target="_blank" rel="noopener">app.impri.dev</a> and use the <strong>Create an API key</strong> button — same result.)</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-built_in">export</span> AGENT_KEY=<span class="hljs-string">&quot;im_&lt;your-key-from-the-response&gt;&quot;</span></code></pre></div>
+<p>This key has full <code>admin</code> scope, which is fine to start. Once you&#39;re wiring up a real agent, create a narrower <code>actions</code>-scoped key instead — see <a href="api-keys.html">API keys & scopes</a>.</p>
+<h3 id="2-submit-an-action-for-approval">2. Submit an action for approval</h3>
 <p>Your agent pushes an action to the inbox. This is the single call your agent makes before doing anything consequential:</p>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST http://localhost:8484/v1/actions \
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">ACTION=$(curl -s -X POST https://api.impri.dev/v1/actions \
   -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$AGENT_KEY</span>&quot;</span> \
   -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
   -d <span class="hljs-string">&#x27;{
@@ -246,24 +222,17 @@ docker compose logs server | grep <span class="hljs-string">&quot;Admin API Key&
     &quot;target_url&quot;: &quot;https://reddit.com/r/cscareerquestions/comments/example&quot;,
     &quot;expires_in&quot;: 3600,
     &quot;editable&quot;: [&quot;preview.body&quot;]
-  }&#x27;</span></code></pre></div>
-<p>Response (<code>201 Created</code>):</p>
-<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
-  <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_abc123&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;pending&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;inbox_url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;http://localhost:8080/inbox/act_abc123&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;expires_at&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1720000000</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;created_at&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1719996400</span>
-<span class="hljs-punctuation">}</span></code></pre></div>
-<p>Save the <code>id</code> — you need it to poll for the decision.</p>
-<hr>
-<h2 id="step-4-approve-in-the-web-inbox">Step 4 — Approve in the web inbox</h2>
-<p>Open the web inbox at <strong><a href="http://localhost:8080" target="_blank" rel="noopener">http://localhost:8080</a></strong> (or the <code>inbox_url</code> from the response). You will see the pending action as a card with the markdown preview. Tap <strong>Approve</strong> (or <strong>Reject</strong>).</p>
-<p>If you configured <code>editable: [&quot;preview.body&quot;]</code>, you can also edit the reply text before approving. The agent will receive the final, human-edited version.</p>
-<hr>
-<h2 id="step-5-agent-picks-up-the-decision-via-polling">Step 5 — Agent picks up the decision via polling</h2>
+  }&#x27;</span>)
+
+ACTION_ID=$(<span class="hljs-built_in">echo</span> <span class="hljs-variable">$ACTION</span> | jq -r .<span class="hljs-built_in">id</span>)
+INBOX_URL=$(<span class="hljs-built_in">echo</span> <span class="hljs-variable">$ACTION</span> | jq -r .inbox_url)
+<span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;Review it at: <span class="hljs-variable">$INBOX_URL</span>&quot;</span></code></pre></div>
+<h3 id="3-approve-in-the-web-inbox">3. Approve in the web inbox</h3>
+<p>Open the <code>inbox_url</code> printed above (or go to <a href="https://app.impri.dev" target="_blank" rel="noopener">app.impri.dev</a> and click <strong>Inbox</strong>). You&#39;ll see the pending action as a card with the markdown preview. Tap <strong>Approve</strong> (or <strong>Reject</strong>).</p>
+<p>If you configured <code>editable: [&quot;preview.body&quot;]</code>, you can also edit the reply text before approving — the agent receives the final, human-edited version.</p>
+<h3 id="4-agent-picks-up-the-decision-via-polling">4. Agent picks up the decision via polling</h3>
 <p>Poll <code>GET /v1/actions/:id</code> until <code>status</code> is no longer <code>pending</code>:</p>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s http://localhost:8484/v1/actions/act_abc123 \
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s https://api.impri.dev/v1/actions/<span class="hljs-variable">$ACTION_ID</span> \
   -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$AGENT_KEY</span>&quot;</span> | jq <span class="hljs-string">&#x27;{status, decision}&#x27;</span></code></pre></div>
 <p>Response after approval:</p>
 <div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
@@ -279,30 +248,22 @@ docker compose logs server | grep <span class="hljs-string">&quot;Admin API Key&
   <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span></code></pre></div>
 <p>If the reviewer edited the body, <code>final_preview</code> contains the edited version and <code>diff</code> is present. <strong>Always use <code>final_preview</code> as the content to send — never the original.</strong></p>
-<hr>
-<h2 id="step-6-execute-and-report-back">Step 6 — Execute and report back</h2>
+<h3 id="5-execute-and-report-back">5. Execute and report back</h3>
 <p>Execute the action with the approved content, then close the loop by reporting the result:</p>
 <div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># After successful execution</span>
-curl -s -X POST http://localhost:8484/v1/actions/act_abc123/result \
+curl -s -X POST https://api.impri.dev/v1/actions/<span class="hljs-variable">$ACTION_ID</span>/result \
   -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$AGENT_KEY</span>&quot;</span> \
   -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
   -d <span class="hljs-string">&#x27;{&quot;status&quot;: &quot;executed&quot;}&#x27;</span>
 
 <span class="hljs-comment"># Or if execution failed</span>
-curl -s -X POST http://localhost:8484/v1/actions/act_abc123/result \
+curl -s -X POST https://api.impri.dev/v1/actions/<span class="hljs-variable">$ACTION_ID</span>/result \
   -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$AGENT_KEY</span>&quot;</span> \
   -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
   -d <span class="hljs-string">&#x27;{&quot;status&quot;: &quot;execute_failed&quot;, &quot;detail&quot;: &quot;Reddit API returned 403&quot;}&#x27;</span></code></pre></div>
-<p>The action lifecycle is now complete: <code>pending → approved → executed</code>.</p>
-<hr>
-<h2 id="alternative-via-mcp-claude-code-claude-desktop-any-mcp-client">Alternative: via MCP (Claude Code, Claude Desktop, any MCP client)</h2>
-<p>If your agent runs inside a Claude Code session or any MCP-compatible client, you can use the Impri MCP server instead of raw HTTP calls.</p>
-<p><strong>Install and run:</strong></p>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Point the MCP server at your self-hosted instance</span>
-<span class="hljs-built_in">export</span> IMPRI_API_KEY=<span class="hljs-string">&quot;<span class="hljs-variable">$AGENT_KEY</span>&quot;</span>
-<span class="hljs-built_in">export</span> IMPRI_BASE_URL=<span class="hljs-string">&quot;http://localhost:8484&quot;</span>
-npx @impri/mcp</code></pre></div>
-<p><strong>Or configure it in your MCP client config</strong> (e.g. <code>~/.claude/mcp.json</code>):</p>
+<p>The action lifecycle is now complete: <code>pending → approved → executed</code>. That&#39;s the whole loop — everything past this point is optional depth (webhooks instead of polling, watchers, notification channels).</p>
+<h3 id="prefer-mcp-claude-code-claude-desktop-any-mcp-client">Prefer MCP? (Claude Code, Claude Desktop, any MCP client)</h3>
+<p>Skip the raw HTTP calls above — the Impri MCP server wraps the same three calls into tool calls your agent can use directly.</p>
 <div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
   <span class="hljs-attr">&quot;mcpServers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
     <span class="hljs-attr">&quot;impri&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
@@ -310,12 +271,11 @@ npx @impri/mcp</code></pre></div>
       <span class="hljs-attr">&quot;args&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;@impri/mcp&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
       <span class="hljs-attr">&quot;env&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
         <span class="hljs-attr">&quot;IMPRI_API_KEY&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_&lt;your-agent-key&gt;&quot;</span><span class="hljs-punctuation">,</span>
-        <span class="hljs-attr">&quot;IMPRI_BASE_URL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;http://localhost:8484&quot;</span>
+        <span class="hljs-attr">&quot;IMPRI_BASE_URL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
       <span class="hljs-punctuation">}</span>
     <span class="hljs-punctuation">}</span>
   <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span></code></pre></div>
-<p><strong>Available tools:</strong></p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -341,33 +301,72 @@ npx @impri/mcp</code></pre></div>
 </tr>
 </tbody></table>
 </div>
-<p><strong>Example agent flow in a Claude Code session:</strong></p>
-<div class="code-block"><pre><code class="hljs"># 1. Push
-impri_push_action(
-  kind=&quot;reddit.comment&quot;,
-  title=&quot;Reply: Why is resume advice so conflicting?&quot;,
-  preview={ format=&quot;markdown&quot;, body=&quot;The advice conflicts because...&quot; },
-  editable=[&quot;preview.body&quot;]
-)
+<div class="code-block"><pre><code class="hljs">impri_push_action(kind=&quot;reddit.comment&quot;, title=&quot;Reply: ...&quot;, preview={...}, editable=[&quot;preview.body&quot;])
 → { action_id: &quot;act_abc123&quot;, status: &quot;pending&quot;, inbox_url: &quot;...&quot; }
 
-# 2. Await (blocks until approved/rejected/expired, default timeout 300s)
 impri_await_decision(action_id=&quot;act_abc123&quot;, timeout_s=600)
 → { status: &quot;approved&quot;, preview: { body: &quot;...&quot; }, edited_by_human: true }
 
-# 3. Execute with final preview, then report
 impri_report_result(action_id=&quot;act_abc123&quot;, status=&quot;executed&quot;)</code></pre></div>
-<blockquote>
-<p>Note: <code>impri_create_watcher</code> and <code>impri_list_watchers</code> are fully wired to the
-<code>/v1/watchers</code> API — you can create and list watchers straight from the MCP
-tools, or use the REST API directly.</p>
-</blockquote>
+<hr>
+<h2 id="option-b-self-host-docker">Option B — Self-host (Docker)</h2>
+<p>Same three calls, running entirely on your own machine — no cloud account, no telemetry.</p>
+<p><strong>Prerequisites:</strong> Docker and Docker Compose, <code>curl</code>.</p>
+<h3 id="1-start-impri">1. Start Impri</h3>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">git <span class="hljs-built_in">clone</span> https://gitlab.com/sekera.radim/impri.git
+<span class="hljs-built_in">cd</span> impri
+
+<span class="hljs-comment"># Set a strong webhook secret before starting</span>
+<span class="hljs-built_in">export</span> WEBHOOK_SECRET=$(openssl rand -hex 32)
+
+docker compose up -d</code></pre></div>
+<p>The server starts on <strong>port 8484</strong> (API) and the web inbox on <strong>port 8080</strong>.</p>
+<p>On the very first start, a bootstrap admin key is printed to the server log — grab it now, it&#39;s shown once and hashed in the database from then on:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">docker compose logs server | grep <span class="hljs-string">&quot;Admin API Key&quot;</span></code></pre></div>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-built_in">export</span> ADMIN_KEY=<span class="hljs-string">&quot;im_&lt;your-key-from-the-log&gt;&quot;</span></code></pre></div>
+<h3 id="2-create-an-api-key-for-your-agent">2. Create an API key for your agent</h3>
+<p>The bootstrap key has <code>admin</code> scope. Create a dedicated key with <code>actions</code> scope for your agent so you can rotate it independently:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -s -X POST http://localhost:8484/v1/keys \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$ADMIN_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;name&quot;: &quot;my-agent&quot;, &quot;scopes&quot;: [&quot;actions&quot;]}&#x27;</span> | <span class="hljs-built_in">tee</span> /dev/stderr | jq .key</code></pre></div>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-built_in">export</span> AGENT_KEY=<span class="hljs-string">&quot;im_&lt;agent-key&gt;&quot;</span></code></pre></div>
+<h3 id="36-push-approve-poll-execute">3–6. Push, approve, poll, execute</h3>
+<p>Same as the cloud steps above, just swap <code>https://api.impri.dev</code> for <code>http://localhost:8484</code> and <code>https://app.impri.dev</code> for <code>http://localhost:8080</code>:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># 3. Push</span>
+curl -s -X POST http://localhost:8484/v1/actions \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$AGENT_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{
+    &quot;kind&quot;: &quot;reddit.comment&quot;,
+    &quot;title&quot;: &quot;Reply: Why is resume advice so conflicting?&quot;,
+    &quot;preview&quot;: { &quot;format&quot;: &quot;markdown&quot;, &quot;body&quot;: &quot;The advice conflicts because different advisors optimise for different audiences...&quot; },
+    &quot;target_url&quot;: &quot;https://reddit.com/r/cscareerquestions/comments/example&quot;,
+    &quot;expires_in&quot;: 3600,
+    &quot;editable&quot;: [&quot;preview.body&quot;]
+  }&#x27;</span>
+<span class="hljs-comment"># → { &quot;id&quot;: &quot;act_abc123&quot;, &quot;status&quot;: &quot;pending&quot;, &quot;inbox_url&quot;: &quot;http://localhost:8080/inbox/act_abc123&quot;, ... }</span>
+
+<span class="hljs-comment"># 4. Approve at the inbox_url above, then poll</span>
+curl -s http://localhost:8484/v1/actions/act_abc123 \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$AGENT_KEY</span>&quot;</span> | jq <span class="hljs-string">&#x27;{status, decision}&#x27;</span>
+
+<span class="hljs-comment"># 5. Execute with decision.final_preview, then report</span>
+curl -s -X POST http://localhost:8484/v1/actions/act_abc123/result \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$AGENT_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;status&quot;: &quot;executed&quot;}&#x27;</span></code></pre></div>
+<p><strong>Via MCP:</strong> same config as Option A, just point it at your local server:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-built_in">export</span> IMPRI_API_KEY=<span class="hljs-string">&quot;<span class="hljs-variable">$AGENT_KEY</span>&quot;</span>
+<span class="hljs-built_in">export</span> IMPRI_BASE_URL=<span class="hljs-string">&quot;http://localhost:8484&quot;</span>
+npx @impri/mcp</code></pre></div>
 <hr>
 <h2 id="what39s-next">What&#39;s next</h2>
 <ul>
 <li><strong>Webhook delivery</strong> instead of polling: see <a href="webhooks.html">webhooks.md</a></li>
 <li><strong>Watchers</strong> (monitor RSS, Reddit, URL changes): REST API via <code>POST /v1/watchers</code>; see <a href="https://github.com/sekera-radim/impri/blob/main/SPEC.md" target="_blank" rel="noopener">SPEC.md</a> for the schema</li>
 <li><strong>Self-hosting configuration</strong> (SMTP, ntfy, backups): see <a href="self-hosting.html">self-hosting.md</a></li>
+<li><strong>The full pattern and its guarantees</strong> (why this actually gates execution, and what it doesn&#39;t cover): see <a href="how-to-add-human-approval-to-an-ai-agent.html">How to add human approval to an AI agent</a></li>
 </ul>
 
   </main>
@@ -375,14 +374,17 @@ tools, or use the REST API directly.</p>
   <aside aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#prerequisites">Prerequisites</a></li>
-<li class="ptoc-h2"><a href="#step-1-start-impri">Step 1 — Start Impri</a></li>
-<li class="ptoc-h2"><a href="#step-2-create-an-api-key-for-your-agent">Step 2 — Create an API key for your agent</a></li>
-<li class="ptoc-h2"><a href="#step-3-submit-an-action-for-approval">Step 3 — Submit an action for approval</a></li>
-<li class="ptoc-h2"><a href="#step-4-approve-in-the-web-inbox">Step 4 — Approve in the web inbox</a></li>
-<li class="ptoc-h2"><a href="#step-5-agent-picks-up-the-decision-via-polling">Step 5 — Agent picks up the decision via polling</a></li>
-<li class="ptoc-h2"><a href="#step-6-execute-and-report-back">Step 6 — Execute and report back</a></li>
-<li class="ptoc-h2"><a href="#alternative-via-mcp-claude-code-claude-desktop-any-mcp-client">Alternative: via MCP (Claude Code, Claude Desktop, any MCP client)</a></li>
+<ul><li class="ptoc-h2"><a href="#option-a-cloud-no-install">Option A — Cloud (no install)</a></li>
+<li class="ptoc-h3"><a href="#1-create-a-project-and-get-a-key">1. Create a project and get a key</a></li>
+<li class="ptoc-h3"><a href="#2-submit-an-action-for-approval">2. Submit an action for approval</a></li>
+<li class="ptoc-h3"><a href="#3-approve-in-the-web-inbox">3. Approve in the web inbox</a></li>
+<li class="ptoc-h3"><a href="#4-agent-picks-up-the-decision-via-polling">4. Agent picks up the decision via polling</a></li>
+<li class="ptoc-h3"><a href="#5-execute-and-report-back">5. Execute and report back</a></li>
+<li class="ptoc-h3"><a href="#prefer-mcp-claude-code-claude-desktop-any-mcp-client">Prefer MCP? (Claude Code, Claude Desktop, any MCP client)</a></li>
+<li class="ptoc-h2"><a href="#option-b-self-host-docker">Option B — Self-host (Docker)</a></li>
+<li class="ptoc-h3"><a href="#1-start-impri">1. Start Impri</a></li>
+<li class="ptoc-h3"><a href="#2-create-an-api-key-for-your-agent">2. Create an API key for your agent</a></li>
+<li class="ptoc-h3"><a href="#36-push-approve-poll-execute">3–6. Push, approve, poll, execute</a></li>
 <li class="ptoc-h2"><a href="#what39s-next">What's next</a></li></ul>
 </nav>
   </aside>
