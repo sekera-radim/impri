@@ -165,7 +165,8 @@ npx @impri/mcp                     # MCP server (published)
 > **Hosted cloud (beta):** a managed instance runs at `app.impri.dev` /
 > `api.impri.dev`. Self-serve signup is open: create a project + admin key with
 > the **Create an API key** button at [app.impri.dev](https://app.impri.dev), or
-> `POST /v1/signup`. It's early beta, so self-host is still the most complete path.
+> `POST /v1/signup`. It's the fastest way to try Impri with no Docker required —
+> self-host is still there if you'd rather keep data on your own infra.
 
 ## Self-hosting notes
 
