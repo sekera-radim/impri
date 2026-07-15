@@ -5,7 +5,20 @@
 
 ## Quickstart
 
-### Docker Compose (< 5 minutes)
+Two ways to run Impri — pick one. Both give you an API key and an inbox URL in under 5 minutes.
+
+### Cloud (no install)
+
+```bash
+curl -s -X POST https://api.impri.dev/v1/signup \
+  -H "Content-Type: application/json" \
+  -d '{"name": "my-agent"}'
+# → { "key": "im_...", "project_id": "proj_...", ... }
+```
+
+Or skip curl and click **Create an API key** at [app.impri.dev](https://app.impri.dev) — same result. Your inbox is at **app.impri.dev**, the API base URL is `https://api.impri.dev/v1`. It's early beta but is the fastest way to try Impri with no Docker required.
+
+### Docker Compose (self-host, < 5 minutes)
 
 ```bash
 git clone https://gitlab.com/sekera.radim/impri.git
@@ -29,7 +42,7 @@ On first start the server prints the bootstrap Admin API key to the logs:
 
 Copy the key, paste it into the login screen, and you're in.
 
-### Dev mode (hot-reload)
+### Dev mode (hot-reload, self-host)
 
 **Terminal 1 — server:**
 
@@ -52,7 +65,7 @@ npm run dev
 
 ## API at a glance
 
-Base URL: `http://localhost:8484/v1`  
+Base URL: `https://api.impri.dev/v1` (cloud) or `http://localhost:8484/v1` (self-host)  
 Auth: `Authorization: Bearer im_<key>`
 
 | Method | Path | Description |
@@ -68,7 +81,7 @@ Auth: `Authorization: Bearer im_<key>`
 ### Push an action (curl example)
 
 ```bash
-curl -X POST http://localhost:8484/v1/actions \
+curl -X POST https://api.impri.dev/v1/actions \
   -H "Authorization: Bearer im_..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -84,11 +97,14 @@ curl -X POST http://localhost:8484/v1/actions \
   }'
 ```
 
+Self-hosting instead? Swap the URL for `http://localhost:8484/v1/actions`.
+
 ## MCP server (Claude Code / agents)
 
 ```bash
 npx @impri/mcp
-# env: IMPRI_API_KEY=im_...  IMPRI_BASE_URL=http://localhost:8484
+# cloud:      IMPRI_API_KEY=im_...  IMPRI_BASE_URL=https://api.impri.dev
+# self-host:  IMPRI_API_KEY=im_...  IMPRI_BASE_URL=http://localhost:8484
 ```
 
 ## Project structure
@@ -125,7 +141,7 @@ impri watch add github-releases --param owner=fastify --param repo=fastify
 
 ## SDKs & integrations
 
-> v0.1, pre-release. Self-host is the complete path; the hosted cloud is early beta.
+> v0.1, pre-release — both cloud and self-host work today; expect rough edges either way.
 
 | Package | Location | Language |
 |---------|----------|----------|
@@ -161,12 +177,6 @@ npx @impri/mcp                     # MCP server (published)
 - [Telegram Approval Bot](docs/telegram-approval.md) — in-chat Approve / Reject buttons; setup, security model, troubleshooting
 - [Audit log](docs/audit-log.md) — event types, query API (`GET /v1/audit`), export (NDJSON/CSV), retention, and security model
 - [`llms.txt`](docs/llms.txt) — machine-readable index for AI assistants
-
-> **Hosted cloud (beta):** a managed instance runs at `app.impri.dev` /
-> `api.impri.dev`. Self-serve signup is open: create a project + admin key with
-> the **Create an API key** button at [app.impri.dev](https://app.impri.dev), or
-> `POST /v1/signup`. It's the fastest way to try Impri with no Docker required —
-> self-host is still there if you'd rather keep data on your own infra.
 
 ## Self-hosting notes
 

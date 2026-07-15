@@ -12,7 +12,8 @@ The `@impri/mcp` package is the fastest way to add human approval to any MCP-com
 
 ```bash
 npx @impri/mcp
-# env: IMPRI_API_KEY=im_...  IMPRI_BASE_URL=http://localhost:8484
+# cloud:      IMPRI_API_KEY=im_...  IMPRI_BASE_URL=https://api.impri.dev
+# self-host:  IMPRI_API_KEY=im_...  IMPRI_BASE_URL=http://localhost:8484
 ```
 
 Add to `~/.claude/mcp.json` (or your client's MCP config file):
@@ -25,7 +26,7 @@ Add to `~/.claude/mcp.json` (or your client's MCP config file):
       "args": ["@impri/mcp"],
       "env": {
         "IMPRI_API_KEY": "im_<your-key>",
-        "IMPRI_BASE_URL": "http://localhost:8484"
+        "IMPRI_BASE_URL": "https://api.impri.dev"
       }
     }
   }

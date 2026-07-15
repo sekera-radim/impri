@@ -811,7 +811,7 @@ notifications client. Use the REST API directly with an admin-scope key.</p>
 <div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> httpx
 
 headers = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">&quot;Bearer im_...&quot;</span>}
-base = <span class="hljs-string">&quot;http://localhost:8484/v1&quot;</span>
+base = <span class="hljs-string">&quot;https://api.impri.dev/v1&quot;</span>  <span class="hljs-comment"># or &quot;http://localhost:8484/v1&quot; self-hosted</span>
 
 <span class="hljs-comment"># Create a Slack channel</span>
 r = httpx.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{base}</span>/notification-channels&quot;</span>, headers=headers, json={

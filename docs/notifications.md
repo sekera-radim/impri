@@ -582,7 +582,7 @@ Python example:
 import httpx
 
 headers = {"Authorization": "Bearer im_..."}
-base = "http://localhost:8484/v1"
+base = "https://api.impri.dev/v1"  # or "http://localhost:8484/v1" self-hosted
 
 # Create a Slack channel
 r = httpx.post(f"{base}/notification-channels", headers=headers, json={

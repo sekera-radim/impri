@@ -1,6 +1,6 @@
 # TypeScript SDK
 
-> **Status — v0.1, pre-release.** The SDK lives at `sdk/typescript/` in this repository. It is not yet published to npm. Install it from the local source while the package matures. The REST API it wraps is stable; self-host is the complete path today; the hosted cloud (`api.impri.dev`) is early beta.
+> **Status — v0.1, pre-release.** The SDK lives at `sdk/typescript/` in this repository. It is not yet published to npm. Install it from the local source while the package matures. The REST API it wraps is stable and works the same against the hosted cloud (`api.impri.dev`, early beta) or a self-hosted instance.
 
 ```bash
 # From the repo root

@@ -1,6 +1,6 @@
 # Impri CLI
 
-> **Status — v0.1, pre-release.** The CLI lives at `cli/` in this repository and is not yet published to npm. Install it from the local source using the build steps below. The REST API it wraps is stable; the hosted cloud (`api.impri.dev`) is early beta.
+> **Status — v0.1, pre-release.** The CLI lives at `cli/` in this repository and is not yet published to npm. Install it from the local source using the build steps below. The REST API it wraps is stable and works against either the hosted cloud (`api.impri.dev`, early beta) or a self-hosted instance — see `impri init --cloud --signup` below.
 
 The `impri` CLI is the fastest way to manage the approval inbox from a terminal — push actions, watch for new ones, approve or reject, and manage watchers and API keys — without writing any code.
 

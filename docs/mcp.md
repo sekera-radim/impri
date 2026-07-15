@@ -34,7 +34,7 @@ IMPRI_BASE_URL=https://api.impri.dev
       "args": ["@impri/mcp"],
       "env": {
         "IMPRI_API_KEY": "im_your_key",
-        "IMPRI_BASE_URL": "http://localhost:8484"
+        "IMPRI_BASE_URL": "https://api.impri.dev"
       }
     }
   }

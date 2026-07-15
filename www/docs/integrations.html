@@ -192,7 +192,8 @@ pre code.hljs{display:block;overflow-x:auto}
 <h2 id="mcp-server-claude-code-claude-desktop-any-mcp-client">MCP server (Claude Code, Claude Desktop, any MCP client)</h2>
 <p>The <code>@impri/mcp</code> package is the fastest way to add human approval to any MCP-compatible agent. No SDK needed.</p>
 <div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">npx @impri/mcp
-<span class="hljs-comment"># env: IMPRI_API_KEY=im_...  IMPRI_BASE_URL=http://localhost:8484</span></code></pre></div>
+<span class="hljs-comment"># cloud:      IMPRI_API_KEY=im_...  IMPRI_BASE_URL=https://api.impri.dev</span>
+<span class="hljs-comment"># self-host:  IMPRI_API_KEY=im_...  IMPRI_BASE_URL=http://localhost:8484</span></code></pre></div>
 <p>Add to <code>~/.claude/mcp.json</code> (or your client&#39;s MCP config file):</p>
 <div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
   <span class="hljs-attr">&quot;mcpServers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
@@ -201,7 +202,7 @@ pre code.hljs{display:block;overflow-x:auto}
       <span class="hljs-attr">&quot;args&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;@impri/mcp&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
       <span class="hljs-attr">&quot;env&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
         <span class="hljs-attr">&quot;IMPRI_API_KEY&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_&lt;your-key&gt;&quot;</span><span class="hljs-punctuation">,</span>
-        <span class="hljs-attr">&quot;IMPRI_BASE_URL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;http://localhost:8484&quot;</span>
+        <span class="hljs-attr">&quot;IMPRI_BASE_URL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
       <span class="hljs-punctuation">}</span>
     <span class="hljs-punctuation">}</span>
   <span class="hljs-punctuation">}</span>
