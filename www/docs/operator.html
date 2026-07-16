@@ -258,11 +258,58 @@ pre code.hljs{display:block;overflow-x:auto}
 </tbody></table>
 </div>
 <hr>
+<h2 id="post-v1admincomp-tier-grant-a-tier-without-stripe"><code>POST /v1/admin/comp-tier</code> — grant a tier without Stripe</h2>
+<p>Sets a project&#39;s tier directly, bypassing checkout. For comping accounts — the
+operator&#39;s own working project, a beta tester, a partner — where a real
+subscription doesn&#39;t apply.</p>
+<div class="code-block"><span class="code-lang">http</span><pre><code class="hljs"><span class="hljs-keyword">POST</span> <span class="hljs-string">/v1/admin/comp-tier</span> <span class="hljs-meta">HTTP/1.1</span>
+<span class="hljs-attribute">Authorization</span><span class="hljs-punctuation">: </span>Bearer im_&lt;operator-admin-key&gt;
+<span class="hljs-attribute">Content-Type</span><span class="hljs-punctuation">: </span>application/json
+
+<span class="language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;project_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;proj_target&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;tier&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;team&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;expires_in&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">315360000</span>
+<span class="hljs-punctuation">}</span></span></code></pre></div>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>project_id</code></td>
+<td>yes</td>
+<td>The project to grant the tier to (not the caller&#39;s own project)</td>
+</tr>
+<tr>
+<td><code>tier</code></td>
+<td>yes</td>
+<td><code>free</code>, <code>indie</code>, or <code>team</code></td>
+</tr>
+<tr>
+<td><code>expires_in</code></td>
+<td>no</td>
+<td>Seconds until <code>current_period_end</code>. Cosmetic only — display field, never enforced. Capped at 10 years. Omit for no expiry.</td>
+</tr>
+</tbody></table>
+</div>
+<p>Response is the updated project row: <code>{ &quot;id&quot;, &quot;tier&quot;, &quot;subscription_status&quot;: &quot;comped&quot;, &quot;current_period_end&quot; }</code>.</p>
+<p>The grant is stable against Stripe: the webhook handler only ever updates a
+project matched by <code>stripe_customer_id</code>, so a project that has never been
+through checkout (the common case for a comped account) is never touched by a
+later webhook event. Recorded as an <code>admin.tier_comped</code> event in the
+<strong>target</strong> project&#39;s own audit log — its owner can see who granted the tier
+and when.</p>
+<hr>
 <h2 id="security-notes">Security notes</h2>
 <ul>
-<li>Returns <code>404 Not Found</code> for all keys that do not belong to <code>OPERATOR_PROJECT_ID</code>, regardless of scope. The endpoint is not discoverable.</li>
-<li>No individual project data is exposed — only platform-level aggregate counts.</li>
+<li>Both operator endpoints return <code>404 Not Found</code> for all keys that do not belong to <code>OPERATOR_PROJECT_ID</code>, regardless of scope. Neither is discoverable.</li>
+<li><code>GET /v1/admin/stats</code> exposes no individual project data — only platform-level aggregate counts.</li>
 <li>Even operator keys cannot read another project&#39;s actions, decisions, or audit log.</li>
+<li><code>POST /v1/admin/comp-tier</code> is rate-limited to 10 requests/min per key.</li>
 <li>Set <code>OPERATOR_PROJECT_ID</code> to a dedicated operator project — do not reuse a user-facing project for this.</li>
 </ul>
 <hr>
@@ -322,6 +369,7 @@ req = urllib.request.Request(
 <div class="ptoc-label">On this page</div>
 <ul><li class="ptoc-h2"><a href="#setup">Setup</a></li>
 <li class="ptoc-h2"><a href="#get-v1adminstats-platform-totals">GET /v1/admin/stats — platform totals</a></li>
+<li class="ptoc-h2"><a href="#post-v1admincomp-tier-grant-a-tier-without-stripe">POST /v1/admin/comp-tier — grant a tier without Stripe</a></li>
 <li class="ptoc-h2"><a href="#security-notes">Security notes</a></li>
 <li class="ptoc-h2"><a href="#usage-example-python">Usage example (Python)</a></li>
 <li class="ptoc-h2"><a href="#environment-variables-for-multi-tenant-operation">Environment variables for multi-tenant operation</a></li></ul>
