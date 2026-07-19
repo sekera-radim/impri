@@ -572,6 +572,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Approve Emails Before Your AI Agent Sends Them: https://impri.dev/docs/approve-emails-before-your-ai-agent-sends-them.html
 - Approve Payments Before Your AI Agent Charges a Card: https://impri.dev/docs/approve-ai-agent-payments-and-charges.html
 - Approve Slack Messages From an AI Agent: https://impri.dev/docs/approve-slack-messages-from-an-ai-agent.html
+- Gate Database Writes From an AI Agent: https://impri.dev/docs/approve-database-writes-from-an-ai-agent.html
 - How to Build a Human-in-the-Loop AI Agent: https://impri.dev/docs/how-to-build-a-human-in-the-loop-ai-agent.html
 - Human Approval Before an Agent Posts to Social Media: https://impri.dev/docs/human-approval-before-an-agent-posts-to-social-media.html
 - Human Approval Gates in the Claude Agent SDK: https://impri.dev/docs/human-approval-claude-agent-sdk.html
@@ -584,4 +585,5 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human-in-the-Loop for LlamaIndex Agents: https://impri.dev/docs/human-in-the-loop-llamaindex-agents.html
 - Human-in-the-Loop for Pydantic AI Agents: https://impri.dev/docs/human-in-the-loop-pydantic-ai.html
 - Human-in-the-Loop for the OpenAI Agents SDK: https://impri.dev/docs/human-in-the-loop-openai-agents-sdk.html
+- Require Human Approval Before an Agent Deletes Data: https://impri.dev/docs/human-approval-before-an-agent-deletes-data.html
 - What Is Human-in-the-Loop for AI Agents?: https://impri.dev/docs/what-is-human-in-the-loop-for-ai-agents.html
