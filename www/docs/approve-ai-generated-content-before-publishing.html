@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Approve AI-Generated Content Before Publishing — Impri Docs</title>
+<meta name="description" content="Approve AI-generated content before publishing to your CMS — review each draft individually, then batch-approve the ones that don&amp;#39;t need a second look.">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Approve AI-Generated Content Before Publishing — Impri Docs">
+<meta property="og:description" content="Approve AI-generated content before publishing to your CMS — review each draft individually, then batch-approve the ones that don&amp;#39;t need a second look.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://impri.dev/docs/approve-ai-generated-content-before-publishing">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://impri.dev/docs/approve-ai-generated-content-before-publishing">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Approve AI-Generated Content Before Publishing","description":"Approve AI-generated content before publishing to your CMS — review each draft individually, then batch-approve the ones that don&#39;t need a second look.","url":"https://impri.dev/docs/approve-ai-generated-content-before-publishing","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+<a href="../docs/observability.html" class="sl">Observability</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval.html" class="sl">Slack approval</a>
+<a href="../docs/discord-approval.html" class="sl">Discord approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/privacy.html" class="sl">Privacy policy</a>
+<a href="../docs/terms.html" class="sl">Terms of service</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+<a href="../docs/account-recovery.html" class="sl">Account recovery</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Reference</span>
+      <span class="bc-sep">/</span>
+      <span>Approve AI-Generated Content Before Publishing</span>
+    </nav>
+    <h1>Approve AI-Generated Content Before Publishing</h1>
+<p>Approve AI-generated content before publishing to your CMS — review each draft individually, then batch-approve the ones that don&#39;t need a second look.</p>
+<hr>
+<h2 id="the-problem-is-volume-not-any-single-draft">The problem is volume, not any single draft</h2>
+<p>A single AI-written blog post is easy to review — read it, fix a line, hit publish. The problem shows up at volume: an agent that generates 200 product descriptions for a new catalog import, or rewrites metadata across an entire category, produces more drafts than anyone will read end to end before they go live. Reviewing each one individually doesn&#39;t scale, and skipping review entirely means the first time anyone notices a hallucinated spec (&quot;machine washable&quot; on a dry-clean-only jacket) or an off-brand tone is after it&#39;s already on the storefront.</p>
+<p>The fix isn&#39;t picking one extreme or the other. It&#39;s gating every publish call the same way, then giving the reviewer a fast path for the drafts that are obviously fine and a slow path for the ones that need real attention.</p>
+<hr>
+<h2 id="push-each-draft-as-its-own-action">Push each draft as its own action</h2>
+<p>Every generated piece of content becomes its own action, with the CMS write as the gated call. In Node.js, for a catalog-import agent writing to a headless CMS:</p>
+<div class="code-block"><span class="code-lang">javascript</span><pre><code class="hljs"><span class="hljs-keyword">const</span> <span class="hljs-variable constant_">IMPRI_BASE</span> = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>;
+<span class="hljs-keyword">const</span> headers = {
+  <span class="hljs-title class_">Authorization</span>: <span class="hljs-string">`Bearer <span class="hljs-subst">${process.env.IMPRI_API_KEY}</span>`</span>,
+  <span class="hljs-string">&quot;Content-Type&quot;</span>: <span class="hljs-string">&quot;application/json&quot;</span>,
+};
+
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">pushDraft</span>(<span class="hljs-params">sku, title, body, cmsPreviewUrl</span>) {
+  <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${IMPRI_BASE}</span>/v1/actions`</span>, {
+    <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>,
+    headers,
+    <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({
+      <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;content.publish&quot;</span>,
+      <span class="hljs-attr">title</span>: <span class="hljs-string">`Product description: <span class="hljs-subst">${sku}</span> — <span class="hljs-subst">${title}</span>`</span>,
+      <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, body },
+      <span class="hljs-attr">target_url</span>: cmsPreviewUrl,
+      <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
+      <span class="hljs-attr">idempotent</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// re-publishing the same body is a safe PUT, not a duplicate</span>
+      <span class="hljs-attr">expires_in</span>: <span class="hljs-number">259200</span>, <span class="hljs-comment">// 3 days — catalog copy isn&#x27;t as time-sensitive as a social post</span>
+    }),
+  });
+  <span class="hljs-keyword">const</span> { id } = <span class="hljs-keyword">await</span> res.<span class="hljs-title function_">json</span>();
+  <span class="hljs-keyword">return</span> id;
+}
+
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">awaitAndPublish</span>(<span class="hljs-params">actionId, sku</span>) {
+  <span class="hljs-keyword">let</span> status = <span class="hljs-string">&quot;pending&quot;</span>, decision;
+  <span class="hljs-keyword">while</span> (status === <span class="hljs-string">&quot;pending&quot;</span>) {
+    <span class="hljs-keyword">await</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Promise</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> <span class="hljs-built_in">setTimeout</span>(r, <span class="hljs-number">10_000</span>));
+    <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">${actionId}</span>`</span>, { headers });
+    ({ status, decision } = <span class="hljs-keyword">await</span> res.<span class="hljs-title function_">json</span>());
+  }
+  <span class="hljs-keyword">if</span> (status !== <span class="hljs-string">&quot;approved&quot;</span>) {
+    <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`<span class="hljs-subst">${sku}</span>: not published (<span class="hljs-subst">${status}</span>)`</span>);
+    <span class="hljs-keyword">return</span>;
+  }
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">publishToCms</span>(sku, decision.<span class="hljs-property">final_preview</span>.<span class="hljs-property">body</span>); <span class="hljs-comment">// your CMS write</span>
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">${actionId}</span>/result`</span>, {
+    <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>,
+    headers,
+    <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({ <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span> }),
+  });
+}</code></pre></div>
+<p><code>idempotent: true</code> here is deliberate and worth calling out — unlike an email or a social post, writing a product description to a CMS is usually a <code>PUT</code> against a known slug. Re-running it produces the same end state, not a duplicate. That&#39;s a genuinely different risk profile from the send-once actions covered elsewhere, and the approval card should say so.</p>
+<hr>
+<h2 id="batch-approving-the-ones-that-don39t-need-scrutiny">Batch-approving the ones that don&#39;t need scrutiny</h2>
+<p>For the drafts that pass a quick skim — no odd claims, no missing fields, on-brand tone — reviewing 200 individual cards is where teams actually give up on the gate. <code>POST /v1/actions/bulk-decision</code> takes up to 50 pending action IDs and a single verdict, so a reviewer can select a page of safe-looking cards in the inbox and approve them in one call instead of one hundred:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -X POST https://api.impri.dev/v1/actions/bulk-decision \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{
+    &quot;ids&quot;: [&quot;act_101&quot;, &quot;act_102&quot;, &quot;act_103&quot;],
+    &quot;verdict&quot;: &quot;approve&quot;,
+    &quot;comment&quot;: &quot;Batch import review — Q3 catalog&quot;
+  }&#x27;</span></code></pre></div>
+<p>One deliberate limitation: bulk decisions carry no <code>edited</code> field — batch approval is edit-free by design. If a draft needs a fix, it comes out of the batch and gets approved (with an edit) individually. That split is the actual point: bulk for &quot;ship as-is,&quot; individual review for &quot;needs a human hand on the text.&quot;</p>
+<hr>
+<h2 id="what-still-deserves-individual-review">What still deserves individual review</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Content type</th>
+<th>Batch-approve candidate?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Product descriptions, standard categories</td>
+<td>Usually — spot-check a sample, batch the rest</td>
+</tr>
+<tr>
+<td>Descriptions for regulated categories (supplements, medical devices, financial products)</td>
+<td>No — claims need individual review every time</td>
+</tr>
+<tr>
+<td>SEO metadata / alt text</td>
+<td>Usually — low stakes, high volume</td>
+</tr>
+<tr>
+<td>Anything with pricing, availability, or legal disclaimers embedded</td>
+<td>No — factual errors here have real consequences</td>
+</tr>
+</tbody></table>
+</div>
+<hr>
+<h2 id="rejected-edited-and-expired-drafts">Rejected, edited, and expired drafts</h2>
+<p>Same rule as any gated action: <code>rejected</code> and <code>expired</code> mean <code>publishToCms</code> never runs for that SKU. If a reviewer edits a description before approving, <code>decision.final_preview.body</code> carries the edited text — always publish from there, not from the original draft. Set <code>expires_in</code> generously (days, not minutes) for catalog content; unlike a live-incident social reply, a product description going live a day later than planned isn&#39;t itself a problem.</p>
+<hr>
+<h2 id="what-impri-doesn39t-check">What Impri doesn&#39;t check</h2>
+<p>Impri stores the draft, notifies a reviewer, and holds the decision — it does not verify that a product claim is accurate, does not check brand style guidelines, and never writes to your CMS itself. That judgment is exactly what the human reviewing the card is there for. For the underlying three-call pattern, see <a href="how-to-add-human-approval-to-an-ai-agent.html">how to add human approval to an AI agent</a>; for the full bulk-decision reference including rate limits and the inbox keyboard shortcuts, see <a href="inbox.html">inbox</a>. Once content approval is flowing through Impri, <a href="audit-log.html">the audit log</a> gives you a record of every SKU published, by whom, and what the agent&#39;s original draft said before it was edited.</p>
+<p>Next step: <a href="quickstart.html">quickstart</a> to get an API key and try this against a small batch first.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#the-problem-is-volume-not-any-single-draft">The problem is volume, not any single draft</a></li>
+<li class="ptoc-h2"><a href="#push-each-draft-as-its-own-action">Push each draft as its own action</a></li>
+<li class="ptoc-h2"><a href="#batch-approving-the-ones-that-don39t-need-scrutiny">Batch-approving the ones that don't need scrutiny</a></li>
+<li class="ptoc-h2"><a href="#what-still-deserves-individual-review">What still deserves individual review</a></li>
+<li class="ptoc-h2"><a href="#rejected-edited-and-expired-drafts">Rejected, edited, and expired drafts</a></li>
+<li class="ptoc-h2"><a href="#what-impri-doesn39t-check">What Impri doesn't check</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+    <a href="/docs/privacy.html">Privacy</a>
+    <a href="/docs/terms.html">Terms</a>
+    <a href="https://sekera.dev">Contact</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>.</span></div>
+</footer>
+</body>
+</html>
