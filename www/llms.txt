@@ -572,6 +572,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Approve AI-Generated Content Before Publishing: https://impri.dev/docs/approve-ai-generated-content-before-publishing.html
 - Approve Emails Before Your AI Agent Sends Them: https://impri.dev/docs/approve-emails-before-your-ai-agent-sends-them.html
 - Approve Payments Before Your AI Agent Charges a Card: https://impri.dev/docs/approve-ai-agent-payments-and-charges.html
+- Approve Refunds Issued by an AI Support Agent: https://impri.dev/docs/approve-refunds-issued-by-an-ai-support-agent.html
 - Approve Slack Messages From an AI Agent: https://impri.dev/docs/approve-slack-messages-from-an-ai-agent.html
 - Gate Database Writes From an AI Agent: https://impri.dev/docs/approve-database-writes-from-an-ai-agent.html
 - How to Build a Human-in-the-Loop AI Agent: https://impri.dev/docs/how-to-build-a-human-in-the-loop-ai-agent.html
