@@ -582,10 +582,12 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human Approval Gates in the Claude Agent SDK: https://impri.dev/docs/human-approval-claude-agent-sdk.html
 - Human Approval for AI Sales Outreach Agents: https://impri.dev/docs/human-approval-for-ai-sales-outreach.html
 - Human Approval for Microsoft AutoGen Agents: https://impri.dev/docs/human-approval-autogen-agents.html
+- Human Approval for Unattended AI Agents: https://impri.dev/docs/human-approval-for-unattended-ai-agents.html
 - Human Approval for n8n AI Agent Workflows: https://impri.dev/docs/human-approval-n8n-ai-agent.html
 - Human Approval for the Vercel AI SDK: https://impri.dev/docs/human-approval-vercel-ai-sdk.html
 - Human-in-the-Loop Approval for LangChain Agents: https://impri.dev/docs/human-in-the-loop-for-langchain-agents.html
 - Human-in-the-Loop Checkpoints in LangGraph: https://impri.dev/docs/human-in-the-loop-langgraph.html
+- Human-in-the-Loop for Autonomous AI Agents: https://impri.dev/docs/human-in-the-loop-for-autonomous-agents.html
 - Human-in-the-Loop for LlamaIndex Agents: https://impri.dev/docs/human-in-the-loop-llamaindex-agents.html
 - Human-in-the-Loop for Pydantic AI Agents: https://impri.dev/docs/human-in-the-loop-pydantic-ai.html
 - Human-in-the-Loop for the OpenAI Agents SDK: https://impri.dev/docs/human-in-the-loop-openai-agents-sdk.html
