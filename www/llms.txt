@@ -568,6 +568,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Add Human Approval to a Cron Job: https://impri.dev/docs/gate-a-cron-job-with-human-approval.html
 - Add a Kill Switch to Your AI Agent: https://impri.dev/docs/add-a-kill-switch-to-your-ai-agent.html
 - Adding Human Approval to CrewAI Agents: https://impri.dev/docs/human-approval-for-crewai-agents.html
+- An Approval Gate for Agents That Run While You Sleep: https://impri.dev/docs/approval-gate-for-overnight-ai-agents.html
 - Approve AI Agent Actions From Slack: https://impri.dev/docs/approve-ai-agent-actions-from-slack.html
 - Approve AI-Generated Content Before Publishing: https://impri.dev/docs/approve-ai-generated-content-before-publishing.html
 - Approve Emails Before Your AI Agent Sends Them: https://impri.dev/docs/approve-emails-before-your-ai-agent-sends-them.html
@@ -585,6 +586,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human Approval for Unattended AI Agents: https://impri.dev/docs/human-approval-for-unattended-ai-agents.html
 - Human Approval for n8n AI Agent Workflows: https://impri.dev/docs/human-approval-n8n-ai-agent.html
 - Human Approval for the Vercel AI SDK: https://impri.dev/docs/human-approval-vercel-ai-sdk.html
+- Human Approval in Multi-Agent Systems: https://impri.dev/docs/human-approval-for-multi-agent-systems.html
 - Human-in-the-Loop Approval for LangChain Agents: https://impri.dev/docs/human-in-the-loop-for-langchain-agents.html
 - Human-in-the-Loop Checkpoints in LangGraph: https://impri.dev/docs/human-in-the-loop-langgraph.html
 - Human-in-the-Loop for Autonomous AI Agents: https://impri.dev/docs/human-in-the-loop-for-autonomous-agents.html
