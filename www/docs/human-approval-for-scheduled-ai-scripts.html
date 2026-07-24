@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Human Approval for Scheduled AI Scripts — Impri Docs</title>
+<meta name="description" content="Gate the output of a scheduled AI script — a nightly GitHub Actions job, a Lambda cron, a CI-triggered generator — without holding a runner idle for hours waiting on a decision.">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Human Approval for Scheduled AI Scripts — Impri Docs">
+<meta property="og:description" content="Gate the output of a scheduled AI script — a nightly GitHub Actions job, a Lambda cron, a CI-triggered generator — without holding a runner idle for hours waiting on a decision.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://impri.dev/docs/human-approval-for-scheduled-ai-scripts">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://impri.dev/docs/human-approval-for-scheduled-ai-scripts">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human Approval for Scheduled AI Scripts","description":"Gate the output of a scheduled AI script — a nightly GitHub Actions job, a Lambda cron, a CI-triggered generator — without holding a runner idle for hours waiting on a decision.","url":"https://impri.dev/docs/human-approval-for-scheduled-ai-scripts","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+<a href="../docs/observability.html" class="sl">Observability</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval.html" class="sl">Slack approval</a>
+<a href="../docs/discord-approval.html" class="sl">Discord approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/privacy.html" class="sl">Privacy policy</a>
+<a href="../docs/terms.html" class="sl">Terms of service</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+<a href="../docs/account-recovery.html" class="sl">Account recovery</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Reference</span>
+      <span class="bc-sep">/</span>
+      <span>Human Approval for Scheduled AI Scripts</span>
+    </nav>
+    <h1>Human Approval for Scheduled AI Scripts</h1>
+<p>Gate the output of a scheduled AI script — a nightly GitHub Actions job, a Lambda cron, a CI-triggered generator — without holding a runner idle for hours waiting on a decision.</p>
+<hr>
+<h2 id="the-constraint-a-long-running-agent-doesn39t-have">The constraint a long-running agent doesn&#39;t have</h2>
+<p>A cron job on a server you own can afford to sit in a polling loop for an hour. A CI-scheduled script usually can&#39;t, or shouldn&#39;t. GitHub Actions bills by the minute, most self-hosted runners are shared, and a job that blocks for hours on <code>GET /v1/actions/:id</code> is a bad use of a CI runner even when it&#39;s technically allowed. This shows up constantly with small automation scripts that use an LLM for one step: a nightly job that drafts release notes from the git log and opens a PR, a scheduled script that summarizes overnight support tickets and posts to Slack, a workflow that generates a changelog and publishes it.</p>
+<p>The fix isn&#39;t a different approval flow — it&#39;s splitting the script into two separate scheduled runs instead of one long-blocking one.</p>
+<hr>
+<h2 id="split-into-a-propose-workflow-and-an-execute-workflow">Split into a propose workflow and an execute workflow</h2>
+<p>The <strong>propose</strong> workflow does the LLM generation, pushes the action to Impri, and exits immediately — no polling, no waiting.</p>
+<div class="code-block"><span class="code-lang">yaml</span><pre><code class="hljs"><span class="hljs-comment"># .github/workflows/nightly-release-notes-propose.yml</span>
+<span class="hljs-attr">name:</span> <span class="hljs-string">Propose</span> <span class="hljs-string">nightly</span> <span class="hljs-string">release</span> <span class="hljs-string">notes</span>
+<span class="hljs-attr">on:</span>
+  <span class="hljs-attr">schedule:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-attr">cron:</span> <span class="hljs-string">&quot;0 6 * * *&quot;</span>   <span class="hljs-comment"># 06:00 UTC daily</span>
+<span class="hljs-attr">jobs:</span>
+  <span class="hljs-attr">propose:</span>
+    <span class="hljs-attr">runs-on:</span> <span class="hljs-string">ubuntu-latest</span>
+    <span class="hljs-attr">steps:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/checkout@v4</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">run:</span> <span class="hljs-string">npm</span> <span class="hljs-string">ci</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Generate</span> <span class="hljs-string">and</span> <span class="hljs-string">push</span> <span class="hljs-string">for</span> <span class="hljs-string">approval</span>
+        <span class="hljs-attr">env:</span>
+          <span class="hljs-attr">IMPRI_API_KEY:</span> <span class="hljs-string">${{</span> <span class="hljs-string">secrets.IMPRI_API_KEY</span> <span class="hljs-string">}}</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">node</span> <span class="hljs-string">scripts/propose-release-notes.mjs</span></code></pre></div>
+<p>The <strong>execute</strong> workflow runs on its own short schedule, checks for any actions that have since been approved, and only then runs the actual side effect (publishing, posting, committing):</p>
+<div class="code-block"><span class="code-lang">yaml</span><pre><code class="hljs"><span class="hljs-comment"># .github/workflows/execute-approved-actions.yml</span>
+<span class="hljs-attr">name:</span> <span class="hljs-string">Execute</span> <span class="hljs-string">approved</span> <span class="hljs-string">actions</span>
+<span class="hljs-attr">on:</span>
+  <span class="hljs-attr">schedule:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-attr">cron:</span> <span class="hljs-string">&quot;*/15 * * * *&quot;</span>   <span class="hljs-comment"># check every 15 minutes</span>
+<span class="hljs-attr">jobs:</span>
+  <span class="hljs-attr">execute:</span>
+    <span class="hljs-attr">runs-on:</span> <span class="hljs-string">ubuntu-latest</span>
+    <span class="hljs-attr">steps:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/checkout@v4</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">run:</span> <span class="hljs-string">npm</span> <span class="hljs-string">ci</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Execute</span> <span class="hljs-string">anything</span> <span class="hljs-string">approved</span>
+        <span class="hljs-attr">env:</span>
+          <span class="hljs-attr">IMPRI_API_KEY:</span> <span class="hljs-string">${{</span> <span class="hljs-string">secrets.IMPRI_API_KEY</span> <span class="hljs-string">}}</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">node</span> <span class="hljs-string">scripts/execute-approved.mjs</span></code></pre></div>
+<p>Neither workflow ever blocks. The <code>propose</code> job stores the action ID somewhere durable (a repo file, a small key-value store, a GitHub Actions artifact) so the <code>execute</code> job knows what to look up:</p>
+<div class="code-block"><span class="code-lang">javascript</span><pre><code class="hljs"><span class="hljs-comment">// scripts/propose-release-notes.mjs</span>
+<span class="hljs-keyword">import</span> { writeFile } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;node:fs/promises&quot;</span>;
+
+<span class="hljs-keyword">const</span> notes = <span class="hljs-keyword">await</span> <span class="hljs-title function_">generateReleaseNotes</span>(); <span class="hljs-comment">// your LLM call</span>
+
+<span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">&quot;https://api.impri.dev/v1/actions&quot;</span>, {
+  <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>,
+  <span class="hljs-attr">headers</span>: {
+    <span class="hljs-title class_">Authorization</span>: <span class="hljs-string">`Bearer <span class="hljs-subst">${process.env.IMPRI_API_KEY}</span>`</span>,
+    <span class="hljs-string">&quot;Content-Type&quot;</span>: <span class="hljs-string">&quot;application/json&quot;</span>,
+  },
+  <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({
+    <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;changelog.publish&quot;</span>,
+    <span class="hljs-attr">title</span>: <span class="hljs-string">`Release notes — <span class="hljs-subst">${<span class="hljs-keyword">new</span> <span class="hljs-built_in">Date</span>().toISOString().slice(<span class="hljs-number">0</span>, <span class="hljs-number">10</span>)}</span>`</span>,
+    <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: notes },
+    <span class="hljs-attr">expires_in</span>: <span class="hljs-number">172800</span>, <span class="hljs-comment">// 48h — survives a weekend before the check job sees it</span>
+    <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
+  }),
+});
+
+<span class="hljs-keyword">const</span> { id } = <span class="hljs-keyword">await</span> res.<span class="hljs-title function_">json</span>();
+<span class="hljs-keyword">await</span> <span class="hljs-title function_">writeFile</span>(<span class="hljs-string">&quot;.impri-pending/release-notes.json&quot;</span>, <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({ id }));</code></pre></div>
+<p>The <code>execute</code> job reads that file, calls <code>GET /v1/actions/:id</code> once, and either runs the publish step (if <code>approved</code>) or does nothing and leaves the pending file alone (if still <code>pending</code>).</p>
+<hr>
+<h2 id="secrets-and-scopes">Secrets and scopes</h2>
+<p>Store <code>IMPRI_API_KEY</code> as a GitHub Actions repository secret, never in the workflow file itself. Scope it to <code>actions</code> only — a CI script proposing and checking actions has no reason to hold <code>admin</code> or <code>watch</code> scope. If the propose and execute workflows run as separate jobs, they can share the same <code>actions</code>-scoped key; there&#39;s no benefit to splitting it further.</p>
+<hr>
+<h2 id="picking-expiresin-for-a-schedule-not-a-person">Picking <code>expires_in</code> for a schedule, not a person</h2>
+<p>For a synchronous approval you&#39;d set a short expiry — minutes to hours. For a scheduled script, size the expiry to the gap between runs plus slack for a weekend or a day someone doesn&#39;t check their phone:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Script cadence</th>
+<th>Suggested <code>expires_in</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Runs hourly, reviewed same-day</td>
+<td><code>21600</code> (6h)</td>
+</tr>
+<tr>
+<td>Runs nightly, reviewed next morning</td>
+<td><code>86400</code> (24h)</td>
+</tr>
+<tr>
+<td>Runs nightly, reviewer may miss a weekend</td>
+<td><code>259200</code> (72h, the default)</td>
+</tr>
+<tr>
+<td>Runs weekly</td>
+<td><code>604800</code> (7d)</td>
+</tr>
+</tbody></table>
+</div>
+<p>Too short and a real Friday-evening backlog silently expires before Monday; too long and stale, no-longer-relevant drafts sit around waiting for a stray approval. Treat <code>expired</code> the same as <code>rejected</code> in the execute job — log it and let the next scheduled run generate a fresh proposal if the task still matters.</p>
+<hr>
+<h2 id="what-this-doesn39t-replace">What this doesn&#39;t replace</h2>
+<p>This pattern is not a substitute for GitHub&#39;s own Environments protection rules if you&#39;re already using them for deploy gating inside a single workflow run — use those when the approval and the job are the same CI run. Reach for the propose/execute split specifically when the script runs unattended on a schedule and you don&#39;t want a runner burning minutes (or a self-hosted runner sitting blocked) waiting on a human. And as always, Impri only holds the decision — it doesn&#39;t generate the release notes, doesn&#39;t know what &quot;good&quot; output looks like, and the execute script is what actually has to enforce that nothing runs without <code>status: &quot;approved&quot;</code>.</p>
+<p>For the single-workflow blocking version of this pattern, see <a href="gate-a-cron-job-with-human-approval.html">gating a cron job</a>. For everything else on wiring up the three calls, start with the <a href="quickstart.html">quickstart</a> or browse <a href="integrations.html">integrations</a>.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#the-constraint-a-long-running-agent-doesn39t-have">The constraint a long-running agent doesn't have</a></li>
+<li class="ptoc-h2"><a href="#split-into-a-propose-workflow-and-an-execute-workflow">Split into a propose workflow and an execute workflow</a></li>
+<li class="ptoc-h2"><a href="#secrets-and-scopes">Secrets and scopes</a></li>
+<li class="ptoc-h2"><a href="#picking-expiresin-for-a-schedule-not-a-person">Picking expires_in for a schedule, not a person</a></li>
+<li class="ptoc-h2"><a href="#what-this-doesn39t-replace">What this doesn't replace</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+    <a href="/docs/privacy.html">Privacy</a>
+    <a href="/docs/terms.html">Terms</a>
+    <a href="https://sekera.dev">Contact</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>.</span></div>
+</footer>
+</body>
+</html>
