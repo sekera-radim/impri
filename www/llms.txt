@@ -591,6 +591,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human Approval for n8n AI Agent Workflows: https://impri.dev/docs/human-approval-n8n-ai-agent.html
 - Human Approval for the Vercel AI SDK: https://impri.dev/docs/human-approval-vercel-ai-sdk.html
 - Human Approval in Multi-Agent Systems: https://impri.dev/docs/human-approval-for-multi-agent-systems.html
+- Human Oversight for Agentic AI: https://impri.dev/docs/human-oversight-for-agentic-ai.html
 - Human-in-the-Loop Approval for LangChain Agents: https://impri.dev/docs/human-in-the-loop-for-langchain-agents.html
 - Human-in-the-Loop Checkpoints in LangGraph: https://impri.dev/docs/human-in-the-loop-langgraph.html
 - Human-in-the-Loop for Autonomous AI Agents: https://impri.dev/docs/human-in-the-loop-for-autonomous-agents.html
