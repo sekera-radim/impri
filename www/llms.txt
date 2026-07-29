@@ -572,6 +572,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - An Approval Gate for Agents That Run While You Sleep: https://impri.dev/docs/approval-gate-for-overnight-ai-agents.html
 - An Approval Gate for Webhook-Triggered Agents: https://impri.dev/docs/approval-gate-for-webhook-triggered-agents.html
 - Approve AI Agent Actions From Slack: https://impri.dev/docs/approve-ai-agent-actions-from-slack.html
+- Approve AI Agent Actions From Your Phone: https://impri.dev/docs/approve-ai-agent-actions-from-your-phone.html
 - Approve AI-Generated Content Before Publishing: https://impri.dev/docs/approve-ai-generated-content-before-publishing.html
 - Approve Emails Before Your AI Agent Sends Them: https://impri.dev/docs/approve-emails-before-your-ai-agent-sends-them.html
 - Approve Payments Before Your AI Agent Charges a Card: https://impri.dev/docs/approve-ai-agent-payments-and-charges.html
