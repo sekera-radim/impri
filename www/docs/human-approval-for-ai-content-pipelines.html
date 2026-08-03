@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Human Approval for AI Content Pipelines — Impri Docs</title>
+<meta name="description" content="An AI content pipeline that drafts, schedules, and publishes without a human check is one bad prompt away from a public mistake — here&amp;#39;s how to gate the publish step, not the drafting.">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Human Approval for AI Content Pipelines — Impri Docs">
+<meta property="og:description" content="An AI content pipeline that drafts, schedules, and publishes without a human check is one bad prompt away from a public mistake — here&amp;#39;s how to gate the publish step, not the drafting.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://impri.dev/docs/human-approval-for-ai-content-pipelines">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://impri.dev/docs/human-approval-for-ai-content-pipelines">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human Approval for AI Content Pipelines","description":"An AI content pipeline that drafts, schedules, and publishes without a human check is one bad prompt away from a public mistake — here&#39;s how to gate the publish step, not the drafting.","url":"https://impri.dev/docs/human-approval-for-ai-content-pipelines","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart.html" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
+<a href="../docs/observability.html" class="sl">Observability</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules.html" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
+<a href="../docs/notifications.html" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval.html" class="sl">Slack approval</a>
+<a href="../docs/discord-approval.html" class="sl">Discord approval</a>
+<a href="../docs/audit-log.html" class="sl">Audit log</a>
+<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
+<a href="../docs/privacy.html" class="sl">Privacy policy</a>
+<a href="../docs/terms.html" class="sl">Terms of service</a>
+<a href="../docs/operator.html" class="sl">Operator / admin</a>
+<a href="../docs/account-recovery.html" class="sl">Account recovery</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp.html" class="sl">MCP server</a>
+<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks.html" class="sl">Webhooks</a>
+<a href="../docs/web-push.html" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli.html" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs.html">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Reference</span>
+      <span class="bc-sep">/</span>
+      <span>Human Approval for AI Content Pipelines</span>
+    </nav>
+    <h1>Human Approval for AI Content Pipelines</h1>
+<p>An AI content pipeline that drafts, schedules, and publishes without a human check is one bad prompt away from a public mistake — here&#39;s how to gate the publish step, not the drafting.</p>
+<hr>
+<h2 id="the-failure-mode-this-solves">The failure mode this solves</h2>
+<p>Most content pipelines are already multi-stage: an agent researches a topic, drafts a blog post, generates social snippets from it, and pushes everything live on a schedule. The drafting stages are low-risk — nobody sees a bad draft sitting in a database. The risk concentrates entirely at the <strong>publish</strong> step, because that&#39;s the one with an audience.</p>
+<p>The mistake teams make is putting the review in the wrong place: a Slack message that says &quot;reply 👍 to approve&quot; with no real enforcement behind it, or a cron job that publishes automatically after a fixed delay &quot;in case nobody objects.&quot; Neither actually blocks execution. What blocks execution is a status field the publish code checks before it runs — which is what Impri&#39;s <code>/v1/actions</code> gate gives you.</p>
+<h2 id="wiring-it-into-a-content-pipeline-python">Wiring it into a content pipeline (Python)</h2>
+<p>The publish function is the only place that touches the CMS API, so it&#39;s the only place that needs the gate. Everything upstream — research, drafting, snippet generation — runs unguarded.</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> time
+<span class="hljs-keyword">import</span> httpx
+
+IMPRI_BASE = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
+HEADERS = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{IMPRI_API_KEY}</span>&quot;</span>}
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">request_publish_approval</span>(<span class="hljs-params">post</span>):
+    resp = httpx.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions&quot;</span>, headers=HEADERS, json={
+        <span class="hljs-string">&quot;kind&quot;</span>: <span class="hljs-string">&quot;blog.publish&quot;</span>,
+        <span class="hljs-string">&quot;title&quot;</span>: <span class="hljs-string">f&quot;Publish: <span class="hljs-subst">{post[<span class="hljs-string">&#x27;title&#x27;</span>]}</span>&quot;</span>,
+        <span class="hljs-string">&quot;preview&quot;</span>: {<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: post[<span class="hljs-string">&quot;body&quot;</span>]},
+        <span class="hljs-string">&quot;target_url&quot;</span>: post[<span class="hljs-string">&quot;cms_draft_url&quot;</span>],
+        <span class="hljs-string">&quot;expires_in&quot;</span>: <span class="hljs-number">21600</span>,  <span class="hljs-comment"># 6 hours — a stale draft isn&#x27;t worth publishing</span>
+        <span class="hljs-string">&quot;editable&quot;</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
+        <span class="hljs-string">&quot;idempotent&quot;</span>: <span class="hljs-literal">False</span>,
+    })
+    <span class="hljs-keyword">return</span> resp.json()[<span class="hljs-string">&quot;id&quot;</span>]
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">wait_and_publish</span>(<span class="hljs-params">action_id, post</span>):
+    <span class="hljs-keyword">while</span> <span class="hljs-literal">True</span>:
+        r = httpx.get(<span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>&quot;</span>, headers=HEADERS).json()
+        <span class="hljs-keyword">if</span> r[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;pending&quot;</span>:
+            <span class="hljs-keyword">break</span>
+        time.sleep(<span class="hljs-number">15</span>)
+
+    <span class="hljs-keyword">if</span> r[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;approved&quot;</span>:
+        <span class="hljs-keyword">return</span>  <span class="hljs-comment"># rejected or expired — pipeline stops here, no publish call is made</span>
+
+    final_body = r[<span class="hljs-string">&quot;decision&quot;</span>][<span class="hljs-string">&quot;final_preview&quot;</span>][<span class="hljs-string">&quot;body&quot;</span>]  <span class="hljs-comment"># carries any human edits</span>
+    cms_publish(post[<span class="hljs-string">&quot;id&quot;</span>], final_body)
+
+    httpx.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>/result&quot;</span>, headers=HEADERS,
+               json={<span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;executed&quot;</span>})</code></pre></div>
+<p>The <code>editable: [&quot;preview.body&quot;]</code> field matters here specifically because content review is often an editing pass, not a binary yes/no — a reviewer fixing a headline shouldn&#39;t have to reject and regenerate the whole draft.</p>
+<h2 id="where-the-gate-actually-needs-to-sit">Where the gate actually needs to sit</h2>
+<p>The wrapper only works as a real gate if <code>cms_publish()</code> is unreachable except through the code path above. If the agent also holds a raw CMS API key it can call directly for &quot;urgent&quot; posts, the gate is decorative. Structure it so the publish credential lives only inside <code>wait_and_publish</code>, not in the agent&#39;s general toolset — see <a href="integrations.html">the SDK integrations guide</a> for wrapping patterns.</p>
+<h2 id="multi-channel-drafts-one-action-per-channel-or-one-for-all">Multi-channel drafts: one action per channel, or one for all?</h2>
+<p>A single blog post often fans out into a tweet thread, a LinkedIn post, and a newsletter blurb. Two approaches work:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Approach</th>
+<th>When to use</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>One action per channel, reviewed independently</td>
+<td>Channels have different reviewers, or you want to approve the tweet without waiting on the newsletter</td>
+</tr>
+<tr>
+<td>One action bundling all variants in <code>preview.body</code>, single approve/reject</td>
+<td>Same reviewer, same editorial voice — one glance covers everything</td>
+</tr>
+</tbody></table>
+</div>
+<p>For teams starting out, bundle first — it&#39;s fewer round trips through the inbox. Split by channel once a channel gets its own owner.</p>
+<h2 id="reviewing-from-a-phone-between-meetings">Reviewing from a phone between meetings</h2>
+<p>Content reviewers are rarely at a desk when a draft is ready. Route the notification to <a href="slack-approval.html">Slack</a> or <a href="telegram-approval.html">Telegram</a> so approve/reject is a tap, not a context switch back to a dashboard. The <code>target_url</code> field above should point at the actual CMS draft, so a reviewer who wants more context than the markdown preview can jump straight there.</p>
+<h2 id="what-this-doesn39t-cover">What this doesn&#39;t cover</h2>
+<p>Impri doesn&#39;t review content quality — it surfaces the draft to whichever human you&#39;ve routed it to and trusts their judgment. It also isn&#39;t a scheduling engine; if your pipeline needs &quot;publish at 9am on the day with the most engagement,&quot; that logic stays in your pipeline and only the final publish call goes through the gate. And expiry is real: a draft that sits unreviewed past <code>expires_in</code> moves to <code>expired</code> and won&#39;t publish, by design — stale drafts about a news cycle that&#39;s already passed shouldn&#39;t go out just because someone finally checked the inbox.</p>
+<p>Next: <a href="quickstart.html">quickstart</a> to get an API key, or <a href="sdk-python.html">the Python SDK reference</a> if you&#39;d rather not hand-roll the <code>httpx</code> calls above.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#the-failure-mode-this-solves">The failure mode this solves</a></li>
+<li class="ptoc-h2"><a href="#wiring-it-into-a-content-pipeline-python">Wiring it into a content pipeline (Python)</a></li>
+<li class="ptoc-h2"><a href="#where-the-gate-actually-needs-to-sit">Where the gate actually needs to sit</a></li>
+<li class="ptoc-h2"><a href="#multi-channel-drafts-one-action-per-channel-or-one-for-all">Multi-channel drafts: one action per channel, or one for all?</a></li>
+<li class="ptoc-h2"><a href="#reviewing-from-a-phone-between-meetings">Reviewing from a phone between meetings</a></li>
+<li class="ptoc-h2"><a href="#what-this-doesn39t-cover">What this doesn't cover</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs.html">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+    <a href="/docs/privacy.html">Privacy</a>
+    <a href="/docs/terms.html">Terms</a>
+    <a href="https://sekera.dev">Contact</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>.</span></div>
+</footer>
+</body>
+</html>
