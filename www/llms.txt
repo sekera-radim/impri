@@ -593,6 +593,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human Approval for Background AI Workers: https://impri.dev/docs/human-approval-for-background-ai-workers.html
 - Human Approval for Microsoft AutoGen Agents: https://impri.dev/docs/human-approval-autogen-agents.html
 - Human Approval for Scheduled AI Scripts: https://impri.dev/docs/human-approval-for-scheduled-ai-scripts.html
+- Human Approval for Solo-Founder AI Automations: https://impri.dev/docs/human-approval-for-solo-founder-automations.html
 - Human Approval for Unattended AI Agents: https://impri.dev/docs/human-approval-for-unattended-ai-agents.html
 - Human Approval for n8n AI Agent Workflows: https://impri.dev/docs/human-approval-n8n-ai-agent.html
 - Human Approval for the Vercel AI SDK: https://impri.dev/docs/human-approval-vercel-ai-sdk.html
@@ -604,6 +605,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human-in-the-Loop for Autonomous AI Agents: https://impri.dev/docs/human-in-the-loop-for-autonomous-agents.html
 - Human-in-the-Loop for CI/CD AI Agents: https://impri.dev/docs/human-in-the-loop-ci-cd-ai-agents.html
 - Human-in-the-Loop for DevOps AI Agents: https://impri.dev/docs/human-in-the-loop-for-devops-ai-agents.html
+- Human-in-the-Loop for E-commerce AI Agents: https://impri.dev/docs/human-in-the-loop-for-ecommerce-ai-agents.html
 - Human-in-the-Loop for LlamaIndex Agents: https://impri.dev/docs/human-in-the-loop-llamaindex-agents.html
 - Human-in-the-Loop for Pydantic AI Agents: https://impri.dev/docs/human-in-the-loop-pydantic-ai.html
 - Human-in-the-Loop for RAG Agents That Take Actions: https://impri.dev/docs/human-in-the-loop-for-rag-agents-that-act.html
