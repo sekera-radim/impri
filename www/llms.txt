@@ -607,9 +607,11 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human-in-the-Loop for DevOps AI Agents: https://impri.dev/docs/human-in-the-loop-for-devops-ai-agents.html
 - Human-in-the-Loop for E-commerce AI Agents: https://impri.dev/docs/human-in-the-loop-for-ecommerce-ai-agents.html
 - Human-in-the-Loop for LlamaIndex Agents: https://impri.dev/docs/human-in-the-loop-llamaindex-agents.html
+- Human-in-the-Loop for Personal AI Assistants: https://impri.dev/docs/human-in-the-loop-for-personal-ai-assistants.html
 - Human-in-the-Loop for Pydantic AI Agents: https://impri.dev/docs/human-in-the-loop-pydantic-ai.html
 - Human-in-the-Loop for RAG Agents That Take Actions: https://impri.dev/docs/human-in-the-loop-for-rag-agents-that-act.html
 - Human-in-the-Loop for the OpenAI Agents SDK: https://impri.dev/docs/human-in-the-loop-openai-agents-sdk.html
+- Open-Source Human-in-the-Loop Tools for AI Agents: https://impri.dev/docs/open-source-human-in-the-loop-tools.html
 - Prevent Prompt Injection From Executing Real Actions: https://impri.dev/docs/prevent-prompt-injection-from-executing-actions.html
 - Require Human Approval Before an Agent Deletes Data: https://impri.dev/docs/human-approval-before-an-agent-deletes-data.html
 - Review AI Agent Decisions Before They Happen: https://impri.dev/docs/review-ai-agent-decisions-before-they-happen.html
