@@ -5,7 +5,7 @@
  * and for signup returning recovery_code, and has_recovery_code in usage.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDb } from '../src/db.js';
 import { createApp } from '../src/index.js';
 
@@ -14,6 +14,9 @@ beforeEach(() => {
 });
 afterEach(() => {
   delete process.env.ALLOW_SIGNUP;
+  // Restore here too: a failing assertion skips the in-test restore and would leak the frozen
+  // clock into every later test in this file.
+  vi.useRealTimers();
 });
 
 async function setup() {
@@ -255,6 +258,14 @@ describe('POST /v1/recover — error paths', () => {
   });
 
   it('rate-limits by IP after 5 attempts', async () => {
+    // Frozen clock: the limiter buckets by wall-clock minute (Math.floor(now/60)*60 in
+    // checkRateLimit), so a run that straddles a minute boundary resets the counter and the
+    // 6th attempt comes back 401 instead of 429. Six argon2-backed requests take ~800ms, which
+    // made this fail roughly once in 75 CI runs (pipeline #2739123224 crossed 02:06:00 exactly).
+    // toFake: ['Date'] only — faking timers would stall fastify and argon2.
+    vi.useFakeTimers({ shouldAdvanceTime: true, toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-01-01T00:00:30Z'));
+
     const { app } = await setup();
     const { project_id } = await signupProject(app, '10.0.12.1');
     const ip = '10.0.12.100';
