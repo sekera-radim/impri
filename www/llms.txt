@@ -564,6 +564,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - OpenAPI spec (live):                                 https://api.impri.dev/v1/openapi.json
 
 ## Use-case guides (auto-generated)
+- A Lightweight Alternative to Workflow Engines for HITL: https://impri.dev/docs/lightweight-alternative-to-workflow-engines-for-hitl.html
 - A Self-Hosted Approval Inbox for AI Agents: https://impri.dev/docs/self-hosted-approval-inbox-for-ai-agents.html
 - AI Agent Approval Queue: Build vs Buy: https://impri.dev/docs/build-vs-buy-ai-agent-approval-queue.html
 - AI Agent Guardrails for Real-World Actions: https://impri.dev/docs/ai-agent-guardrails-for-real-world-actions.html
@@ -619,6 +620,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human-in-the-Loop vs Full Autonomy for AI Agents: https://impri.dev/docs/human-in-the-loop-vs-full-autonomy.html
 - Open-Source Human-in-the-Loop Tools for AI Agents: https://impri.dev/docs/open-source-human-in-the-loop-tools.html
 - Prevent Prompt Injection From Executing Real Actions: https://impri.dev/docs/prevent-prompt-injection-from-executing-actions.html
+- REST API vs MCP for Human-in-the-Loop Approval: https://impri.dev/docs/rest-api-vs-mcp-for-human-approval.html
 - Require Human Approval Before an Agent Deletes Data: https://impri.dev/docs/human-approval-before-an-agent-deletes-data.html
 - Review AI Agent Decisions Before They Happen: https://impri.dev/docs/review-ai-agent-decisions-before-they-happen.html
 - Safe Autonomy: Let Agents Act, but Not Blindly: https://impri.dev/docs/safe-autonomy-for-ai-agents.html
