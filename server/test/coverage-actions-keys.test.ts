@@ -629,6 +629,105 @@ describe('Admin stats endpoint (GET /v1/admin/stats)', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Admin comp-tier endpoint
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Admin comp-tier endpoint (POST /v1/admin/comp-tier)', () => {
+  it('grants a tier to another project when called by the operator key', async () => {
+    const { db, app, adminKey, projectId } = await setup();
+    process.env.OPERATOR_PROJECT_ID = projectId;
+    const target = await createProjectWithAdminKey(db, 'Target Project');
+
+    const res = await app.inject({
+      method: 'POST', url: '/v1/admin/comp-tier', headers: auth(adminKey),
+      payload: { project_id: target.projectId, tier: 'team', expires_in: 315_360_000 }, // 10y
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.tier).toBe('team');
+    expect(body.subscription_status).toBe('comped');
+    expect(typeof body.current_period_end).toBe('number');
+
+    // Reflected in GET /v1/billing for the target project's own key
+    const billingRes = await app.inject({
+      method: 'GET', url: '/v1/billing', headers: auth(target.key),
+    });
+    expect(billingRes.json().tier).toBe('team');
+
+    // Audited on the TARGET project, not the operator's
+    const auditRes = await app.inject({
+      method: 'GET', url: '/v1/audit', headers: auth(target.key),
+    });
+    const events = auditRes.json().items ?? auditRes.json();
+    expect(JSON.stringify(events)).toContain('admin.tier_comped');
+  });
+
+  it('is idempotent-safe against Stripe reconciliation (no stripe_customer_id set)', async () => {
+    const { db, app, adminKey, projectId } = await setup();
+    process.env.OPERATOR_PROJECT_ID = projectId;
+    const target = await createProjectWithAdminKey(db, 'Target Project');
+
+    await app.inject({
+      method: 'POST', url: '/v1/admin/comp-tier', headers: auth(adminKey),
+      payload: { project_id: target.projectId, tier: 'indie' },
+    });
+    const row = db.prepare('SELECT stripe_customer_id, stripe_subscription_id FROM projects WHERE id = ?')
+      .get(target.projectId) as { stripe_customer_id: string | null; stripe_subscription_id: string | null };
+    expect(row.stripe_customer_id).toBeNull();
+    expect(row.stripe_subscription_id).toBeNull();
+  });
+
+  it('returns 404 when called by a non-operator project', async () => {
+    const { db, app } = await setup();
+    const project2 = await createProjectWithAdminKey(db, 'Project 2');
+    process.env.OPERATOR_PROJECT_ID = project2.projectId;
+
+    const project3 = await createProjectWithAdminKey(db, 'Project 3');
+    const res = await app.inject({
+      method: 'POST', url: '/v1/admin/comp-tier', headers: auth(project3.key),
+      payload: { project_id: project3.projectId, tier: 'team' },
+    });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('returns 404 for a non-admin scope key even on the operator project', async () => {
+    const { db, app, adminKey, projectId } = await setup();
+    process.env.OPERATOR_PROJECT_ID = projectId;
+    const target = await createProjectWithAdminKey(db, 'Target Project');
+    const { key: actionsKey } = await createScopedKey(app, adminKey, ['actions'], 'no-admin');
+
+    const res = await app.inject({
+      method: 'POST', url: '/v1/admin/comp-tier', headers: auth(actionsKey),
+      payload: { project_id: target.projectId, tier: 'team' },
+    });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('rejects an unknown tier value with 400', async () => {
+    const { db, app, adminKey, projectId } = await setup();
+    process.env.OPERATOR_PROJECT_ID = projectId;
+    const target = await createProjectWithAdminKey(db, 'Target Project');
+
+    const res = await app.inject({
+      method: 'POST', url: '/v1/admin/comp-tier', headers: auth(adminKey),
+      payload: { project_id: target.projectId, tier: 'enterprise' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('returns 404 when project_id does not exist', async () => {
+    const { app, adminKey, projectId } = await setup();
+    process.env.OPERATOR_PROJECT_ID = projectId;
+
+    const res = await app.inject({
+      method: 'POST', url: '/v1/admin/comp-tier', headers: auth(adminKey),
+      payload: { project_id: 'proj_does_not_exist', tier: 'team' },
+    });
+    expect(res.statusCode).toBe(404);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Cross-project idempotency isolation
 // ─────────────────────────────────────────────────────────────────────────────
 

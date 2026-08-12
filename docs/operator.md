@@ -63,11 +63,47 @@ Fields:
 
 ---
 
+## `POST /v1/admin/comp-tier` — grant a tier without Stripe
+
+Sets a project's tier directly, bypassing checkout. For comping accounts — the
+operator's own working project, a beta tester, a partner — where a real
+subscription doesn't apply.
+
+```http
+POST /v1/admin/comp-tier HTTP/1.1
+Authorization: Bearer im_<operator-admin-key>
+Content-Type: application/json
+
+{
+  "project_id": "proj_target",
+  "tier": "team",
+  "expires_in": 315360000
+}
+```
+
+| Field | Required | Description |
+|-------|----------|--------------|
+| `project_id` | yes | The project to grant the tier to (not the caller's own project) |
+| `tier` | yes | `free`, `indie`, or `team` |
+| `expires_in` | no | Seconds until `current_period_end`. Cosmetic only — display field, never enforced. Capped at 10 years. Omit for no expiry. |
+
+Response is the updated project row: `{ "id", "tier", "subscription_status": "comped", "current_period_end" }`.
+
+The grant is stable against Stripe: the webhook handler only ever updates a
+project matched by `stripe_customer_id`, so a project that has never been
+through checkout (the common case for a comped account) is never touched by a
+later webhook event. Recorded as an `admin.tier_comped` event in the
+**target** project's own audit log — its owner can see who granted the tier
+and when.
+
+---
+
 ## Security notes
 
-- Returns `404 Not Found` for all keys that do not belong to `OPERATOR_PROJECT_ID`, regardless of scope. The endpoint is not discoverable.
-- No individual project data is exposed — only platform-level aggregate counts.
+- Both operator endpoints return `404 Not Found` for all keys that do not belong to `OPERATOR_PROJECT_ID`, regardless of scope. Neither is discoverable.
+- `GET /v1/admin/stats` exposes no individual project data — only platform-level aggregate counts.
 - Even operator keys cannot read another project's actions, decisions, or audit log.
+- `POST /v1/admin/comp-tier` is rate-limited to 10 requests/min per key.
 - Set `OPERATOR_PROJECT_ID` to a dedicated operator project — do not reuse a user-facing project for this.
 
 ---
