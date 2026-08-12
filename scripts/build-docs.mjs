@@ -120,9 +120,10 @@ renderer.code = function (token) {
 
 renderer.link = function (token) {
   let href = token.href || '';
-  // Rewrite relative docs/*.md links to .html so cross-page navigation works
+  // Rewrite relative docs/*.md links to the clean (extensionless) URL so
+  // cross-page navigation works without going through a 308 redirect
   if (href && !href.startsWith('http') && !href.startsWith('//') && !href.startsWith('#')) {
-    href = href.replace(/\.md(\s*#.*)?$/, (_, hash) => `.html${hash || ''}`);
+    href = href.replace(/\.md(\s*#.*)?$/, (_, hash) => hash || '');
   }
   const title  = token.title ? ` title="${escHtml(token.title)}"` : '';
   const target = href.startsWith('http') ? ' target="_blank" rel="noopener"' : '';
@@ -207,7 +208,7 @@ function buildSidebar(activeSlug, root) {
   return NAV.map(group => {
     const links = group.pages.map(page => {
       const isActive = page.slug === activeSlug;
-      return `<a href="${root}docs/${page.slug}.html" class="sl${isActive ? ' active' : ''}">${escHtml(page.title)}</a>`;
+      return `<a href="${root}docs/${page.slug}" class="sl${isActive ? ' active' : ''}">${escHtml(page.title)}</a>`;
     }).join('\n');
     return `<div class="sg">
 <div class="sg-label">${escHtml(group.section)}</div>
@@ -337,7 +338,7 @@ function buildNav(root) {
   <div class="nav-links">
     <a class="link" href="/#how">How it works</a>
     <a class="link" href="/#pricing">Pricing</a>
-    <a class="link active-nav" href="${root}docs.html">Docs</a>
+    <a class="link active-nav" href="${root}docs">Docs</a>
     <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
   </div>
 </div>
@@ -352,11 +353,11 @@ function buildFooter() {
   </a>
   <div>
     <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
-    <a href="/docs.html">Docs</a>
+    <a href="/docs">Docs</a>
     <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
     <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
-    <a href="/docs/privacy.html">Privacy</a>
-    <a href="/docs/terms.html">Terms</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/terms">Terms</a>
     <a href="https://sekera.dev">Contact</a>
   </div>
 </div>
@@ -417,7 +418,7 @@ ${buildNav(root)}
 
   <main class="doc-main" id="main-content">
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="${root}docs.html">Docs</a>
+      <a href="${root}docs">Docs</a>
       <span class="bc-sep">/</span>
       <span>${escHtml(section)}</span>
       <span class="bc-sep">/</span>
@@ -444,7 +445,7 @@ function renderHubPage(pages) {
   const cards = NAV.map(group => {
     const pageLinks = group.pages.map(p => {
       const info = pages.get(p.slug) || {};
-      return `<li><a href="docs/${p.slug}.html">${escHtml(p.title)}</a></li>`;
+      return `<li><a href="docs/${p.slug}">${escHtml(p.title)}</a></li>`;
     }).join('\n');
     return `<div class="hub-card">
 <div class="hub-card-title">${escHtml(group.section)}</div>
@@ -485,9 +486,9 @@ ${buildNav('')}
     <h1 style="margin-top:16px">Impri documentation</h1>
     <p>Add a human approval step to any AI agent. An agent proposes an action, a person approves or rejects it in the inbox, and only then does it run. Everything you need to get started and go deep.</p>
     <div style="display:flex;gap:12px;margin-top:28px;flex-wrap:wrap">
-      <a class="btn btn-primary btn-sm" href="docs/quickstart.html">Quickstart</a>
-      <a class="btn btn-ghost btn-sm" href="docs/how-to-add-human-approval-to-an-ai-agent.html">Human approval pattern</a>
-      <a class="btn btn-ghost btn-sm" href="docs/mcp.html">MCP server</a>
+      <a class="btn btn-primary btn-sm" href="docs/quickstart">Quickstart</a>
+      <a class="btn btn-ghost btn-sm" href="docs/how-to-add-human-approval-to-an-ai-agent">Human approval pattern</a>
+      <a class="btn btn-ghost btn-sm" href="docs/mcp">MCP server</a>
     </div>
   </div>
 
@@ -573,7 +574,7 @@ function main() {
     .replace(/href="styles\.css"/g, 'href="../styles.css"')
     // Patch nav/breadcrumb "Docs" link so it doesn't resolve to the
     // non-existent www/docs/docs.html (BL-1 fix).
-    .replace(/href="docs\.html"/g, 'href="../docs.html"')
+    .replace(/href="docs"/g, 'href="../docs"')
     .replace(/href="docs\//g, 'href="./');
   writeFileSync(join(DOCS_OUT, 'index.html'), hubIndexHtml, 'utf8');
   console.log(`  ✓  docs/index.html`);
@@ -606,7 +607,9 @@ function main() {
     const guideLines = [];
     for (const [slug, info] of pageIndex.entries()) {
       if (PAGE_MAP.has(slug)) continue; // NAV pages already listed in the curated section
-      guideLines.push(`- ${info.title}: https://impri.dev/docs/${slug}.html`);
+      // Extensionless — the .html form 308-redirects, and Search Console reports
+      // every redirected URL as "Page with redirect".
+      guideLines.push(`- ${info.title}: https://impri.dev/docs/${slug}`);
     }
     if (guideLines.length) {
       llms = llms.replace(/\s+$/, '') + `\n\n${GUIDES_MARKER}\n` + guideLines.sort().join('\n') + '\n';

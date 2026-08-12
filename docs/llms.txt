@@ -538,29 +538,29 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 
 ## Documentation
 
-- Quickstart (self-hosted, zero to first approved action): https://impri.dev/docs/quickstart.html
-- How to add human approval to an AI agent:            https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent.html
-- Python SDK reference:                                https://impri.dev/docs/sdk-python.html
-- TypeScript SDK reference:                            https://impri.dev/docs/sdk-typescript.html
-- MCP server reference:                                https://impri.dev/docs/mcp.html
-- Claude Agent SDK integration:                        https://impri.dev/docs/claude-agent-sdk.html
-- Integrations (LangChain, CrewAI, OpenAI, n8n, Make, Zapier): https://impri.dev/docs/integrations.html
-- CLI reference:                                       https://impri.dev/docs/cli.html
-- Inbox UX, keyboard shortcuts, bulk approve/reject:   https://impri.dev/docs/inbox.html
-- Webhooks (delivery, signature, retry):               https://impri.dev/docs/webhooks.html
-- Notification channels (Slack, Discord, Telegram, ntfy, email, webhook): https://impri.dev/docs/notifications.html
-- Telegram approval mode:                              https://impri.dev/docs/telegram-approval.html
-- Slack approval mode:                                 https://impri.dev/docs/slack-approval.html
-- Discord approval mode:                               https://impri.dev/docs/discord-approval.html
-- Rules engine:                                        https://impri.dev/docs/rules.html
-- Watcher presets (18 presets with params):            https://impri.dev/docs/watcher-presets.html
-- Audit log (events, query, export, retention):        https://impri.dev/docs/audit-log.html
-- API keys (scopes, lifecycle, security):              https://impri.dev/docs/api-keys.html
-- Billing (tiers, limits, Stripe):                     https://impri.dev/docs/billing.html
-- GDPR (export, erasure):                              https://impri.dev/docs/gdpr.html
-- Web push notifications (VAPID setup):                https://impri.dev/docs/web-push.html
-- Operator / multi-tenant stats:                       https://impri.dev/docs/operator.html
-- Self-hosting (docker compose, env vars, HTTPS):      https://impri.dev/docs/self-hosting.html
-- Observability (/metrics Prometheus, /readyz, /healthz, structured logs, GET /v1/usage): https://impri.dev/docs/observability.html
-- Cookbook (email, SQL, social, idempotent batches):   https://impri.dev/docs/cookbook.html
+- Quickstart (self-hosted, zero to first approved action): https://impri.dev/docs/quickstart
+- How to add human approval to an AI agent:            https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent
+- Python SDK reference:                                https://impri.dev/docs/sdk-python
+- TypeScript SDK reference:                            https://impri.dev/docs/sdk-typescript
+- MCP server reference:                                https://impri.dev/docs/mcp
+- Claude Agent SDK integration:                        https://impri.dev/docs/claude-agent-sdk
+- Integrations (LangChain, CrewAI, OpenAI, n8n, Make, Zapier): https://impri.dev/docs/integrations
+- CLI reference:                                       https://impri.dev/docs/cli
+- Inbox UX, keyboard shortcuts, bulk approve/reject:   https://impri.dev/docs/inbox
+- Webhooks (delivery, signature, retry):               https://impri.dev/docs/webhooks
+- Notification channels (Slack, Discord, Telegram, ntfy, email, webhook): https://impri.dev/docs/notifications
+- Telegram approval mode:                              https://impri.dev/docs/telegram-approval
+- Slack approval mode:                                 https://impri.dev/docs/slack-approval
+- Discord approval mode:                               https://impri.dev/docs/discord-approval
+- Rules engine:                                        https://impri.dev/docs/rules
+- Watcher presets (18 presets with params):            https://impri.dev/docs/watcher-presets
+- Audit log (events, query, export, retention):        https://impri.dev/docs/audit-log
+- API keys (scopes, lifecycle, security):              https://impri.dev/docs/api-keys
+- Billing (tiers, limits, Stripe):                     https://impri.dev/docs/billing
+- GDPR (export, erasure):                              https://impri.dev/docs/gdpr
+- Web push notifications (VAPID setup):                https://impri.dev/docs/web-push
+- Operator / multi-tenant stats:                       https://impri.dev/docs/operator
+- Self-hosting (docker compose, env vars, HTTPS):      https://impri.dev/docs/self-hosting
+- Observability (/metrics Prometheus, /readyz, /healthz, structured logs, GET /v1/usage): https://impri.dev/docs/observability
+- Cookbook (email, SQL, social, idempotent batches):   https://impri.dev/docs/cookbook
 - OpenAPI spec (live):                                 https://api.impri.dev/v1/openapi.json

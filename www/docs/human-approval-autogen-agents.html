@@ -116,7 +116,7 @@ pre code.hljs{display:block;overflow-x:auto}
   <div class="nav-links">
     <a class="link" href="/#how">How it works</a>
     <a class="link" href="/#pricing">Pricing</a>
-    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="link active-nav" href="../docs">Docs</a>
     <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
   </div>
 </div>
@@ -126,58 +126,58 @@ pre code.hljs{display:block;overflow-x:auto}
   <aside class="docs-sidebar" aria-label="Documentation navigation">
     <div class="sg">
 <div class="sg-label">Getting started</div>
-<a href="../docs/quickstart.html" class="sl">Quickstart</a>
-<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
-<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
-<a href="../docs/observability.html" class="sl">Observability</a>
+<a href="../docs/quickstart" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting" class="sl">Self-hosting</a>
+<a href="../docs/observability" class="sl">Observability</a>
 </div>
 <div class="sg">
 <div class="sg-label">API reference</div>
-<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
-<a href="../docs/rules.html" class="sl">Rules engine</a>
-<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
-<a href="../docs/notifications.html" class="sl">Notification channels</a>
-<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
-<a href="../docs/slack-approval.html" class="sl">Slack approval</a>
-<a href="../docs/discord-approval.html" class="sl">Discord approval</a>
-<a href="../docs/audit-log.html" class="sl">Audit log</a>
-<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
-<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
-<a href="../docs/privacy.html" class="sl">Privacy policy</a>
-<a href="../docs/terms.html" class="sl">Terms of service</a>
-<a href="../docs/operator.html" class="sl">Operator / admin</a>
-<a href="../docs/account-recovery.html" class="sl">Account recovery</a>
+<a href="../docs/api-keys" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets" class="sl">Watcher presets</a>
+<a href="../docs/notifications" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval" class="sl">Slack approval</a>
+<a href="../docs/discord-approval" class="sl">Discord approval</a>
+<a href="../docs/audit-log" class="sl">Audit log</a>
+<a href="../docs/billing" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr" class="sl">GDPR &amp; data export</a>
+<a href="../docs/privacy" class="sl">Privacy policy</a>
+<a href="../docs/terms" class="sl">Terms of service</a>
+<a href="../docs/operator" class="sl">Operator / admin</a>
+<a href="../docs/account-recovery" class="sl">Account recovery</a>
 </div>
 <div class="sg">
 <div class="sg-label">SDKs</div>
-<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
-<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+<a href="../docs/sdk-python" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript" class="sl">TypeScript SDK</a>
 </div>
 <div class="sg">
 <div class="sg-label">Integrations</div>
-<a href="../docs/mcp.html" class="sl">MCP server</a>
-<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
-<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+<a href="../docs/mcp" class="sl">MCP server</a>
+<a href="../docs/integrations" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk" class="sl">Claude Agent SDK</a>
 </div>
 <div class="sg">
 <div class="sg-label">Inbox &amp; webhooks</div>
-<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
-<a href="../docs/webhooks.html" class="sl">Webhooks</a>
-<a href="../docs/web-push.html" class="sl">Web push</a>
+<a href="../docs/inbox" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks" class="sl">Webhooks</a>
+<a href="../docs/web-push" class="sl">Web push</a>
 </div>
 <div class="sg">
 <div class="sg-label">CLI</div>
-<a href="../docs/cli.html" class="sl">CLI reference</a>
+<a href="../docs/cli" class="sl">CLI reference</a>
 </div>
 <div class="sg">
 <div class="sg-label">Cookbook</div>
-<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+<a href="../docs/cookbook" class="sl">Cookbook</a>
 </div>
   </aside>
 
   <main class="doc-main" id="main-content">
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../docs.html">Docs</a>
+      <a href="../docs">Docs</a>
       <span class="bc-sep">/</span>
       <span>Reference</span>
       <span class="bc-sep">/</span>
@@ -297,7 +297,7 @@ executor.initiate_chat(assistant, message=<span class="hljs-string">&quot;Restar
 <p>Impri stores the proposed command, notifies you, and holds the decision — it does not read the command, judge whether it is safe, or run it. That last part is still <code>subprocess.run</code> in your own code, gated on <code>status == &quot;approved&quot;</code>. The gate only holds if <code>propose_and_run_shell</code> is genuinely the agent&#39;s only way to reach a shell; leave a second, ungated code executor configured anywhere in the same chat and this becomes decorative.</p>
 <hr>
 <h2 id="next-step">Next step</h2>
-<p>Start with the <a href="quickstart.html">quickstart</a> for an API key with the <code>actions</code> scope, read <a href="how-to-add-human-approval-to-an-ai-agent.html">how to add human approval to an AI agent</a> for the full propose → approve → execute contract, and use the <a href="sdk-python.html">Python SDK</a> instead of raw <code>requests</code> calls once this moves past a prototype.</p>
+<p>Start with the <a href="quickstart">quickstart</a> for an API key with the <code>actions</code> scope, read <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a> for the full propose → approve → execute contract, and use the <a href="sdk-python">Python SDK</a> instead of raw <code>requests</code> calls once this moves past a prototype.</p>
 
   </main>
 
@@ -322,11 +322,11 @@ executor.initiate_chat(assistant, message=<span class="hljs-string">&quot;Restar
   </a>
   <div>
     <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
-    <a href="/docs.html">Docs</a>
+    <a href="/docs">Docs</a>
     <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
     <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
-    <a href="/docs/privacy.html">Privacy</a>
-    <a href="/docs/terms.html">Terms</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/terms">Terms</a>
     <a href="https://sekera.dev">Contact</a>
   </div>
 </div>

@@ -536,93 +536,93 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 
 ## Documentation
 
-- Quickstart (self-hosted, zero to first approved action): https://impri.dev/docs/quickstart.html
-- How to add human approval to an AI agent:            https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent.html
-- Python SDK reference:                                https://impri.dev/docs/sdk-python.html
-- TypeScript SDK reference:                            https://impri.dev/docs/sdk-typescript.html
-- MCP server reference:                                https://impri.dev/docs/mcp.html
-- Claude Agent SDK integration:                        https://impri.dev/docs/claude-agent-sdk.html
-- Integrations (LangChain, CrewAI, OpenAI, n8n, Make, Zapier): https://impri.dev/docs/integrations.html
-- CLI reference:                                       https://impri.dev/docs/cli.html
-- Inbox UX, keyboard shortcuts, bulk approve/reject:   https://impri.dev/docs/inbox.html
-- Webhooks (delivery, signature, retry):               https://impri.dev/docs/webhooks.html
-- Notification channels (Slack, Discord, Telegram, ntfy, email, webhook): https://impri.dev/docs/notifications.html
-- Telegram approval mode:                              https://impri.dev/docs/telegram-approval.html
-- Slack approval mode:                                 https://impri.dev/docs/slack-approval.html
-- Discord approval mode:                               https://impri.dev/docs/discord-approval.html
-- Rules engine:                                        https://impri.dev/docs/rules.html
-- Watcher presets (18 presets with params):            https://impri.dev/docs/watcher-presets.html
-- Audit log (events, query, export, retention):        https://impri.dev/docs/audit-log.html
-- API keys (scopes, lifecycle, security):              https://impri.dev/docs/api-keys.html
-- Billing (tiers, limits, Stripe):                     https://impri.dev/docs/billing.html
-- GDPR (export, erasure):                              https://impri.dev/docs/gdpr.html
-- Web push notifications (VAPID setup):                https://impri.dev/docs/web-push.html
-- Operator / multi-tenant stats:                       https://impri.dev/docs/operator.html
-- Self-hosting (docker compose, env vars, HTTPS):      https://impri.dev/docs/self-hosting.html
-- Observability (/metrics Prometheus, /readyz, /healthz, structured logs, GET /v1/usage): https://impri.dev/docs/observability.html
-- Cookbook (email, SQL, social, idempotent batches):   https://impri.dev/docs/cookbook.html
+- Quickstart (self-hosted, zero to first approved action): https://impri.dev/docs/quickstart
+- How to add human approval to an AI agent:            https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent
+- Python SDK reference:                                https://impri.dev/docs/sdk-python
+- TypeScript SDK reference:                            https://impri.dev/docs/sdk-typescript
+- MCP server reference:                                https://impri.dev/docs/mcp
+- Claude Agent SDK integration:                        https://impri.dev/docs/claude-agent-sdk
+- Integrations (LangChain, CrewAI, OpenAI, n8n, Make, Zapier): https://impri.dev/docs/integrations
+- CLI reference:                                       https://impri.dev/docs/cli
+- Inbox UX, keyboard shortcuts, bulk approve/reject:   https://impri.dev/docs/inbox
+- Webhooks (delivery, signature, retry):               https://impri.dev/docs/webhooks
+- Notification channels (Slack, Discord, Telegram, ntfy, email, webhook): https://impri.dev/docs/notifications
+- Telegram approval mode:                              https://impri.dev/docs/telegram-approval
+- Slack approval mode:                                 https://impri.dev/docs/slack-approval
+- Discord approval mode:                               https://impri.dev/docs/discord-approval
+- Rules engine:                                        https://impri.dev/docs/rules
+- Watcher presets (18 presets with params):            https://impri.dev/docs/watcher-presets
+- Audit log (events, query, export, retention):        https://impri.dev/docs/audit-log
+- API keys (scopes, lifecycle, security):              https://impri.dev/docs/api-keys
+- Billing (tiers, limits, Stripe):                     https://impri.dev/docs/billing
+- GDPR (export, erasure):                              https://impri.dev/docs/gdpr
+- Web push notifications (VAPID setup):                https://impri.dev/docs/web-push
+- Operator / multi-tenant stats:                       https://impri.dev/docs/operator
+- Self-hosting (docker compose, env vars, HTTPS):      https://impri.dev/docs/self-hosting
+- Observability (/metrics Prometheus, /readyz, /healthz, structured logs, GET /v1/usage): https://impri.dev/docs/observability
+- Cookbook (email, SQL, social, idempotent batches):   https://impri.dev/docs/cookbook
 - OpenAPI spec (live):                                 https://api.impri.dev/v1/openapi.json
 
 ## Use-case guides (auto-generated)
-- A Lightweight Alternative to Workflow Engines for HITL: https://impri.dev/docs/lightweight-alternative-to-workflow-engines-for-hitl.html
-- A Self-Hosted Approval Inbox for AI Agents: https://impri.dev/docs/self-hosted-approval-inbox-for-ai-agents.html
-- AI Agent Approval Queue: Build vs Buy: https://impri.dev/docs/build-vs-buy-ai-agent-approval-queue.html
-- AI Agent Guardrails for Real-World Actions: https://impri.dev/docs/ai-agent-guardrails-for-real-world-actions.html
-- Add Human Approval to a Cron Job: https://impri.dev/docs/gate-a-cron-job-with-human-approval.html
-- Add a Kill Switch to Your AI Agent: https://impri.dev/docs/add-a-kill-switch-to-your-ai-agent.html
-- Adding Human Approval to CrewAI Agents: https://impri.dev/docs/human-approval-for-crewai-agents.html
-- Alternatives to Building Your Own Agent Approval System: https://impri.dev/docs/alternatives-to-building-your-own-approval-system.html
-- An Approval Gate for AI Data Pipelines: https://impri.dev/docs/approval-gate-for-ai-data-pipelines.html
-- An Approval Gate for Agents That Run While You Sleep: https://impri.dev/docs/approval-gate-for-overnight-ai-agents.html
-- An Approval Gate for Webhook-Triggered Agents: https://impri.dev/docs/approval-gate-for-webhook-triggered-agents.html
-- An Approval Workflow for AI Marketing Automation: https://impri.dev/docs/approval-workflow-for-ai-marketing-automation.html
-- An MCP Approval Server for AI Agents: https://impri.dev/docs/mcp-approval-server-for-ai-agents.html
-- Approval Inbox vs Slack Buttons for Agent Sign-off: https://impri.dev/docs/approval-inbox-vs-slack-buttons.html
-- Approve AI Agent Actions From Slack: https://impri.dev/docs/approve-ai-agent-actions-from-slack.html
-- Approve AI Agent Actions From Your Phone: https://impri.dev/docs/approve-ai-agent-actions-from-your-phone.html
-- Approve AI-Generated Content Before Publishing: https://impri.dev/docs/approve-ai-generated-content-before-publishing.html
-- Approve Emails Before Your AI Agent Sends Them: https://impri.dev/docs/approve-emails-before-your-ai-agent-sends-them.html
-- Approve Payments Before Your AI Agent Charges a Card: https://impri.dev/docs/approve-ai-agent-payments-and-charges.html
-- Approve Refunds Issued by an AI Support Agent: https://impri.dev/docs/approve-refunds-issued-by-an-ai-support-agent.html
-- Approve Slack Messages From an AI Agent: https://impri.dev/docs/approve-slack-messages-from-an-ai-agent.html
-- Build an Audit Trail for AI Agent Actions: https://impri.dev/docs/audit-trail-for-ai-agent-actions.html
-- Gate Database Writes From an AI Agent: https://impri.dev/docs/approve-database-writes-from-an-ai-agent.html
-- How to Build a Human-in-the-Loop AI Agent: https://impri.dev/docs/how-to-build-a-human-in-the-loop-ai-agent.html
-- Human Approval Before an AI Agent Deploys Code: https://impri.dev/docs/human-approval-before-deploying-code-with-an-agent.html
-- Human Approval Before an Agent Posts to Social Media: https://impri.dev/docs/human-approval-before-an-agent-posts-to-social-media.html
-- Human Approval Before an Agent Sends SMS: https://impri.dev/docs/human-approval-before-an-agent-sends-sms.html
-- Human Approval Gates in the Claude Agent SDK: https://impri.dev/docs/human-approval-claude-agent-sdk.html
-- Human Approval for AI Content Pipelines: https://impri.dev/docs/human-approval-for-ai-content-pipelines.html
-- Human Approval for AI Recruiting Outreach: https://impri.dev/docs/human-approval-for-ai-recruiting-outreach.html
-- Human Approval for AI Sales Outreach Agents: https://impri.dev/docs/human-approval-for-ai-sales-outreach.html
-- Human Approval for Background AI Workers: https://impri.dev/docs/human-approval-for-background-ai-workers.html
-- Human Approval for Microsoft AutoGen Agents: https://impri.dev/docs/human-approval-autogen-agents.html
-- Human Approval for Scheduled AI Scripts: https://impri.dev/docs/human-approval-for-scheduled-ai-scripts.html
-- Human Approval for Solo-Founder AI Automations: https://impri.dev/docs/human-approval-for-solo-founder-automations.html
-- Human Approval for Unattended AI Agents: https://impri.dev/docs/human-approval-for-unattended-ai-agents.html
-- Human Approval for n8n AI Agent Workflows: https://impri.dev/docs/human-approval-n8n-ai-agent.html
-- Human Approval for the Vercel AI SDK: https://impri.dev/docs/human-approval-vercel-ai-sdk.html
-- Human Approval in Multi-Agent Systems: https://impri.dev/docs/human-approval-for-multi-agent-systems.html
-- Human Oversight for Agentic AI: https://impri.dev/docs/human-oversight-for-agentic-ai.html
-- Human-in-the-Loop Approval for LangChain Agents: https://impri.dev/docs/human-in-the-loop-for-langchain-agents.html
-- Human-in-the-Loop Checkpoints in LangGraph: https://impri.dev/docs/human-in-the-loop-langgraph.html
-- Human-in-the-Loop Tools for LLM Agents, Compared: https://impri.dev/docs/hitl-tools-for-llm-agents-compared.html
-- Human-in-the-Loop for AI Customer Support Agents: https://impri.dev/docs/human-in-the-loop-ai-customer-support.html
-- Human-in-the-Loop for Autonomous AI Agents: https://impri.dev/docs/human-in-the-loop-for-autonomous-agents.html
-- Human-in-the-Loop for CI/CD AI Agents: https://impri.dev/docs/human-in-the-loop-ci-cd-ai-agents.html
-- Human-in-the-Loop for DevOps AI Agents: https://impri.dev/docs/human-in-the-loop-for-devops-ai-agents.html
-- Human-in-the-Loop for E-commerce AI Agents: https://impri.dev/docs/human-in-the-loop-for-ecommerce-ai-agents.html
-- Human-in-the-Loop for LlamaIndex Agents: https://impri.dev/docs/human-in-the-loop-llamaindex-agents.html
-- Human-in-the-Loop for Personal AI Assistants: https://impri.dev/docs/human-in-the-loop-for-personal-ai-assistants.html
-- Human-in-the-Loop for Pydantic AI Agents: https://impri.dev/docs/human-in-the-loop-pydantic-ai.html
-- Human-in-the-Loop for RAG Agents That Take Actions: https://impri.dev/docs/human-in-the-loop-for-rag-agents-that-act.html
-- Human-in-the-Loop for the OpenAI Agents SDK: https://impri.dev/docs/human-in-the-loop-openai-agents-sdk.html
-- Human-in-the-Loop vs Full Autonomy for AI Agents: https://impri.dev/docs/human-in-the-loop-vs-full-autonomy.html
-- Open-Source Human-in-the-Loop Tools for AI Agents: https://impri.dev/docs/open-source-human-in-the-loop-tools.html
-- Prevent Prompt Injection From Executing Real Actions: https://impri.dev/docs/prevent-prompt-injection-from-executing-actions.html
-- REST API vs MCP for Human-in-the-Loop Approval: https://impri.dev/docs/rest-api-vs-mcp-for-human-approval.html
-- Require Human Approval Before an Agent Deletes Data: https://impri.dev/docs/human-approval-before-an-agent-deletes-data.html
-- Review AI Agent Decisions Before They Happen: https://impri.dev/docs/review-ai-agent-decisions-before-they-happen.html
-- Safe Autonomy: Let Agents Act, but Not Blindly: https://impri.dev/docs/safe-autonomy-for-ai-agents.html
-- Stop Your AI Agent From Sending Emails Without Approval: https://impri.dev/docs/stop-your-ai-agent-sending-emails-without-approval.html
-- What Is Human-in-the-Loop for AI Agents?: https://impri.dev/docs/what-is-human-in-the-loop-for-ai-agents.html
+- A Lightweight Alternative to Workflow Engines for HITL: https://impri.dev/docs/lightweight-alternative-to-workflow-engines-for-hitl
+- A Self-Hosted Approval Inbox for AI Agents: https://impri.dev/docs/self-hosted-approval-inbox-for-ai-agents
+- AI Agent Approval Queue: Build vs Buy: https://impri.dev/docs/build-vs-buy-ai-agent-approval-queue
+- AI Agent Guardrails for Real-World Actions: https://impri.dev/docs/ai-agent-guardrails-for-real-world-actions
+- Add Human Approval to a Cron Job: https://impri.dev/docs/gate-a-cron-job-with-human-approval
+- Add a Kill Switch to Your AI Agent: https://impri.dev/docs/add-a-kill-switch-to-your-ai-agent
+- Adding Human Approval to CrewAI Agents: https://impri.dev/docs/human-approval-for-crewai-agents
+- Alternatives to Building Your Own Agent Approval System: https://impri.dev/docs/alternatives-to-building-your-own-approval-system
+- An Approval Gate for AI Data Pipelines: https://impri.dev/docs/approval-gate-for-ai-data-pipelines
+- An Approval Gate for Agents That Run While You Sleep: https://impri.dev/docs/approval-gate-for-overnight-ai-agents
+- An Approval Gate for Webhook-Triggered Agents: https://impri.dev/docs/approval-gate-for-webhook-triggered-agents
+- An Approval Workflow for AI Marketing Automation: https://impri.dev/docs/approval-workflow-for-ai-marketing-automation
+- An MCP Approval Server for AI Agents: https://impri.dev/docs/mcp-approval-server-for-ai-agents
+- Approval Inbox vs Slack Buttons for Agent Sign-off: https://impri.dev/docs/approval-inbox-vs-slack-buttons
+- Approve AI Agent Actions From Slack: https://impri.dev/docs/approve-ai-agent-actions-from-slack
+- Approve AI Agent Actions From Your Phone: https://impri.dev/docs/approve-ai-agent-actions-from-your-phone
+- Approve AI-Generated Content Before Publishing: https://impri.dev/docs/approve-ai-generated-content-before-publishing
+- Approve Emails Before Your AI Agent Sends Them: https://impri.dev/docs/approve-emails-before-your-ai-agent-sends-them
+- Approve Payments Before Your AI Agent Charges a Card: https://impri.dev/docs/approve-ai-agent-payments-and-charges
+- Approve Refunds Issued by an AI Support Agent: https://impri.dev/docs/approve-refunds-issued-by-an-ai-support-agent
+- Approve Slack Messages From an AI Agent: https://impri.dev/docs/approve-slack-messages-from-an-ai-agent
+- Build an Audit Trail for AI Agent Actions: https://impri.dev/docs/audit-trail-for-ai-agent-actions
+- Gate Database Writes From an AI Agent: https://impri.dev/docs/approve-database-writes-from-an-ai-agent
+- How to Build a Human-in-the-Loop AI Agent: https://impri.dev/docs/how-to-build-a-human-in-the-loop-ai-agent
+- Human Approval Before an AI Agent Deploys Code: https://impri.dev/docs/human-approval-before-deploying-code-with-an-agent
+- Human Approval Before an Agent Posts to Social Media: https://impri.dev/docs/human-approval-before-an-agent-posts-to-social-media
+- Human Approval Before an Agent Sends SMS: https://impri.dev/docs/human-approval-before-an-agent-sends-sms
+- Human Approval Gates in the Claude Agent SDK: https://impri.dev/docs/human-approval-claude-agent-sdk
+- Human Approval for AI Content Pipelines: https://impri.dev/docs/human-approval-for-ai-content-pipelines
+- Human Approval for AI Recruiting Outreach: https://impri.dev/docs/human-approval-for-ai-recruiting-outreach
+- Human Approval for AI Sales Outreach Agents: https://impri.dev/docs/human-approval-for-ai-sales-outreach
+- Human Approval for Background AI Workers: https://impri.dev/docs/human-approval-for-background-ai-workers
+- Human Approval for Microsoft AutoGen Agents: https://impri.dev/docs/human-approval-autogen-agents
+- Human Approval for Scheduled AI Scripts: https://impri.dev/docs/human-approval-for-scheduled-ai-scripts
+- Human Approval for Solo-Founder AI Automations: https://impri.dev/docs/human-approval-for-solo-founder-automations
+- Human Approval for Unattended AI Agents: https://impri.dev/docs/human-approval-for-unattended-ai-agents
+- Human Approval for n8n AI Agent Workflows: https://impri.dev/docs/human-approval-n8n-ai-agent
+- Human Approval for the Vercel AI SDK: https://impri.dev/docs/human-approval-vercel-ai-sdk
+- Human Approval in Multi-Agent Systems: https://impri.dev/docs/human-approval-for-multi-agent-systems
+- Human Oversight for Agentic AI: https://impri.dev/docs/human-oversight-for-agentic-ai
+- Human-in-the-Loop Approval for LangChain Agents: https://impri.dev/docs/human-in-the-loop-for-langchain-agents
+- Human-in-the-Loop Checkpoints in LangGraph: https://impri.dev/docs/human-in-the-loop-langgraph
+- Human-in-the-Loop Tools for LLM Agents, Compared: https://impri.dev/docs/hitl-tools-for-llm-agents-compared
+- Human-in-the-Loop for AI Customer Support Agents: https://impri.dev/docs/human-in-the-loop-ai-customer-support
+- Human-in-the-Loop for Autonomous AI Agents: https://impri.dev/docs/human-in-the-loop-for-autonomous-agents
+- Human-in-the-Loop for CI/CD AI Agents: https://impri.dev/docs/human-in-the-loop-ci-cd-ai-agents
+- Human-in-the-Loop for DevOps AI Agents: https://impri.dev/docs/human-in-the-loop-for-devops-ai-agents
+- Human-in-the-Loop for E-commerce AI Agents: https://impri.dev/docs/human-in-the-loop-for-ecommerce-ai-agents
+- Human-in-the-Loop for LlamaIndex Agents: https://impri.dev/docs/human-in-the-loop-llamaindex-agents
+- Human-in-the-Loop for Personal AI Assistants: https://impri.dev/docs/human-in-the-loop-for-personal-ai-assistants
+- Human-in-the-Loop for Pydantic AI Agents: https://impri.dev/docs/human-in-the-loop-pydantic-ai
+- Human-in-the-Loop for RAG Agents That Take Actions: https://impri.dev/docs/human-in-the-loop-for-rag-agents-that-act
+- Human-in-the-Loop for the OpenAI Agents SDK: https://impri.dev/docs/human-in-the-loop-openai-agents-sdk
+- Human-in-the-Loop vs Full Autonomy for AI Agents: https://impri.dev/docs/human-in-the-loop-vs-full-autonomy
+- Open-Source Human-in-the-Loop Tools for AI Agents: https://impri.dev/docs/open-source-human-in-the-loop-tools
+- Prevent Prompt Injection From Executing Real Actions: https://impri.dev/docs/prevent-prompt-injection-from-executing-actions
+- REST API vs MCP for Human-in-the-Loop Approval: https://impri.dev/docs/rest-api-vs-mcp-for-human-approval
+- Require Human Approval Before an Agent Deletes Data: https://impri.dev/docs/human-approval-before-an-agent-deletes-data
+- Review AI Agent Decisions Before They Happen: https://impri.dev/docs/review-ai-agent-decisions-before-they-happen
+- Safe Autonomy: Let Agents Act, but Not Blindly: https://impri.dev/docs/safe-autonomy-for-ai-agents
+- Stop Your AI Agent From Sending Emails Without Approval: https://impri.dev/docs/stop-your-ai-agent-sending-emails-without-approval
+- What Is Human-in-the-Loop for AI Agents?: https://impri.dev/docs/what-is-human-in-the-loop-for-ai-agents

@@ -116,7 +116,7 @@ pre code.hljs{display:block;overflow-x:auto}
   <div class="nav-links">
     <a class="link" href="/#how">How it works</a>
     <a class="link" href="/#pricing">Pricing</a>
-    <a class="link active-nav" href="../docs.html">Docs</a>
+    <a class="link active-nav" href="../docs">Docs</a>
     <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
   </div>
 </div>
@@ -126,58 +126,58 @@ pre code.hljs{display:block;overflow-x:auto}
   <aside class="docs-sidebar" aria-label="Documentation navigation">
     <div class="sg">
 <div class="sg-label">Getting started</div>
-<a href="../docs/quickstart.html" class="sl">Quickstart</a>
-<a href="../docs/how-to-add-human-approval-to-an-ai-agent.html" class="sl">Human approval pattern</a>
-<a href="../docs/self-hosting.html" class="sl">Self-hosting</a>
-<a href="../docs/observability.html" class="sl">Observability</a>
+<a href="../docs/quickstart" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting" class="sl">Self-hosting</a>
+<a href="../docs/observability" class="sl">Observability</a>
 </div>
 <div class="sg">
 <div class="sg-label">API reference</div>
-<a href="../docs/api-keys.html" class="sl">API keys &amp; scopes</a>
-<a href="../docs/rules.html" class="sl">Rules engine</a>
-<a href="../docs/watcher-presets.html" class="sl">Watcher presets</a>
-<a href="../docs/notifications.html" class="sl">Notification channels</a>
-<a href="../docs/telegram-approval.html" class="sl">Telegram approval</a>
-<a href="../docs/slack-approval.html" class="sl">Slack approval</a>
-<a href="../docs/discord-approval.html" class="sl">Discord approval</a>
-<a href="../docs/audit-log.html" class="sl">Audit log</a>
-<a href="../docs/billing.html" class="sl">Billing &amp; tiers</a>
-<a href="../docs/gdpr.html" class="sl">GDPR &amp; data export</a>
-<a href="../docs/privacy.html" class="sl">Privacy policy</a>
-<a href="../docs/terms.html" class="sl">Terms of service</a>
-<a href="../docs/operator.html" class="sl">Operator / admin</a>
-<a href="../docs/account-recovery.html" class="sl">Account recovery</a>
+<a href="../docs/api-keys" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets" class="sl">Watcher presets</a>
+<a href="../docs/notifications" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval" class="sl">Slack approval</a>
+<a href="../docs/discord-approval" class="sl">Discord approval</a>
+<a href="../docs/audit-log" class="sl">Audit log</a>
+<a href="../docs/billing" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr" class="sl">GDPR &amp; data export</a>
+<a href="../docs/privacy" class="sl">Privacy policy</a>
+<a href="../docs/terms" class="sl">Terms of service</a>
+<a href="../docs/operator" class="sl">Operator / admin</a>
+<a href="../docs/account-recovery" class="sl">Account recovery</a>
 </div>
 <div class="sg">
 <div class="sg-label">SDKs</div>
-<a href="../docs/sdk-python.html" class="sl">Python SDK</a>
-<a href="../docs/sdk-typescript.html" class="sl">TypeScript SDK</a>
+<a href="../docs/sdk-python" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript" class="sl">TypeScript SDK</a>
 </div>
 <div class="sg">
 <div class="sg-label">Integrations</div>
-<a href="../docs/mcp.html" class="sl">MCP server</a>
-<a href="../docs/integrations.html" class="sl">LangChain / CrewAI / n8n</a>
-<a href="../docs/claude-agent-sdk.html" class="sl">Claude Agent SDK</a>
+<a href="../docs/mcp" class="sl">MCP server</a>
+<a href="../docs/integrations" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk" class="sl">Claude Agent SDK</a>
 </div>
 <div class="sg">
 <div class="sg-label">Inbox &amp; webhooks</div>
-<a href="../docs/inbox.html" class="sl">Inbox UX &amp; bulk decisions</a>
-<a href="../docs/webhooks.html" class="sl">Webhooks</a>
-<a href="../docs/web-push.html" class="sl">Web push</a>
+<a href="../docs/inbox" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks" class="sl">Webhooks</a>
+<a href="../docs/web-push" class="sl">Web push</a>
 </div>
 <div class="sg">
 <div class="sg-label">CLI</div>
-<a href="../docs/cli.html" class="sl">CLI reference</a>
+<a href="../docs/cli" class="sl">CLI reference</a>
 </div>
 <div class="sg">
 <div class="sg-label">Cookbook</div>
-<a href="../docs/cookbook.html" class="sl">Cookbook</a>
+<a href="../docs/cookbook" class="sl">Cookbook</a>
 </div>
   </aside>
 
   <main class="doc-main" id="main-content">
     <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../docs.html">Docs</a>
+      <a href="../docs">Docs</a>
       <span class="bc-sep">/</span>
       <span>Reference</span>
       <span class="bc-sep">/</span>
@@ -190,7 +190,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <p>Nobody asks for an audit trail before something goes wrong. They ask afterward: a customer says they never approved a refund email, a teammate wants to know why a blog post went live at 2 a.m., or a compliance review needs proof that every agent-initiated action had a named human behind it. If the only record is scattered application logs — or worse, nothing — there&#39;s no good answer.</p>
 <p>An audit trail for agent actions needs three things to actually hold up: it has to record the <em>proposal</em> separately from the <em>decision</em>, it has to know <em>who</em> decided (not just that someone did), and it has to be tamper-resistant enough that nobody can quietly edit history after the fact.</p>
 <h2 id="what-gets-logged-automatically-just-by-using-the-gate">What gets logged, automatically, just by using the gate</h2>
-<p>If your agent already routes side-effecting actions through an approval gate, the audit trail is a side effect of that gate rather than something you build separately. Every action pushed through Impri writes an append-only row for its full lifecycle — created, rule-applied, approved or rejected, expired, executed or failed — with no route to edit or delete an individual entry after the fact. See <a href="audit-log.html">audit-log</a> for the full schema.</p>
+<p>If your agent already routes side-effecting actions through an approval gate, the audit trail is a side effect of that gate rather than something you build separately. Every action pushed through Impri writes an append-only row for its full lifecycle — created, rule-applied, approved or rejected, expired, executed or failed — with no route to edit or delete an individual entry after the fact. See <a href="audit-log">audit-log</a> for the full schema.</p>
 <p>The part that matters for accountability: decisions made through chat approval channels record a human-readable actor, not just a key ID.</p>
 <div class="table-wrap"><table>
 <thead>
@@ -252,9 +252,9 @@ pre code.hljs{display:block;overflow-x:auto}
   -o agent-actions-q3.csv</code></pre></div>
 <p>This is rate-limited to 5 requests/minute per key — it&#39;s built for periodic pulls, not for polling in a loop. If you need per-request retention limits for a compliance framework (e.g., &quot;keep 180 days, no more&quot;), that&#39;s a <code>AUDIT_RETENTION_DAYS</code> setting on the instance, not something the export call itself controls.</p>
 <h2 id="what-this-doesn39t-give-you">What this doesn&#39;t give you</h2>
-<p>The audit trail records that an action happened and who decided it — it does not evaluate whether the decision was <em>correct</em>. If a human approves a bad draft, that approval is logged faithfully; Impri does not second-guess a human reviewer&#39;s judgment, and it&#39;s not a content moderation system. It also only covers actions that actually went through the gate: if your agent has a side channel to the same service (a raw API key it can call directly instead of going through the wrapped executor), that path leaves no row here at all. The trail is only as complete as the chokepoint is real — see <a href="integrations.html">the SDK integrations</a> for wrapping the executor so there is no second path.</p>
+<p>The audit trail records that an action happened and who decided it — it does not evaluate whether the decision was <em>correct</em>. If a human approves a bad draft, that approval is logged faithfully; Impri does not second-guess a human reviewer&#39;s judgment, and it&#39;s not a content moderation system. It also only covers actions that actually went through the gate: if your agent has a side channel to the same service (a raw API key it can call directly instead of going through the wrapped executor), that path leaves no row here at all. The trail is only as complete as the chokepoint is real — see <a href="integrations">the SDK integrations</a> for wrapping the executor so there is no second path.</p>
 <h2 id="getting-a-key-and-pushing-your-first-action">Getting a key and pushing your first action</h2>
-<p>If you haven&#39;t wired up the push/poll/execute pattern yet, <a href="how-to-add-human-approval-to-an-ai-agent.html">How to Add Human Approval to an AI Agent</a> covers the three calls end to end, and <a href="quickstart.html">quickstart</a> walks through getting an API key on cloud or self-host.</p>
+<p>If you haven&#39;t wired up the push/poll/execute pattern yet, <a href="how-to-add-human-approval-to-an-ai-agent">How to Add Human Approval to an AI Agent</a> covers the three calls end to end, and <a href="quickstart">quickstart</a> walks through getting an API key on cloud or self-host.</p>
 
   </main>
 
@@ -278,11 +278,11 @@ pre code.hljs{display:block;overflow-x:auto}
   </a>
   <div>
     <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
-    <a href="/docs.html">Docs</a>
+    <a href="/docs">Docs</a>
     <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
     <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
-    <a href="/docs/privacy.html">Privacy</a>
-    <a href="/docs/terms.html">Terms</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/terms">Terms</a>
     <a href="https://sekera.dev">Contact</a>
   </div>
 </div>
