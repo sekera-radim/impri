@@ -578,7 +578,9 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - An Approval Workflow for AI Marketing Automation: https://impri.dev/docs/approval-workflow-for-ai-marketing-automation
 - An MCP Approval Server for AI Agents: https://impri.dev/docs/mcp-approval-server-for-ai-agents
 - Approval Inbox vs Slack Buttons for Agent Sign-off: https://impri.dev/docs/approval-inbox-vs-slack-buttons
+- Approve AI Agent Actions From Discord: https://impri.dev/docs/approve-ai-agent-actions-from-discord
 - Approve AI Agent Actions From Slack: https://impri.dev/docs/approve-ai-agent-actions-from-slack
+- Approve AI Agent Actions From Telegram: https://impri.dev/docs/approve-ai-agent-actions-from-telegram
 - Approve AI Agent Actions From Your Phone: https://impri.dev/docs/approve-ai-agent-actions-from-your-phone
 - Approve AI-Generated Content Before Publishing: https://impri.dev/docs/approve-ai-generated-content-before-publishing
 - Approve Emails Before Your AI Agent Sends Them: https://impri.dev/docs/approve-emails-before-your-ai-agent-sends-them
