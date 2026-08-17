@@ -575,6 +575,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - An Approval Gate for AI Data Pipelines: https://impri.dev/docs/approval-gate-for-ai-data-pipelines
 - An Approval Gate for Agents That Run While You Sleep: https://impri.dev/docs/approval-gate-for-overnight-ai-agents
 - An Approval Gate for Webhook-Triggered Agents: https://impri.dev/docs/approval-gate-for-webhook-triggered-agents
+- An Approval Inbox for AI Agents: https://impri.dev/docs/approval-inbox-for-ai-agents
 - An Approval Workflow for AI Marketing Automation: https://impri.dev/docs/approval-workflow-for-ai-marketing-automation
 - An MCP Approval Server for AI Agents: https://impri.dev/docs/mcp-approval-server-for-ai-agents
 - Approval Inbox vs Slack Buttons for Agent Sign-off: https://impri.dev/docs/approval-inbox-vs-slack-buttons
