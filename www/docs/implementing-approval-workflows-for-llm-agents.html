@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Implementing Approval Workflows for LLM Agents — Impri Docs</title>
+<meta name="description" content="An approval workflow for an LLM agent means one thing in practice: the agent proposes, a human decides, and the side effect only fires after that decision — here&amp;#39;s how to wire it in.">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Implementing Approval Workflows for LLM Agents — Impri Docs">
+<meta property="og:description" content="An approval workflow for an LLM agent means one thing in practice: the agent proposes, a human decides, and the side effect only fires after that decision — here&amp;#39;s how to wire it in.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://impri.dev/docs/implementing-approval-workflows-for-llm-agents">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://impri.dev/docs/implementing-approval-workflows-for-llm-agents">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Implementing Approval Workflows for LLM Agents","description":"An approval workflow for an LLM agent means one thing in practice: the agent proposes, a human decides, and the side effect only fires after that decision — here&#39;s how to wire it in.","url":"https://impri.dev/docs/implementing-approval-workflows-for-llm-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting" class="sl">Self-hosting</a>
+<a href="../docs/observability" class="sl">Observability</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets" class="sl">Watcher presets</a>
+<a href="../docs/notifications" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval" class="sl">Slack approval</a>
+<a href="../docs/discord-approval" class="sl">Discord approval</a>
+<a href="../docs/audit-log" class="sl">Audit log</a>
+<a href="../docs/billing" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr" class="sl">GDPR &amp; data export</a>
+<a href="../docs/privacy" class="sl">Privacy policy</a>
+<a href="../docs/terms" class="sl">Terms of service</a>
+<a href="../docs/operator" class="sl">Operator / admin</a>
+<a href="../docs/account-recovery" class="sl">Account recovery</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp" class="sl">MCP server</a>
+<a href="../docs/integrations" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks" class="sl">Webhooks</a>
+<a href="../docs/web-push" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Reference</span>
+      <span class="bc-sep">/</span>
+      <span>Implementing Approval Workflows for LLM Agents</span>
+    </nav>
+    <h1>Implementing Approval Workflows for LLM Agents</h1>
+<p>An approval workflow for an LLM agent means one thing in practice: the agent proposes, a human decides, and the side effect only fires after that decision — here&#39;s how to wire it in.</p>
+<hr>
+<h2 id="where-this-fits-in-an-agent39s-control-loop">Where this fits in an agent&#39;s control loop</h2>
+<p>Most LLM agent frameworks (LangChain, a custom ReAct loop, whatever you rolled yourself) already have a point where the agent decides &quot;call this tool now.&quot; An approval workflow inserts a pause at that exact point for any tool with a real-world side effect — sending something, writing to a database, spending money. The tool call is split into two halves: a <strong>propose</strong> call that never touches the real system, and an <strong>execute</strong> call that only runs after a human decision comes back.</p>
+<p>This is different from asking the LLM to &quot;confirm before acting&quot; in its system prompt. A prompt instruction is advisory — the model can be talked past it by a bad context, a prompt injection in tool output, or just a wrong turn in reasoning. A workflow needs an actual data dependency: the execute code path must be unreachable without an external <code>approved</code> status.</p>
+<h2 id="building-the-workflow-with-impri">Building the workflow with Impri</h2>
+<p>Impri gives you three calls that form this workflow: push the action, wait for a decision, execute and report. Here&#39;s a Python agent function that wraps a &quot;create a support ticket refund&quot; tool:</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> requests
+<span class="hljs-keyword">import</span> time
+
+IMPRI_BASE = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
+API_KEY = <span class="hljs-string">&quot;im_your_key_here&quot;</span>
+HEADERS = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{API_KEY}</span>&quot;</span>}
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">request_approval</span>(<span class="hljs-params">kind, title, body, editable=<span class="hljs-literal">None</span>, expires_in=<span class="hljs-number">3600</span></span>):
+    resp = requests.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions&quot;</span>, headers=HEADERS, json={
+        <span class="hljs-string">&quot;kind&quot;</span>: kind,
+        <span class="hljs-string">&quot;title&quot;</span>: title,
+        <span class="hljs-string">&quot;preview&quot;</span>: {<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: body},
+        <span class="hljs-string">&quot;editable&quot;</span>: editable <span class="hljs-keyword">or</span> [],
+        <span class="hljs-string">&quot;expires_in&quot;</span>: expires_in,
+    })
+    <span class="hljs-keyword">return</span> resp.json()[<span class="hljs-string">&quot;id&quot;</span>]
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">wait_for_decision</span>(<span class="hljs-params">action_id, poll_every=<span class="hljs-number">5</span></span>):
+    <span class="hljs-keyword">while</span> <span class="hljs-literal">True</span>:
+        resp = requests.get(<span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>&quot;</span>, headers=HEADERS)
+        data = resp.json()
+        <span class="hljs-keyword">if</span> data[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;pending&quot;</span>:
+            <span class="hljs-keyword">return</span> data
+        time.sleep(poll_every)
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">issue_refund_with_approval</span>(<span class="hljs-params">order_id, amount, reason</span>):
+    action_id = request_approval(
+        kind=<span class="hljs-string">&quot;payment.refund&quot;</span>,
+        title=<span class="hljs-string">f&quot;Refund $<span class="hljs-subst">{amount}</span> for order <span class="hljs-subst">{order_id}</span>&quot;</span>,
+        body=<span class="hljs-string">f&quot;Reason: <span class="hljs-subst">{reason}</span>\nOrder: <span class="hljs-subst">{order_id}</span>\nAmount: $<span class="hljs-subst">{amount}</span>&quot;</span>,
+        editable=[<span class="hljs-string">&quot;preview.body&quot;</span>],
+    )
+    decision = wait_for_decision(action_id)
+
+    <span class="hljs-keyword">if</span> decision[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;approved&quot;</span>:
+        <span class="hljs-keyword">return</span> {<span class="hljs-string">&quot;executed&quot;</span>: <span class="hljs-literal">False</span>, <span class="hljs-string">&quot;status&quot;</span>: decision[<span class="hljs-string">&quot;status&quot;</span>]}
+
+    <span class="hljs-comment"># Real side effect only happens here, after approval</span>
+    payment_api.refund(order_id, amount)
+
+    requests.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>/result&quot;</span>,
+                   headers=HEADERS, json={<span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;executed&quot;</span>})
+    <span class="hljs-keyword">return</span> {<span class="hljs-string">&quot;executed&quot;</span>: <span class="hljs-literal">True</span>}</code></pre></div>
+<p>The agent&#39;s tool-calling code calls <code>issue_refund_with_approval</code> instead of a direct <code>payment_api.refund</code>. That substitution is the entire integration — no framework-specific glue required, because the workflow lives outside the LLM&#39;s reasoning loop entirely.</p>
+<hr>
+<h2 id="designing-the-workflow-not-just-the-api-calls">Designing the workflow, not just the API calls</h2>
+<p>Wiring three HTTP calls is the easy part. The workflow design decisions that actually matter:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Decision</th>
+<th>Guidance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Which tools get gated</td>
+<td>Anything with an external side effect: send, post, pay, delete, deploy. Read-only tools don&#39;t need a gate.</td>
+</tr>
+<tr>
+<td>Expiry per action kind</td>
+<td>Short for time-sensitive actions (a live chat reply), longer for batch review (end-of-day content queue).</td>
+</tr>
+<tr>
+<td>Who can edit before approving</td>
+<td>Set <code>editable</code> only on fields a reviewer should be able to fix without rejecting outright — usually just the draft body.</td>
+</tr>
+<tr>
+<td>What happens on reject/expire</td>
+<td>Treat both the same: log it, don&#39;t retry silently, optionally let the agent re-propose if the underlying task is still relevant.</td>
+</tr>
+</tbody></table>
+</div>
+<p>One workflow mistake worth naming explicitly: gating the <em>call</em> but leaving the agent holding a credential that can reach the same system directly. If the agent&#39;s code (or a tool it can invoke) still has the raw API key for the payment provider, it can route around the approval step entirely. The gate only works if the wrapped function is the agent&#39;s only path to the side effect — see <a href="how-to-add-human-approval-to-an-ai-agent">how this actually gates execution</a> for the full argument.</p>
+<h2 id="multi-step-agents-and-workflow-ordering">Multi-step agents and workflow ordering</h2>
+<p>If your agent runs several actions in sequence — draft a refund, then email the customer about it — decide whether each step needs its own approval or whether one approval covers the batch. Impri doesn&#39;t orchestrate multi-step sequencing itself; it holds individual decisions. For agents that need branching logic across many gated steps, treat Impri as the approval primitive inside a larger orchestration layer (an n8n workflow, a Temporal workflow, or your own state machine) rather than trying to make the approval API do the sequencing.</p>
+<hr>
+<h2 id="reporting-outcomes-back">Reporting outcomes back</h2>
+<p>Don&#39;t skip the <code>POST /v1/actions/:id/result</code> call. Without it, an approved action has no record of whether execution actually succeeded — which matters when you&#39;re debugging why a customer says they never got their refund. Pass <code>status: &quot;execute_failed&quot;</code> if your side-effect call throws, so the failure shows up on the action instead of silently vanishing from the agent&#39;s logs.</p>
+<h2 id="next-step">Next step</h2>
+<p>Start with the <a href="quickstart">quickstart</a> to get an API key, then wire in <a href="mcp">MCP</a> if your agent runs inside a client that supports it — it collapses these three calls into three tool calls with no HTTP code at all.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#where-this-fits-in-an-agent39s-control-loop">Where this fits in an agent's control loop</a></li>
+<li class="ptoc-h2"><a href="#building-the-workflow-with-impri">Building the workflow with Impri</a></li>
+<li class="ptoc-h2"><a href="#designing-the-workflow-not-just-the-api-calls">Designing the workflow, not just the API calls</a></li>
+<li class="ptoc-h2"><a href="#multi-step-agents-and-workflow-ordering">Multi-step agents and workflow ordering</a></li>
+<li class="ptoc-h2"><a href="#reporting-outcomes-back">Reporting outcomes back</a></li>
+<li class="ptoc-h2"><a href="#next-step">Next step</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/terms">Terms</a>
+    <a href="https://sekera.dev">Contact</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>.</span></div>
+</footer>
+</body>
+</html>

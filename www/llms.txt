@@ -571,6 +571,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Add Human Approval to a Cron Job: https://impri.dev/docs/gate-a-cron-job-with-human-approval
 - Add a Kill Switch to Your AI Agent: https://impri.dev/docs/add-a-kill-switch-to-your-ai-agent
 - Adding Human Approval to CrewAI Agents: https://impri.dev/docs/human-approval-for-crewai-agents
+- Adding an Audit Log to Your AI Agent: https://impri.dev/docs/adding-an-audit-log-to-your-ai-agent
 - Alternatives to Building Your Own Agent Approval System: https://impri.dev/docs/alternatives-to-building-your-own-approval-system
 - An Approval Gate for AI Data Pipelines: https://impri.dev/docs/approval-gate-for-ai-data-pipelines
 - An Approval Gate for Agents That Run While You Sleep: https://impri.dev/docs/approval-gate-for-overnight-ai-agents
@@ -593,6 +594,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Edit AI Agent Drafts Before You Approve Them: https://impri.dev/docs/edit-ai-agent-drafts-before-approving
 - Gate Database Writes From an AI Agent: https://impri.dev/docs/approve-database-writes-from-an-ai-agent
 - How to Build a Human-in-the-Loop AI Agent: https://impri.dev/docs/how-to-build-a-human-in-the-loop-ai-agent
+- How to Review AI-Generated Content Before It Goes Out: https://impri.dev/docs/how-to-review-ai-content-before-it-goes-out
 - Human Approval Before an AI Agent Deploys Code: https://impri.dev/docs/human-approval-before-deploying-code-with-an-agent
 - Human Approval Before an Agent Posts to Social Media: https://impri.dev/docs/human-approval-before-an-agent-posts-to-social-media
 - Human Approval Before an Agent Sends SMS: https://impri.dev/docs/human-approval-before-an-agent-sends-sms
@@ -623,6 +625,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human-in-the-Loop for RAG Agents That Take Actions: https://impri.dev/docs/human-in-the-loop-for-rag-agents-that-act
 - Human-in-the-Loop for the OpenAI Agents SDK: https://impri.dev/docs/human-in-the-loop-openai-agents-sdk
 - Human-in-the-Loop vs Full Autonomy for AI Agents: https://impri.dev/docs/human-in-the-loop-vs-full-autonomy
+- Implementing Approval Workflows for LLM Agents: https://impri.dev/docs/implementing-approval-workflows-for-llm-agents
 - Mobile Approvals for AI Agents: https://impri.dev/docs/mobile-approvals-for-ai-agents
 - One-Tap Approve/Reject for AI Agent Actions: https://impri.dev/docs/one-tap-approve-reject-for-ai-agents
 - Open-Source Human-in-the-Loop Tools for AI Agents: https://impri.dev/docs/open-source-human-in-the-loop-tools
@@ -632,6 +635,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Review AI Agent Decisions Before They Happen: https://impri.dev/docs/review-ai-agent-decisions-before-they-happen
 - Safe Autonomy: Let Agents Act, but Not Blindly: https://impri.dev/docs/safe-autonomy-for-ai-agents
 - Stop Your AI Agent From Sending Emails Without Approval: https://impri.dev/docs/stop-your-ai-agent-sending-emails-without-approval
+- The Propose, Approve, Execute Pattern for AI Agents: https://impri.dev/docs/the-propose-approve-execute-pattern
 - Web Push Notifications for Agent Approvals: https://impri.dev/docs/web-push-notifications-for-agent-approvals
 - What Is Human-in-the-Loop for AI Agents?: https://impri.dev/docs/what-is-human-in-the-loop-for-ai-agents
 - ntfy Notifications for AI Agent Approvals: https://impri.dev/docs/ntfy-notifications-for-ai-agent-approvals
