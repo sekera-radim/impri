@@ -594,6 +594,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Build an Audit Trail for AI Agent Actions: https://impri.dev/docs/audit-trail-for-ai-agent-actions
 - Edit AI Agent Drafts Before You Approve Them: https://impri.dev/docs/edit-ai-agent-drafts-before-approving
 - Gate Database Writes From an AI Agent: https://impri.dev/docs/approve-database-writes-from-an-ai-agent
+- Handling Approval Timeouts and Expiry in Agents: https://impri.dev/docs/handling-approval-timeouts-and-expiry-in-agents
 - How to Build a Human-in-the-Loop AI Agent: https://impri.dev/docs/how-to-build-a-human-in-the-loop-ai-agent
 - How to Pause an AI Agent for Human Input: https://impri.dev/docs/how-to-pause-an-ai-agent-for-human-input
 - How to Review AI-Generated Content Before It Goes Out: https://impri.dev/docs/how-to-review-ai-content-before-it-goes-out
@@ -640,4 +641,5 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - The Propose, Approve, Execute Pattern for AI Agents: https://impri.dev/docs/the-propose-approve-execute-pattern
 - Web Push Notifications for Agent Approvals: https://impri.dev/docs/web-push-notifications-for-agent-approvals
 - What Is Human-in-the-Loop for AI Agents?: https://impri.dev/docs/what-is-human-in-the-loop-for-ai-agents
+- Wrapping an Agent Tool With a Human Approval Step: https://impri.dev/docs/wrapping-a-tool-with-a-human-approval-step
 - ntfy Notifications for AI Agent Approvals: https://impri.dev/docs/ntfy-notifications-for-ai-agent-approvals
