@@ -963,23 +963,38 @@ describe('GET /v1/audit/export — retention boundary', () => {
   });
 
   it('export rate-limits at 5 requests/min per key', async () => {
-    const { app, adminKey: key } = await setup();
+    // Frozen clock: the limiter buckets by wall-clock minute (Math.floor(now/60)*60 in
+    // checkRateLimit), so a run that straddles a minute boundary resets the counter and the
+    // 6th export comes back 200 instead of 429. Pipeline #2787972755 hit exactly that — all
+    // six requests landed in the last 470ms of the minute (06:20:59.468–.930) and the 6th
+    // asked the limiter after 06:21:00. Same fix as the recovery-code limiter test.
+    // toFake: ['Date'] only — faking timers would stall fastify.
+    vi.useFakeTimers({ shouldAdvanceTime: true, toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-01-01T00:00:05Z'));
 
-    // Hit the rate limit
-    for (let i = 0; i < 5; i++) {
-      const r = await app.inject({
+    try {
+      const { app, adminKey: key } = await setup();
+
+      // Hit the rate limit
+      for (let i = 0; i < 5; i++) {
+        const r = await app.inject({
+          method: 'GET',
+          url: '/v1/audit/export',
+          headers: { Authorization: `Bearer ${key}` },
+        });
+        expect(r.statusCode).toBe(200);
+      }
+      const blocked = await app.inject({
         method: 'GET',
         url: '/v1/audit/export',
         headers: { Authorization: `Bearer ${key}` },
       });
-      expect(r.statusCode).toBe(200);
+      expect(blocked.statusCode).toBe(429);
+    } finally {
+      // Restore even when an assertion throws — a leaked frozen clock would poison
+      // every later test in this file.
+      vi.useRealTimers();
     }
-    const blocked = await app.inject({
-      method: 'GET',
-      url: '/v1/audit/export',
-      headers: { Authorization: `Bearer ${key}` },
-    });
-    expect(blocked.statusCode).toBe(429);
   });
 });
 
