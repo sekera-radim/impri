@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Human Approval for Real Estate AI Agents — Impri Docs</title>
+<meta name="description" content="Real estate AI agents reply to leads, draft listing descriptions, and propose showing times — this shows how to put a human approval step in front of every one of those before they reach a client&amp;#39;">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Human Approval for Real Estate AI Agents — Impri Docs">
+<meta property="og:description" content="Real estate AI agents reply to leads, draft listing descriptions, and propose showing times — this shows how to put a human approval step in front of every one of those before they reach a client&amp;#39;">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://impri.dev/docs/human-approval-for-real-estate-ai-agents">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://impri.dev/docs/human-approval-for-real-estate-ai-agents">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human Approval for Real Estate AI Agents","description":"Real estate AI agents reply to leads, draft listing descriptions, and propose showing times — this shows how to put a human approval step in front of every one of those before they reach a client&#39;","url":"https://impri.dev/docs/human-approval-for-real-estate-ai-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting" class="sl">Self-hosting</a>
+<a href="../docs/observability" class="sl">Observability</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets" class="sl">Watcher presets</a>
+<a href="../docs/notifications" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval" class="sl">Slack approval</a>
+<a href="../docs/discord-approval" class="sl">Discord approval</a>
+<a href="../docs/audit-log" class="sl">Audit log</a>
+<a href="../docs/billing" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr" class="sl">GDPR &amp; data export</a>
+<a href="../docs/privacy" class="sl">Privacy policy</a>
+<a href="../docs/terms" class="sl">Terms of service</a>
+<a href="../docs/operator" class="sl">Operator / admin</a>
+<a href="../docs/account-recovery" class="sl">Account recovery</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp" class="sl">MCP server</a>
+<a href="../docs/integrations" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks" class="sl">Webhooks</a>
+<a href="../docs/web-push" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Reference</span>
+      <span class="bc-sep">/</span>
+      <span>Human Approval for Real Estate AI Agents</span>
+    </nav>
+    <h1>Human Approval for Real Estate AI Agents</h1>
+<p>Real estate AI agents reply to leads, draft listing descriptions, and propose showing times — this shows how to put a human approval step in front of every one of those before they reach a client&#39;s inbox.</p>
+<hr>
+<h2 id="where-this-goes-wrong-without-a-gate">Where this goes wrong without a gate</h2>
+<p>A lead-response agent hooked up to a CRM is one of the more tempting automations in real estate — inbound inquiries about a listing arrive at all hours, and a fast reply matters. It&#39;s also a place where an ungated agent causes real damage: quoting a price that changed last week, confirming a showing time the agent double-booked, or replying to a fair-housing-sensitive question with language a broker would never approve. None of these need malice — a stale context window or a bad scrape of the listing feed is enough.</p>
+<p>The fix isn&#39;t a stricter prompt. It&#39;s making the send/confirm call structurally unreachable until a person has actually looked at the draft and said yes.</p>
+<h2 id="three-calls-in-typescript">Three calls, in TypeScript</h2>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> fetch <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;node-fetch&quot;</span>;
+
+<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">BASE</span> = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>;
+<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">KEY</span> = process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_API_KEY</span>!;
+<span class="hljs-keyword">const</span> headers = {
+  <span class="hljs-title class_">Authorization</span>: <span class="hljs-string">`Bearer <span class="hljs-subst">${KEY}</span>`</span>,
+  <span class="hljs-string">&quot;Content-Type&quot;</span>: <span class="hljs-string">&quot;application/json&quot;</span>,
+};
+
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">proposeLeadReply</span>(<span class="hljs-params"><span class="hljs-attr">leadName</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">listingAddress</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">draft</span>: <span class="hljs-built_in">string</span></span>) {
+  <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${BASE}</span>/v1/actions`</span>, {
+    <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>,
+    headers,
+    <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({
+      <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;email.send&quot;</span>,
+      <span class="hljs-attr">title</span>: <span class="hljs-string">`Lead reply: <span class="hljs-subst">${leadName}</span> — <span class="hljs-subst">${listingAddress}</span>`</span>,
+      <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: draft },
+      <span class="hljs-attr">expires_in</span>: <span class="hljs-number">3600</span>, <span class="hljs-comment">// leads go cold fast — 1 hour, not the 72h default</span>
+      <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
+    }),
+  });
+  <span class="hljs-keyword">const</span> { id } = <span class="hljs-keyword">await</span> res.<span class="hljs-title function_">json</span>();
+  <span class="hljs-keyword">return</span> id <span class="hljs-keyword">as</span> <span class="hljs-built_in">string</span>;
+}
+
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">awaitDecision</span>(<span class="hljs-params"><span class="hljs-attr">actionId</span>: <span class="hljs-built_in">string</span></span>) {
+  <span class="hljs-keyword">while</span> (<span class="hljs-literal">true</span>) {
+    <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${BASE}</span>/v1/actions/<span class="hljs-subst">${actionId}</span>`</span>, { headers });
+    <span class="hljs-keyword">const</span> data = <span class="hljs-keyword">await</span> res.<span class="hljs-title function_">json</span>();
+    <span class="hljs-keyword">if</span> (data.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;pending&quot;</span>) <span class="hljs-keyword">return</span> data;
+    <span class="hljs-keyword">await</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Promise</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> <span class="hljs-built_in">setTimeout</span>(r, <span class="hljs-number">8000</span>));
+  }
+}
+
+<span class="hljs-keyword">const</span> actionId = <span class="hljs-keyword">await</span> <span class="hljs-title function_">proposeLeadReply</span>(
+  <span class="hljs-string">&quot;Priya Nair&quot;</span>,
+  <span class="hljs-string">&quot;412 Elm St, Unit 3B&quot;</span>,
+  <span class="hljs-string">&quot;Hi Priya, thanks for asking about 412 Elm St — it&#x27;s still available and we can set up a showing this week...&quot;</span>,
+);
+<span class="hljs-keyword">const</span> decision = <span class="hljs-keyword">await</span> <span class="hljs-title function_">awaitDecision</span>(actionId);
+
+<span class="hljs-keyword">if</span> (decision.<span class="hljs-property">status</span> === <span class="hljs-string">&quot;approved&quot;</span>) {
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">sendReply</span>(decision.<span class="hljs-property">decision</span>.<span class="hljs-property">final_preview</span>.<span class="hljs-property">body</span>); <span class="hljs-comment">// your CRM/email call</span>
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${BASE}</span>/v1/actions/<span class="hljs-subst">${actionId}</span>/result`</span>, {
+    <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>,
+    headers,
+    <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({ <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span> }),
+  });
+}</code></pre></div>
+<p>If the agent instead confirms a showing time or updates a listing price, the shape doesn&#39;t change — only <code>kind</code>, <code>title</code>, and the preview body do.</p>
+<h2 id="not-every-real-estate-action-needs-the-same-urgency">Not every real estate action needs the same urgency</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Typical <code>expires_in</code></th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Lead reply</td>
+<td>1 hour (<code>3600</code>)</td>
+<td>Inbound interest cools fast; a day-old reply reads as ignored</td>
+</tr>
+<tr>
+<td>Showing confirmation</td>
+<td>4–8 hours</td>
+<td>Needs a person to check their actual calendar, not just approve text</td>
+</tr>
+<tr>
+<td>Listing description update</td>
+<td>24–72 hours</td>
+<td>Lower urgency, more scrutiny — brokers often want to read it carefully</td>
+</tr>
+<tr>
+<td>Price change announcement</td>
+<td>Default 72h or longer</td>
+<td>High-stakes, rarely time-sensitive in the same-day sense</td>
+</tr>
+</tbody></table>
+</div>
+<p>Set <code>expires_in</code> per <code>kind</code> rather than using one value everywhere — a stale lead reply and a stale price change are different failure modes, and the API&#39;s 300s–30d range gives room for both.</p>
+<h2 id="the-broker-still-owns-the-words">The broker still owns the words</h2>
+<p>Set <code>editable: [&quot;preview.body&quot;]</code> and a broker can tighten a lead reply&#39;s tone or correct a detail the agent got wrong, right on the approval card, before it goes out. <code>decision.diff</code> gives a record of what they changed — useful if a client later disputes what was said about a listing. Execute with <code>decision.final_preview.body</code>, not the agent&#39;s original draft; the API never lets the original slip back in.</p>
+<h2 id="impri-is-the-gate-not-the-crm">Impri is the gate, not the CRM</h2>
+<p>Impri doesn&#39;t know your MLS data, doesn&#39;t verify a listing is still active, and doesn&#39;t check a calendar for conflicts — it stores the proposed action, notifies whoever should review it, and holds the decision until they respond. That&#39;s the whole job. If your agent still holds a raw CRM or SMTP credential it can call directly instead of going through the wrapped send function, the gate can be routed around — wire the approval into the actual send path, not next to it (see the <a href="integrations">integrations guide</a>).</p>
+<p>It&#39;s also not a scheduling engine — if you need real calendar-conflict resolution across multiple agents and showings, that logic belongs in your CRM or booking tool, with Impri sitting in front of the one step that sends a message to a client.</p>
+<h2 id="next-step">Next step</h2>
+<p>Get a key from the <a href="quickstart">quickstart</a>, then check the <a href="sdk-typescript">TypeScript SDK</a> if you&#39;d rather not write the fetch calls above by hand.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#where-this-goes-wrong-without-a-gate">Where this goes wrong without a gate</a></li>
+<li class="ptoc-h2"><a href="#three-calls-in-typescript">Three calls, in TypeScript</a></li>
+<li class="ptoc-h2"><a href="#not-every-real-estate-action-needs-the-same-urgency">Not every real estate action needs the same urgency</a></li>
+<li class="ptoc-h2"><a href="#the-broker-still-owns-the-words">The broker still owns the words</a></li>
+<li class="ptoc-h2"><a href="#impri-is-the-gate-not-the-crm">Impri is the gate, not the CRM</a></li>
+<li class="ptoc-h2"><a href="#next-step">Next step</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/terms">Terms</a>
+    <a href="https://sekera.dev">Contact</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>.</span></div>
+</footer>
+</body>
+</html>

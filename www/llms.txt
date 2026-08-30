@@ -572,6 +572,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Add a Kill Switch to Your AI Agent: https://impri.dev/docs/add-a-kill-switch-to-your-ai-agent
 - Adding Human Approval to CrewAI Agents: https://impri.dev/docs/human-approval-for-crewai-agents
 - Adding an Audit Log to Your AI Agent: https://impri.dev/docs/adding-an-audit-log-to-your-ai-agent
+- Agentic AI Safety Patterns: https://impri.dev/docs/agentic-ai-safety-patterns
 - Alternatives to Building Your Own Agent Approval System: https://impri.dev/docs/alternatives-to-building-your-own-approval-system
 - An Approval Gate for AI Data Pipelines: https://impri.dev/docs/approval-gate-for-ai-data-pipelines
 - An Approval Gate for Agents That Run While You Sleep: https://impri.dev/docs/approval-gate-for-overnight-ai-agents
@@ -607,10 +608,12 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human Approval for AI Content Pipelines: https://impri.dev/docs/human-approval-for-ai-content-pipelines
 - Human Approval for AI Recruiting Outreach: https://impri.dev/docs/human-approval-for-ai-recruiting-outreach
 - Human Approval for AI Sales Outreach Agents: https://impri.dev/docs/human-approval-for-ai-sales-outreach
+- Human Approval for AI Social Media Management: https://impri.dev/docs/human-approval-for-ai-social-media-management
 - Human Approval for Background AI Workers: https://impri.dev/docs/human-approval-for-background-ai-workers
 - Human Approval for Fintech AI Agents: https://impri.dev/docs/human-approval-for-fintech-ai-agents
 - Human Approval for Legal AI Agents: https://impri.dev/docs/human-approval-for-legal-ai-agents
 - Human Approval for Microsoft AutoGen Agents: https://impri.dev/docs/human-approval-autogen-agents
+- Human Approval for Real Estate AI Agents: https://impri.dev/docs/human-approval-for-real-estate-ai-agents
 - Human Approval for Scheduled AI Scripts: https://impri.dev/docs/human-approval-for-scheduled-ai-scripts
 - Human Approval for Solo-Founder AI Automations: https://impri.dev/docs/human-approval-for-solo-founder-automations
 - Human Approval for Unattended AI Agents: https://impri.dev/docs/human-approval-for-unattended-ai-agents
@@ -622,7 +625,10 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human-in-the-Loop Checkpoints in LangGraph: https://impri.dev/docs/human-in-the-loop-langgraph
 - Human-in-the-Loop Tools for LLM Agents, Compared: https://impri.dev/docs/hitl-tools-for-llm-agents-compared
 - Human-in-the-Loop for AI Customer Support Agents: https://impri.dev/docs/human-in-the-loop-ai-customer-support
+- Human-in-the-Loop for AI Newsletter Automation: https://impri.dev/docs/human-in-the-loop-for-ai-newsletter-automation
 - Human-in-the-Loop for AI in E-commerce: https://impri.dev/docs/human-in-the-loop-for-ai-in-ecommerce
+- Human-in-the-Loop for AI in HR and Recruiting: https://impri.dev/docs/human-in-the-loop-for-ai-in-hr
+- Human-in-the-Loop for AI in SaaS Operations: https://impri.dev/docs/human-in-the-loop-for-ai-in-saas-operations
 - Human-in-the-Loop for Autonomous AI Agents: https://impri.dev/docs/human-in-the-loop-for-autonomous-agents
 - Human-in-the-Loop for CI/CD AI Agents: https://impri.dev/docs/human-in-the-loop-ci-cd-ai-agents
 - Human-in-the-Loop for DevOps AI Agents: https://impri.dev/docs/human-in-the-loop-for-devops-ai-agents
@@ -645,7 +651,9 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Safe Autonomy: Let Agents Act, but Not Blindly: https://impri.dev/docs/safe-autonomy-for-ai-agents
 - Stop Your AI Agent From Sending Emails Without Approval: https://impri.dev/docs/stop-your-ai-agent-sending-emails-without-approval
 - The Propose, Approve, Execute Pattern for AI Agents: https://impri.dev/docs/the-propose-approve-execute-pattern
+- The Risks of Autonomous AI Agents Taking Actions: https://impri.dev/docs/the-risks-of-autonomous-ai-agents-taking-actions
 - Web Push Notifications for Agent Approvals: https://impri.dev/docs/web-push-notifications-for-agent-approvals
 - What Is Human-in-the-Loop for AI Agents?: https://impri.dev/docs/what-is-human-in-the-loop-for-ai-agents
+- Why AI Agents Need Approval Gates: https://impri.dev/docs/why-ai-agents-need-approval-gates
 - Wrapping an Agent Tool With a Human Approval Step: https://impri.dev/docs/wrapping-a-tool-with-a-human-approval-step
 - ntfy Notifications for AI Agent Approvals: https://impri.dev/docs/ntfy-notifications-for-ai-agent-approvals
