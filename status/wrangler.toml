@@ -13,7 +13,7 @@ kv_namespaces = [
 ]
 
 [triggers]
-crons = ["*/10 * * * *"]
+crons = ["*/15 * * * *"]
 
 [[routes]]
 pattern = "status.impri.dev"

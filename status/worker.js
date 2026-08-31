@@ -23,7 +23,8 @@ const TARGETS = [
 ];
 
 const DAYS_SHOWN = 60;
-const AGG_TTL_SEC = 90 * 86400;
+// How long an edge-cached page may be stale. See the KV note in runChecks.
+const PAGE_CACHE_SEC = 120;
 
 function dateKey(ts) {
   return new Date(ts).toISOString().slice(0, 10);
@@ -50,34 +51,55 @@ async function runChecks(env) {
   for (const t of TARGETS) {
     results[t.id] = { ...(await checkTarget(t)), ts: now };
   }
-  // One combined daily-aggregate KV entry (all targets nested) instead of one
-  // key per target. The 5-min cron would otherwise do 4 writes/run × 288 =
-  // 1152 writes/day, over the Workers KV free-tier budget (1k writes/day).
-  // This keeps it at 2 writes/run (agg + latest) = 576/day, with 5-min
-  // resolution and the warm-keeping side effect intact.
-  const aggKey = `agg:${dateKey(now)}`;
-  const agg = (await env.STATUS_KV.get(aggKey, 'json')) ?? {};
+  // The whole rolling window lives in one key. The previous shape kept one key
+  // per day and loadHistory read them in a loop, so a single page view cost 61
+  // reads — roughly 1600 views exhausted the free tier's 100k/day, and a status
+  // page is precisely what monitors and bots poll. Two writes per run, and at
+  // 15-minute intervals that is 192/day against the 1000/day write limit.
+  const today = dateKey(now);
+  let history = (await env.STATUS_KV.get('history', 'json')) ?? null;
+
+  // One-time migration from the per-day keys. Sixty reads, once; afterwards
+  // 'history' exists and this never runs again.
+  if (history === null) {
+    history = {};
+    for (let i = DAYS_SHOWN - 1; i >= 0; i--) {
+      const d = dateKey(now - i * 86400_000);
+      const old = await env.STATUS_KV.get(`agg:${d}`, 'json');
+      if (old) history[d] = old;
+    }
+  }
+
+  const day = history[today] ?? {};
   for (const t of TARGETS) {
-    const cell = agg[t.id] ?? { n: 0, fail: 0, msSum: 0 };
+    const cell = day[t.id] ?? { n: 0, fail: 0, msSum: 0 };
     cell.n += 1;
     if (!results[t.id].ok) cell.fail += 1;
     cell.msSum += results[t.id].ms;
-    agg[t.id] = cell;
+    day[t.id] = cell;
   }
-  await env.STATUS_KV.put(aggKey, JSON.stringify(agg), { expirationTtl: AGG_TTL_SEC });
+  history[today] = day;
+
+  // Trim here rather than with a per-key TTL, which one combined key cannot have.
+  const cutoff = dateKey(now - DAYS_SHOWN * 86400_000);
+  for (const d of Object.keys(history)) {
+    if (d < cutoff) delete history[d];
+  }
+
+  await env.STATUS_KV.put('history', JSON.stringify(history));
   await env.STATUS_KV.put('latest', JSON.stringify({ ts: now, results }));
   return results;
 }
 
+/** One KV read for the whole window — see the note in runChecks. */
 async function loadHistory(env) {
+  const history = (await env.STATUS_KV.get('history', 'json')) ?? {};
   const out = {};
   for (const t of TARGETS) out[t.id] = [];
   const today = Date.now();
-  // One KV read per day (all targets in one entry) instead of one per target
-  // per day — 60 reads/pageview instead of 180.
   for (let i = DAYS_SHOWN - 1; i >= 0; i--) {
     const d = dateKey(today - i * 86400_000);
-    const agg = await env.STATUS_KV.get(`agg:${d}`, 'json');
+    const agg = history[d];
     for (const t of TARGETS) {
       const cell = agg?.[t.id];
       out[t.id].push({
@@ -180,26 +202,49 @@ export default {
     await runChecks(env);
   },
 
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    const latest = await env.STATUS_KV.get('latest', 'json');
 
+    // The favicon needs nothing from KV; reading 'latest' before this branch
+    // meant every icon request cost a read.
     if (url.pathname === '/favicon.svg') {
       return new Response(FAVICON_SVG, {
         headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400' },
       });
     }
 
+    // Serve from the edge cache when we can. A status page is polled — by
+    // monitors, by bots, by anyone leaving the tab open — and each of those
+    // requests used to reach KV. The probe runs every 15 minutes, so a
+    // two-minute-old copy is no less true.
+    const cache = caches.default;
+    const cacheKey = new Request(url.toString(), { method: 'GET' });
+    const hit = await cache.match(cacheKey);
+    if (hit) return hit;
+
+    const latest = await env.STATUS_KV.get('latest', 'json');
+
     if (url.pathname === '/api/status') {
       const history = await loadHistory(env);
-      return new Response(JSON.stringify({ overall: overallState(latest).label, latest, history }, null, 2), {
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' },
+      const res = new Response(JSON.stringify({ overall: overallState(latest).label, latest, history }, null, 2), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': `public, max-age=${PAGE_CACHE_SEC}`,
+          'Access-Control-Allow-Origin': '*',
+        },
       });
+      ctx.waitUntil(cache.put(cacheKey, res.clone()));
+      return res;
     }
 
     const history = await loadHistory(env);
-    return new Response(renderHtml(latest, history), {
-      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+    const res = new Response(renderHtml(latest, history), {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': `public, max-age=${PAGE_CACHE_SEC}`,
+      },
     });
+    ctx.waitUntil(cache.put(cacheKey, res.clone()));
+    return res;
   },
 };
