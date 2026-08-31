@@ -640,6 +640,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human-in-the-Loop for RAG Agents That Take Actions: https://impri.dev/docs/human-in-the-loop-for-rag-agents-that-act
 - Human-in-the-Loop for the OpenAI Agents SDK: https://impri.dev/docs/human-in-the-loop-openai-agents-sdk
 - Human-in-the-Loop vs Full Autonomy for AI Agents: https://impri.dev/docs/human-in-the-loop-vs-full-autonomy
+- Human-in-the-Loop, Explained for AI Builders: https://impri.dev/docs/human-in-the-loop-explained
 - Implementing Approval Workflows for LLM Agents: https://impri.dev/docs/implementing-approval-workflows-for-llm-agents
 - Mobile Approvals for AI Agents: https://impri.dev/docs/mobile-approvals-for-ai-agents
 - One-Tap Approve/Reject for AI Agent Actions: https://impri.dev/docs/one-tap-approve-reject-for-ai-agents
@@ -654,6 +655,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - The Risks of Autonomous AI Agents Taking Actions: https://impri.dev/docs/the-risks-of-autonomous-ai-agents-taking-actions
 - Web Push Notifications for Agent Approvals: https://impri.dev/docs/web-push-notifications-for-agent-approvals
 - What Is Human-in-the-Loop for AI Agents?: https://impri.dev/docs/what-is-human-in-the-loop-for-ai-agents
+- What Is an Approval Inbox for AI Agents?: https://impri.dev/docs/what-is-an-approval-inbox
 - Why AI Agents Need Approval Gates: https://impri.dev/docs/why-ai-agents-need-approval-gates
 - Wrapping an Agent Tool With a Human Approval Step: https://impri.dev/docs/wrapping-a-tool-with-a-human-approval-step
 - ntfy Notifications for AI Agent Approvals: https://impri.dev/docs/ntfy-notifications-for-ai-agent-approvals
