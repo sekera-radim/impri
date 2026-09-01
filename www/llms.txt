@@ -653,9 +653,11 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Stop Your AI Agent From Sending Emails Without Approval: https://impri.dev/docs/stop-your-ai-agent-sending-emails-without-approval
 - The Propose, Approve, Execute Pattern for AI Agents: https://impri.dev/docs/the-propose-approve-execute-pattern
 - The Risks of Autonomous AI Agents Taking Actions: https://impri.dev/docs/the-risks-of-autonomous-ai-agents-taking-actions
+- Trust Boundaries for AI Agents That Take Actions: https://impri.dev/docs/trust-boundaries-for-ai-agents
 - Web Push Notifications for Agent Approvals: https://impri.dev/docs/web-push-notifications-for-agent-approvals
 - What Is Human-in-the-Loop for AI Agents?: https://impri.dev/docs/what-is-human-in-the-loop-for-ai-agents
 - What Is an Approval Inbox for AI Agents?: https://impri.dev/docs/what-is-an-approval-inbox
+- When to Let an AI Agent Act Autonomously (and When Not To): https://impri.dev/docs/when-to-let-an-ai-agent-act-autonomously
 - Why AI Agents Need Approval Gates: https://impri.dev/docs/why-ai-agents-need-approval-gates
 - Wrapping an Agent Tool With a Human Approval Step: https://impri.dev/docs/wrapping-a-tool-with-a-human-approval-step
 - ntfy Notifications for AI Agent Approvals: https://impri.dev/docs/ntfy-notifications-for-ai-agent-approvals
