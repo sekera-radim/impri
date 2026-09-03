@@ -611,6 +611,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human Approval for AI Social Media Management: https://impri.dev/docs/human-approval-for-ai-social-media-management
 - Human Approval for Background AI Workers: https://impri.dev/docs/human-approval-for-background-ai-workers
 - Human Approval for Fintech AI Agents: https://impri.dev/docs/human-approval-for-fintech-ai-agents
+- Human Approval for Google Agent Development Kit (ADK) Agents: https://impri.dev/docs/human-approval-google-agent-development-kit
 - Human Approval for Legal AI Agents: https://impri.dev/docs/human-approval-for-legal-ai-agents
 - Human Approval for Microsoft AutoGen Agents: https://impri.dev/docs/human-approval-autogen-agents
 - Human Approval for Real Estate AI Agents: https://impri.dev/docs/human-approval-for-real-estate-ai-agents
@@ -621,6 +622,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human Approval for the Vercel AI SDK: https://impri.dev/docs/human-approval-vercel-ai-sdk
 - Human Approval in Multi-Agent Systems: https://impri.dev/docs/human-approval-for-multi-agent-systems
 - Human Oversight for Agentic AI: https://impri.dev/docs/human-oversight-for-agentic-ai
+- Human Oversight vs Automation in AI Agents: https://impri.dev/docs/human-oversight-vs-automation-in-ai-agents
 - Human-in-the-Loop Approval for LangChain Agents: https://impri.dev/docs/human-in-the-loop-for-langchain-agents
 - Human-in-the-Loop Checkpoints in LangGraph: https://impri.dev/docs/human-in-the-loop-langgraph
 - Human-in-the-Loop Tools for LLM Agents, Compared: https://impri.dev/docs/hitl-tools-for-llm-agents-compared
@@ -639,6 +641,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human-in-the-Loop for Pydantic AI Agents: https://impri.dev/docs/human-in-the-loop-pydantic-ai
 - Human-in-the-Loop for RAG Agents That Take Actions: https://impri.dev/docs/human-in-the-loop-for-rag-agents-that-act
 - Human-in-the-Loop for the OpenAI Agents SDK: https://impri.dev/docs/human-in-the-loop-openai-agents-sdk
+- Human-in-the-Loop in Microsoft Agent Framework: https://impri.dev/docs/human-in-the-loop-microsoft-agent-framework
 - Human-in-the-Loop vs Full Autonomy for AI Agents: https://impri.dev/docs/human-in-the-loop-vs-full-autonomy
 - Human-in-the-Loop, Explained for AI Builders: https://impri.dev/docs/human-in-the-loop-explained
 - Implementing Approval Workflows for LLM Agents: https://impri.dev/docs/implementing-approval-workflows-for-llm-agents
@@ -657,6 +660,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Web Push Notifications for Agent Approvals: https://impri.dev/docs/web-push-notifications-for-agent-approvals
 - What Is Human-in-the-Loop for AI Agents?: https://impri.dev/docs/what-is-human-in-the-loop-for-ai-agents
 - What Is an Approval Inbox for AI Agents?: https://impri.dev/docs/what-is-an-approval-inbox
+- What Is an MCP Approval Server?: https://impri.dev/docs/what-is-an-mcp-approval-server
 - When to Let an AI Agent Act Autonomously (and When Not To): https://impri.dev/docs/when-to-let-an-ai-agent-act-autonomously
 - Why AI Agents Need Approval Gates: https://impri.dev/docs/why-ai-agents-need-approval-gates
 - Wrapping an Agent Tool With a Human Approval Step: https://impri.dev/docs/wrapping-a-tool-with-a-human-approval-step

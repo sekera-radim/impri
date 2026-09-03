@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Human Approval for Google Agent Development Kit (ADK) Agents — Impri Docs</title>
+<meta name="description" content="Give a Google ADK agent cloud cleanup powers and it will eventually target the wrong bucket — add human approval before deletion using ADK&amp;#39;s native MCP support.">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Human Approval for Google Agent Development Kit (ADK) Agents — Impri Docs">
+<meta property="og:description" content="Give a Google ADK agent cloud cleanup powers and it will eventually target the wrong bucket — add human approval before deletion using ADK&amp;#39;s native MCP support.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://impri.dev/docs/human-approval-google-agent-development-kit">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://impri.dev/docs/human-approval-google-agent-development-kit">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human Approval for Google Agent Development Kit (ADK) Agents","description":"Give a Google ADK agent cloud cleanup powers and it will eventually target the wrong bucket — add human approval before deletion using ADK&#39;s native MCP support.","url":"https://impri.dev/docs/human-approval-google-agent-development-kit","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting" class="sl">Self-hosting</a>
+<a href="../docs/observability" class="sl">Observability</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets" class="sl">Watcher presets</a>
+<a href="../docs/notifications" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval" class="sl">Slack approval</a>
+<a href="../docs/discord-approval" class="sl">Discord approval</a>
+<a href="../docs/audit-log" class="sl">Audit log</a>
+<a href="../docs/billing" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr" class="sl">GDPR &amp; data export</a>
+<a href="../docs/privacy" class="sl">Privacy policy</a>
+<a href="../docs/terms" class="sl">Terms of service</a>
+<a href="../docs/operator" class="sl">Operator / admin</a>
+<a href="../docs/account-recovery" class="sl">Account recovery</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp" class="sl">MCP server</a>
+<a href="../docs/integrations" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks" class="sl">Webhooks</a>
+<a href="../docs/web-push" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Reference</span>
+      <span class="bc-sep">/</span>
+      <span>Human Approval for Google Agent Development Kit (ADK) Agents</span>
+    </nav>
+    <h1>Human Approval for Google Agent Development Kit (ADK) Agents</h1>
+<p>Give a Google ADK agent cloud cleanup powers and it will eventually target the wrong bucket — add human approval before deletion using ADK&#39;s native MCP support.</p>
+<hr>
+<h2 id="the-scenario">The scenario</h2>
+<p>A cost-control agent built with Google ADK scans a GCP project, finds BigQuery datasets and Cloud Storage buckets with no read activity in 90 days, and proposes deleting them. Finding stale resources is exactly the kind of thing an agent is good at. Deleting them without a second opinion is exactly the kind of thing that turns into an incident report — a dataset that looks unused because the pipeline reading it runs quarterly, not daily.</p>
+<p>ADK agents call tools through the standard <code>google.adk.tools</code> interface, and since ADK speaks MCP natively, the cleanest way to add a gate is to give the agent an MCP-based approval tool rather than hand-rolling REST calls inside a custom function tool.</p>
+<h2 id="setup-adding-impri-as-an-mcp-toolset">Setup: adding Impri as an MCP toolset</h2>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">from</span> google.adk.agents <span class="hljs-keyword">import</span> Agent
+<span class="hljs-keyword">from</span> google.adk.tools.mcp_tool <span class="hljs-keyword">import</span> MCPToolset, StdioServerParameters
+
+impri_toolset = MCPToolset(
+    connection_params=StdioServerParameters(
+        command=<span class="hljs-string">&quot;npx&quot;</span>,
+        args=[<span class="hljs-string">&quot;@impri/mcp&quot;</span>],
+        env={<span class="hljs-string">&quot;IMPRI_API_KEY&quot;</span>: <span class="hljs-string">&quot;im_your_key_here&quot;</span>},
+    )
+)
+
+cleanup_agent = Agent(
+    name=<span class="hljs-string">&quot;gcp_cost_cleanup&quot;</span>,
+    model=<span class="hljs-string">&quot;gemini-2.5-pro&quot;</span>,
+    instruction=(
+        <span class="hljs-string">&quot;Find unused BigQuery datasets and GCS buckets. Before deleting anything, &quot;</span>
+        <span class="hljs-string">&quot;push an impri_push_action with kind=&#x27;gcp.resource.delete&#x27; describing what &quot;</span>
+        <span class="hljs-string">&quot;you found and why, then wait on impri_await_decision. Only call the delete &quot;</span>
+        <span class="hljs-string">&quot;tool if the decision status is &#x27;approved&#x27;.&quot;</span>
+    ),
+    tools=[find_unused_resources, delete_gcp_resource, *impri_toolset.get_tools()],
+)</code></pre></div>
+<p>The agent now has three tool families: one to find candidates, one to actually delete, and Impri&#39;s <code>impri_push_action</code> / <code>impri_await_decision</code> / <code>impri_report_result</code> to gate the path between them.</p>
+<h2 id="why-the-instruction-alone-isn39t-the-gate">Why the instruction alone isn&#39;t the gate</h2>
+<p>Notice the instruction <em>tells</em> the model to check for approval before deleting — and models mostly follow instructions like that. &quot;Mostly&quot; is the problem. The actual gate isn&#39;t the sentence in the prompt; it&#39;s whether <code>delete_gcp_resource</code> can be reached without an approved decision. If your <code>delete_gcp_resource</code> function checks nothing and just calls the GCP API, a model that skips the approval step (bad context, a confusing tool result, an unusual phrasing in the found-resources list) still deletes the bucket. Wrap the delete function itself:</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">def</span> <span class="hljs-title function_">delete_gcp_resource</span>(<span class="hljs-params">resource_id: <span class="hljs-built_in">str</span>, approved_action_id: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">dict</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Deletes a GCP resource. Requires an Impri action_id with status &#x27;approved&#x27;.&quot;&quot;&quot;</span>
+    status = check_impri_action_status(approved_action_id)  <span class="hljs-comment"># calls GET /v1/actions/:id</span>
+    <span class="hljs-keyword">if</span> status[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;approved&quot;</span>:
+        <span class="hljs-keyword">return</span> {<span class="hljs-string">&quot;error&quot;</span>: <span class="hljs-string">f&quot;action <span class="hljs-subst">{approved_action_id}</span> is <span class="hljs-subst">{status[<span class="hljs-string">&#x27;status&#x27;</span>]}</span>, not approved&quot;</span>}
+
+    resource_type, name = resource_id.split(<span class="hljs-string">&quot;:&quot;</span>, <span class="hljs-number">1</span>)
+    _do_delete(resource_type, name)  <span class="hljs-comment"># actual GCP client call</span>
+    report_impri_result(approved_action_id, <span class="hljs-string">&quot;executed&quot;</span>)
+    <span class="hljs-keyword">return</span> {<span class="hljs-string">&quot;deleted&quot;</span>: resource_id}</code></pre></div>
+<p>Now the model <em>can</em> call <code>delete_gcp_resource</code> directly, but the function refuses to do anything without a matching approved action ID — the chokepoint lives in code, not in the system prompt.</p>
+<h2 id="what-the-reviewer-sees">What the reviewer sees</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value in this example</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>kind</code></td>
+<td><code>gcp.resource.delete</code></td>
+</tr>
+<tr>
+<td><code>title</code></td>
+<td>&quot;Delete unused dataset: analytics.raw_events_2024&quot;</td>
+</tr>
+<tr>
+<td><code>preview.body</code></td>
+<td>Last-access timestamp, size, estimated monthly cost saved</td>
+</tr>
+<tr>
+<td><code>expires_in</code></td>
+<td><code>259200</code> (default 72h — plenty of time to double-check with the data team)</td>
+</tr>
+<tr>
+<td><code>undo</code></td>
+<td>&quot;Dataset was exported to gs://backups/pre-delete/ before removal; restore with <code>bq load</code>&quot;</td>
+</tr>
+</tbody></table>
+</div>
+<p>Setting <code>undo</code> matters here specifically because dataset deletion is not reversible through the API itself — Impri just displays the plain-English escape hatch on the card so the reviewer knows one exists before approving.</p>
+<hr>
+<h2 id="what-this-doesn39t-cover">What this doesn&#39;t cover</h2>
+<p>Impri doesn&#39;t inspect the GCP resource, doesn&#39;t know if the dataset is actually safe to delete, and doesn&#39;t talk to the GCP API at all — that&#39;s entirely <code>delete_gcp_resource</code>&#39;s job. It also isn&#39;t IAM: it doesn&#39;t restrict <em>who</em> can technically call the delete function, only whether a human signed off before that specific call ran with that specific resource ID. Keep IAM scoped tightly regardless of whether Impri is in the loop.</p>
+<p>For the underlying MCP tool contract, see <a href="mcp">mcp</a>. For the same wrapper pattern applied to other SDKs, see <a href="integrations">integrations</a>, and for getting an API key first, the <a href="quickstart">quickstart</a>.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#the-scenario">The scenario</a></li>
+<li class="ptoc-h2"><a href="#setup-adding-impri-as-an-mcp-toolset">Setup: adding Impri as an MCP toolset</a></li>
+<li class="ptoc-h2"><a href="#why-the-instruction-alone-isn39t-the-gate">Why the instruction alone isn't the gate</a></li>
+<li class="ptoc-h2"><a href="#what-the-reviewer-sees">What the reviewer sees</a></li>
+<li class="ptoc-h2"><a href="#what-this-doesn39t-cover">What this doesn't cover</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/terms">Terms</a>
+    <a href="https://sekera.dev">Contact</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>.</span></div>
+</footer>
+</body>
+</html>
