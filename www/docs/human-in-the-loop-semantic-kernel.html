@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Human-in-the-Loop for Microsoft Semantic Kernel Agents — Impri Docs</title>
+<meta name="description" content="Add a human approval gate to Semantic Kernel function calling so a plugin can&amp;#39;t send, post, or spend money until a person taps approve on the actual generated payload.">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Human-in-the-Loop for Microsoft Semantic Kernel Agents — Impri Docs">
+<meta property="og:description" content="Add a human approval gate to Semantic Kernel function calling so a plugin can&amp;#39;t send, post, or spend money until a person taps approve on the actual generated payload.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://impri.dev/docs/human-in-the-loop-semantic-kernel">
+<meta name="twitter:card" content="summary">
+<link rel="canonical" href="https://impri.dev/docs/human-in-the-loop-semantic-kernel">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human-in-the-Loop for Microsoft Semantic Kernel Agents","description":"Add a human approval gate to Semantic Kernel function calling so a plugin can&#39;t send, post, or spend money until a person taps approve on the actual generated payload.","url":"https://impri.dev/docs/human-in-the-loop-semantic-kernel","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting" class="sl">Self-hosting</a>
+<a href="../docs/observability" class="sl">Observability</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets" class="sl">Watcher presets</a>
+<a href="../docs/notifications" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval" class="sl">Slack approval</a>
+<a href="../docs/discord-approval" class="sl">Discord approval</a>
+<a href="../docs/audit-log" class="sl">Audit log</a>
+<a href="../docs/billing" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr" class="sl">GDPR &amp; data export</a>
+<a href="../docs/privacy" class="sl">Privacy policy</a>
+<a href="../docs/terms" class="sl">Terms of service</a>
+<a href="../docs/operator" class="sl">Operator / admin</a>
+<a href="../docs/account-recovery" class="sl">Account recovery</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp" class="sl">MCP server</a>
+<a href="../docs/integrations" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks" class="sl">Webhooks</a>
+<a href="../docs/web-push" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Reference</span>
+      <span class="bc-sep">/</span>
+      <span>Human-in-the-Loop for Microsoft Semantic Kernel Agents</span>
+    </nav>
+    <h1>Human-in-the-Loop for Microsoft Semantic Kernel Agents</h1>
+<p>Add a human approval gate to Semantic Kernel function calling so a plugin can&#39;t send, post, or spend money until a person taps approve on the actual generated payload.</p>
+<hr>
+<h2 id="where-the-gap-is-in-semantic-kernel">Where the gap is in Semantic Kernel</h2>
+<p>Semantic Kernel&#39;s <code>FunctionInvocationFilter</code> gives you a hook that runs before and after any plugin function the kernel decides to call. That&#39;s the right layer to intercept — but &quot;intercept&quot; usually means either an in-process <code>Console.ReadLine()</code> prompt (useless once the agent runs unattended on a server) or nothing at all. Neither gets you a real approval record, a mobile-friendly approve/reject, or the ability to let a reviewer edit the draft before it goes out.</p>
+<p>Impri fills that specific gap: it&#39;s a gate that stores the proposed function call, notifies a human on their phone or desktop, and holds the decision — nothing more. Semantic Kernel still owns planning and function orchestration; Impri only owns the yes/no.</p>
+<hr>
+<h2 id="wiring-the-filter">Wiring the filter</h2>
+<p>Register an <code>IFunctionInvocationFilter</code> that intercepts sensitive plugin functions — here, an <code>EmailPlugin.SendEmail</code> function — and routes the call through Impri instead of letting it execute directly.</p>
+<div class="code-block"><span class="code-lang">csharp</span><pre><code class="hljs"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">ImpriApprovalFilter</span> : <span class="hljs-title">IFunctionInvocationFilter</span>
+{
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">readonly</span> HttpClient _http;
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">readonly</span> HashSet&lt;<span class="hljs-built_in">string</span>&gt; GatedFunctions = <span class="hljs-keyword">new</span>() { <span class="hljs-string">&quot;SendEmail&quot;</span>, <span class="hljs-string">&quot;PostToSlack&quot;</span> };
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">ImpriApprovalFilter</span>(<span class="hljs-params">HttpClient http</span>)</span> =&gt; _http = http;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">async</span> Task <span class="hljs-title">OnFunctionInvocationAsync</span>(<span class="hljs-params">
+        FunctionInvocationContext context, Func&lt;FunctionInvocationContext, Task&gt; next</span>)</span>
+    {
+        <span class="hljs-keyword">if</span> (!GatedFunctions.Contains(context.Function.Name))
+        {
+            <span class="hljs-keyword">await</span> next(context);
+            <span class="hljs-keyword">return</span>;
+        }
+
+        <span class="hljs-keyword">var</span> body = <span class="hljs-built_in">string</span>.Join(<span class="hljs-string">&quot;\n&quot;</span>, context.Arguments.Select(a =&gt; <span class="hljs-string">$&quot;<span class="hljs-subst">{a.Key}</span>: <span class="hljs-subst">{a.Value}</span>&quot;</span>));
+
+        <span class="hljs-keyword">var</span> createResp = <span class="hljs-keyword">await</span> _http.PostAsJsonAsync(<span class="hljs-string">&quot;https://api.impri.dev/v1/actions&quot;</span>, <span class="hljs-keyword">new</span>
+        {
+            kind = <span class="hljs-string">&quot;email.send&quot;</span>,
+            title = <span class="hljs-string">$&quot;Semantic Kernel: <span class="hljs-subst">{context.Function.Name}</span>&quot;</span>,
+            preview = <span class="hljs-keyword">new</span> { format = <span class="hljs-string">&quot;markdown&quot;</span>, body },
+            expires_in = <span class="hljs-number">3600</span>,
+            editable = <span class="hljs-keyword">new</span>[] { <span class="hljs-string">&quot;preview.body&quot;</span> }
+        });
+        <span class="hljs-keyword">var</span> action = <span class="hljs-keyword">await</span> createResp.Content.ReadFromJsonAsync&lt;ImpriAction&gt;();
+
+        ImpriDecision decision;
+        <span class="hljs-keyword">while</span> (<span class="hljs-literal">true</span>)
+        {
+            <span class="hljs-keyword">await</span> Task.Delay(TimeSpan.FromSeconds(<span class="hljs-number">10</span>));
+            <span class="hljs-keyword">var</span> poll = <span class="hljs-keyword">await</span> _http.GetFromJsonAsync&lt;ImpriDecision&gt;(
+                <span class="hljs-string">$&quot;https://api.impri.dev/v1/actions/<span class="hljs-subst">{action.Id}</span>&quot;</span>);
+            <span class="hljs-keyword">if</span> (poll.Status != <span class="hljs-string">&quot;pending&quot;</span>) { decision = poll; <span class="hljs-keyword">break</span>; }
+        }
+
+        <span class="hljs-keyword">if</span> (decision.Status != <span class="hljs-string">&quot;approved&quot;</span>)
+        {
+            context.Result = <span class="hljs-keyword">new</span> FunctionResult(context.Function, <span class="hljs-string">$&quot;Not sent: <span class="hljs-subst">{decision.Status}</span>&quot;</span>);
+            <span class="hljs-keyword">return</span>; <span class="hljs-comment">// next() is never called — SendEmail never runs</span>
+        }
+
+        <span class="hljs-comment">// Swap in the human-edited body before the real function runs</span>
+        context.Arguments[<span class="hljs-string">&quot;body&quot;</span>] = decision.Decision.FinalPreview.Body;
+        <span class="hljs-keyword">await</span> next(context);
+
+        <span class="hljs-keyword">await</span> _http.PostAsJsonAsync(
+            <span class="hljs-string">$&quot;https://api.impri.dev/v1/actions/<span class="hljs-subst">{action.Id}</span>/result&quot;</span>, <span class="hljs-keyword">new</span> { status = <span class="hljs-string">&quot;executed&quot;</span> });
+    }
+}</code></pre></div>
+<p>Register it on the kernel:</p>
+<div class="code-block"><span class="code-lang">csharp</span><pre><code class="hljs"><span class="hljs-keyword">var</span> kernel = Kernel.CreateBuilder()
+    .AddOpenAIChatCompletion(modelId, apiKey)
+    .Build();
+
+kernel.FunctionInvocationFilters.Add(<span class="hljs-keyword">new</span> ImpriApprovalFilter(httpClient));
+kernel.ImportPluginFromType&lt;EmailPlugin&gt;();</code></pre></div>
+<p>The critical line is <code>if (decision.Status != &quot;approved&quot;) { ...; return; }</code> — the filter&#39;s <code>next(context)</code> delegate is what actually invokes <code>EmailPlugin.SendEmail</code>, and it&#39;s simply never called on rejection or expiry. There&#39;s no code path where a non-approved call reaches the plugin.</p>
+<hr>
+<h2 id="why-the-filter-not-the-planner">Why the filter, not the planner</h2>
+<p>You could try gating at the planner level instead — inspecting the plan before the kernel executes any step. That works for stopping a whole plan, but it loses granularity: a plan might legitimately read a calendar, summarize a document, <em>and</em> send an email, and you only want to gate the last one. The <code>FunctionInvocationFilter</code> runs per-function-call, so read-only plugins run freely and only the ones you list in <code>GatedFunctions</code> pause for a human.</p>
+<p>This is also why Impri only works as a real gate if <code>EmailPlugin</code> (or whatever wraps the actual side effect) has no other way to fire — if the kernel or a separate service account can call the mail API directly outside this filter, the agent has a bypass. See <a href="integrations">the Semantic Kernel integration notes</a> for wrapping the underlying client so the filter is the only path.</p>
+<hr>
+<h2 id="what-you-get-and-what-you-don39t">What you get, and what you don&#39;t</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Provided by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Deciding <em>whether</em> the plan should include sending an email</td>
+<td>Semantic Kernel planner — Impri has no opinion here</td>
+</tr>
+<tr>
+<td>Holding execution until a human decides</td>
+<td>Impri</td>
+</tr>
+<tr>
+<td>Letting the reviewer edit the email body before it sends</td>
+<td>Impri (<code>editable</code> + <code>final_preview</code>)</td>
+</tr>
+<tr>
+<td>Audit record of who approved what, when</td>
+<td>Impri</td>
+</tr>
+<tr>
+<td>Retrying or branching the plan on rejection</td>
+<td>Your filter&#39;s <code>else</code> branch — Impri just reports the status</td>
+</tr>
+</tbody></table>
+</div>
+<p>Impri doesn&#39;t understand Semantic Kernel plans, functions, or plugins — it sees a title, a markdown preview, and a decision. All the C#-specific wiring above is yours to write; Impri&#39;s job stops at <code>{ status: &quot;approved&quot; | &quot;rejected&quot; | &quot;expired&quot; }</code>.</p>
+<hr>
+<h2 id="next-step">Next step</h2>
+<p>Start with the <a href="quickstart">quickstart</a> to get an API key, then read <a href="mcp">the MCP integration</a> if you&#39;d rather have Semantic Kernel call <code>impri_push_action</code> as a plugin function directly instead of hand-rolling the HTTP calls above.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#where-the-gap-is-in-semantic-kernel">Where the gap is in Semantic Kernel</a></li>
+<li class="ptoc-h2"><a href="#wiring-the-filter">Wiring the filter</a></li>
+<li class="ptoc-h2"><a href="#why-the-filter-not-the-planner">Why the filter, not the planner</a></li>
+<li class="ptoc-h2"><a href="#what-you-get-and-what-you-don39t">What you get, and what you don't</a></li>
+<li class="ptoc-h2"><a href="#next-step">Next step</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/terms">Terms</a>
+    <a href="https://sekera.dev">Contact</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>.</span></div>
+</footer>
+</body>
+</html>

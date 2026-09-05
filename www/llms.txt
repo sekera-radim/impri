@@ -591,6 +591,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Approve Payments Before Your AI Agent Charges a Card: https://impri.dev/docs/approve-ai-agent-payments-and-charges
 - Approve Refunds Issued by an AI Support Agent: https://impri.dev/docs/approve-refunds-issued-by-an-ai-support-agent
 - Approve Slack Messages From an AI Agent: https://impri.dev/docs/approve-slack-messages-from-an-ai-agent
+- Approve Terminal Commands Before Your AI Coding Agent Runs Them: https://impri.dev/docs/approve-ai-coding-agent-terminal-commands
 - Blocking vs Polling for Human Approval in Agents: https://impri.dev/docs/blocking-vs-polling-for-human-approval
 - Build an Audit Trail for AI Agent Actions: https://impri.dev/docs/audit-trail-for-ai-agent-actions
 - Edit AI Agent Drafts Before You Approve Them: https://impri.dev/docs/edit-ai-agent-drafts-before-approving
@@ -639,6 +640,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human-in-the-Loop for E-commerce AI Agents: https://impri.dev/docs/human-in-the-loop-for-ecommerce-ai-agents
 - Human-in-the-Loop for Healthcare AI Messaging: https://impri.dev/docs/human-in-the-loop-for-healthcare-ai-messaging
 - Human-in-the-Loop for LlamaIndex Agents: https://impri.dev/docs/human-in-the-loop-llamaindex-agents
+- Human-in-the-Loop for Microsoft Semantic Kernel Agents: https://impri.dev/docs/human-in-the-loop-semantic-kernel
 - Human-in-the-Loop for Personal AI Assistants: https://impri.dev/docs/human-in-the-loop-for-personal-ai-assistants
 - Human-in-the-Loop for Pydantic AI Agents: https://impri.dev/docs/human-in-the-loop-pydantic-ai
 - Human-in-the-Loop for RAG Agents That Take Actions: https://impri.dev/docs/human-in-the-loop-for-rag-agents-that-act
