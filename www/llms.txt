@@ -602,6 +602,8 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - How to Pause an AI Agent for Human Input: https://impri.dev/docs/how-to-pause-an-ai-agent-for-human-input
 - How to Review AI-Generated Content Before It Goes Out: https://impri.dev/docs/how-to-review-ai-content-before-it-goes-out
 - Human Approval Before an AI Agent Deploys Code: https://impri.dev/docs/human-approval-before-deploying-code-with-an-agent
+- Human Approval Before an AI Agent Merges a Pull Request: https://impri.dev/docs/approve-ai-agent-pull-requests-before-merge
+- Human Approval Before an AI Agent Writes to Your Filesystem: https://impri.dev/docs/human-approval-for-ai-agent-file-writes
 - Human Approval Before an Agent Posts to Social Media: https://impri.dev/docs/human-approval-before-an-agent-posts-to-social-media
 - Human Approval Before an Agent Sends SMS: https://impri.dev/docs/human-approval-before-an-agent-sends-sms
 - Human Approval Gates in the Claude Agent SDK: https://impri.dev/docs/human-approval-claude-agent-sdk
