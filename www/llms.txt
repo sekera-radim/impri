@@ -586,8 +586,10 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Approve AI Agent Actions From Telegram: https://impri.dev/docs/approve-ai-agent-actions-from-telegram
 - Approve AI Agent Actions From Your Phone: https://impri.dev/docs/approve-ai-agent-actions-from-your-phone
 - Approve AI Agent Actions by Email: https://impri.dev/docs/approve-ai-agent-actions-by-email
+- Approve AI Agent CRM Updates Before They Sync: https://impri.dev/docs/approve-ai-agent-crm-updates
 - Approve AI-Generated Content Before Publishing: https://impri.dev/docs/approve-ai-generated-content-before-publishing
 - Approve Emails Before Your AI Agent Sends Them: https://impri.dev/docs/approve-emails-before-your-ai-agent-sends-them
+- Approve GitHub Actions Runs Triggered by an AI Coding Agent: https://impri.dev/docs/approve-ai-agent-github-actions-workflows
 - Approve Payments Before Your AI Agent Charges a Card: https://impri.dev/docs/approve-ai-agent-payments-and-charges
 - Approve Refunds Issued by an AI Support Agent: https://impri.dev/docs/approve-refunds-issued-by-an-ai-support-agent
 - Approve Slack Messages From an AI Agent: https://impri.dev/docs/approve-slack-messages-from-an-ai-agent
@@ -601,6 +603,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - How to Build a Human-in-the-Loop AI Agent: https://impri.dev/docs/how-to-build-a-human-in-the-loop-ai-agent
 - How to Pause an AI Agent for Human Input: https://impri.dev/docs/how-to-pause-an-ai-agent-for-human-input
 - How to Review AI-Generated Content Before It Goes Out: https://impri.dev/docs/how-to-review-ai-content-before-it-goes-out
+- Human Approval Before an AI Agent Automates Your Browser: https://impri.dev/docs/human-approval-for-ai-agent-browser-automation
 - Human Approval Before an AI Agent Deploys Code: https://impri.dev/docs/human-approval-before-deploying-code-with-an-agent
 - Human Approval Before an AI Agent Merges a Pull Request: https://impri.dev/docs/approve-ai-agent-pull-requests-before-merge
 - Human Approval Before an AI Agent Writes to Your Filesystem: https://impri.dev/docs/human-approval-for-ai-agent-file-writes
@@ -615,6 +618,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human Approval for Background AI Workers: https://impri.dev/docs/human-approval-for-background-ai-workers
 - Human Approval for Fintech AI Agents: https://impri.dev/docs/human-approval-for-fintech-ai-agents
 - Human Approval for Google Agent Development Kit (ADK) Agents: https://impri.dev/docs/human-approval-google-agent-development-kit
+- Human Approval for Jira AI Agents: https://impri.dev/docs/human-approval-for-jira-ai-agents
 - Human Approval for Legal AI Agents: https://impri.dev/docs/human-approval-for-legal-ai-agents
 - Human Approval for Mastra AI Agents: https://impri.dev/docs/human-approval-mastra-agents
 - Human Approval for Microsoft AutoGen Agents: https://impri.dev/docs/human-approval-autogen-agents
@@ -638,6 +642,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human-in-the-Loop for Autonomous AI Agents: https://impri.dev/docs/human-in-the-loop-for-autonomous-agents
 - Human-in-the-Loop for CI/CD AI Agents: https://impri.dev/docs/human-in-the-loop-ci-cd-ai-agents
 - Human-in-the-Loop for Cloudflare Agents SDK: https://impri.dev/docs/human-in-the-loop-cloudflare-agents
+- Human-in-the-Loop for Computer-Use AI Agents: https://impri.dev/docs/human-in-the-loop-for-computer-use-ai-agents
 - Human-in-the-Loop for DevOps AI Agents: https://impri.dev/docs/human-in-the-loop-for-devops-ai-agents
 - Human-in-the-Loop for E-commerce AI Agents: https://impri.dev/docs/human-in-the-loop-for-ecommerce-ai-agents
 - Human-in-the-Loop for Healthcare AI Messaging: https://impri.dev/docs/human-in-the-loop-for-healthcare-ai-messaging
@@ -664,6 +669,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - The Risks of Autonomous AI Agents Taking Actions: https://impri.dev/docs/the-risks-of-autonomous-ai-agents-taking-actions
 - Trust Boundaries for AI Agents That Take Actions: https://impri.dev/docs/trust-boundaries-for-ai-agents
 - Web Push Notifications for Agent Approvals: https://impri.dev/docs/web-push-notifications-for-agent-approvals
+- What Happens When an AI Agent Acts Without Approval: https://impri.dev/docs/what-happens-when-an-ai-agent-acts-without-approval
 - What Is Human-in-the-Loop for AI Agents?: https://impri.dev/docs/what-is-human-in-the-loop-for-ai-agents
 - What Is an Approval Inbox for AI Agents?: https://impri.dev/docs/what-is-an-approval-inbox
 - What Is an MCP Approval Server?: https://impri.dev/docs/what-is-an-mcp-approval-server
