@@ -587,6 +587,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Approve AI Agent Actions From Your Phone: https://impri.dev/docs/approve-ai-agent-actions-from-your-phone
 - Approve AI Agent Actions by Email: https://impri.dev/docs/approve-ai-agent-actions-by-email
 - Approve AI Agent CRM Updates Before They Sync: https://impri.dev/docs/approve-ai-agent-crm-updates
+- Approve AI Agent Calendar Changes Before They&#39;re Sent: https://impri.dev/docs/approve-ai-agent-calendar-changes
 - Approve AI-Generated Content Before Publishing: https://impri.dev/docs/approve-ai-generated-content-before-publishing
 - Approve Emails Before Your AI Agent Sends Them: https://impri.dev/docs/approve-emails-before-your-ai-agent-sends-them
 - Approve GitHub Actions Runs Triggered by an AI Coding Agent: https://impri.dev/docs/approve-ai-agent-github-actions-workflows
@@ -615,6 +616,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human Approval for AI Recruiting Outreach: https://impri.dev/docs/human-approval-for-ai-recruiting-outreach
 - Human Approval for AI Sales Outreach Agents: https://impri.dev/docs/human-approval-for-ai-sales-outreach
 - Human Approval for AI Social Media Management: https://impri.dev/docs/human-approval-for-ai-social-media-management
+- Human Approval for AI Trading Agents: https://impri.dev/docs/human-approval-for-ai-trading-agents
 - Human Approval for Background AI Workers: https://impri.dev/docs/human-approval-for-background-ai-workers
 - Human Approval for Fintech AI Agents: https://impri.dev/docs/human-approval-for-fintech-ai-agents
 - Human Approval for Google Agent Development Kit (ADK) Agents: https://impri.dev/docs/human-approval-google-agent-development-kit
