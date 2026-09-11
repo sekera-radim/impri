@@ -6,9 +6,27 @@ default:
 
 # server lives in the root npm workspace; mcp and ui are standalone
 # packages with their own lockfiles.
+#
+# Each job runs only when its own package (or this file) changed. The
+# daily SEO engine pushes docs-only seo/* branches and docs/ + www/
+# commits to main; running all three suites for those exhausted the
+# namespace's compute quota (Sept 2026). A newly pushed branch has no
+# previous commit to diff against, so branches compare to main instead.
+# Web-triggered and scheduled pipelines still run every job.
 
 server:
   stage: test
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes: &server_paths
+        - server/**/*
+        - package.json
+        - package-lock.json
+        - .gitlab-ci.yml
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        paths: *server_paths
+        compare_to: refs/heads/main
   cache:
     key:
       files:
@@ -25,6 +43,15 @@ server:
 
 mcp:
   stage: test
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes: &mcp_paths
+        - mcp/**/*
+        - .gitlab-ci.yml
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        paths: *mcp_paths
+        compare_to: refs/heads/main
   cache:
     key:
       files:
@@ -40,6 +67,15 @@ mcp:
 
 ui:
   stage: test
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes: &ui_paths
+        - ui/**/*
+        - .gitlab-ci.yml
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        paths: *ui_paths
+        compare_to: refs/heads/main
   cache:
     key:
       files:
