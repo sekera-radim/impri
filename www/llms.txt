@@ -588,6 +588,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Approve AI Agent Actions by Email: https://impri.dev/docs/approve-ai-agent-actions-by-email
 - Approve AI Agent CRM Updates Before They Sync: https://impri.dev/docs/approve-ai-agent-crm-updates
 - Approve AI Agent Calendar Changes Before They&#39;re Sent: https://impri.dev/docs/approve-ai-agent-calendar-changes
+- Approve AI Agent Support Ticket Escalations: https://impri.dev/docs/approve-ai-agent-support-ticket-escalations
 - Approve AI-Generated Content Before Publishing: https://impri.dev/docs/approve-ai-generated-content-before-publishing
 - Approve Emails Before Your AI Agent Sends Them: https://impri.dev/docs/approve-emails-before-your-ai-agent-sends-them
 - Approve GitHub Actions Runs Triggered by an AI Coding Agent: https://impri.dev/docs/approve-ai-agent-github-actions-workflows
@@ -612,6 +613,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human Approval Before an Agent Sends SMS: https://impri.dev/docs/human-approval-before-an-agent-sends-sms
 - Human Approval Gates in the Claude Agent SDK: https://impri.dev/docs/human-approval-claude-agent-sdk
 - Human Approval for AI Agencies and Freelancers: https://impri.dev/docs/human-approval-for-ai-agencies
+- Human Approval for AI Agent Terraform Changes: https://impri.dev/docs/human-approval-for-ai-agent-terraform-changes
 - Human Approval for AI Content Pipelines: https://impri.dev/docs/human-approval-for-ai-content-pipelines
 - Human Approval for AI Recruiting Outreach: https://impri.dev/docs/human-approval-for-ai-recruiting-outreach
 - Human Approval for AI Sales Outreach Agents: https://impri.dev/docs/human-approval-for-ai-sales-outreach
