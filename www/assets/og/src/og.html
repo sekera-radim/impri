@@ -1,0 +1,142 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1200px;height:630px;overflow:hidden}
+  body{
+    position:relative;
+    background:#06070d;
+    color:#eef0f7;
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---- aurora background, echoing www/styles.css .bg-aurora / .bg-grid ---- */
+  .aurora{
+    position:absolute; inset:-160px -120px;
+    background:
+      radial-gradient(480px 480px at 12% 8%,  rgba(99,102,241,0.42), transparent 60%),
+      radial-gradient(460px 460px at 88% 12%,  rgba(34,211,238,0.26), transparent 60%),
+      radial-gradient(560px 560px at 72% 92%,  rgba(139,92,246,0.34), transparent 62%),
+      radial-gradient(420px 420px at 15% 96%,  rgba(52,211,153,0.14), transparent 60%);
+    filter:blur(10px) saturate(1.15);
+  }
+  .grid{
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size:48px 48px;
+    -webkit-mask-image:radial-gradient(ellipse 85% 70% at 35% 30%, #000 40%, transparent 82%);
+            mask-image:radial-gradient(ellipse 85% 70% at 35% 30%, #000 40%, transparent 82%);
+  }
+  .vignette{
+    position:absolute; inset:0;
+    background:radial-gradient(120% 90% at 50% -10%, transparent 55%, rgba(3,4,9,0.75) 100%);
+  }
+
+  .stage{ position:absolute; inset:0; padding:64px 68px; display:flex; flex-direction:column; justify-content:space-between; }
+
+  /* ---- wordmark, matching .brand / .brand .mark in styles.css ---- */
+  .brandrow{ display:flex; align-items:center; gap:14px; }
+  .mark{
+    width:46px; height:46px; border-radius:14px; display:grid; place-items:center; flex:none;
+    background:linear-gradient(120deg,#6366f1,#8b5cf6);
+    box-shadow:0 10px 28px rgba(99,102,241,0.5);
+  }
+  .mark svg{ width:26px; height:26px; }
+  .brandrow .name{ font-size:28px; font-weight:800; letter-spacing:-0.02em; }
+  .docs-badge{
+    display:none; align-items:center; margin-left:2px;
+    font-size:15px; font-weight:700; letter-spacing:.02em;
+    padding:5px 14px; border-radius:999px;
+    background:rgba(34,211,238,0.14); color:#7fe3f4; border:1px solid rgba(34,211,238,0.38);
+  }
+  body.docs .docs-badge{ display:inline-flex; }
+
+  /* ---- main row: headline + illustration ---- */
+  .main{ display:flex; align-items:center; gap:40px; flex:1; margin-top:8px; }
+  .copy{ flex:1.15; max-width:620px; }
+  h1{
+    font-size:60px; font-weight:800; line-height:1.08; letter-spacing:-0.03em;
+    background:linear-gradient(120deg,#f3f4fa 0%,#eef0f7 55%,#c9cdfb 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .sub{ margin-top:20px; font-size:20px; color:#9aa3b2; line-height:1.5; max-width:520px; }
+
+  /* ---- illustration: glassy approval card, echoing .approval-card ---- */
+  .illust{ flex:1; display:flex; justify-content:center; }
+  .approval-card{
+    width:400px; border-radius:20px; padding:24px;
+    background:linear-gradient(180deg, rgba(24,26,44,0.92), rgba(12,13,24,0.88));
+    border:1px solid rgba(255,255,255,0.14);
+    box-shadow:0 40px 90px -24px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.07);
+    transform:rotate(1.5deg);
+  }
+  .ac-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .ac-chip{
+    font-size:12.5px; font-weight:700; padding:5px 12px; border-radius:999px;
+    background:rgba(251,191,36,0.14); color:#fbbf24; border:1px solid rgba(251,191,36,0.32);
+  }
+  .ac-agent{ font-size:12.5px; color:#6b7280; font-weight:600; }
+  .ac-title{ font-weight:700; font-size:18px; margin-bottom:12px; }
+  .ac-body{
+    font-size:14px; color:#9aa3b2; line-height:1.55;
+    background:rgba(255,255,255,0.035); border:1px solid rgba(255,255,255,0.10);
+    border-radius:12px; padding:14px 15px; margin-bottom:18px;
+  }
+  .ac-body b{ color:#eef0f7; font-weight:600; }
+  .ac-actions{ display:flex; gap:10px; }
+  .ac-btn{
+    flex:1; text-align:center; font-size:14px; font-weight:700; padding:11px 0; border-radius:11px;
+    border:1px solid rgba(255,255,255,0.16); background:rgba(255,255,255,0.045); color:#9aa3b2;
+  }
+  .ac-btn.approve{ background:rgba(52,211,153,0.16); color:#5eead4; border-color:rgba(52,211,153,0.4); }
+  .ac-btn.reject{ background:rgba(255,255,255,0.03); color:#9aa3b2; }
+
+  /* ---- footer meta ---- */
+  .footer{ display:flex; align-items:baseline; gap:16px; }
+  .footer .domain{ font-size:19px; font-weight:700; color:#eef0f7; letter-spacing:-0.01em; }
+  .footer .tag{ font-size:16px; color:#6b7280; }
+  .footer .dot{ width:6px; height:6px; border-radius:50%; background:#34d399; box-shadow:0 0 8px #34d399; display:inline-block; margin-right:6px; }
+</style>
+</head>
+<body>
+  <div class="aurora"></div>
+  <div class="grid"></div>
+  <div class="vignette"></div>
+
+  <div class="stage">
+    <div class="brandrow">
+      <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="name">Impri</span>
+      <span class="docs-badge">Docs</span>
+    </div>
+
+    <div class="main">
+      <div class="copy">
+        <h1>Human approval for AI&nbsp;agent actions</h1>
+        <div class="sub">Your agent proposes a risky action over MCP or REST. It lands in Slack, Telegram, Discord or email. A human approves or rejects, and the agent continues.</div>
+      </div>
+      <div class="illust">
+        <div class="approval-card">
+          <div class="ac-head"><span class="ac-chip">Pending approval</span><span class="ac-agent">agent · cleanup-bot</span></div>
+          <div class="ac-title">Delete 40 stale records</div>
+          <div class="ac-body">Action: <b>db.delete</b> · table <b>sessions</b><br>Reason: expired &gt; 30 days, no active refs.</div>
+          <div class="ac-actions">
+            <div class="ac-btn approve">Approve</div>
+            <div class="ac-btn reject">Reject</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span class="domain"><span class="dot"></span>impri.dev</span>
+      <span class="tag">MCP + REST · self-host or cloud</span>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Impri for AI agents — human approval over MCP</title>
+  <meta name="description" content="Install the Impri MCP server in Claude Code, Codex, Cursor or Windsurf, and give your agent 8 tools to propose actions, await a human decision, and report the outcome." />
+  <meta name="theme-color" content="#06070d" />
+  <meta property="og:title" content="Impri for AI agents — human approval over MCP" />
+  <meta property="og:description" content="Install the Impri MCP server in Claude Code, Codex, Cursor or Windsurf, and give your agent 8 tools to propose actions, await a human decision, and report the outcome." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://impri.dev/agents" />
+  <meta property="og:image" content="https://impri.dev/assets/og/og-default.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Impri — human-in-the-loop approval inbox for AI agents" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://impri.dev/assets/og/og-default.png" />
+  <link rel="canonical" href="https://impri.dev/agents" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/styles.css" />
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Impri for AI agents — human approval over MCP","description":"Install the Impri MCP server in Claude Code, Codex, Cursor or Windsurf, and give your agent 8 tools to propose actions, await a human decision, and report the outcome.","url":"https://impri.dev/agents","inLanguage":"en"}</script>
+</head>
+<body>
+<div class="bg-aurora"></div><div class="bg-grid"></div><div class="bg-vignette"></div>
+<nav class="nav scrolled" id="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri</a>
+      <div class="nav-links">
+        <a class="link" href="/#how">How it works</a>
+        <a class="link" href="/use-cases">Use cases</a>
+        <a class="link active-nav" href="/agents">Agents</a>
+        <a class="link" href="/pricing">Pricing</a>
+        <a class="link" href="/docs">Docs</a>
+        <a class="btn btn-primary btn-sm" href="https://app.impri.dev">Get started</a>
+      </div>
+    </div>
+  </nav>
+  <header class="hero uc-hero" id="top">
+    <div class="wrap" style="max-width:820px">
+      <span class="eyebrow reveal">For Claude Code, Codex, Cursor, Windsurf and any MCP agent</span>
+      <h1 class="reveal" data-delay="1" style="margin-top:18px">Give your agent a way to ask a human first.</h1>
+      <div class="lede reveal" data-delay="2">Impri is an MCP server with 8 tools: propose an action, wait for a decision, report what happened. Your agent keeps doing everything else at full speed — it only stops at the door marked "real side effect."</div>
+      <div class="hero-cta reveal" data-delay="3">
+        <a class="btn btn-primary magnetic" href="https://app.impri.dev">Get started free <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="btn btn-ghost magnetic" href="https://gitlab.com/sekera.radim/impri">Self-host instead</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="section uc-section" id="install">
+    <div class="wrap uc-wrap" style="max-width:820px">
+      <div class="section-head reveal"><span class="eyebrow">Install</span><h2 style="margin-top:14px">One line per agent</h2></div>
+      <div class="install-tabs" role="tablist"><button class="install-tab active" type="button" data-tab="0">Claude Code</button>
+<button class="install-tab" type="button" data-tab="1">OpenAI Codex</button>
+<button class="install-tab" type="button" data-tab="2">Cursor</button>
+<button class="install-tab" type="button" data-tab="3">Windsurf</button></div>
+  <div class="install-panels"><div class="install-panel active" data-panel="0">
+    <div class="code-block"><pre>claude mcp add impri \
+  -e IMPRI_API_KEY=im_your_key_here \
+  -e IMPRI_BASE_URL=https://api.impri.dev \
+  -- npx @impri/mcp</pre></div>
+    <p class="uc-prose" style="font-size:14px;margin-top:6px">Self-hosted? Drop IMPRI_BASE_URL — it defaults to http://localhost:8484. <a href="/docs/claude-code-human-approval">Full guide →</a></p>
+  </div>
+<div class="install-panel" data-panel="1">
+    <div class="code-block"><pre>codex mcp add impri \
+  --env IMPRI_API_KEY=im_your_key_here \
+  --env IMPRI_BASE_URL=https://api.impri.dev \
+  -- npx -y @impri/mcp</pre></div>
+    <p class="uc-prose" style="font-size:14px;margin-top:6px">Self-hosted? Drop IMPRI_BASE_URL — it defaults to http://localhost:8484. <a href="/docs/codex-human-approval">Full guide →</a></p>
+  </div>
+<div class="install-panel" data-panel="2">
+    <div class="code-block"><pre>{
+  &quot;mcpServers&quot;: {
+    &quot;impri&quot;: {
+      &quot;command&quot;: &quot;npx&quot;,
+      &quot;args&quot;: [&quot;-y&quot;, &quot;@impri/mcp&quot;],
+      &quot;env&quot;: {
+        &quot;IMPRI_API_KEY&quot;: &quot;im_your_key_here&quot;,
+        &quot;IMPRI_BASE_URL&quot;: &quot;https://api.impri.dev&quot;
+      }
+    }
+  }
+}</pre></div>
+    <p class="uc-prose" style="font-size:14px;margin-top:6px">Save as .cursor/mcp.json. Self-hosted? Drop IMPRI_BASE_URL — it defaults to http://localhost:8484. <a href="/docs/cursor-human-approval">Full guide →</a></p>
+  </div>
+<div class="install-panel" data-panel="3">
+    <div class="code-block"><pre>{
+  &quot;mcpServers&quot;: {
+    &quot;impri&quot;: {
+      &quot;command&quot;: &quot;npx&quot;,
+      &quot;args&quot;: [&quot;-y&quot;, &quot;@impri/mcp&quot;],
+      &quot;env&quot;: {
+        &quot;IMPRI_API_KEY&quot;: &quot;im_your_key_here&quot;,
+        &quot;IMPRI_BASE_URL&quot;: &quot;https://api.impri.dev&quot;
+      }
+    }
+  }
+}</pre></div>
+    <p class="uc-prose" style="font-size:14px;margin-top:6px">Save to ~/.codeium/windsurf/mcp_config.json. Self-hosted? Drop IMPRI_BASE_URL — it defaults to http://localhost:8484. <a href="/docs/windsurf-human-approval">Full guide →</a></p>
+  </div></div>
+  <script>(function(){
+    var tabs=document.querySelectorAll('.install-tab'),panels=document.querySelectorAll('.install-panel');
+    tabs.forEach(function(t){t.addEventListener('click',function(){
+      tabs.forEach(function(x){x.classList.remove('active')});
+      panels.forEach(function(x){x.classList.remove('active')});
+      t.classList.add('active');
+      document.querySelector('.install-panel[data-panel="'+t.dataset.tab+'"]').classList.add('active');
+    });});
+  })();</script>
+    </div>
+  </section>
+
+  <section class="section uc-section" id="tools">
+    <div class="wrap uc-wrap" style="max-width:820px">
+      <div class="section-head reveal"><span class="eyebrow">What the agent gets</span><h2 style="margin-top:14px">8 tools</h2></div>
+      <div class="table-wrap reveal" data-delay="1"><table class="tools-table">
+        <thead><tr><th>Tool</th><th>Purpose</th></tr></thead>
+        <tbody><tr><td>impri_push_action</td><td>Submit a proposed action with a preview; returns an action_id and inbox_url.</td></tr>
+<tr><td>impri_await_decision</td><td>Long-poll until a human approves, rejects, or the timeout elapses.</td></tr>
+<tr><td>impri_report_result</td><td>Report whether the approved action executed; closes the audit loop.</td></tr>
+<tr><td>impri_inbox_status</td><td>Check how many actions are pending before starting a new batch.</td></tr>
+<tr><td>impri_create_watcher</td><td>Create a monitoring watcher from a full hand-written spec.</td></tr>
+<tr><td>impri_list_watchers</td><td>List configured watchers, optionally filtered by status.</td></tr>
+<tr><td>impri_list_watcher_presets</td><td>List ready-made watcher templates (Reddit, GitHub releases, HN, RSS…).</td></tr>
+<tr><td>impri_create_watcher_from_preset</td><td>Create a watcher from a preset by id, with just the params filled in.</td></tr></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section class="section uc-section" id="loop">
+    <div class="wrap uc-wrap" style="max-width:820px">
+      <div class="section-head reveal"><span class="eyebrow">How it runs</span><h2 style="margin-top:14px">Propose → await → report</h2></div>
+      <ol class="flow-list reveal" data-delay="1"><li>Before an action leaves the sandbox — a send, a deploy, a write, a publish — the agent calls impri_push_action with a short title and a preview.</li>
+<li>The agent calls impri_await_decision and blocks. The action shows up in the web inbox, and on your phone if a notification channel is configured.</li>
+<li>A human approves, rejects, or edits the draft. The decision (and any edit, as a signed diff) comes back from the poll.</li>
+<li>On approved, the agent executes — never before — and calls impri_report_result so the inbox shows the real outcome, not just the decision.</li></ol>
+      <div class="code-block reveal" data-delay="2"><pre>impri_push_action({ kind, title, preview: { format, body }, editable })
+  // -&gt; { action_id, status: &quot;pending&quot;, inbox_url }
+
+impri_await_decision({ action_id, timeout_s })
+  // -&gt; { status: &quot;approved&quot; | &quot;rejected&quot;, preview, edited_by_human }
+
+impri_report_result({ action_id, status: &quot;executed&quot; | &quot;execute_failed&quot;, detail })</pre></div>
+    </div>
+  </section>
+
+  <section class="section uc-section" id="usecases">
+    <div class="wrap uc-wrap" style="max-width:820px">
+      <div class="section-head reveal"><span class="eyebrow">Use cases</span><h2 style="margin-top:14px">See it applied</h2></div>
+      <p class="uc-prose">Overnight coding runs, destructive database writes, outbound email, deploys, refunds, content publishing — <a href="/use-cases">see what people use it for</a>. Full API reference: <a href="/docs/mcp">MCP server docs</a> and the <a href="https://api.impri.dev/v1/openapi.json">OpenAPI spec</a>.</p>
+    </div>
+  </section>
+
+  <section class="section" id="cta">
+    <div class="wrap"><div class="cta-band reveal">
+      <h2>Give your agent hands — <span class="gradient-text">and a conscience.</span></h2>
+      <div class="cta-btns">
+        <a class="btn btn-primary magnetic" href="https://app.impri.dev">Get started free</a>
+        <a class="btn btn-ghost magnetic" href="https://gitlab.com/sekera.radim/impri">Self-host instead</a>
+      </div>
+    </div></div>
+  </section>
+<footer class="footer">
+    <div class="wrap footer-inner">
+      <a class="brand" href="/"><span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri</a>
+      <div>
+        <a href="/use-cases">Use cases</a>
+        <a href="/agents">Agents</a>
+        <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+        <a href="/docs">Docs</a>
+        <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+        <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+        <a href="/docs/privacy">Privacy</a>
+        <a href="/docs/terms">Terms</a>
+        <a href="https://sekera.dev">Contact</a>
+      </div>
+    </div>
+    <div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>.</span></div>
+  </footer>
+<script src="/app.js" defer></script>
+</body>
+</html>

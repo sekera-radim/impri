@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2026-09-13T14:29:43.158Z",
+  "useCases": [
+    {
+      "slug": "content-publishing",
+      "title": "Approve AI-generated content before it publishes",
+      "description": "Put a human review step in front of AI-drafted blog posts, social media, and marketing copy before it goes live, without slowing down the drafting itself."
+    },
+    {
+      "slug": "deploy-and-infra-changes",
+      "title": "Human approval before an AI agent deploys or changes infra",
+      "description": "Gate deploys, Terraform applies, and other infrastructure changes an AI agent proposes behind a human decision, without slowing down everything else it does."
+    },
+    {
+      "slug": "destructive-database-ops",
+      "title": "Gate destructive database operations from an AI agent",
+      "description": "Put human approval in front of every INSERT, UPDATE, DELETE or schema change a text-to-SQL or coding agent generates, before it touches production."
+    },
+    {
+      "slug": "outbound-email-and-messages",
+      "title": "Approve emails, Slack and SMS an AI agent wants to send",
+      "description": "Hold every outbound email, Slack message, or SMS an AI agent drafts for a human to read and approve before it reaches a real inbox."
+    },
+    {
+      "slug": "overnight-coding-agent",
+      "title": "Let a coding agent run overnight, approve from your phone",
+      "description": "Kick off a long coding agent run before bed, gate every risky step behind Impri, and approve or reject each one from your phone in the morning."
+    },
+    {
+      "slug": "refunds-and-payments",
+      "title": "Approve refunds and charges an AI support agent wants to issue",
+      "description": "Require human sign-off before an AI support or billing agent issues a refund or charge, with the amount and reason visible in the approval card."
+    }
+  ],
+  "agents": {
+    "title": "Impri for AI agents — human approval over MCP"
+  }
+}

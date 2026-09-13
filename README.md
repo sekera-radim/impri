@@ -1,24 +1,138 @@
-# Impri — Approval Inbox for AI Agents
+# Impri
 
-> The imprimatur for your AI agents. Watchers watch the world, the Approval
-> Inbox holds the agent's hands until a human says yes.
+**Human-in-the-loop approval inbox for AI agents.**
 
-## Quickstart
+Your agent wants to send the email, post the reply, run the migration.
+You want to see it before it happens, from your phone if you're not at a desk.
+Impri is the inbox in between.
 
-Two ways to run Impri — pick one. Both give you an API key and an inbox URL in under 5 minutes.
-
-### Cloud (no install)
-
-```bash
-curl -s -X POST https://api.impri.dev/v1/signup \
-  -H "Content-Type: application/json" \
-  -d '{"name": "my-agent"}'
-# → { "key": "im_...", "project_id": "proj_...", ... }
+```
+Agent (Claude Code / any MCP client)  →  Impri inbox  →  You approve, edit, or reject
+        ↑                                                          |
+        └──────────────── agent executes, reports result ──────────┘
 ```
 
-Or skip curl and click **Create an API key** at [app.impri.dev](https://app.impri.dev) — same result. Your inbox is at **app.impri.dev**, the API base URL is `https://api.impri.dev/v1`. It's early beta but is the fastest way to try Impri with no Docker required.
+![Impri demo: an agent pushing an action, the approval inbox, a human approving it, the agent executing](https://raw.githubusercontent.com/sekera-radim/impri/main/www/assets/demo/killer-demo.gif)
 
-### Docker Compose (self-host, < 5 minutes)
+[Watch as MP4](https://impri.dev/assets/demo/killer-demo.mp4?utm_source=github&utm_medium=readme&utm_campaign=impri)
+
+## The problem
+
+Agents that only read and draft are safe by construction. The moment one can send an email, post a reply, or run a write against a database, "ask the user first" becomes a system-prompt instruction — and a instruction is something a capable model can reason its way past, forget under load, or misjudge on an edge case you didn't anticipate.
+
+Impri turns that instruction into a data dependency instead. The agent pushes a proposed action to an inbox and polls for a decision; the execution branch is only reachable once the API actually returns `status: "approved"`. There's nothing to talk the model past — the gate lives outside the model, not inside its prompt.
+
+## 60-second install
+
+**Claude Code:**
+
+```bash
+claude mcp add impri --env IMPRI_API_KEY=im_... --env IMPRI_BASE_URL=https://api.impri.dev -- npx -y @impri/mcp
+```
+
+**Codex:**
+
+```bash
+codex mcp add impri --env IMPRI_API_KEY=im_... --env IMPRI_BASE_URL=https://api.impri.dev -- npx -y @impri/mcp
+```
+
+**Cursor** — add to `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "impri": {
+      "command": "npx",
+      "args": ["-y", "@impri/mcp"],
+      "env": {
+        "IMPRI_API_KEY": "im_...",
+        "IMPRI_BASE_URL": "https://api.impri.dev"
+      }
+    }
+  }
+}
+```
+
+**Windsurf** — add the same block to `mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "impri": {
+      "command": "npx",
+      "args": ["-y", "@impri/mcp"],
+      "env": {
+        "IMPRI_API_KEY": "im_...",
+        "IMPRI_BASE_URL": "https://api.impri.dev"
+      }
+    }
+  }
+}
+```
+
+Get an `im_...` key with one curl call — no signup form:
+
+```bash
+curl -s -X POST https://api.impri.dev/v1/signup -H "Content-Type: application/json" -d '{"name":"my-agent"}'
+```
+
+`IMPRI_BASE_URL` defaults to `http://localhost:8484` (self-host) if you omit it — set it to `https://api.impri.dev` for the hosted cloud, as above. Self-hosting instead of the cloud? See [Self-host or cloud](#self-host-or-cloud) below.
+
+## What the agent can do
+
+| Tool | What it does |
+|---|---|
+| `impri_push_action` | Submit a proposed action — title, formatted preview, optional editable fields |
+| `impri_await_decision` | Poll until a human approves, rejects, or the timeout elapses |
+| `impri_report_result` | Report whether the approved action actually succeeded |
+| `impri_inbox_status` | Check how many actions are waiting, before starting a big batch |
+| `impri_create_watcher` | Create a watcher (RSS / Reddit search / URL diff) that feeds matching items into the inbox |
+| `impri_list_watchers` | List configured watchers, optionally filtered by status |
+| `impri_list_watcher_presets` | List the 18 ready-made watcher templates (Hacker News, GitHub releases, npm, arXiv, …) |
+| `impri_create_watcher_from_preset` | Create a watcher from a preset by id + params, no config schema to write |
+
+## The loop
+
+```
+1. impri_push_action(kind, title, preview)        → { action_id, status: "pending", inbox_url }
+2. impri_await_decision(action_id)                 → waits for a human to approve/reject/edit, or times out
+3. If approved: execute the real action
+4. impri_report_result(action_id, "executed" | "execute_failed")
+```
+
+Or in plain REST, the same three calls:
+
+```bash
+ACTION=$(curl -s -X POST https://api.impri.dev/v1/actions \
+  -H "Authorization: Bearer $IMPRI_API_KEY" \
+  -d '{"kind":"email.send","title":"Outreach: Acme","preview":{"format":"markdown","body":"Hi Sarah, ..."}}')
+ID=$(echo "$ACTION" | jq -r .action_id)
+
+# poll (or long-poll) until a human decides
+DECISION=$(curl -s "https://api.impri.dev/v1/actions/$ID" -H "Authorization: Bearer $IMPRI_API_KEY")
+
+# only now, and only if approved
+[ "$(echo "$DECISION" | jq -r .status)" = "approved" ] && send_email "$(echo "$DECISION" | jq -r .preview.body)"
+```
+
+The human doesn't have to be staring at a dashboard: an action can notify Slack, Discord, Telegram, ntfy, email, or a generic webhook, and the reviewer can edit the draft before approving — the agent receives that edited text back.
+
+## Why not just a prompt instruction?
+
+| "Please ask before sending" in the system prompt | Impri |
+|---|---|
+| The model has to remember, every time | Execution is unreachable without `status: "approved"` from the API |
+| No record of who decided what, or when | Every decision is in the audit log |
+| Can't fix a typo without a new draft | Edit-before-approve — the agent gets the edited version back |
+| One-off per agent, per project | One inbox, six notification channels, 18 watcher presets, all agents |
+
+The honest caveat: this is a real gate only as long as the approved path is the agent's *only* path to the side effect — give it the raw credential too and it can route around you.
+
+## Self-host or cloud
+
+**Cloud** — signup above, inbox at [app.impri.dev](https://app.impri.dev?utm_source=github&utm_medium=readme&utm_campaign=impri), early beta.
+
+**Self-host** — full core, MIT, no license key:
 
 ```bash
 git clone https://gitlab.com/sekera.radim/impri.git
@@ -26,165 +140,55 @@ cd impri
 docker compose up
 ```
 
-Open **http://localhost:8080** in your browser.
+Server on `http://localhost:8484`, web inbox on `http://localhost:8080`. The bootstrap admin key prints to the logs on first start. Details: [Self-hosting](docs/self-hosting.md).
 
-On first start the server prints the bootstrap Admin API key to the logs:
+## Reference
 
-```
-╔══════════════════════════════════════════════════════╗
-║            IMPRI — FIRST RUN BOOTSTRAP               ║
-╠══════════════════════════════════════════════════════╣
-║  Admin API Key: im_...                               ║
-║  Project ID:    proj_...                             ║
-║  Store this key securely — it will not be shown again.║
-╚══════════════════════════════════════════════════════╝
-```
+Everything below is unchanged technical detail: CLI, SDKs, integrations, the full doc set, and legal.
 
-Copy the key, paste it into the login screen, and you're in.
+### CLI, SDKs & integrations
 
-### Dev mode (hot-reload, self-host)
+> v0.1, pre-release. MCP is published; the CLI and both SDKs are local-install only (pre-npm / pre-PyPI) for now.
 
-**Terminal 1 — server:**
+| Package | Location | Status |
+|---|---|---|
+| MCP server | `mcp/` / `npx @impri/mcp` | Published |
+| CLI (`impri`) | `cli/` | Local build — see [CLI reference](docs/cli.md) |
+| Python SDK | `sdk/python/` | Local install (`pip install -e sdk/python`) |
+| TypeScript SDK | `sdk/typescript/` | Local install (`npm install ./sdk/typescript`) |
 
-```bash
-cd server
-npm install
-npm run dev
-# Server starts on http://localhost:8484
-```
+Framework integrations in [`integrations/`](integrations/): packages for the [Claude Agent SDK](integrations/claude-agent-sdk), [CrewAI](integrations/crewai), [LangChain](integrations/langchain), and the [OpenAI Agents SDK](integrations/openai-agents); documented webhook-based patterns for n8n, Make, and Zapier in [Integrations](docs/integrations.md).
 
-**Terminal 2 — UI:**
+### Notifications
 
-```bash
-cd ui
-npm install
-npm run dev
-# UI starts on http://localhost:5173
-# /v1 requests are proxied to localhost:8484
-```
+Six channels: Slack, Discord, Telegram, email, ntfy, and generic webhook. See [Notification channels](docs/notifications.md) and [Telegram Approval Bot](docs/telegram-approval.md).
 
-## API at a glance
+### Documentation
 
-Base URL: `https://api.impri.dev/v1` (cloud) or `http://localhost:8484/v1` (self-host)  
-Auth: `Authorization: Bearer im_<key>`
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/v1/actions` | Push a new action for approval |
-| GET | `/v1/actions` | List actions (`?status=pending&q=…&kind=…&since=…`) |
-| GET | `/v1/actions/:id` | Get action detail + decision |
-| POST | `/v1/actions/:id/decision` | Approve or reject (single) |
-| POST | `/v1/actions/bulk-decision` | Approve or reject up to 50 actions at once |
-| POST | `/v1/actions/:id/result` | Report execution result |
-| GET | `/v1/openapi.json` | OpenAPI spec |
-
-### Push an action (curl example)
-
-```bash
-curl -X POST https://api.impri.dev/v1/actions \
-  -H "Authorization: Bearer im_..." \
-  -H "Content-Type: application/json" \
-  -d '{
-    "kind": "reddit.comment",
-    "title": "Reply to: Why is resume advice so conflicting?",
-    "preview": {
-      "format": "markdown",
-      "body": "The advice conflicts because..."
-    },
-    "target_url": "https://reddit.com/r/jobs/comments/...",
-    "expires_in": 86400,
-    "editable": ["preview.body"]
-  }'
-```
-
-Self-hosting instead? Swap the URL for `http://localhost:8484/v1/actions`.
-
-## MCP server (Claude Code / agents)
-
-```bash
-npx @impri/mcp
-# cloud:      IMPRI_API_KEY=im_...  IMPRI_BASE_URL=https://api.impri.dev
-# self-host:  IMPRI_API_KEY=im_...  IMPRI_BASE_URL=http://localhost:8484
-```
-
-## Project structure
-
-```
-server/   TypeScript + Fastify + SQLite — REST API (port 8484)
-mcp/      MCP server (stdio) — thin wrapper over the REST API
-ui/       Vue 3 + Vuetify — web inbox (port 5173 dev / 8080 Docker)
-docker/   Dockerfiles (server.Dockerfile)
-docs/     Research, ADRs
-```
-
-## CLI
-
-The `impri` CLI lets humans manage the inbox from a terminal — approve, reject, tail pending actions, add watchers, and manage keys — without writing any code.
-
-```bash
-# Build and install (local, pre-npm)
-cd sdk/typescript && npm install && npm run build
-cd ../cli && npm install && npm run build
-npm install -g ./cli
-
-# Connect to your instance
-impri init --cloud --signup   # or: impri init (self-hosted)
-
-# Common commands
-impri inbox                   # pending actions
-impri tail                    # live-tail new actions
-impri approve act_abc123
-impri watch add github-releases --param owner=fastify --param repo=fastify
-```
-
-- [CLI reference](docs/cli.md)
-
-## SDKs & integrations
-
-> v0.1, pre-release — both cloud and self-host work today; expect rough edges either way.
-
-| Package | Location | Language |
-|---------|----------|----------|
-| CLI | `cli/` | Node 18+ |
-| Python SDK | `sdk/python/` | Python 3.10+ |
-| TypeScript SDK | `sdk/typescript/` | Node 18+ (native fetch) |
-| MCP server | `mcp/` / `npx @impri/mcp` | Any MCP client |
-
-```bash
-pip install -e sdk/python          # Python SDK (local, pre-PyPI)
-npm install ./sdk/typescript       # TS SDK (local, pre-npm)
-npx @impri/mcp                     # MCP server (published)
-```
-
-- [Python SDK reference](docs/sdk-python.md)
-- [TypeScript SDK reference](docs/sdk-typescript.md)
-- [Integrations](docs/integrations.md) — LangChain, OpenAI Agents, CrewAI, n8n, Make, Zapier, webhook receivers
-- [Cookbook](docs/cookbook.md) — recipes for email approval, SQL gating, social posts, idempotent batches, webhook verification, key rotation
-
-## Documentation
-
-- **Web docs:** <https://impri.dev/docs>
-- [CLI reference](docs/cli.md) — install, `impri init`, every command with examples, config + env precedence
-- [Quickstart](docs/quickstart.md) — signup → first approved action in < 5 min
-- [Example agent](examples/approval-gated-agent.mjs) — a complete, dependency-free
-  agent that proposes an action, waits for approval, then acts and reports back
-- [How to add human approval to an AI agent](docs/how-to-add-human-approval-to-an-ai-agent.md)
+- **Web docs:** <https://impri.dev/docs?utm_source=github&utm_medium=readme&utm_campaign=impri>
+- [Quickstart](docs/quickstart.md) — signup to first approved action in under 5 minutes
+- [Example agent](examples/approval-gated-agent.mjs) — dependency-free Node script showing the full loop
 - [Self-hosting](docs/self-hosting.md) — Docker, env vars, backups, reverse proxy
 - [Webhooks](docs/webhooks.md) — HMAC verification, retries, polling fallback
-- [Inbox UX & Bulk API](docs/inbox.md) — keyboard shortcuts, bulk approve/reject, search/filter parameters, `POST /v1/actions/bulk-decision` reference
-- [Watcher presets](docs/watcher-presets.md) — 18 ready-to-use templates (HN, Reddit, GitHub, npm, arXiv, …); REST + SDK + MCP usage
-- [Notification channels](docs/notifications.md) — Slack, Discord, Telegram, ntfy, email, and generic webhook; digest window, auto-disable, SSRF protection
-- [Telegram Approval Bot](docs/telegram-approval.md) — in-chat Approve / Reject buttons; setup, security model, troubleshooting
-- [Audit log](docs/audit-log.md) — event types, query API (`GET /v1/audit`), export (NDJSON/CSV), retention, and security model
+- [Watcher presets](docs/watcher-presets.md) — all 18 templates, REST + SDK + MCP usage
+- [Audit log](docs/audit-log.md) — event types, query API, export, retention
+- [Architecture](ARCHITECTURE.md)
 - [`llms.txt`](docs/llms.txt) — machine-readable index for AI assistants
 
-## Self-hosting notes
+### Pricing
 
-- SQLite data is persisted in a Docker volume (`impri-data`).
-- Set `WEBHOOK_SECRET` env var to a random string for HMAC webhook signing.
-- `BASE_URL` should match the public URL of your deployment (used in inbox_url links).
+Free (3 watchers, 100 approvals/mo) · Indie $9/mo (20 watchers, 2,000 approvals/mo, 5-minute checks) · Team $29/mo (unlimited watchers and approvals, 1-minute checks). Self-host the full core for free — no tier limits apply outside the hosted cloud. Details: [impri.dev](https://impri.dev/?utm_source=github&utm_medium=readme&utm_campaign=impri#pricing).
 
-## License
+### Privacy & legal
 
-MIT — see [LICENSE](LICENSE). Self-host the full core freely; the hosted cloud
-and team features are the paid offering (see `MONETIZATION.md`).
+- [Privacy Policy](docs/privacy.md)
+- [GDPR notes](docs/gdpr.md)
+- [Terms](docs/terms.md)
+
+### License
+
+MIT — see [LICENSE](LICENSE). Self-host the full core freely; the hosted cloud and paid tiers are the commercial offering (see [MONETIZATION.md](MONETIZATION.md)).
+
+---
+
+Made by [Radim Sekera](https://impri.dev?utm_source=github&utm_medium=readme&utm_campaign=impri). Related project: [briefgate.dev](https://briefgate.dev) — client intake for AI coding agents.

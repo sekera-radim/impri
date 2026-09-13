@@ -325,3 +325,81 @@ section { position: relative; }
   .status-pending .glyph, .cursor { animation: none; }
   * { scroll-behavior: auto !important; }
 }
+
+/* ---------- hero demo loop + screenshot strip ---------- */
+.hero-media { margin-top: 36px; }
+.hero-loop {
+  width: 100%; height: auto; display: block; border-radius: 16px;
+  border: 1px solid var(--border); box-shadow: 0 30px 80px rgba(0,0,0,.45); background: #0b1020;
+}
+.hero-watch {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 14px;
+  font-size: 13.5px; color: var(--muted); text-decoration: none;
+}
+.hero-watch:hover { color: var(--text); }
+.hero-watch svg { width: 14px; height: 14px; }
+.shots-strip {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  max-width: var(--maxw); margin: 0 auto; padding: 0 24px 90px;
+}
+.shots-strip figure { margin: 0; }
+.shots-strip img {
+  width: 100%; height: auto; display: block; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--surface);
+}
+.shots-strip figcaption { margin-top: 10px; font-size: 13px; color: var(--faint); text-align: center; }
+@media (max-width: 800px) { .shots-strip { grid-template-columns: 1fr; } }
+
+/* ---------- use-case / agents pages (shared with docs code blocks) ---------- */
+.uc-crumbs { font-size: 13px; color: var(--faint); margin-bottom: 18px; }
+.uc-crumbs a { color: var(--muted); text-decoration: none; }
+.uc-crumbs a:hover { color: var(--text); }
+.uc-wrap { max-width: 760px; }
+.uc-intro { max-width: 42em; }
+.uc-prose { color: var(--muted); font-size: 16px; line-height: 1.75; max-width: 42em; }
+.uc-prose p { margin: 0 0 14px; }
+.uc-prose ol, .uc-prose ul { padding-left: 22px; margin: 8px 0 16px; }
+.uc-prose li { margin: 6px 0; }
+.uc-prose strong { color: var(--text); }
+.uc-prose a { color: #a5b4fc; text-decoration: underline; text-underline-offset: 3px; }
+.uc-prose a:hover { color: #c7cbff; }
+.uc-prose h2 { font-size: 20px; margin: 28px 0 10px; color: var(--text); }
+.uc-prose table { width: 100%; min-width: 420px; border-collapse: collapse; font-size: 14px; margin: 10px 0; }
+.uc-prose th, .uc-prose td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+.uc-prose th { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+.table-wrap { overflow-x: auto; margin: 14px 0; }
+.code-block {
+  position: relative; background: rgba(0,0,0,.38); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px; margin: 14px 0; overflow: hidden;
+}
+.code-block pre { margin: 0; padding: 16px 18px; overflow-x: auto; font-size: 13px; line-height: 1.6; font-family: var(--mono); color: #cdd3e1; }
+.uc-shot-figure { margin: 0 0 8px; text-align: center; }
+.uc-shot { max-width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--border); box-shadow: 0 24px 60px rgba(0,0,0,.4); }
+.uc-shot-figure figcaption { margin-top: 12px; font-size: 13px; color: var(--faint); }
+.features-3 { grid-template-columns: repeat(3, 1fr); }
+.uc-card { display: block; text-decoration: none; color: inherit; }
+.uc-more { display: inline-block; margin-top: 10px; font-size: 13.5px; color: #a5b4fc; }
+.cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+/* ---------- /agents one-pager ---------- */
+.install-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.install-tab {
+  padding: 8px 16px; border-radius: 999px; font-size: 13.5px; border: 1px solid var(--border);
+  background: transparent; color: var(--muted); cursor: pointer; transition: all .15s;
+}
+.install-tab.active { background: var(--surface-2); color: var(--text); border-color: var(--border-2); }
+.install-panel { display: none; }
+.install-panel.active { display: block; }
+.tools-table { min-width: 520px; }
+.tools-table td:first-child { font-family: var(--mono); color: #c7cbff; white-space: nowrap; }
+.flow-list { counter-reset: flow; list-style: none; padding: 0; margin: 0; max-width: 42em; }
+.flow-list li {
+  position: relative; padding: 4px 0 20px 38px; color: var(--muted); font-size: 15px; line-height: 1.7;
+}
+.flow-list li::before {
+  counter-increment: flow; content: counter(flow); position: absolute; left: 0; top: 2px;
+  width: 24px; height: 24px; border-radius: 50%; background: var(--surface-2); color: var(--text);
+  font-size: 12px; font-weight: 700; display: grid; place-items: center; font-family: var(--mono);
+}
+
+@media (max-width: 900px) { .features-3 { grid-template-columns: 1fr; } }

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Approve refunds and charges an AI support agent wants to issue — Impri</title>
+  <meta name="description" content="Require human sign-off before an AI support or billing agent issues a refund or charge, with the amount and reason visible in the approval card." />
+  <meta name="theme-color" content="#06070d" />
+  <meta property="og:title" content="Approve refunds and charges an AI support agent wants to issue — Impri" />
+  <meta property="og:description" content="Require human sign-off before an AI support or billing agent issues a refund or charge, with the amount and reason visible in the approval card." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://impri.dev/use-cases/refunds-and-payments" />
+  <meta property="og:image" content="https://impri.dev/assets/og/og-default.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Impri — human-in-the-loop approval inbox for AI agents" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://impri.dev/assets/og/og-default.png" />
+  <link rel="canonical" href="https://impri.dev/use-cases/refunds-and-payments" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/styles.css" />
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Approve refunds and charges an AI support agent wants to issue","description":"Require human sign-off before an AI support or billing agent issues a refund or charge, with the amount and reason visible in the approval card.","url":"https://impri.dev/use-cases/refunds-and-payments","inLanguage":"en","isPartOf":{"@type":"WebSite","name":"Impri","url":"https://impri.dev"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Impri","item":"https://impri.dev"},{"@type":"ListItem","position":2,"name":"Use cases","item":"https://impri.dev/use-cases"},{"@type":"ListItem","position":3,"name":"Approve refunds and charges an AI support agent wants to issue","item":"https://impri.dev/use-cases/refunds-and-payments"}]}</script>
+</head>
+<body>
+<div class="bg-aurora"></div><div class="bg-grid"></div><div class="bg-vignette"></div>
+<nav class="nav scrolled" id="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri</a>
+      <div class="nav-links">
+        <a class="link" href="/#how">How it works</a>
+        <a class="link active-nav" href="/use-cases">Use cases</a>
+        <a class="link" href="/agents">Agents</a>
+        <a class="link" href="/pricing">Pricing</a>
+        <a class="link" href="/docs">Docs</a>
+        <a class="btn btn-primary btn-sm" href="https://app.impri.dev">Get started</a>
+      </div>
+    </div>
+  </nav>
+  <header class="hero uc-hero" id="top">
+    <div class="wrap" style="max-width:820px">
+      <nav class="uc-crumbs reveal" aria-label="Breadcrumb"><a href="/">Impri</a> › <a href="/use-cases">Use cases</a></nav>
+      <span class="eyebrow reveal" data-delay="1">Use case</span>
+      <h1 class="reveal" data-delay="1" style="margin-top:18px">Approve refunds and charges an AI support agent wants to issue</h1>
+      <div class="lede reveal uc-intro" data-delay="2"><p>An AI support agent that can look up an order, understand the complaint, and decide a refund is warranted is genuinely useful — most refund requests are routine and the reasoning is easy to check. The part worth gating isn&#39;t the judgment call, it&#39;s the money actually moving.</p>
+</div>
+      <div class="hero-cta reveal" data-delay="3">
+        <a class="btn btn-primary magnetic" href="https://app.impri.dev">Try it free <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="btn btn-ghost magnetic" href="https://gitlab.com/sekera.radim/impri">Self-host instead</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="section uc-section" id="problem">
+    <div class="wrap uc-wrap">
+      <div class="section-head reveal"><span class="eyebrow">The problem</span><h2 style="margin-top:14px">Problem</h2></div>
+      <div class="uc-prose reveal" data-delay="1"><p>A support agent that&#39;s right 98% of the time about refund amounts is still wrong roughly once in fifty. At volume, &quot;wrong&quot; here means real charge-backs, real disputes, real reconciliation work, and a customer who got refunded twice or not at all. Refunds also invite a specific failure mode agents are bad at resisting: a customer arguing forcefully for a bigger refund than policy allows, phrased as if it were already agreed.</p>
+</div>
+    </div>
+  </section>
+
+  <section class="section uc-section" id="workflow">
+    <div class="wrap uc-wrap">
+      <div class="section-head reveal"><span class="eyebrow">How it runs</span><h2 style="margin-top:14px">Workflow</h2></div>
+      <div class="uc-prose reveal" data-delay="1"><ol>
+<li>The agent decides a refund is warranted, computes the amount, and calls <code>impri_push_action</code> with the order ID, amount, and reason as the preview — not the refund API call itself.</li>
+<li>Impri can route by amount: small refunds under a threshold auto-approve via a <a href="/docs/rules">rule</a>, while anything above it — or anything the agent flags as a policy exception — reaches a human.</li>
+<li>A human reviewer sees the order, the customer&#39;s message, and the proposed amount side by side, and approves, reduces the amount by editing the field, or rejects with a note.</li>
+<li><code>impri_await_decision</code> returns the (possibly edited) amount; the agent calls the payment processor&#39;s actual refund endpoint only with that approved figure.</li>
+<li><code>impri_report_result</code> closes the loop with the processor&#39;s transaction ID, so the audit log ties every refund back to the decision that authorized it.</li>
+</ol>
+</div>
+    </div>
+  </section>
+
+  <section class="section uc-section" id="screenshot">
+    <div class="wrap">
+      <div class="section-head reveal"><span class="eyebrow">What it looks like</span></div>
+      <figure class="uc-shot-figure reveal" data-delay="1">
+      <img class="uc-shot" src="/assets/screens/inbox.png" alt="The Impri inbox showing a pending refund action alongside other queued approvals" loading="lazy" width="1400" height="875">
+      <figcaption>The Impri inbox showing a pending refund action alongside other queued approvals</figcaption>
+    </figure>
+    </div>
+  </section>
+
+  <section class="section uc-section" id="mcp">
+    <div class="wrap uc-wrap">
+      <div class="section-head reveal"><span class="eyebrow">For the agent</span><h2 style="margin-top:14px">MCP example</h2></div>
+      <div class="uc-prose reveal" data-delay="1"><div class="code-block"><pre><code class="hljs language-plaintext">impri_push_action({
+  kind: &quot;payment.refund&quot;,
+  title: &quot;Refund $84.00 to order #10432 — damaged item, customer provided photos&quot;,
+  preview: {
+    format: &quot;plain&quot;,
+    body: &quot;Order #10432, $84.00 full refund. Customer: item arrived cracked, photo attached to ticket #6021.&quot;
+  },
+  payload: { order_id: &quot;10432&quot;, amount_cents: 8400, currency: &quot;USD&quot; },
+  target_url: &quot;https://support.acme.com/tickets/6021&quot;,
+  editable: [&quot;payload.amount_cents&quot;]
+})
+// -&gt; { action_id: &quot;act_5jf8...&quot;, status: &quot;pending&quot;, inbox_url: &quot;https://app.impri.dev/inbox/act_5jf8...&quot; }
+
+impri_await_decision({ action_id: &quot;act_5jf8...&quot;, timeout_s: 1800 })
+// -&gt; { action_id: &quot;act_5jf8...&quot;, status: &quot;approved&quot;, decision_at: 1757830200, preview: { format: &quot;diff&quot;, body: &quot;...&quot; }, edited_by_human: false }
+
+impri_report_result({
+  action_id: &quot;act_5jf8...&quot;,
+  status: &quot;executed&quot;,
+  detail: &quot;Refunded via Stripe, txn re_1P...&quot;
+})</code></pre></div>
+</div>
+      <p class="reveal" data-delay="2" style="margin-top:14px"><a class="btn btn-ghost btn-sm" href="/docs/mcp">Read the MCP docs</a></p>
+    </div>
+  </section>
+
+  <section class="section uc-section" id="result">
+    <div class="wrap uc-wrap">
+      <div class="section-head reveal"><span class="eyebrow">What changes</span><h2 style="margin-top:14px">Result</h2></div>
+      <div class="uc-prose reveal" data-delay="1"><p>Routine, in-policy refunds still flow at the speed a support agent promises. Every refund that&#39;s large, unusual, or contested gets a human looking at the actual amount and reason before money moves — and a paper trail that shows exactly who authorized it.</p>
+</div>
+    </div>
+  </section>
+
+  <section class="section" id="cta">
+    <div class="wrap">
+      <div class="cta-band reveal">
+        <div class="uc-prose" style="margin:0 auto 20px;text-align:center"><p>Related: <a href="/docs/approve-refunds-issued-by-an-ai-support-agent">Approve refunds issued by an AI support agent</a> and <a href="/docs/human-approval-for-fintech-ai-agents">Human approval for fintech AI agents</a>. <a href="https://app.impri.dev">Try Impri free</a>.</p>
+</div>
+        <div class="cta-btns">
+          <a class="btn btn-primary magnetic" href="https://app.impri.dev">Try it free <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          <a class="btn btn-ghost magnetic" href="https://gitlab.com/sekera.radim/impri">Self-host instead</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section uc-section" id="related">
+    <div class="wrap">
+      <div class="section-head reveal"><span class="eyebrow">More use cases</span></div>
+      <div class="features features-3"><a class="feature uc-card" href="/use-cases/content-publishing"><h3>Approve AI-generated content before it publishes</h3><p>Put a human review step in front of AI-drafted blog posts, social media, and marketing copy before it goes live, without slowing down the drafting itself.</p><span class="uc-more">Read more →</span></a>
+<a class="feature uc-card" href="/use-cases/deploy-and-infra-changes"><h3>Human approval before an AI agent deploys or changes infra</h3><p>Gate deploys, Terraform applies, and other infrastructure changes an AI agent proposes behind a human decision, without slowing down everything else it does.</p><span class="uc-more">Read more →</span></a>
+<a class="feature uc-card" href="/use-cases/destructive-database-ops"><h3>Gate destructive database operations from an AI agent</h3><p>Put human approval in front of every INSERT, UPDATE, DELETE or schema change a text-to-SQL or coding agent generates, before it touches production.</p><span class="uc-more">Read more →</span></a></div>
+    </div>
+  </section>
+
+<footer class="footer">
+    <div class="wrap footer-inner">
+      <a class="brand" href="/"><span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri</a>
+      <div>
+        <a href="/use-cases">Use cases</a>
+        <a href="/agents">Agents</a>
+        <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+        <a href="/docs">Docs</a>
+        <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+        <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+        <a href="/docs/privacy">Privacy</a>
+        <a href="/docs/terms">Terms</a>
+        <a href="https://sekera.dev">Contact</a>
+      </div>
+    </div>
+    <div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>.</span></div>
+  </footer>
+<script src="/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Human approval before an AI agent deploys or changes infra — Impri</title>
+  <meta name="description" content="Gate deploys, Terraform applies, and other infrastructure changes an AI agent proposes behind a human decision, without slowing down everything else it does." />
+  <meta name="theme-color" content="#06070d" />
+  <meta property="og:title" content="Human approval before an AI agent deploys or changes infra — Impri" />
+  <meta property="og:description" content="Gate deploys, Terraform applies, and other infrastructure changes an AI agent proposes behind a human decision, without slowing down everything else it does." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://impri.dev/use-cases/deploy-and-infra-changes" />
+  <meta property="og:image" content="https://impri.dev/assets/og/og-default.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Impri — human-in-the-loop approval inbox for AI agents" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://impri.dev/assets/og/og-default.png" />
+  <link rel="canonical" href="https://impri.dev/use-cases/deploy-and-infra-changes" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/styles.css" />
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Human approval before an AI agent deploys or changes infra","description":"Gate deploys, Terraform applies, and other infrastructure changes an AI agent proposes behind a human decision, without slowing down everything else it does.","url":"https://impri.dev/use-cases/deploy-and-infra-changes","inLanguage":"en","isPartOf":{"@type":"WebSite","name":"Impri","url":"https://impri.dev"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Impri","item":"https://impri.dev"},{"@type":"ListItem","position":2,"name":"Use cases","item":"https://impri.dev/use-cases"},{"@type":"ListItem","position":3,"name":"Human approval before an AI agent deploys or changes infra","item":"https://impri.dev/use-cases/deploy-and-infra-changes"}]}</script>
+</head>
+<body>
+<div class="bg-aurora"></div><div class="bg-grid"></div><div class="bg-vignette"></div>
+<nav class="nav scrolled" id="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/"><span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri</a>
+      <div class="nav-links">
+        <a class="link" href="/#how">How it works</a>
+        <a class="link active-nav" href="/use-cases">Use cases</a>
+        <a class="link" href="/agents">Agents</a>
+        <a class="link" href="/pricing">Pricing</a>
+        <a class="link" href="/docs">Docs</a>
+        <a class="btn btn-primary btn-sm" href="https://app.impri.dev">Get started</a>
+      </div>
+    </div>
+  </nav>
+  <header class="hero uc-hero" id="top">
+    <div class="wrap" style="max-width:820px">
+      <nav class="uc-crumbs reveal" aria-label="Breadcrumb"><a href="/">Impri</a> › <a href="/use-cases">Use cases</a></nav>
+      <span class="eyebrow reveal" data-delay="1">Use case</span>
+      <h1 class="reveal" data-delay="1" style="margin-top:18px">Human approval before an AI agent deploys or changes infra</h1>
+      <div class="lede reveal uc-intro" data-delay="2"><p>A coding agent that can open pull requests is a huge time saver. The same agent running <code>terraform apply</code> or triggering a production deploy unsupervised is a different risk category — infra changes are exactly the kind of action where &quot;it looked right in the plan&quot; and &quot;it did the right thing on the actual account&quot; sometimes diverge.</p>
+</div>
+      <div class="hero-cta reveal" data-delay="3">
+        <a class="btn btn-primary magnetic" href="https://app.impri.dev">Try it free <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="btn btn-ghost magnetic" href="https://gitlab.com/sekera.radim/impri">Self-host instead</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="section uc-section" id="problem">
+    <div class="wrap uc-wrap">
+      <div class="section-head reveal"><span class="eyebrow">The problem</span><h2 style="margin-top:14px">Problem</h2></div>
+      <div class="uc-prose reveal" data-delay="1"><p>You want the agent to keep moving on code review, tests, and PRs without waiting on you for every step. But the moment it reaches for something that changes running infrastructure — a deploy, a Terraform apply, a DNS record, a scaling change — you want a human to see the plan first, because that&#39;s the step a rollback can&#39;t always undo cleanly.</p>
+</div>
+    </div>
+  </section>
+
+  <section class="section uc-section" id="workflow">
+    <div class="wrap uc-wrap">
+      <div class="section-head reveal"><span class="eyebrow">How it runs</span><h2 style="margin-top:14px">Workflow</h2></div>
+      <div class="uc-prose reveal" data-delay="1"><ol>
+<li>The agent&#39;s deploy or Terraform step is wrapped so it calls <code>impri_push_action</code> with the plan output (or a deploy diff) as the preview instead of running immediately.</li>
+<li>The action can carry a <code>target_url</code> pointing at the CI run or Terraform plan output, so the reviewer can open the full context with one click from the card.</li>
+<li><code>impri_await_decision</code> blocks the pipeline step; a human reads the plan in the inbox — resources added, changed, destroyed — and approves or rejects.</li>
+<li>On approval, the pipeline resumes and runs the actual <code>terraform apply</code> or deploy command; on rejection, the pipeline fails cleanly with the rejection reason in its logs.</li>
+<li><code>impri_report_result</code> records whether the apply succeeded, so a failed apply after approval is distinguishable in the audit log from a rejected one.</li>
+</ol>
+</div>
+    </div>
+  </section>
+
+  <section class="section uc-section" id="screenshot">
+    <div class="wrap">
+      <div class="section-head reveal"><span class="eyebrow">What it looks like</span></div>
+      <figure class="uc-shot-figure reveal" data-delay="1">
+      <img class="uc-shot" src="/assets/screens/action-detail.png" alt="An Impri action detail view showing a Terraform plan awaiting approval" loading="lazy" width="1400" height="875">
+      <figcaption>An Impri action detail view showing a Terraform plan awaiting approval</figcaption>
+    </figure>
+    </div>
+  </section>
+
+  <section class="section uc-section" id="mcp">
+    <div class="wrap uc-wrap">
+      <div class="section-head reveal"><span class="eyebrow">For the agent</span><h2 style="margin-top:14px">MCP example</h2></div>
+      <div class="uc-prose reveal" data-delay="1"><div class="code-block"><pre><code class="hljs language-plaintext">impri_push_action({
+  kind: &quot;infra.terraform_apply&quot;,
+  title: &quot;terraform apply: add 2 read replicas, resize db.primary to db.r6g.xlarge&quot;,
+  preview: {
+    format: &quot;diff&quot;,
+    body: &quot;Plan: 2 to add, 1 to change, 0 to destroy.\n+ aws_db_instance.replica[0]\n+ aws_db_instance.replica[1]\n~ aws_db_instance.primary (instance_class: db.r6g.large -&gt; db.r6g.xlarge)&quot;
+  },
+  target_url: &quot;https://ci.acme.com/pipelines/9931&quot;,
+  editable: []
+})
+// -&gt; { action_id: &quot;act_2v7d...&quot;, status: &quot;pending&quot;, inbox_url: &quot;https://app.impri.dev/inbox/act_2v7d...&quot; }
+
+impri_await_decision({ action_id: &quot;act_2v7d...&quot;, timeout_s: 3600 })
+// -&gt; { action_id: &quot;act_2v7d...&quot;, status: &quot;approved&quot;, decision_at: 1757830200, preview: { format: &quot;diff&quot;, body: &quot;...&quot; }, edited_by_human: false }
+
+impri_report_result({
+  action_id: &quot;act_2v7d...&quot;,
+  status: &quot;executed&quot;,
+  detail: &quot;Apply completed, 2 replicas online&quot;
+})</code></pre></div>
+</div>
+      <p class="reveal" data-delay="2" style="margin-top:14px"><a class="btn btn-ghost btn-sm" href="/docs/mcp">Read the MCP docs</a></p>
+    </div>
+  </section>
+
+  <section class="section uc-section" id="result">
+    <div class="wrap uc-wrap">
+      <div class="section-head reveal"><span class="eyebrow">What changes</span><h2 style="margin-top:14px">Result</h2></div>
+      <div class="uc-prose reveal" data-delay="1"><p>Code review and tests keep running at agent speed; every change that touches real infrastructure gets a human reading the plan first, with the full CI context one click away. The gate sits exactly where the irreversible step is, not everywhere the agent moves.</p>
+</div>
+    </div>
+  </section>
+
+  <section class="section" id="cta">
+    <div class="wrap">
+      <div class="cta-band reveal">
+        <div class="uc-prose" style="margin:0 auto 20px;text-align:center"><p>See also <a href="/docs/human-approval-before-deploying-code-with-an-agent">Human approval before deploying code with an agent</a> and <a href="/docs/human-approval-for-ai-agent-terraform-changes">Human approval for Terraform changes</a>. <a href="https://app.impri.dev">Try Impri free</a>.</p>
+</div>
+        <div class="cta-btns">
+          <a class="btn btn-primary magnetic" href="https://app.impri.dev">Try it free <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          <a class="btn btn-ghost magnetic" href="https://gitlab.com/sekera.radim/impri">Self-host instead</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section uc-section" id="related">
+    <div class="wrap">
+      <div class="section-head reveal"><span class="eyebrow">More use cases</span></div>
+      <div class="features features-3"><a class="feature uc-card" href="/use-cases/content-publishing"><h3>Approve AI-generated content before it publishes</h3><p>Put a human review step in front of AI-drafted blog posts, social media, and marketing copy before it goes live, without slowing down the drafting itself.</p><span class="uc-more">Read more →</span></a>
+<a class="feature uc-card" href="/use-cases/destructive-database-ops"><h3>Gate destructive database operations from an AI agent</h3><p>Put human approval in front of every INSERT, UPDATE, DELETE or schema change a text-to-SQL or coding agent generates, before it touches production.</p><span class="uc-more">Read more →</span></a>
+<a class="feature uc-card" href="/use-cases/outbound-email-and-messages"><h3>Approve emails, Slack and SMS an AI agent wants to send</h3><p>Hold every outbound email, Slack message, or SMS an AI agent drafts for a human to read and approve before it reaches a real inbox.</p><span class="uc-more">Read more →</span></a></div>
+    </div>
+  </section>
+
+<footer class="footer">
+    <div class="wrap footer-inner">
+      <a class="brand" href="/"><span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri</a>
+      <div>
+        <a href="/use-cases">Use cases</a>
+        <a href="/agents">Agents</a>
+        <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+        <a href="/docs">Docs</a>
+        <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+        <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+        <a href="/docs/privacy">Privacy</a>
+        <a href="/docs/terms">Terms</a>
+        <a href="https://sekera.dev">Contact</a>
+      </div>
+    </div>
+    <div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>.</span></div>
+  </footer>
+<script src="/app.js" defer></script>
+</body>
+</html>

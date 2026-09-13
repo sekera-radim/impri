@@ -36,6 +36,17 @@ const NAV = [
     ],
   },
   {
+    section: 'Install',
+    icon: '▸',
+    pages: [
+      { slug: 'how-to-get-human-approval-into-your-coding-agent', title: 'Overview' },
+      { slug: 'claude-code-human-approval',                       title: 'Claude Code' },
+      { slug: 'codex-human-approval',                              title: 'OpenAI Codex' },
+      { slug: 'cursor-human-approval',                             title: 'Cursor' },
+      { slug: 'windsurf-human-approval',                           title: 'Windsurf' },
+    ],
+  },
+  {
     section: 'API reference',
     icon: '⬡',
     pages: [
@@ -233,6 +244,17 @@ function extractDesc(html) {
 
 const FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E";
 
+// Shared favicon set — real files live at the site root, produced separately.
+// Falls back gracefully: browsers that can't fetch these just keep no icon,
+// nothing breaks. Keep the inline SVG data-URI too as a same-request fallback.
+const FAVICON_LINKS = `<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="${FAVICON}">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">`;
+
+const OG_DOCS = 'https://impri.dev/assets/og/og-docs.png';
+
 const LOGO_SVG = `<svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 // Custom hljs dark theme tuned to the Impri palette (background matches terminal in styles.css)
@@ -393,10 +415,15 @@ function renderDocPage({ slug, title, desc, section, contentHtml, sidebarHtml, p
 <meta property="og:description" content="${escHtml(desc)}">
 <meta property="og:type" content="article">
 <meta property="og:url" content="${canonical}">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="${OG_DOCS}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Impri — human-in-the-loop approval inbox for AI agents">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${OG_DOCS}">
 <link rel="canonical" href="${canonical}">
 <script type="application/ld+json">${jsonLd}</script>
-<link rel="icon" href="${FAVICON}">
+${FAVICON_LINKS}
 <link rel="stylesheet" href="${root}styles.css">
 <style>
 ${HLJS_CSS}
@@ -466,7 +493,15 @@ ${pageLinks}
 <meta property="og:title" content="Impri Docs — human approval for AI agents">
 <meta property="og:description" content="Complete reference for Impri: quickstart, API, SDKs, integrations, CLI, and self-hosting.">
 <meta property="og:type" content="website">
-<link rel="icon" href="${FAVICON}">
+<meta property="og:url" content="https://impri.dev/docs">
+<meta property="og:image" content="${OG_DOCS}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Impri — human-in-the-loop approval inbox for AI agents">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${OG_DOCS}">
+<link rel="canonical" href="https://impri.dev/docs">
+${FAVICON_LINKS}
 <link rel="stylesheet" href="styles.css">
 <style>
 ${DOCS_CSS}
@@ -579,14 +614,29 @@ function main() {
   writeFileSync(join(DOCS_OUT, 'index.html'), hubIndexHtml, 'utf8');
   console.log(`  ✓  docs/index.html`);
 
+  // ── pull in use-case / agents pages built by scripts/build-usecases.mjs ──
+  // That script writes a small manifest so this one doesn't need to know
+  // anything about its markdown format — just the URLs it produced.
+  let useCasesManifest = { useCases: [], agents: null };
+  try {
+    useCasesManifest = JSON.parse(readFileSync(join(WWW, 'use-cases', '.manifest.json'), 'utf8'));
+  } catch {
+    console.log('  note: www/use-cases/.manifest.json not found — run build-usecases.mjs first for those pages to appear in the sitemap/llms.txt');
+  }
+
   // ── sitemap.xml ──────────────────────────────────────────────────────────
   // So search engines discover every doc page, including unlisted SEO pages
-  // that are not in the NAV sidebar.
+  // that are not in the NAV sidebar, plus the use-case/agents/pricing pages.
   const lastmod = new Date().toISOString().slice(0, 10);
-  const urls = ['https://impri.dev/', 'https://impri.dev/docs'];
+  const urls = ['https://impri.dev/', 'https://impri.dev/docs', 'https://impri.dev/pricing'];
   for (const slug of pageIndex.keys()) {
     urls.push(`https://impri.dev/docs/${slug}`);
   }
+  if (useCasesManifest.useCases.length) {
+    urls.push('https://impri.dev/use-cases');
+    for (const uc of useCasesManifest.useCases) urls.push(`https://impri.dev/use-cases/${uc.slug}`);
+  }
+  if (useCasesManifest.agents) urls.push('https://impri.dev/agents');
   const sitemap =
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
@@ -611,10 +661,28 @@ function main() {
       // every redirected URL as "Page with redirect".
       guideLines.push(`- ${info.title}: https://impri.dev/docs/${slug}`);
     }
+    let section = '';
     if (guideLines.length) {
-      llms = llms.replace(/\s+$/, '') + `\n\n${GUIDES_MARKER}\n` + guideLines.sort().join('\n') + '\n';
+      section += guideLines.sort().join('\n') + '\n';
+    }
+    if (useCasesManifest.useCases.length) {
+      section += `\n## Install per agent\n`;
+      for (const g of NAV.find(g => g.section === 'Install').pages) {
+        section += `- ${g.title}: https://impri.dev/docs/${g.slug}\n`;
+      }
+      section += `\n## Use cases\n`;
+      section += `- Use cases index: https://impri.dev/use-cases\n`;
+      for (const uc of useCasesManifest.useCases) {
+        section += `- ${uc.title}: https://impri.dev/use-cases/${uc.slug}\n`;
+      }
+    }
+    if (useCasesManifest.agents) {
+      section += `\n## For AI agents\n- ${useCasesManifest.agents.title}: https://impri.dev/agents\n`;
+    }
+    if (section) {
+      llms = llms.replace(/\s+$/, '') + `\n\n${GUIDES_MARKER}\n` + section.replace(/^\n/, '');
       writeFileSync(llmsPath, llms, 'utf8');
-      console.log(`  ✓  llms.txt (+${guideLines.length} guide links)`);
+      console.log(`  ✓  llms.txt (guides + use cases + install + agents)`);
     }
   } catch (e) {
     console.log(`  note: llms.txt not updated (${e.message})`);

@@ -681,3 +681,22 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Why AI Agents Need Approval Gates: https://impri.dev/docs/why-ai-agents-need-approval-gates
 - Wrapping an Agent Tool With a Human Approval Step: https://impri.dev/docs/wrapping-a-tool-with-a-human-approval-step
 - ntfy Notifications for AI Agent Approvals: https://impri.dev/docs/ntfy-notifications-for-ai-agent-approvals
+
+## Install per agent
+- Overview: https://impri.dev/docs/how-to-get-human-approval-into-your-coding-agent
+- Claude Code: https://impri.dev/docs/claude-code-human-approval
+- OpenAI Codex: https://impri.dev/docs/codex-human-approval
+- Cursor: https://impri.dev/docs/cursor-human-approval
+- Windsurf: https://impri.dev/docs/windsurf-human-approval
+
+## Use cases
+- Use cases index: https://impri.dev/use-cases
+- Approve AI-generated content before it publishes: https://impri.dev/use-cases/content-publishing
+- Human approval before an AI agent deploys or changes infra: https://impri.dev/use-cases/deploy-and-infra-changes
+- Gate destructive database operations from an AI agent: https://impri.dev/use-cases/destructive-database-ops
+- Approve emails, Slack and SMS an AI agent wants to send: https://impri.dev/use-cases/outbound-email-and-messages
+- Let a coding agent run overnight, approve from your phone: https://impri.dev/use-cases/overnight-coding-agent
+- Approve refunds and charges an AI support agent wants to issue: https://impri.dev/use-cases/refunds-and-payments
+
+## For AI agents
+- Impri for AI agents — human approval over MCP: https://impri.dev/agents

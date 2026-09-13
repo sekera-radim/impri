@@ -36,3 +36,6 @@ tool call:
   }
 }
 ```
+
+See the [main README](../README.md) for the full tool list and the [docs](https://impri.dev/docs?utm_source=github&utm_medium=readme&utm_campaign=impri) for everything else (watchers, notification channels, self-hosting).
+

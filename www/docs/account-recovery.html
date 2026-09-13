@@ -10,10 +10,19 @@
 <meta property="og:description" content="Impri is intentionally anonymous — no email address, no password. Your API key is the only credential. If you lose all your keys, this guide explains how to recover access using a recovery code.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/account-recovery">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Impri — human-in-the-loop approval inbox for AI agents">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/account-recovery">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Account Recovery","description":"Impri is intentionally anonymous — no email address, no password. Your API key is the only credential. If you lose all your keys, this guide explains how to recover access using a recovery code.","url":"https://impri.dev/docs/account-recovery","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 <link rel="stylesheet" href="../styles.css">
 <style>
 pre code.hljs{display:block;overflow-x:auto}
@@ -132,6 +141,14 @@ pre code.hljs{display:block;overflow-x:auto}
 <a href="../docs/observability" class="sl">Observability</a>
 </div>
 <div class="sg">
+<div class="sg-label">Install</div>
+<a href="../docs/how-to-get-human-approval-into-your-coding-agent" class="sl">Overview</a>
+<a href="../docs/claude-code-human-approval" class="sl">Claude Code</a>
+<a href="../docs/codex-human-approval" class="sl">OpenAI Codex</a>
+<a href="../docs/cursor-human-approval" class="sl">Cursor</a>
+<a href="../docs/windsurf-human-approval" class="sl">Windsurf</a>
+</div>
+<div class="sg">
 <div class="sg-label">API reference</div>
 <a href="../docs/api-keys" class="sl">API keys &amp; scopes</a>
 <a href="../docs/rules" class="sl">Rules engine</a>
@@ -206,8 +223,13 @@ pre code.hljs{display:block;overflow-x:auto}
   <span class="hljs-attr">&quot;recovery_code&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;imr_…&quot;</span><span class="hljs-punctuation">,</span>
   <span class="hljs-attr">&quot;note&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Store this key and recovery code securely — they will not be shown again.&quot;</span>
 <span class="hljs-punctuation">}</span></code></pre></div>
+<p>Clicking <strong>Create an API key</strong> on the login screen calls this same endpoint and shows both
+values together in a one-time panel, with a required checkbox confirming you saved them
+before you can continue into the app. Since a recovery code already exists from this point,
+the setup banner described below does not appear for a freshly created account.</p>
 <h3 id="via-the-dashboard">Via the dashboard</h3>
-<p>Open the dashboard, click the <strong>shield icon</strong> in the top-right header, or dismiss the setup banner that appears when no recovery code is set.</p>
+<p>Once signed in, open the dashboard, click the <strong>shield icon</strong> in the top-right header, or
+dismiss the setup banner that appears when no recovery code is set.</p>
 <h3 id="via-the-api">Via the API</h3>
 <div class="code-block"><span class="code-lang">http</span><pre><code class="hljs">POST /v1/recovery-code
 <span class="hljs-attribute">Authorization</span><span class="hljs-punctuation">: </span>Bearer im_&lt;admin-key&gt;</code></pre></div>

@@ -1,0 +1,254 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Impri killer demo — short</title>
+<style>
+  :root {
+    --bg:        #06070d;
+    --bg-2:      #0a0b16;
+    --surface:   rgba(255,255,255,0.05);
+    --surface-2: rgba(255,255,255,0.08);
+    --border:    rgba(255,255,255,0.10);
+    --border-2:  rgba(255,255,255,0.18);
+    --text:      #eef0f7;
+    --muted:     #9aa3b2;
+    --faint:     #6b7280;
+    --indigo:  #6366f1;
+    --violet:  #8b5cf6;
+    --cyan:    #22d3ee;
+    --green:   #34d399;
+    --amber:   #fbbf24;
+    --red:     #f87171;
+    --grad: linear-gradient(120deg, #818cf8 0%, #a78bfa 40%, #22d3ee 100%);
+    --grad-soft: linear-gradient(120deg, #6366f1, #8b5cf6);
+    --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; width: 1920px; height: 1080px; overflow: hidden;
+    font-family: var(--font); background: #000;
+  }
+  .scene {
+    position: absolute; inset: 0; width: 1920px; height: 1080px;
+    display: flex; align-items: center; justify-content: center;
+    will-change: opacity;
+  }
+  .fade-black { position: absolute; inset: 0; background: #000; pointer-events: none; z-index: 50; }
+  .dark-bg {
+    background:
+      radial-gradient(1000px 620px at 18% 8%, rgba(99,102,241,0.20), transparent 60%),
+      radial-gradient(900px 560px at 84% 88%, rgba(34,211,238,0.14), transparent 60%),
+      radial-gradient(700px 500px at 60% 30%, rgba(139,92,246,0.12), transparent 60%),
+      linear-gradient(180deg, var(--bg-2), var(--bg));
+  }
+  .wordmark { display: flex; align-items: center; gap: 16px; }
+  .wordmark .mark {
+    width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center;
+    background: var(--grad-soft); box-shadow: 0 10px 30px rgba(99,102,241,0.5); flex: none;
+  }
+  .wordmark .mark svg { width: 28px; height: 28px; }
+  .wordmark .word { font-size: 42px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+  .caption {
+    position: absolute; left: 0; right: 0; bottom: 74px; text-align: center;
+    font-family: var(--font); font-size: 30px; font-weight: 600; color: var(--text);
+  }
+  .terminal {
+    border-radius: 16px; overflow: hidden;
+    background: var(--bg-2); border: 1px solid var(--border-2);
+    box-shadow: 0 40px 120px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.02);
+    display: flex; flex-direction: column;
+  }
+  .terminal.full { width: 1320px; height: 720px; }
+  .term-bar {
+    height: 44px; flex: none; display: flex; align-items: center; gap: 8px;
+    padding: 0 18px; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border);
+  }
+  .term-bar i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+  .term-bar i:nth-child(1){ background:#ff5f57; }
+  .term-bar i:nth-child(2){ background:#febc2e; }
+  .term-bar i:nth-child(3){ background:#28c840; }
+  .term-title { margin-left: 10px; color: var(--faint); font-size: 14px; font-family: var(--mono); }
+  .term-body { flex: 1; padding: 30px 34px; font-family: var(--mono); font-size: 19px; line-height: 1.75; color: var(--text); overflow: hidden; }
+  .ln { min-height: 1.75em; white-space: pre-wrap; word-break: break-word; }
+  .ln .cursor { display: inline-block; width: 10px; height: 1.1em; background: var(--cyan); vertical-align: -0.16em; margin-left: 2px; }
+  .tok-prompt { color: var(--cyan); font-weight: 700; }
+  .tok-agent  { color: var(--text); }
+  .tok-dim    { color: var(--faint); }
+  .tok-fn     { color: #7dd3fc; }
+  .tok-key    { color: #93c5fd; }
+  .tok-str    { color: #86efac; }
+  .tok-punc   { color: #6b7280; }
+  .tok-ok     { color: var(--green); font-weight: 700; }
+  .tool-block { margin: 10px 0 6px; padding: 14px 18px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--indigo); font-size: 17px; white-space: pre-wrap; }
+  .phone-wrap { position: relative; }
+  .phone { width: 460px; height: 940px; border-radius: 58px; background: #0c0e16; border: 1px solid var(--border-2); box-shadow: 0 50px 140px rgba(0,0,0,0.6); padding: 16px; position: relative; overflow: hidden; }
+  .phone .notch { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); width: 140px; height: 26px; background: #0c0e16; border-radius: 0 0 16px 16px; z-index: 5; }
+  .phone .screen { width: 100%; height: 100%; border-radius: 44px; background: #12141e; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+  .chat-top { height: 74px; flex: none; display: flex; align-items: center; gap: 12px; padding: 0 22px 0 26px; border-bottom: 1px solid rgba(255,255,255,0.06); color: var(--text); font-family: var(--font); font-size: 16px; font-weight: 700; }
+  .chat-top .app-ico { width: 30px; height: 30px; border-radius: 8px; background: var(--grad-soft); display: grid; place-items: center; }
+  .chat-top .app-ico svg { width: 16px; height: 16px; }
+  .chat-body { flex: 1; padding: 22px 20px; overflow: hidden; }
+  .msg-card { background: var(--surface-2); border: 1px solid var(--border-2); border-radius: 16px; padding: 20px 20px 18px; box-shadow: 0 14px 34px rgba(0,0,0,0.35); }
+  .msg-card .m-title { font-family: var(--font); font-size: 19px; font-weight: 700; color: var(--text); margin-bottom: 10px; line-height: 1.35; }
+  .msg-card .m-field { font-family: var(--mono); font-size: 13.5px; color: var(--muted); background: rgba(255,255,255,0.04); border-radius: 10px; padding: 10px 13px; margin-bottom: 14px; }
+  .msg-card .m-btns { display: flex; gap: 10px; }
+  .m-btn { flex: 1; text-align: center; padding: 12px 0; border-radius: 10px; font-size: 15px; font-weight: 700; font-family: var(--font); transition: transform .08s; }
+  .m-btn.approve { background: rgba(52,211,153,0.16); color: var(--green); border: 1px solid rgba(52,211,153,0.4); }
+  .m-btn.reject   { background: rgba(248,113,113,0.14); color: var(--red); border: 1px solid rgba(248,113,113,0.4); }
+  .m-btn.pressed { transform: scale(0.94); }
+  .m-status { display: flex; align-items: center; gap: 10px; padding: 11px 0 0; font-family: var(--font); font-size: 14.5px; font-weight: 700; }
+  .m-status.rejected { color: var(--red); }
+  .m-status .dot3 { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .note-box { margin-top: 12px; border-radius: 10px; border: 1px solid var(--border-2); background: rgba(255,255,255,0.03); padding: 10px 13px; font-family: var(--font); font-size: 14px; color: var(--text); min-height: 20px; }
+  .note-label { font-family: var(--mono); font-size: 11.5px; color: var(--faint); text-transform: uppercase; letter-spacing: .04em; margin: 10px 0 4px; }
+  .thumb { position: absolute; width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255,224,189,0.95), rgba(210,160,120,0.55) 70%, transparent 100%); z-index: 20; pointer-events: none; }
+  .final-card { display: flex; flex-direction: column; align-items: center; gap: 26px; text-align: center; }
+  .final-tag { font-size: 30px; font-weight: 700; color: var(--text); max-width: 900px; }
+  .final-sub { font-family: var(--mono); font-size: 18px; color: var(--muted); }
+  .final-track { width: 480px; height: 4px; background: var(--border); border-radius: 99px; margin-top: 10px; overflow: hidden; }
+  .final-fill { height: 100%; background: var(--grad); border-radius: 99px; width: 0%; }
+</style>
+</head>
+<body>
+
+  <!-- SCENE 1 — risky action (compressed) -->
+  <div class="scene dark-bg" id="scene1">
+    <div class="terminal full">
+      <div class="term-bar"><i></i><i></i><i></i><span class="term-title">Claude Code — impri MCP</span></div>
+      <div class="term-body">
+        <div class="ln" id="s1-l1"></div>
+        <div class="ln" id="s1-tool" style="opacity:0"></div>
+      </div>
+    </div>
+    <div class="caption" id="s1-cap" style="opacity:0">Your agent wants to do something risky.</div>
+  </div>
+
+  <!-- SCENE 2 — lands in Slack -->
+  <div class="scene dark-bg" id="scene2">
+    <div class="phone-wrap" id="s2-phone" style="opacity:0; transform: translateY(40px) scale(0.96);">
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="chat-top">
+            <span class="app-ico"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            Impri
+          </div>
+          <div class="chat-body">
+            <div class="msg-card">
+              <div class="m-title">Delete 40 stale customer records</div>
+              <div class="m-field">crm-prod · customers · 40 rows</div>
+              <div class="m-btns" id="s2-btns">
+                <div class="m-btn approve">Approve</div>
+                <div class="m-btn reject" id="s2-reject-btn">Reject</div>
+              </div>
+              <div id="s2-note-wrap" style="opacity:0">
+                <div class="note-label">Note</div>
+                <div class="note-box" id="s2-note"></div>
+              </div>
+              <div class="m-status rejected" id="s2-status" style="opacity:0"><span class="dot3"></span>Rejected · by Radim</div>
+            </div>
+          </div>
+        </div>
+        <div class="thumb" id="s2-thumb" style="opacity:0"></div>
+      </div>
+    </div>
+    <div class="caption" id="s2-cap" style="opacity:0">Approve, reject, or reject with a note — from Slack, Telegram, Discord or email.</div>
+  </div>
+
+  <!-- SCENE 3 — closing -->
+  <div class="scene dark-bg" id="scene3">
+    <div class="final-card" id="s3-card" style="opacity:0">
+      <div class="wordmark">
+        <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="word">Impri</span>
+      </div>
+      <div class="final-tag">Nothing executes without a human's yes.</div>
+      <div class="final-sub">impri.dev &middot; open source &middot; MCP + REST</div>
+      <div class="final-track"><div class="final-fill" id="s3-fill"></div></div>
+    </div>
+  </div>
+
+  <div class="fade-black" id="fadeblack"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (t, s, e, from, to) => clamp((t - s) / (e - s), 0, 1) * (to - from) + from;
+function typed(t, start, dur, text) {
+  const p = clamp((t - start) / dur, 0, 1);
+  const n = Math.round(text.length * p);
+  return { text: text.slice(0, n), active: t >= start && p < 1, done: p >= 1 };
+}
+function setTyped(el, t, start, dur, prefix, text, cls) {
+  const r = typed(t, start, dur, text);
+  if (t < start) { el.innerHTML = ''; return; }
+  el.innerHTML = (prefix || '') + '<span class="' + (cls || '') + '">' + escapeHtml(r.text) + '</span>' +
+    (r.active ? '<span class="cursor"></span>' : '');
+}
+function escapeHtml(s) { return s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+function show(el, t, start, fadeDur) { el.style.opacity = clamp((t - start) / fadeDur, 0, 1); }
+
+const B1 = 2.6;
+const B2 = 7.5;
+const END = 10.5;
+const FADE = 0.35;
+
+function sceneOpacity(t, s, e) {
+  const rise = clamp((t - (s - FADE)) / (2 * FADE), 0, 1);
+  const fall = clamp(((e + FADE) - t) / (2 * FADE), 0, 1);
+  return Math.min(rise, fall);
+}
+
+function seek(t) {
+  t = clamp(t, 0, END);
+  $('scene1').style.opacity = sceneOpacity(t, 0, B1);
+  $('scene2').style.opacity = sceneOpacity(t, B1, B2);
+  $('scene3').style.opacity = sceneOpacity(t, B2, END);
+
+  const fadeIn = clamp(1 - t / FADE, 0, 1);
+  const fadeOut = clamp((t - (END - FADE)) / FADE, 0, 1);
+  $('fadeblack').style.opacity = Math.max(fadeIn, fadeOut);
+
+  // SCENE 1
+  setTyped($('s1-l1'), t, 0.0, 0.8, '<span class="tok-prompt">&gt; </span>', 'Delete 40 stale customer records from the CRM.', 'tok-prompt');
+  show($('s1-tool'), t, 1.1, 0.3);
+  $('s1-tool').innerHTML = '<div class="tool-block"><span class="tok-fn">impri_push_action</span><span class="tok-punc">(</span><span class="tok-str">"Delete 40 stale customer records"</span><span class="tok-punc">)</span></div>';
+  show($('s1-cap'), t, 1.5, 0.35);
+
+  // SCENE 2
+  const t2 = t - B1;
+  const phone2 = $('s2-phone');
+  const rise2 = clamp((t2 - 0.1) / 0.5, 0, 1);
+  phone2.style.opacity = rise2;
+  phone2.style.transform = 'translateY(' + lerp(t2, 0.1, 0.6, 40, 0) + 'px) scale(' + lerp(t2, 0.1, 0.6, 0.96, 1) + ')';
+  show($('s2-cap'), t2, 0.9, 0.35);
+
+  const thumb2 = $('s2-thumb');
+  if (t2 >= 1.4 && t2 < 2.3) {
+    thumb2.style.opacity = clamp((t2 - 1.4) / 0.2, 0, 1) * clamp((2.3 - t2) / 0.25, 0, 1);
+    const x = lerp(t2, 1.4, 2.0, 360, 150);
+    const y = lerp(t2, 1.4, 2.0, 520, 470);
+    thumb2.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+  } else {
+    thumb2.style.opacity = 0;
+  }
+  $('s2-reject-btn').classList.toggle('pressed', t2 >= 2.0 && t2 < 2.4);
+  const btnsFade = clamp(1 - (t2 - 2.3) / 0.3, 0, 1);
+  $('s2-btns').style.opacity = t2 < 2.3 ? 1 : Math.max(0, btnsFade);
+  show($('s2-note-wrap'), t2, 2.8, 0.25);
+  setTyped($('s2-note'), t2, 3.0, 1.2, '', 'Keep records newer than 90 days', '');
+  show($('s2-status'), t2, 4.5, 0.3);
+
+  // SCENE 3
+  const t3 = t - B2;
+  show($('s3-card'), t3, 0.25, 0.45);
+  $('s3-fill').style.width = (lerp(t3, 0.5, END - B2 - 0.3, 0, 100)) + '%';
+}
+
+window.__seek = seek;
+seek(0);
+</script>
+</body>
+</html>

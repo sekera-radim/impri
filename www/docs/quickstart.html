@@ -10,10 +10,19 @@
 <meta property="og:description" content="From zero to your first approved action in under 5 minutes.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/quickstart">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Impri — human-in-the-loop approval inbox for AI agents">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/quickstart">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Quickstart","description":"From zero to your first approved action in under 5 minutes.","url":"https://impri.dev/docs/quickstart","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 <link rel="stylesheet" href="../styles.css">
 <style>
 pre code.hljs{display:block;overflow-x:auto}
@@ -130,6 +139,14 @@ pre code.hljs{display:block;overflow-x:auto}
 <a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
 <a href="../docs/self-hosting" class="sl">Self-hosting</a>
 <a href="../docs/observability" class="sl">Observability</a>
+</div>
+<div class="sg">
+<div class="sg-label">Install</div>
+<a href="../docs/how-to-get-human-approval-into-your-coding-agent" class="sl">Overview</a>
+<a href="../docs/claude-code-human-approval" class="sl">Claude Code</a>
+<a href="../docs/codex-human-approval" class="sl">OpenAI Codex</a>
+<a href="../docs/cursor-human-approval" class="sl">Cursor</a>
+<a href="../docs/windsurf-human-approval" class="sl">Windsurf</a>
 </div>
 <div class="sg">
 <div class="sg-label">API reference</div>
@@ -262,13 +279,24 @@ curl -s -X POST https://api.impri.dev/v1/actions/<span class="hljs-variable">$AC
   -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
   -d <span class="hljs-string">&#x27;{&quot;status&quot;: &quot;execute_failed&quot;, &quot;detail&quot;: &quot;Reddit API returned 403&quot;}&#x27;</span></code></pre></div>
 <p>The action lifecycle is now complete: <code>pending → approved → executed</code>. That&#39;s the whole loop — everything past this point is optional depth (webhooks instead of polling, watchers, notification channels).</p>
-<h3 id="prefer-mcp-claude-code-claude-desktop-any-mcp-client">Prefer MCP? (Claude Code, Claude Desktop, any MCP client)</h3>
-<p>Skip the raw HTTP calls above — the Impri MCP server wraps the same three calls into tool calls your agent can use directly.</p>
+<h3 id="prefer-mcp-claude-code-codex-cli-cursor-windsurf-any-mcp-client">Prefer MCP? (Claude Code, Codex CLI, Cursor, Windsurf, any MCP client)</h3>
+<p>Skip the raw HTTP calls above — the Impri MCP server wraps the same three calls into tool calls your agent can use directly. The web inbox&#39;s <strong>Connect an agent</strong> panel shows the same commands below with your real key already filled in.</p>
+<p><strong>Claude Code:</strong></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">claude mcp add impri \
+  -e IMPRI_API_KEY=im_&lt;your-agent-key&gt; \
+  -e IMPRI_BASE_URL=https://api.impri.dev \
+  -- npx -y @impri/mcp</code></pre></div>
+<p><strong>Codex CLI:</strong></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">codex mcp add impri \
+  --<span class="hljs-built_in">env</span> IMPRI_API_KEY=im_&lt;your-agent-key&gt; \
+  --<span class="hljs-built_in">env</span> IMPRI_BASE_URL=https://api.impri.dev \
+  -- npx -y @impri/mcp</code></pre></div>
+<p><strong>Cursor</strong> (<code>~/.cursor/mcp.json</code> or <code>.cursor/mcp.json</code> in your project), <strong>Windsurf</strong> (<code>~/.codeium/windsurf/mcp_config.json</code>), <strong>Claude Desktop, or any other MCP client</strong> — same JSON shape:</p>
 <div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
   <span class="hljs-attr">&quot;mcpServers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
     <span class="hljs-attr">&quot;impri&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
       <span class="hljs-attr">&quot;command&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;npx&quot;</span><span class="hljs-punctuation">,</span>
-      <span class="hljs-attr">&quot;args&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;@impri/mcp&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;args&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;-y&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-string">&quot;@impri/mcp&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
       <span class="hljs-attr">&quot;env&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
         <span class="hljs-attr">&quot;IMPRI_API_KEY&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_&lt;your-agent-key&gt;&quot;</span><span class="hljs-punctuation">,</span>
         <span class="hljs-attr">&quot;IMPRI_BASE_URL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
@@ -276,6 +304,7 @@ curl -s -X POST https://api.impri.dev/v1/actions/<span class="hljs-variable">$AC
     <span class="hljs-punctuation">}</span>
   <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span></code></pre></div>
+<p>Self-hosting? Drop the <code>IMPRI_BASE_URL</code> line — the MCP server already defaults to <code>http://localhost:8484</code>.</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -380,7 +409,7 @@ npx @impri/mcp</code></pre></div>
 <li class="ptoc-h3"><a href="#3-approve-in-the-web-inbox">3. Approve in the web inbox</a></li>
 <li class="ptoc-h3"><a href="#4-agent-picks-up-the-decision-via-polling">4. Agent picks up the decision via polling</a></li>
 <li class="ptoc-h3"><a href="#5-execute-and-report-back">5. Execute and report back</a></li>
-<li class="ptoc-h3"><a href="#prefer-mcp-claude-code-claude-desktop-any-mcp-client">Prefer MCP? (Claude Code, Claude Desktop, any MCP client)</a></li>
+<li class="ptoc-h3"><a href="#prefer-mcp-claude-code-codex-cli-cursor-windsurf-any-mcp-client">Prefer MCP? (Claude Code, Codex CLI, Cursor, Windsurf, any MCP client)</a></li>
 <li class="ptoc-h2"><a href="#option-b-self-host-docker">Option B — Self-host (Docker)</a></li>
 <li class="ptoc-h3"><a href="#1-start-impri">1. Start Impri</a></li>
 <li class="ptoc-h3"><a href="#2-create-an-api-key-for-your-agent">2. Create an API key for your agent</a></li>

@@ -10,10 +10,19 @@
 <meta property="og:description" content="When you run Impri as a shared platform for multiple teams or users, you need visibility into the whole instance — not just your own project. The operator endpoint provides platform-wide stats without">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/operator">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Impri — human-in-the-loop approval inbox for AI agents">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/operator">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Operator / Multi-tenant Self-hosting","description":"When you run Impri as a shared platform for multiple teams or users, you need visibility into the whole instance — not just your own project. The operator endpoint provides platform-wide stats without","url":"https://impri.dev/docs/operator","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 <link rel="stylesheet" href="../styles.css">
 <style>
 pre code.hljs{display:block;overflow-x:auto}
@@ -132,6 +141,14 @@ pre code.hljs{display:block;overflow-x:auto}
 <a href="../docs/observability" class="sl">Observability</a>
 </div>
 <div class="sg">
+<div class="sg-label">Install</div>
+<a href="../docs/how-to-get-human-approval-into-your-coding-agent" class="sl">Overview</a>
+<a href="../docs/claude-code-human-approval" class="sl">Claude Code</a>
+<a href="../docs/codex-human-approval" class="sl">OpenAI Codex</a>
+<a href="../docs/cursor-human-approval" class="sl">Cursor</a>
+<a href="../docs/windsurf-human-approval" class="sl">Windsurf</a>
+</div>
+<div class="sg">
 <div class="sg-label">API reference</div>
 <a href="../docs/api-keys" class="sl">API keys &amp; scopes</a>
 <a href="../docs/rules" class="sl">Rules engine</a>
@@ -213,6 +230,17 @@ pre code.hljs{display:block;overflow-x:auto}
     <span class="hljs-attr">&quot;actions_7d&quot;</span><span class="hljs-punctuation">:</span>    <span class="hljs-number">1203</span><span class="hljs-punctuation">,</span>
     <span class="hljs-attr">&quot;watchers&quot;</span><span class="hljs-punctuation">:</span>       <span class="hljs-number">88</span>
   <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;funnel&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;signed_up&quot;</span><span class="hljs-punctuation">:</span>             <span class="hljs-number">142</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;created_api_key&quot;</span><span class="hljs-punctuation">:</span>       <span class="hljs-number">98</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;first_action&quot;</span><span class="hljs-punctuation">:</span>          <span class="hljs-number">71</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;first_decision&quot;</span><span class="hljs-punctuation">:</span>        <span class="hljs-number">54</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;demo_decided&quot;</span><span class="hljs-punctuation">:</span>          <span class="hljs-number">61</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;integration_connected&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">22</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;paid&quot;</span><span class="hljs-punctuation">:</span>                  <span class="hljs-number">27</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;activated_last_7d&quot;</span><span class="hljs-punctuation">:</span>     <span class="hljs-number">18</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;activated_last_30d&quot;</span><span class="hljs-punctuation">:</span>    <span class="hljs-number">39</span>
+  <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
   <span class="hljs-attr">&quot;ts&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1720000000</span>
 <span class="hljs-punctuation">}</span></code></pre></div>
 <p>Fields:</p>
@@ -252,11 +280,83 @@ pre code.hljs{display:block;overflow-x:auto}
 <td>Active (non-paused) watchers across all projects</td>
 </tr>
 <tr>
+<td><code>funnel</code></td>
+<td>Activation funnel — see below</td>
+</tr>
+<tr>
 <td><code>ts</code></td>
 <td>Unix timestamp of the response</td>
 </tr>
 </tbody></table>
 </div>
+<h3 id="funnel-activation-funnel"><code>funnel</code> — activation funnel</h3>
+<p>Every step below counts <strong>distinct projects</strong>, and every step <strong>excludes the
+operator&#39;s own project</strong> (<code>OPERATOR_PROJECT_ID</code>) so dogfooding never inflates
+the numbers.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>signed_up</code></td>
+<td>Projects (excluding the operator project)</td>
+</tr>
+<tr>
+<td><code>created_api_key</code></td>
+<td>Projects with at least one API key (any scope, revoked or not)</td>
+</tr>
+<tr>
+<td><code>first_action</code></td>
+<td>Projects with at least one <strong>real</strong> action — see below</td>
+</tr>
+<tr>
+<td><code>first_decision</code></td>
+<td>Projects with at least one <strong>human</strong> decision on a <strong>real</strong> action — see below</td>
+</tr>
+<tr>
+<td><code>demo_decided</code></td>
+<td>Projects that decided their onboarding demo action (any decision, human or auto) — the onboarding &quot;aha&quot; signal, tracked separately, see below</td>
+</tr>
+<tr>
+<td><code>integration_connected</code></td>
+<td>Projects with at least one notification channel (Slack, Discord, Telegram, ntfy, email or webhook)</td>
+</tr>
+<tr>
+<td><code>paid</code></td>
+<td>Projects with <code>tier != &#39;free&#39;</code></td>
+</tr>
+<tr>
+<td><code>activated_last_7d</code> / <code>activated_last_30d</code></td>
+<td>Projects with at least one human decision on a <strong>real</strong> action in the last 7 / 30 days</td>
+</tr>
+</tbody></table>
+</div>
+<p>The funnel is deliberately monotonic — each step is a subset of projects that
+could have reached the previous one — so two definitions are narrower than
+&quot;any row exists&quot;:</p>
+<ul>
+<li><strong>&quot;Real&quot; action</strong> (<code>first_action</code>, and the action side of <code>first_decision</code>/
+<code>activated_last_7d/30d</code>) excludes the built-in demo/test actions — the
+onboarding &quot;Send a test approval&quot; button (<code>ui/src/components/GettingStarted.vue</code>)
+creates an action with <code>kind = &#39;demo&#39;</code>, and <code>impri init --demo</code> (the CLI onboarding
+wizard) creates <code>kind = &#39;demo.email&#39;</code> / <code>kind = &#39;demo.publish&#39;</code>. Both are excluded by
+a <code>kind = &#39;demo&#39; OR kind LIKE &#39;demo.%&#39;</code> filter so clicking the onboarding button once
+doesn&#39;t count as activation. This kind is reliably distinguishable, so there is no
+separate <code>first_real_action</code> field — <code>first_action</code> already means &quot;real&quot;. Without
+this filter, a project that only ever decided its demo action could show up as
+MORE activated (<code>first_decision</code>/<code>activated_*</code>) than one that took a real action but
+hadn&#39;t decided it yet — that onboarding signal is real, but it isn&#39;t the same thing
+as activation, so it&#39;s tracked separately as <code>demo_decided</code> instead.</li>
+<li><strong>&quot;Human&quot; decision</strong> (<code>first_decision</code>, <code>activated_last_7d/30d</code>) excludes decisions
+made by the rules engine: <code>auto_approve</code>/<code>auto_reject</code> outcomes are written with
+<code>decisions.channel = &#39;auto&#39;</code> (see <code>server/src/routes/actions.ts</code>), and a rule firing
+automatically is not a person doing anything. <code>demo_decided</code> does NOT apply this
+filter — deciding the demo action at all (even via a rule) still means the project
+ran through onboarding.</li>
+</ul>
 <hr>
 <h2 id="post-v1admincomp-tier-grant-a-tier-without-stripe"><code>POST /v1/admin/comp-tier</code> — grant a tier without Stripe</h2>
 <p>Sets a project&#39;s tier directly, bypassing checkout. For comping accounts — the
@@ -369,6 +469,7 @@ req = urllib.request.Request(
 <div class="ptoc-label">On this page</div>
 <ul><li class="ptoc-h2"><a href="#setup">Setup</a></li>
 <li class="ptoc-h2"><a href="#get-v1adminstats-platform-totals">GET /v1/admin/stats — platform totals</a></li>
+<li class="ptoc-h3"><a href="#funnel-activation-funnel">funnel — activation funnel</a></li>
 <li class="ptoc-h2"><a href="#post-v1admincomp-tier-grant-a-tier-without-stripe">POST /v1/admin/comp-tier — grant a tier without Stripe</a></li>
 <li class="ptoc-h2"><a href="#security-notes">Security notes</a></li>
 <li class="ptoc-h2"><a href="#usage-example-python">Usage example (Python)</a></li>
