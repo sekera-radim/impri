@@ -121,6 +121,34 @@ describe('GET /v1/admin/stats — funnel', () => {
     expect(funnel.activated_last_30d).toBe(1);
   });
 
+  it('first_decision/activated_* ignorují rozhodnutí o demo akcích; demo_decided je počítá zvlášť', async () => {
+    const { app, adminKey, db } = await setup();
+
+    // A project that only ever decided its onboarding "Send a test approval" action —
+    // deciding it (even by a human) must NOT count as first_decision/activated, only
+    // as demo_decided (the onboarding "aha" signal).
+    addProject(db, 'p-demo-only');
+    const aDemo = addAction(db, 'a-demo', 'p-demo-only', 'demo');
+    addDecision(db, aDemo, 'api', nowSec());
+
+    // Same for the CLI's `impri init --demo` seeded actions.
+    addProject(db, 'p-cli-demo');
+    const aCliDemo = addAction(db, 'a-cli-demo', 'p-cli-demo', 'demo.email');
+    addDecision(db, aCliDemo, 'web', nowSec());
+
+    // A project that decided a REAL action counts for first_decision/activated_*,
+    // but not for demo_decided (it never touched a demo action).
+    addProject(db, 'p-real');
+    const aReal = addAction(db, 'a-real', 'p-real', 'invoice.send');
+    addDecision(db, aReal, 'api', nowSec());
+
+    const funnel = await getFunnel(app, adminKey);
+    expect(funnel.first_decision).toBe(1); // only p-real
+    expect(funnel.activated_last_7d).toBe(1);
+    expect(funnel.activated_last_30d).toBe(1);
+    expect(funnel.demo_decided).toBe(2); // p-demo-only + p-cli-demo, not p-real
+  });
+
   it('created_api_key, integration_connected a paid počítají DISTINCT projekty', async () => {
     const { app, adminKey, db } = await setup();
     addProject(db, 'p1', 'indie');

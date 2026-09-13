@@ -11,6 +11,7 @@ import type { Tier } from '../billing.js';
 // that just clicked the onboarding button once. Excluded by pattern since the kind is
 // reliably distinguishable (unlike, say, a watcher-generated action, which has no such tell).
 const DEMO_KIND_FILTER = "kind != 'demo' AND kind NOT LIKE 'demo.%'";
+const DEMO_KIND_MATCH = "(kind = 'demo' OR kind LIKE 'demo.%')"; // negation of DEMO_KIND_FILTER
 
 // Activation funnel for the operator dashboard, computed with parameterized SQL over
 // the schema in db.ts. Every step EXCLUDES the operator's own project (OPERATOR_PROJECT_ID)
@@ -18,7 +19,13 @@ const DEMO_KIND_FILTER = "kind != 'demo' AND kind NOT LIKE 'demo.%'";
 //
 // "Human decision" (first_decision / activated_*) means a decisions row whose channel is
 // not 'auto' — auto_approve/auto_reject rule outcomes are written with channel='auto'
-// (see actions.ts) and are not a person doing anything.
+// (see actions.ts) and are not a person doing anything. These steps also apply the same
+// DEMO_KIND_FILTER as first_action: a project that only ever decided its own onboarding
+// "Send a test approval" action was not, by the same logic as first_action, activated —
+// keeping the demo-kind filter off first_decision/activated_* let a demo-only project
+// show up as MORE activated than one that took a real action, which isn't monotonic and
+// isn't the point of the funnel. That onboarding signal is real and worth tracking, so
+// it's kept separately as `demo_decided`.
 function computeFunnel(db: Db, operator: string, now: number): Record<string, number> {
   const one = (sql: string, ...params: unknown[]): number =>
     (db.prepare(sql).get(...params) as { c: number }).c;
@@ -28,7 +35,7 @@ function computeFunnel(db: Db, operator: string, now: number): Record<string, nu
       `SELECT COUNT(DISTINCT a.project_id) AS c
          FROM decisions d
          JOIN actions a ON a.id = d.action_id
-        WHERE d.channel != 'auto' AND a.project_id != ? AND d.decided_at > ?`,
+        WHERE d.channel != 'auto' AND a.project_id != ? AND ${DEMO_KIND_FILTER} AND d.decided_at > ?`,
       operator,
       since,
     );
@@ -47,7 +54,17 @@ function computeFunnel(db: Db, operator: string, now: number): Record<string, nu
       `SELECT COUNT(DISTINCT a.project_id) AS c
          FROM decisions d
          JOIN actions a ON a.id = d.action_id
-        WHERE d.channel != 'auto' AND a.project_id != ?`,
+        WHERE d.channel != 'auto' AND a.project_id != ? AND ${DEMO_KIND_FILTER}`,
+      operator,
+    ),
+    // Onboarding "aha" signal, tracked separately (see comment above) — a project that
+    // decided its own "Send a test approval" / `impri init --demo` action, human or not
+    // (deciding a demo action at all, even auto, still means someone ran through onboarding).
+    demo_decided: one(
+      `SELECT COUNT(DISTINCT a.project_id) AS c
+         FROM decisions d
+         JOIN actions a ON a.id = d.action_id
+        WHERE a.project_id != ? AND ${DEMO_KIND_MATCH}`,
       operator,
     ),
     integration_connected: one(

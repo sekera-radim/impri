@@ -49,6 +49,7 @@ Response:
     "created_api_key":       98,
     "first_action":          71,
     "first_decision":        54,
+    "demo_decided":          61,
     "integration_connected": 22,
     "paid":                  27,
     "activated_last_7d":     18,
@@ -83,24 +84,34 @@ the numbers.
 | `signed_up` | Projects (excluding the operator project) |
 | `created_api_key` | Projects with at least one API key (any scope, revoked or not) |
 | `first_action` | Projects with at least one **real** action — see below |
-| `first_decision` | Projects with at least one **human** decision — see below |
+| `first_decision` | Projects with at least one **human** decision on a **real** action — see below |
+| `demo_decided` | Projects that decided their onboarding demo action (any decision, human or auto) — the onboarding "aha" signal, tracked separately, see below |
 | `integration_connected` | Projects with at least one notification channel (Slack, Discord, Telegram, ntfy, email or webhook) |
 | `paid` | Projects with `tier != 'free'` |
-| `activated_last_7d` / `activated_last_30d` | Projects with at least one human decision in the last 7 / 30 days |
+| `activated_last_7d` / `activated_last_30d` | Projects with at least one human decision on a **real** action in the last 7 / 30 days |
 
-Two definitions are deliberately narrower than "any row exists":
+The funnel is deliberately monotonic — each step is a subset of projects that
+could have reached the previous one — so two definitions are narrower than
+"any row exists":
 
-- **"Real" action** (`first_action`) excludes the built-in demo/test actions —
-  the onboarding "Send a test approval" button (`ui/src/components/GettingStarted.vue`)
+- **"Real" action** (`first_action`, and the action side of `first_decision`/
+  `activated_last_7d/30d`) excludes the built-in demo/test actions — the
+  onboarding "Send a test approval" button (`ui/src/components/GettingStarted.vue`)
   creates an action with `kind = 'demo'`, and `impri init --demo` (the CLI onboarding
   wizard) creates `kind = 'demo.email'` / `kind = 'demo.publish'`. Both are excluded by
   a `kind = 'demo' OR kind LIKE 'demo.%'` filter so clicking the onboarding button once
   doesn't count as activation. This kind is reliably distinguishable, so there is no
-  separate `first_real_action` field — `first_action` already means "real".
+  separate `first_real_action` field — `first_action` already means "real". Without
+  this filter, a project that only ever decided its demo action could show up as
+  MORE activated (`first_decision`/`activated_*`) than one that took a real action but
+  hadn't decided it yet — that onboarding signal is real, but it isn't the same thing
+  as activation, so it's tracked separately as `demo_decided` instead.
 - **"Human" decision** (`first_decision`, `activated_last_7d/30d`) excludes decisions
   made by the rules engine: `auto_approve`/`auto_reject` outcomes are written with
   `decisions.channel = 'auto'` (see `server/src/routes/actions.ts`), and a rule firing
-  automatically is not a person doing anything.
+  automatically is not a person doing anything. `demo_decided` does NOT apply this
+  filter — deciding the demo action at all (even via a rule) still means the project
+  ran through onboarding.
 
 ---
 
