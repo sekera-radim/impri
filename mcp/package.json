@@ -1,6 +1,6 @@
 {
   "name": "@impri/mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "mcpName": "io.github.sekera-radim/impri",
   "description": "Impri MCP server — human-in-the-loop approval inbox for AI agents",
   "keywords": [

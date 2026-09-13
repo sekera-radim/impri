@@ -15,6 +15,29 @@ const CheckoutBody = z.object({
   period: z.enum(['monthly', 'yearly']).default('monthly'),
 });
 
+// True when a Stripe error means "this customer id doesn't exist in the current
+// mode" — the classic case being a stripe_customer_id created in TEST mode that
+// got stored, then the account switched to LIVE keys (or vice versa on a staging
+// reset). Stripe reports this as an InvalidRequestError with code 'resource_missing'
+// and param 'customer'; retrying with a freshly created customer recovers cleanly.
+function isMissingCustomer(err: unknown): boolean {
+  const e = err as { code?: string; param?: string } | undefined;
+  return e?.code === 'resource_missing' && e?.param === 'customer';
+}
+
+// Any Stripe failure that isn't the recoverable "stale customer" case: log the
+// full error (with project context) server-side for debugging, but never leak
+// Stripe's message, error codes or ids to the client.
+function sendBillingUnavailable(
+  request: { log: { error: (obj: unknown, msg: string) => void } },
+  reply: { status: (code: number) => { send: (body: unknown) => unknown } },
+  projectId: string,
+  err: unknown,
+): unknown {
+  request.log.error({ err, projectId }, 'stripe billing operation failed');
+  return reply.status(502).send({ error: 'billing_unavailable' });
+}
+
 // Mirror a Stripe subscription onto the local project row (tier is derived from
 // the price; Stripe stays the source of truth for status/period).
 function applySubscription(db: Db, customerId: string, sub: Stripe.Subscription): void {
@@ -72,25 +95,51 @@ export function registerBillingRoutes(app: FastifyInstance, db: Db): void {
 
     // Reuse or create the project's Stripe customer.
     let customerId = getProjectBilling(db, key.projectId).stripe_customer_id;
-    if (!customerId) {
-      const customer = await stripe.customers.create({ metadata: { project_id: key.projectId } });
-      customerId = customer.id;
-      db.prepare('UPDATE projects SET stripe_customer_id = ? WHERE id = ?').run(customerId, key.projectId);
+    try {
+      if (!customerId) {
+        const customer = await stripe.customers.create({ metadata: { project_id: key.projectId } });
+        customerId = customer.id;
+        db.prepare('UPDATE projects SET stripe_customer_id = ? WHERE id = ?').run(customerId, key.projectId);
+      }
+    } catch (err) {
+      return sendBillingUnavailable(request, reply, key.projectId, err);
     }
 
     // Redirect back to the web UI, which may live on a different origin than
     // the API (e.g. app.impri.dev vs api.impri.dev). Falls back to BASE_URL
     // for same-origin self-hosting.
     const appUrl = process.env.APP_URL ?? process.env.BASE_URL ?? 'http://localhost:8484';
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      customer: customerId,
-      line_items: [{ price: priceId, quantity: 1 }],
-      client_reference_id: key.projectId,
-      success_url: `${appUrl}/?checkout=success`,
-      cancel_url: `${appUrl}/?checkout=canceled`,
-    });
-    return { url: session.url };
+    const createSession = (customer: string) =>
+      stripe.checkout.sessions.create({
+        mode: 'subscription',
+        customer,
+        line_items: [{ price: priceId, quantity: 1 }],
+        client_reference_id: key.projectId,
+        success_url: `${appUrl}/?checkout=success`,
+        cancel_url: `${appUrl}/?checkout=canceled`,
+      });
+
+    try {
+      let session;
+      try {
+        session = await createSession(customerId);
+      } catch (err) {
+        if (!isMissingCustomer(err)) throw err;
+        // Stale customer id (e.g. a test-mode id left over after switching to
+        // live keys) — mint a fresh customer and retry exactly once.
+        request.log.warn(
+          { projectId: key.projectId, staleCustomerId: customerId },
+          'stripe customer missing, creating a new one and retrying checkout',
+        );
+        const fresh = await stripe.customers.create({ metadata: { project_id: key.projectId } });
+        customerId = fresh.id;
+        db.prepare('UPDATE projects SET stripe_customer_id = ? WHERE id = ?').run(customerId, key.projectId);
+        session = await createSession(customerId);
+      }
+      return { url: session.url };
+    } catch (err) {
+      return sendBillingUnavailable(request, reply, key.projectId, err);
+    }
   });
 
   // POST /v1/billing/portal — Stripe customer portal (admin scope)

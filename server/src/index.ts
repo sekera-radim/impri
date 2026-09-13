@@ -65,6 +65,23 @@ export async function createApp(db: Db) {
     });
   }
 
+  // Every route validates its own input with zod and replies explicitly, so
+  // anything landing here is an UNHANDLED exception (a bug, or a framework-level
+  // failure like a malformed content-type). For a 5xx, err.message can carry
+  // internal detail (a driver error, a third-party SDK message, a file path) —
+  // log it in full server-side and send the client a generic message instead.
+  // 4xx errors (e.g. Fastify's own body-parsing errors) already carry a safe,
+  // specific message, so those pass through unchanged.
+  app.setErrorHandler((err, request, reply) => {
+    const statusCode = (err as { statusCode?: number }).statusCode ?? 500;
+    if (statusCode < 500) {
+      reply.status(statusCode).send(err);
+      return;
+    }
+    request.log.error({ err }, 'unhandled error in route handler');
+    reply.status(statusCode).send({ error: 'internal_error', message: 'Something went wrong' });
+  });
+
   // Keep the raw body on every JSON request (Stripe webhook signature needs
   // the exact bytes) while still exposing the parsed object to routes.
   app.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body, done) => {

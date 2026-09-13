@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { createDb } from '../src/db.js';
+import { createDb, genId, nowSec } from '../src/db.js';
 import { bootstrapAdminKey } from '../src/auth.js';
 import { createApp } from '../src/index.js';
 
@@ -209,13 +209,24 @@ describe('Rules CRUD', () => {
   });
 
   it('enforces 50-rule cap and returns 409 on the 51st rule', async () => {
-    const { app, adminKey } = await setup();
+    const { app, adminKey, db, projectId } = await setup();
 
-    // Create 50 rules
-    for (let i = 0; i < 50; i++) {
-      const r = await createRule(app, adminKey, { name: `Rule ${i}`, rule_action: 'auto_approve' });
-      expect(r.statusCode).toBe(201);
+    // Seed the first 49 rules directly in the store instead of through the API.
+    // Every authenticated request re-verifies the API key with argon2 (deliberately
+    // memory-hard, ~tens of ms each) in the preHandler — 50 of those back-to-back
+    // made this test flaky (it hit the 10s timeout under load). Only the requests
+    // that actually cross the cap boundary need to go through the real endpoint.
+    const now = nowSec();
+    for (let i = 0; i < 49; i++) {
+      db.prepare(
+        `INSERT INTO approval_rules (id, project_id, name, rule_action, created_at, updated_at)
+         VALUES (?, ?, ?, 'auto_approve', ?, ?)`,
+      ).run(genId('rule_'), projectId, `Rule ${i}`, now, now);
     }
+
+    // The 50th rule, created through the real endpoint, must still succeed.
+    const fiftieth = await createRule(app, adminKey, { name: 'Rule 49', rule_action: 'auto_approve' });
+    expect(fiftieth.statusCode).toBe(201);
 
     // 51st must be rejected
     const overflow = await createRule(app, adminKey, { name: 'One too many', rule_action: 'auto_approve' });

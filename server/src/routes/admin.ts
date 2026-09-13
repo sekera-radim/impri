@@ -5,6 +5,61 @@ import { nowSec } from '../db.js';
 import { hasScope, checkRateLimit } from '../auth.js';
 import type { Tier } from '../billing.js';
 
+// The onboarding "Send a test approval" button (ui/src/components/GettingStarted.vue)
+// and `impri init --demo` (cli/src/commands/init.ts) create actions with kind 'demo' or
+// 'demo.*' — those are not real usage and would inflate "first_action" for every signup
+// that just clicked the onboarding button once. Excluded by pattern since the kind is
+// reliably distinguishable (unlike, say, a watcher-generated action, which has no such tell).
+const DEMO_KIND_FILTER = "kind != 'demo' AND kind NOT LIKE 'demo.%'";
+
+// Activation funnel for the operator dashboard, computed with parameterized SQL over
+// the schema in db.ts. Every step EXCLUDES the operator's own project (OPERATOR_PROJECT_ID)
+// so Radim's own dogfood project never counts as a "signup" or an "activation".
+//
+// "Human decision" (first_decision / activated_*) means a decisions row whose channel is
+// not 'auto' — auto_approve/auto_reject rule outcomes are written with channel='auto'
+// (see actions.ts) and are not a person doing anything.
+function computeFunnel(db: Db, operator: string, now: number): Record<string, number> {
+  const one = (sql: string, ...params: unknown[]): number =>
+    (db.prepare(sql).get(...params) as { c: number }).c;
+
+  const humanDecisionsSince = (since: number): number =>
+    one(
+      `SELECT COUNT(DISTINCT a.project_id) AS c
+         FROM decisions d
+         JOIN actions a ON a.id = d.action_id
+        WHERE d.channel != 'auto' AND a.project_id != ? AND d.decided_at > ?`,
+      operator,
+      since,
+    );
+
+  return {
+    signed_up: one('SELECT COUNT(*) AS c FROM projects WHERE id != ?', operator),
+    created_api_key: one(
+      'SELECT COUNT(DISTINCT project_id) AS c FROM api_keys WHERE project_id != ?',
+      operator,
+    ),
+    first_action: one(
+      `SELECT COUNT(DISTINCT project_id) AS c FROM actions WHERE project_id != ? AND ${DEMO_KIND_FILTER}`,
+      operator,
+    ),
+    first_decision: one(
+      `SELECT COUNT(DISTINCT a.project_id) AS c
+         FROM decisions d
+         JOIN actions a ON a.id = d.action_id
+        WHERE d.channel != 'auto' AND a.project_id != ?`,
+      operator,
+    ),
+    integration_connected: one(
+      'SELECT COUNT(DISTINCT project_id) AS c FROM notification_channels WHERE project_id != ?',
+      operator,
+    ),
+    paid: one("SELECT COUNT(*) AS c FROM projects WHERE tier != 'free' AND id != ?", operator),
+    activated_last_7d: humanDecisionsSince(now - 604_800),
+    activated_last_30d: humanDecisionsSince(now - 2_592_000),
+  };
+}
+
 // Operator-only platform stats. Restricted to the operator's own project
 // (OPERATOR_PROJECT_ID) so no signed-up user can read cross-tenant totals.
 // Returns 404 for anyone else, so the endpoint isn't even discoverable.
@@ -40,6 +95,7 @@ export function registerAdminRoutes(app: FastifyInstance, db: Db): void {
         actions_7d: count('SELECT COUNT(*) AS c FROM actions WHERE created_at > ?', now - 604_800),
         watchers: count("SELECT COUNT(*) AS c FROM watchers WHERE status != 'paused'"),
       },
+      funnel: computeFunnel(db, operator, now),
       ts: now,
     };
   });

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createRequire } from "node:module";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -330,8 +331,16 @@ Examples:
 
 // ─── MCP server ───────────────────────────────────────────────────────────────
 
+// Read the version from package.json at runtime rather than hardcoding it here —
+// this file drifted out of sync with package.json before (reported "0.1.0" while
+// the package was already at 0.1.1). tsc compiles src/index.ts to dist/index.js
+// one level under the package root, so package.json is always "../package.json"
+// from the compiled file, same as server/src/index.ts does it.
+const _require = createRequire(import.meta.url);
+const PKG_VERSION: string = (_require("../package.json") as { version: string }).version;
+
 const server = new Server(
-  { name: "@impri/mcp", version: "0.1.0" },
+  { name: "@impri/mcp", version: PKG_VERSION },
   { capabilities: { tools: {} } },
 );
 

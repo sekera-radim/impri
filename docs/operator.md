@@ -44,6 +44,16 @@ Response:
     "actions_7d":    1203,
     "watchers":       88
   },
+  "funnel": {
+    "signed_up":             142,
+    "created_api_key":       98,
+    "first_action":          71,
+    "first_decision":        54,
+    "integration_connected": 22,
+    "paid":                  27,
+    "activated_last_7d":     18,
+    "activated_last_30d":    39
+  },
   "ts": 1720000000
 }
 ```
@@ -59,7 +69,38 @@ Fields:
 | `activity.actions_total` | Total actions ever created across all projects |
 | `activity.actions_7d` | Actions created in the last 7 days |
 | `activity.watchers` | Active (non-paused) watchers across all projects |
+| `funnel` | Activation funnel — see below |
 | `ts` | Unix timestamp of the response |
+
+### `funnel` — activation funnel
+
+Every step below counts **distinct projects**, and every step **excludes the
+operator's own project** (`OPERATOR_PROJECT_ID`) so dogfooding never inflates
+the numbers.
+
+| Field | Meaning |
+|-------|---------|
+| `signed_up` | Projects (excluding the operator project) |
+| `created_api_key` | Projects with at least one API key (any scope, revoked or not) |
+| `first_action` | Projects with at least one **real** action — see below |
+| `first_decision` | Projects with at least one **human** decision — see below |
+| `integration_connected` | Projects with at least one notification channel (Slack, Discord, Telegram, ntfy, email or webhook) |
+| `paid` | Projects with `tier != 'free'` |
+| `activated_last_7d` / `activated_last_30d` | Projects with at least one human decision in the last 7 / 30 days |
+
+Two definitions are deliberately narrower than "any row exists":
+
+- **"Real" action** (`first_action`) excludes the built-in demo/test actions —
+  the onboarding "Send a test approval" button (`ui/src/components/GettingStarted.vue`)
+  creates an action with `kind = 'demo'`, and `impri init --demo` (the CLI onboarding
+  wizard) creates `kind = 'demo.email'` / `kind = 'demo.publish'`. Both are excluded by
+  a `kind = 'demo' OR kind LIKE 'demo.%'` filter so clicking the onboarding button once
+  doesn't count as activation. This kind is reliably distinguishable, so there is no
+  separate `first_real_action` field — `first_action` already means "real".
+- **"Human" decision** (`first_decision`, `activated_last_7d/30d`) excludes decisions
+  made by the rules engine: `auto_approve`/`auto_reject` outcomes are written with
+  `decisions.channel = 'auto'` (see `server/src/routes/actions.ts`), and a rule firing
+  automatically is not a person doing anything.
 
 ---
 

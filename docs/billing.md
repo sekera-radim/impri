@@ -106,6 +106,20 @@ Redirect the user to `url`. On success, Stripe redirects back to `APP_URL/?check
 
 Returns `400 Bad Request` when billing is disabled (self-hosted with no `STRIPE_SECRET_KEY`).
 
+**Stripe error hardening:** if the project's stored `stripe_customer_id` no longer
+exists on Stripe's side (e.g. a test-mode customer id left over after switching an
+account to live keys), the server clears it, creates a fresh customer, and retries
+the checkout exactly once — transparent to the caller. Any other Stripe failure
+(rate limit, card error, API outage, or a second failed retry) returns:
+
+```json
+{ "error": "billing_unavailable" }
+```
+
+with status `502 Bad Gateway`. The response never includes Stripe's own error
+message, error code or ids — those are logged server-side (with the project id)
+for debugging, not returned to the client.
+
 ---
 
 ### `POST /v1/billing/portal` — manage subscription
