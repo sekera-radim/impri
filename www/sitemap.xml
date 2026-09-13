@@ -27,6 +27,7 @@
   <url><loc>https://impri.dev/docs/approve-ai-agent-payments-and-charges</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-ai-agent-pull-requests-before-merge</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-ai-agent-support-ticket-escalations</loc><lastmod>2026-09-13</lastmod></url>
+  <url><loc>https://impri.dev/docs/approve-ai-agent-vendor-contract-terms</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-ai-coding-agent-terminal-commands</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-ai-generated-content-before-publishing</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-database-writes-from-an-ai-agent</loc><lastmod>2026-09-13</lastmod></url>
@@ -65,8 +66,10 @@
   <url><loc>https://impri.dev/docs/human-approval-for-ai-agencies</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-ai-agent-browser-automation</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-ai-agent-file-writes</loc><lastmod>2026-09-13</lastmod></url>
+  <url><loc>https://impri.dev/docs/human-approval-for-ai-agent-secrets-rotation</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-ai-agent-terraform-changes</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-ai-content-pipelines</loc><lastmod>2026-09-13</lastmod></url>
+  <url><loc>https://impri.dev/docs/human-approval-for-ai-procurement-agents</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-ai-recruiting-outreach</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-ai-sales-outreach</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-ai-social-media-management</loc><lastmod>2026-09-13</lastmod></url>
@@ -89,6 +92,7 @@
   <url><loc>https://impri.dev/docs/human-in-the-loop-ci-cd-ai-agents</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-cloudflare-agents</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-explained</loc><lastmod>2026-09-13</lastmod></url>
+  <url><loc>https://impri.dev/docs/human-in-the-loop-for-ai-hr-onboarding-agents</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-ai-in-ecommerce</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-ai-in-hr</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-ai-in-saas-operations</loc><lastmod>2026-09-13</lastmod></url>

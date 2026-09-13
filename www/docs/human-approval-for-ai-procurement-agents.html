@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Human Approval for AI Procurement Agents — Impri Docs</title>
+<meta name="description" content="An AI agent that can generate a purchase order is one bad supplier match away from a real invoice. This is the pattern for putting a human sign-off between the agent&amp;#39;s recommendation and the money">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Human Approval for AI Procurement Agents — Impri Docs">
+<meta property="og:description" content="An AI agent that can generate a purchase order is one bad supplier match away from a real invoice. This is the pattern for putting a human sign-off between the agent&amp;#39;s recommendation and the money">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://impri.dev/docs/human-approval-for-ai-procurement-agents">
+<meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Impri — human-in-the-loop approval inbox for AI agents">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
+<link rel="canonical" href="https://impri.dev/docs/human-approval-for-ai-procurement-agents">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human Approval for AI Procurement Agents","description":"An AI agent that can generate a purchase order is one bad supplier match away from a real invoice. This is the pattern for putting a human sign-off between the agent&#39;s recommendation and the money","url":"https://impri.dev/docs/human-approval-for-ai-procurement-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting" class="sl">Self-hosting</a>
+<a href="../docs/observability" class="sl">Observability</a>
+</div>
+<div class="sg">
+<div class="sg-label">Install</div>
+<a href="../docs/how-to-get-human-approval-into-your-coding-agent" class="sl">Overview</a>
+<a href="../docs/claude-code-human-approval" class="sl">Claude Code</a>
+<a href="../docs/codex-human-approval" class="sl">OpenAI Codex</a>
+<a href="../docs/cursor-human-approval" class="sl">Cursor</a>
+<a href="../docs/windsurf-human-approval" class="sl">Windsurf</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets" class="sl">Watcher presets</a>
+<a href="../docs/notifications" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval" class="sl">Slack approval</a>
+<a href="../docs/discord-approval" class="sl">Discord approval</a>
+<a href="../docs/audit-log" class="sl">Audit log</a>
+<a href="../docs/billing" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr" class="sl">GDPR &amp; data export</a>
+<a href="../docs/privacy" class="sl">Privacy policy</a>
+<a href="../docs/terms" class="sl">Terms of service</a>
+<a href="../docs/operator" class="sl">Operator / admin</a>
+<a href="../docs/account-recovery" class="sl">Account recovery</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp" class="sl">MCP server</a>
+<a href="../docs/integrations" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks" class="sl">Webhooks</a>
+<a href="../docs/web-push" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Reference</span>
+      <span class="bc-sep">/</span>
+      <span>Human Approval for AI Procurement Agents</span>
+    </nav>
+    <h1>Human Approval for AI Procurement Agents</h1>
+<p>An AI agent that can generate a purchase order is one bad supplier match away from a real invoice. This is the pattern for putting a human sign-off between the agent&#39;s recommendation and the money actually moving.</p>
+<hr>
+<h2 id="why-procurement-is-a-stricter-case-than-quotapprove-this-emailquot">Why procurement is a stricter case than &quot;approve this email&quot;</h2>
+<p>Most human-in-the-loop examples are about tone and wording — did the agent phrase the outreach email well. Procurement is different: the downside of a bad approval is a line item on next month&#39;s invoice, a vendor relationship, or a budget line that someone in finance has to explain. That changes what the approval card needs to show and what metadata is worth attaching to the action, not the mechanics of the gate itself.</p>
+<p>A procurement agent typically does three things before it should ever be allowed to touch a vendor system: match a need to a catalog item or RFQ response, compute a total against budget, and draft the PO. All three can be done by the agent. The fourth step — actually submitting the PO to the ERP or emailing the vendor a confirmed order — is the one that needs a human in the loop.</p>
+<hr>
+<h2 id="the-purchase-order-approval-flow">The purchase order approval flow</h2>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> os
+<span class="hljs-keyword">import</span> time
+<span class="hljs-keyword">import</span> requests
+
+IMPRI_BASE = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
+HEADERS = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{os.environ[<span class="hljs-string">&#x27;IMPRI_API_KEY&#x27;</span>]}</span>&quot;</span>}
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">propose_purchase_order</span>(<span class="hljs-params">vendor, items, total_usd</span>):
+    body = {
+        <span class="hljs-string">&quot;kind&quot;</span>: <span class="hljs-string">&quot;procurement.purchase_order.create&quot;</span>,
+        <span class="hljs-string">&quot;title&quot;</span>: <span class="hljs-string">f&quot;PO for <span class="hljs-subst">{vendor}</span>: $<span class="hljs-subst">{total_usd:,<span class="hljs-number">.2</span>f}</span>&quot;</span>,
+        <span class="hljs-string">&quot;preview&quot;</span>: {
+            <span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>,
+            <span class="hljs-string">&quot;body&quot;</span>: (
+                <span class="hljs-string">f&quot;**Vendor:** <span class="hljs-subst">{vendor}</span>\n\n&quot;</span>
+                <span class="hljs-string">f&quot;**Items:**\n&quot;</span> + <span class="hljs-string">&quot;\n&quot;</span>.join(<span class="hljs-string">f&quot;- <span class="hljs-subst">{i[<span class="hljs-string">&#x27;qty&#x27;</span>]}</span>x <span class="hljs-subst">{i[<span class="hljs-string">&#x27;name&#x27;</span>]}</span> @ $<span class="hljs-subst">{i[<span class="hljs-string">&#x27;unit_price&#x27;</span>]}</span>&quot;</span> <span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> items) +
+                <span class="hljs-string">f&quot;\n\n**Total:** $<span class="hljs-subst">{total_usd:,<span class="hljs-number">.2</span>f}</span>&quot;</span>
+            ),
+        },
+        <span class="hljs-string">&quot;target_url&quot;</span>: <span class="hljs-string">f&quot;https://erp.internal.example.com/vendors/<span class="hljs-subst">{vendor}</span>&quot;</span>,
+        <span class="hljs-string">&quot;expires_in&quot;</span>: <span class="hljs-number">259200</span>,  <span class="hljs-comment"># 72h — a stale PO shouldn&#x27;t auto-submit later</span>
+        <span class="hljs-string">&quot;editable&quot;</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
+        <span class="hljs-string">&quot;idempotent&quot;</span>: <span class="hljs-literal">False</span>,  <span class="hljs-comment"># submitting the same PO twice creates a duplicate order</span>
+        <span class="hljs-string">&quot;undo&quot;</span>: <span class="hljs-string">&quot;Cancel PO via ERP &gt; Purchase Orders &gt; Cancel (before vendor acknowledges)&quot;</span>,
+    }
+    resp = requests.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions&quot;</span>, headers=HEADERS, json=body)
+    <span class="hljs-keyword">return</span> resp.json()[<span class="hljs-string">&quot;id&quot;</span>]
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">wait_for_decision</span>(<span class="hljs-params">action_id, poll_seconds=<span class="hljs-number">15</span></span>):
+    <span class="hljs-keyword">while</span> <span class="hljs-literal">True</span>:
+        resp = requests.get(<span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>&quot;</span>, headers=HEADERS)
+        data = resp.json()
+        <span class="hljs-keyword">if</span> data[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;pending&quot;</span>:
+            <span class="hljs-keyword">return</span> data
+        time.sleep(poll_seconds)
+
+action_id = propose_purchase_order(<span class="hljs-string">&quot;Acme Supplies Ltd.&quot;</span>, [
+    {<span class="hljs-string">&quot;name&quot;</span>: <span class="hljs-string">&quot;A4 paper, 500-sheet&quot;</span>, <span class="hljs-string">&quot;qty&quot;</span>: <span class="hljs-number">40</span>, <span class="hljs-string">&quot;unit_price&quot;</span>: <span class="hljs-number">4.25</span>},
+    {<span class="hljs-string">&quot;name&quot;</span>: <span class="hljs-string">&quot;Toner cartridge, black&quot;</span>, <span class="hljs-string">&quot;qty&quot;</span>: <span class="hljs-number">12</span>, <span class="hljs-string">&quot;unit_price&quot;</span>: <span class="hljs-number">38.00</span>},
+], total_usd=<span class="hljs-number">626.00</span>)
+
+decision = wait_for_decision(action_id)
+
+<span class="hljs-keyword">if</span> decision[<span class="hljs-string">&quot;status&quot;</span>] == <span class="hljs-string">&quot;approved&quot;</span>:
+    final_body = decision[<span class="hljs-string">&quot;decision&quot;</span>][<span class="hljs-string">&quot;final_preview&quot;</span>][<span class="hljs-string">&quot;body&quot;</span>]
+    <span class="hljs-comment"># submit_po_to_erp(final_body) — your actual ERP call</span>
+    requests.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>/result&quot;</span>, headers=HEADERS,
+                  json={<span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;executed&quot;</span>, <span class="hljs-string">&quot;payload&quot;</span>: {<span class="hljs-string">&quot;erp_po_number&quot;</span>: <span class="hljs-string">&quot;PO-88213&quot;</span>}})
+<span class="hljs-keyword">else</span>:
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;PO not submitted — decision was <span class="hljs-subst">{decision[<span class="hljs-string">&#x27;status&#x27;</span>]}</span>&quot;</span>)</code></pre></div>
+<p>A rejected or expired decision means the ERP call is simply never made. There&#39;s no separate &quot;cancel&quot; step to remember — the agent&#39;s code path to <code>submit_po_to_erp</code> only exists inside the <code>approved</code> branch.</p>
+<hr>
+<h2 id="let-the-reviewer-edit-numbers-before-they-commit">Let the reviewer edit numbers before they commit</h2>
+<p>Procurement drafts often need a small correction — a quantity typo, a unit price the agent misread from a quote PDF — rather than an outright rejection. Setting <code>editable: [&quot;preview.body&quot;]</code> lets the person approving the PO fix the draft directly in the inbox card instead of rejecting it and asking the agent to redo the whole thing. <code>decision.diff</code> on the response shows exactly what was changed, which matters when finance later asks why a PO total doesn&#39;t match the original AI-generated draft.</p>
+<hr>
+<h2 id="audit-trail-for-finance-and-compliance">Audit trail for finance and compliance</h2>
+<p>Every procurement approval Impri holds becomes a queryable record: who approved it, when, and what the final approved content was versus what the agent originally proposed. For a finance or compliance review, that&#39;s the artifact that answers &quot;why did this vendor get paid&quot; without anyone having to reconstruct it from Slack messages or email threads. See <a href="audit-log">the audit log docs</a> for what&#39;s retained and for how long.</p>
+<hr>
+<h2 id="what-impri-does-not-do-here">What Impri does not do here</h2>
+<p>Impri does not talk to your ERP, does not check the PO against a budget, and does not validate that the vendor and pricing are legitimate — all of that is the agent&#39;s job before the action is ever created. Impri&#39;s only responsibility is holding the &quot;submit or don&#39;t&quot; decision and making sure the ERP call in your code is unreachable without an <code>approved</code> status. If the agent still holds a credential that can call the ERP directly, wrap that credential so the approved decision is genuinely the only path — see <a href="sdk-python">SDK integrations</a> for how to structure that wrapper.</p>
+<p>Next step: if this is your first Impri integration, start with the <a href="quickstart">quickstart</a> to get an API key, then come back and adapt the code above to your ERP.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#why-procurement-is-a-stricter-case-than-quotapprove-this-emailquot">Why procurement is a stricter case than &quot;approve this email&quot;</a></li>
+<li class="ptoc-h2"><a href="#the-purchase-order-approval-flow">The purchase order approval flow</a></li>
+<li class="ptoc-h2"><a href="#let-the-reviewer-edit-numbers-before-they-commit">Let the reviewer edit numbers before they commit</a></li>
+<li class="ptoc-h2"><a href="#audit-trail-for-finance-and-compliance">Audit trail for finance and compliance</a></li>
+<li class="ptoc-h2"><a href="#what-impri-does-not-do-here">What Impri does not do here</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/terms">Terms</a>
+    <a href="https://sekera.dev">Contact</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>.</span></div>
+</footer>
+</body>
+</html>
