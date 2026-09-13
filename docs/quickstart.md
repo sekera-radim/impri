@@ -119,16 +119,36 @@ curl -s -X POST https://api.impri.dev/v1/actions/$ACTION_ID/result \
 
 The action lifecycle is now complete: `pending → approved → executed`. That's the whole loop — everything past this point is optional depth (webhooks instead of polling, watchers, notification channels).
 
-### Prefer MCP? (Claude Code, Claude Desktop, any MCP client)
+### Prefer MCP? (Claude Code, Codex CLI, Cursor, Windsurf, any MCP client)
 
-Skip the raw HTTP calls above — the Impri MCP server wraps the same three calls into tool calls your agent can use directly.
+Skip the raw HTTP calls above — the Impri MCP server wraps the same three calls into tool calls your agent can use directly. The web inbox's **Connect an agent** panel shows the same commands below with your real key already filled in.
+
+**Claude Code:**
+
+```bash
+claude mcp add impri \
+  -e IMPRI_API_KEY=im_<your-agent-key> \
+  -e IMPRI_BASE_URL=https://api.impri.dev \
+  -- npx -y @impri/mcp
+```
+
+**Codex CLI:**
+
+```bash
+codex mcp add impri \
+  --env IMPRI_API_KEY=im_<your-agent-key> \
+  --env IMPRI_BASE_URL=https://api.impri.dev \
+  -- npx -y @impri/mcp
+```
+
+**Cursor** (`~/.cursor/mcp.json` or `.cursor/mcp.json` in your project), **Windsurf** (`~/.codeium/windsurf/mcp_config.json`), **Claude Desktop, or any other MCP client** — same JSON shape:
 
 ```json
 {
   "mcpServers": {
     "impri": {
       "command": "npx",
-      "args": ["@impri/mcp"],
+      "args": ["-y", "@impri/mcp"],
       "env": {
         "IMPRI_API_KEY": "im_<your-agent-key>",
         "IMPRI_BASE_URL": "https://api.impri.dev"
@@ -137,6 +157,8 @@ Skip the raw HTTP calls above — the Impri MCP server wraps the same three call
   }
 }
 ```
+
+Self-hosting? Drop the `IMPRI_BASE_URL` line — the MCP server already defaults to `http://localhost:8484`.
 
 | Tool | What it does |
 |------|-------------|

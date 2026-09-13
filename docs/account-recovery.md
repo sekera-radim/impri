@@ -37,9 +37,15 @@ Example: `imr_ABcDEfgHiJkLmNopQrStUvwX`
 }
 ```
 
+Clicking **Create an API key** on the login screen calls this same endpoint and shows both
+values together in a one-time panel, with a required checkbox confirming you saved them
+before you can continue into the app. Since a recovery code already exists from this point,
+the setup banner described below does not appear for a freshly created account.
+
 ### Via the dashboard
 
-Open the dashboard, click the **shield icon** in the top-right header, or dismiss the setup banner that appears when no recovery code is set.
+Once signed in, open the dashboard, click the **shield icon** in the top-right header, or
+dismiss the setup banner that appears when no recovery code is set.
 
 ### Via the API
 

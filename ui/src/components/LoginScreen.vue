@@ -169,16 +169,22 @@
       </v-card>
     </v-dialog>
 
-    <!-- New key dialog (shown once) -->
-    <v-dialog v-model="showKeyDialog" max-width="480" persistent>
+    <!-- New account dialog (shown once): API key AND recovery code together.
+         Losing either after this closes means losing access, so both must be
+         saved before continuing — hence the required confirmation checkbox. -->
+    <v-dialog v-model="showKeyDialog" max-width="520" persistent>
       <v-card>
-        <v-card-title>Your new API key</v-card-title>
+        <v-card-title>Save your key and recovery code</v-card-title>
         <v-card-text>
-          <p class="text-body-2 text-medium-emphasis mb-3">
-            This is shown once. Copy and store it somewhere safe — it's how you and your
-            agents access Impri.
+          <v-alert type="warning" variant="tonal" density="compact" class="mb-4">
+            Neither of these will be shown again. Save both now, somewhere like a password
+            manager — the recovery code is your only way back in if you lose the key.
+          </v-alert>
+
+          <p class="text-body-2 text-medium-emphasis mb-2">
+            API key — how you and your agents access Impri:
           </p>
-          <div class="d-flex align-center gap-2">
+          <div class="d-flex align-center gap-2 mb-4">
             <code class="key-box">{{ newKey }}</code>
             <v-btn
               :icon="copyFeedback ? 'mdi-check' : 'mdi-content-copy'"
@@ -189,10 +195,39 @@
               @click="copyKey"
             />
           </div>
+
+          <p class="text-body-2 text-medium-emphasis mb-2">
+            Recovery code — regains access if you ever lose all your API keys:
+          </p>
+          <div class="d-flex align-center gap-2 mb-4">
+            <code class="key-box">{{ newRecoveryCode }}</code>
+            <v-btn
+              :icon="copyNewCodeFeedback ? 'mdi-check' : 'mdi-content-copy'"
+              variant="text"
+              size="small"
+              title="Copy recovery code"
+              aria-label="Copy recovery code"
+              @click="copyNewRecoveryCode"
+            />
+          </div>
+
+          <v-checkbox
+            v-model="savedBothConfirmed"
+            density="compact"
+            hide-details
+            color="primary"
+            label="I've saved both the API key and the recovery code"
+          />
         </v-card-text>
         <v-card-actions class="pa-4 pt-0">
           <v-spacer />
-          <v-btn color="primary" variant="flat" :loading="auth.loggingIn" @click="continueWithKey">
+          <v-btn
+            color="primary"
+            variant="flat"
+            :disabled="!savedBothConfirmed"
+            :loading="auth.loggingIn"
+            @click="continueWithKey"
+          >
             Continue to inbox
           </v-btn>
         </v-card-actions>
@@ -215,8 +250,11 @@ const fullApiBase = rawBase.startsWith('http') ? rawBase : window.location.origi
 const creating = ref(false)
 const signupError = ref<string | null>(null)
 const newKey = ref('')
+const newRecoveryCode = ref('')
 const showKeyDialog = ref(false)
 const copyFeedback = ref(false)
+const copyNewCodeFeedback = ref(false)
+const savedBothConfirmed = ref(false)
 
 // Recovery form state
 const showRecoverForm = ref(false)
@@ -256,12 +294,14 @@ async function createKey(): Promise<void> {
       signupError.value = 'Too many attempts — please wait a minute and try again.'
       return
     }
-    const json = (await res.json()) as { key?: string; message?: string }
-    if (!res.ok || !json.key) {
+    const json = (await res.json()) as { key?: string; recovery_code?: string; message?: string }
+    if (!res.ok || !json.key || !json.recovery_code) {
       signupError.value = json.message ?? 'Could not create a key.'
       return
     }
     newKey.value = json.key
+    newRecoveryCode.value = json.recovery_code
+    savedBothConfirmed.value = false
     showKeyDialog.value = true
   } catch {
     signupError.value = 'Network error — could not reach the server.'
@@ -274,6 +314,12 @@ function copyKey(): void {
   void navigator.clipboard?.writeText(newKey.value)
   copyFeedback.value = true
   setTimeout(() => { copyFeedback.value = false }, 1_500)
+}
+
+function copyNewRecoveryCode(): void {
+  void navigator.clipboard?.writeText(newRecoveryCode.value)
+  copyNewCodeFeedback.value = true
+  setTimeout(() => { copyNewCodeFeedback.value = false }, 1_500)
 }
 
 async function continueWithKey(): Promise<void> {

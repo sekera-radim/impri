@@ -73,23 +73,115 @@
           </div>
 
           <p class="text-body-2 font-weight-medium mb-1 mt-4">
-            Or let an AI agent (Claude &amp; others) ask for approval — MCP config:
+            Or let an AI agent ask for approval — connect an MCP client:
           </p>
-          <div class="code-wrap">
-            <v-btn
-              class="code-copy"
-              :icon="copyFeedback === 'mcp' ? 'mdi-check' : 'mdi-content-copy'"
-              size="x-small"
-              variant="text"
-              title="Copy"
-              aria-label="Copy MCP config snippet"
-              @click="copy(mcpSnippet, 'mcp')"
-            />
-            <pre class="code-block">{{ mcpSnippet }}</pre>
-          </div>
+
+          <v-tabs v-model="agentTab" density="compact" color="primary" show-arrows class="mb-2">
+            <v-tab value="claude">Claude Code</v-tab>
+            <v-tab value="codex">Codex CLI</v-tab>
+            <v-tab value="cursor">Cursor</v-tab>
+            <v-tab value="windsurf">Windsurf</v-tab>
+            <v-tab value="json">Generic JSON</v-tab>
+          </v-tabs>
+
+          <v-window v-model="agentTab">
+            <v-window-item value="claude">
+              <div class="code-wrap">
+                <v-btn
+                  class="code-copy"
+                  :icon="copyFeedback === 'claude' ? 'mdi-check' : 'mdi-content-copy'"
+                  size="x-small"
+                  variant="text"
+                  title="Copy"
+                  aria-label="Copy Claude Code command"
+                  @click="copy(claudeCommand, 'claude')"
+                />
+                <pre class="code-block">{{ claudeCommand }}</pre>
+              </div>
+              <p class="text-caption text-medium-emphasis mt-2">
+                Verify it loaded with <code>/mcp</code> inside Claude Code.
+              </p>
+            </v-window-item>
+
+            <v-window-item value="codex">
+              <div class="code-wrap">
+                <v-btn
+                  class="code-copy"
+                  :icon="copyFeedback === 'codex' ? 'mdi-check' : 'mdi-content-copy'"
+                  size="x-small"
+                  variant="text"
+                  title="Copy"
+                  aria-label="Copy Codex CLI command"
+                  @click="copy(codexCommand, 'codex')"
+                />
+                <pre class="code-block">{{ codexCommand }}</pre>
+              </div>
+            </v-window-item>
+
+            <v-window-item value="cursor">
+              <p class="text-caption text-medium-emphasis mb-1">
+                Add to <code>~/.cursor/mcp.json</code> (or <code>.cursor/mcp.json</code> in your project):
+              </p>
+              <div class="code-wrap">
+                <v-btn
+                  class="code-copy"
+                  :icon="copyFeedback === 'cursor' ? 'mdi-check' : 'mdi-content-copy'"
+                  size="x-small"
+                  variant="text"
+                  title="Copy"
+                  aria-label="Copy Cursor MCP config"
+                  @click="copy(jsonSnippet, 'cursor')"
+                />
+                <pre class="code-block">{{ jsonSnippet }}</pre>
+              </div>
+            </v-window-item>
+
+            <v-window-item value="windsurf">
+              <p class="text-caption text-medium-emphasis mb-1">
+                Add to <code>~/.codeium/windsurf/mcp_config.json</code>:
+              </p>
+              <div class="code-wrap">
+                <v-btn
+                  class="code-copy"
+                  :icon="copyFeedback === 'windsurf' ? 'mdi-check' : 'mdi-content-copy'"
+                  size="x-small"
+                  variant="text"
+                  title="Copy"
+                  aria-label="Copy Windsurf MCP config"
+                  @click="copy(jsonSnippet, 'windsurf')"
+                />
+                <pre class="code-block">{{ jsonSnippet }}</pre>
+              </div>
+            </v-window-item>
+
+            <v-window-item value="json">
+              <p class="text-caption text-medium-emphasis mb-1">
+                Works with any MCP-compatible client (Claude Desktop and others) — paste into
+                its <code>mcpServers</code> config:
+              </p>
+              <div class="code-wrap">
+                <v-btn
+                  class="code-copy"
+                  :icon="copyFeedback === 'json' ? 'mdi-check' : 'mdi-content-copy'"
+                  size="x-small"
+                  variant="text"
+                  title="Copy"
+                  aria-label="Copy MCP config JSON"
+                  @click="copy(jsonSnippet, 'json')"
+                />
+                <pre class="code-block">{{ jsonSnippet }}</pre>
+              </div>
+            </v-window-item>
+          </v-window>
 
           <p class="text-caption text-medium-emphasis mt-2">
-            Use an API key that starts with <code>im_</code> (the same kind you signed in with).
+            <template v-if="auth.apiKey">
+              These snippets already include your current API key — handle copied text like
+              the key itself.
+            </template>
+            <template v-else>
+              Replace <code>im_YOUR_KEY</code> with a key that starts with <code>im_</code>.
+            </template>
           </p>
         </div>
       </v-expand-transition>
@@ -131,14 +223,38 @@ const curlSnippet = computed(
   -d '{"kind":"email.send","title":"Send welcome email","preview":{"format":"markdown","body":"To: user@example.com\\n\\nWelcome aboard!"}}'`,
 )
 
-const mcpSnippet = computed(() =>
+const agentTab = ref<'claude' | 'codex' | 'cursor' | 'windsurf' | 'json'>('claude')
+
+// Use the real key when we have one (the user is signed in to see this panel
+// at all) so the snippet is ready to paste, not a template to hand-edit.
+const apiKeyValue = computed(() => auth.apiKey ?? 'im_YOUR_KEY')
+
+// The MCP server's own default is localhost:8484 (see mcp/src/index.ts), so
+// only spell out IMPRI_BASE_URL when pointing anywhere else (e.g. the cloud).
+const showBaseUrl = computed(() => apiOrigin !== 'http://localhost:8484')
+
+const claudeCommand = computed(() => {
+  const envArgs = [`-e IMPRI_API_KEY=${apiKeyValue.value}`]
+  if (showBaseUrl.value) envArgs.push(`-e IMPRI_BASE_URL=${apiOrigin}`)
+  return `claude mcp add impri \\\n  ${envArgs.join(' \\\n  ')} \\\n  -- npx -y @impri/mcp`
+})
+
+const codexCommand = computed(() => {
+  const envArgs = [`--env IMPRI_API_KEY=${apiKeyValue.value}`]
+  if (showBaseUrl.value) envArgs.push(`--env IMPRI_BASE_URL=${apiOrigin}`)
+  return `codex mcp add impri \\\n  ${envArgs.join(' \\\n  ')} \\\n  -- npx -y @impri/mcp`
+})
+
+const jsonSnippet = computed(() =>
   JSON.stringify(
     {
       mcpServers: {
         impri: {
           command: 'npx',
           args: ['-y', '@impri/mcp'],
-          env: { IMPRI_API_KEY: 'im_YOUR_KEY', IMPRI_BASE_URL: apiOrigin },
+          env: showBaseUrl.value
+            ? { IMPRI_API_KEY: apiKeyValue.value, IMPRI_BASE_URL: apiOrigin }
+            : { IMPRI_API_KEY: apiKeyValue.value },
         },
       },
     },
