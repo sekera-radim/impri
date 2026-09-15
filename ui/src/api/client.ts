@@ -29,7 +29,11 @@ import type {
   RecoverResponse,
   RecoveryCodeResponse,
 } from '../types'
-import { reportUnexpectedApiFailure } from '../utils/sentryReporting'
+import { NetworkFailureTracker, reportUnexpectedApiFailure } from '../utils/sentryReporting'
+
+// Module-level so every ApiClient instance (the auth store builds more than
+// one) counts the same streak of unanswered requests.
+const networkFailures = new NetworkFailureTracker()
 
 export class ApiClientError extends Error {
   constructor(
@@ -65,10 +69,12 @@ export class ApiClient {
         body: body !== undefined ? JSON.stringify(body) : undefined,
       })
     } catch (err) {
-      // No response at all (offline, DNS, CORS) — a bug/outage, not a 4xx.
-      reportUnexpectedApiFailure(err, { method, path })
+      // No response at all (offline, DNS, CORS) — reported only when it
+      // persists, see NetworkFailureTracker.
+      networkFailures.recordFailure(err, { method, path })
       throw err
     }
+    networkFailures.recordResponse()
 
     if (response.status === 204) {
       return undefined as T

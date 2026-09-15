@@ -181,28 +181,70 @@ export function reportError(error: unknown, extra?: Record<string, unknown>): vo
   });
 }
 
+type Reporter = (error: unknown, extra?: Record<string, unknown>) => void;
+
 /**
- * Reports the API failures that are actually a bug — a 5xx, or no response at
- * all (network/CORS/offline) — with just `{status, method, pathname}`: no
- * body, no query string (a recovery-code redeem call carries its code as
- * `?t=...`, and pathnameOnly() strips that the same way it does for uncaught
- * errors — see scrubEvent() above). A 4xx is the person's or agent's own
- * mistake (bad API key, validation failure, not found), not a bug, and is
- * deliberately left out so Sentry volume tracks real breakage.
+ * Reports the HTTP failures that are actually a bug — a 5xx — with just
+ * `{status, method, pathname}`: no body, no query string (a recovery-code
+ * redeem call carries its code as `?t=...`, and pathnameOnly() strips that the
+ * same way it does for uncaught errors — see scrubEvent() above). A 4xx is the
+ * person's or agent's own mistake (bad API key, validation failure, not
+ * found), not a bug, and is deliberately left out so Sentry volume tracks real
+ * breakage. No response at all goes through NetworkFailureTracker instead.
  */
 export function reportUnexpectedApiFailure(
   error: unknown,
-  info: { status?: number; method: string; path: string },
+  info: { status: number; method: string; path: string },
   // Injectable for tests (see tests/sentryReporting.test.ts) — defaults to
   // the real reportError. A plain function param rather than spying on the
   // module's own export, since an intra-module call bypasses a spy set on
   // the exported binding.
-  report: (error: unknown, extra?: Record<string, unknown>) => void = reportError,
+  report: Reporter = reportError,
 ): void {
-  if (info.status !== undefined && info.status < 500) return;
+  if (info.status < 500) return;
   report(error, {
-    status: info.status ?? 'network_error',
+    status: info.status,
     method: info.method,
     pathname: pathnameOnly(info.path),
   });
+}
+
+export const NETWORK_FAILURE_REPORT_THRESHOLD = 3;
+
+/**
+ * Requests that got no response at all. The inbox polls every few seconds, so
+ * a Wi-Fi drop, a laptop waking up or a reload mid-request each produced a
+ * "Failed to fetch" event (IMPRI-WEB-2) while the API itself was fine. One
+ * failure says nothing; a streak while the browser believes it is online is
+ * an outage worth knowing about (API down, DNS, CORS), and it is reported once
+ * per streak rather than on every poll that follows.
+ */
+export class NetworkFailureTracker {
+  private consecutiveFailures = 0;
+
+  constructor(
+    private readonly report: Reporter = reportError,
+    private readonly isOnline: () => boolean = () => typeof navigator === 'undefined' || navigator.onLine,
+    private readonly threshold: number = NETWORK_FAILURE_REPORT_THRESHOLD,
+  ) {}
+
+  recordResponse(): void {
+    this.consecutiveFailures = 0;
+  }
+
+  recordFailure(error: unknown, info: { method: string; path: string }): void {
+    // A request the page cancelled itself, or one made while the browser
+    // knows it is offline, is not an outage of ours.
+    if (error instanceof Error && error.name === 'AbortError') return;
+    if (!this.isOnline()) return;
+
+    this.consecutiveFailures += 1;
+    if (this.consecutiveFailures !== this.threshold) return;
+    this.report(error, {
+      status: 'network_error',
+      method: info.method,
+      pathname: pathnameOnly(info.path),
+      consecutive_failures: this.threshold,
+    });
+  }
 }

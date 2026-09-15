@@ -361,8 +361,11 @@ track user error instead of breakage.
 | `VITE_SENTRY_ENVIRONMENT` | No | Defaults to `production` in a production build, `development` otherwise. |
 
 Uncaught Vue errors, `window.onerror`, and unhandled promise rejections are
-reported; unexpected API failures (5xx or no response at all) surfaced
-through the shared `ApiClient` are reported the same way a 4xx is not.
+reported. Through the shared `ApiClient`, a 5xx is reported every time and a
+4xx never is. A request that gets no response at all is reported only after
+3 such failures in a row while the browser says it is online, and once per
+streak: the inbox polls every few seconds, so a single Wi-Fi drop or a reload
+mid-request is not an outage. Aborted requests are not reported.
 
 The browser sends events straight to your DSN's ingest host, so that origin
 must be allowed in the UI's Content-Security-Policy `connect-src`, or the

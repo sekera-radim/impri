@@ -7,6 +7,7 @@ import {
   reportUnexpectedApiFailure,
   resetSentryReportingForTests,
   IGNORED_ERROR_PATTERNS,
+  NetworkFailureTracker,
 } from '../src/utils/sentryReporting'
 import type { ErrorEvent as SentryEvent, EventHint } from '@sentry/browser'
 
@@ -142,16 +143,71 @@ describe('reportUnexpectedApiFailure', () => {
     expect(report).toHaveBeenCalledWith(err, { status: 500, method: 'POST', pathname: '/v1/actions' })
   })
 
-  it('reports with status "network_error" when no HTTP status is available', () => {
-    const report = vi.fn()
-    const err = new TypeError('Failed to fetch')
-    reportUnexpectedApiFailure(err, { method: 'GET', path: '/v1/actions' }, report)
-    expect(report).toHaveBeenCalledWith(err, { status: 'network_error', method: 'GET', pathname: '/v1/actions' })
-  })
-
   it('defaults to the real reportError (a structural no-op with no DSN configured)', () => {
     resetSentryReportingForTests()
     expect(() => reportUnexpectedApiFailure(new Error('boom'), { status: 500, method: 'GET', path: '/v1/x' })).not.toThrow()
+  })
+})
+
+describe('NetworkFailureTracker', () => {
+  const info = { method: 'GET', path: '/v1/actions?status=pending' }
+  const fetchFailed = () => new TypeError('Failed to fetch')
+
+  it('does not report a single failed request (a Wi-Fi blip while polling)', () => {
+    const report = vi.fn()
+    const tracker = new NetworkFailureTracker(report, () => true, 3)
+    tracker.recordFailure(fetchFailed(), info)
+    tracker.recordFailure(fetchFailed(), info)
+    expect(report).not.toHaveBeenCalled()
+  })
+
+  it('reports once when failures reach the threshold, not on every later poll', () => {
+    const report = vi.fn()
+    const tracker = new NetworkFailureTracker(report, () => true, 3)
+    const err = fetchFailed()
+    tracker.recordFailure(fetchFailed(), info)
+    tracker.recordFailure(fetchFailed(), info)
+    tracker.recordFailure(err, info)
+    tracker.recordFailure(fetchFailed(), info)
+    tracker.recordFailure(fetchFailed(), info)
+    expect(report).toHaveBeenCalledTimes(1)
+    expect(report).toHaveBeenCalledWith(err, {
+      status: 'network_error',
+      method: 'GET',
+      pathname: '/v1/actions',
+      consecutive_failures: 3,
+    })
+  })
+
+  it('starts a new streak after any response, so a later outage is reported again', () => {
+    const report = vi.fn()
+    const tracker = new NetworkFailureTracker(report, () => true, 3)
+    tracker.recordFailure(fetchFailed(), info)
+    tracker.recordFailure(fetchFailed(), info)
+    tracker.recordResponse()
+    tracker.recordFailure(fetchFailed(), info)
+    tracker.recordFailure(fetchFailed(), info)
+    expect(report).not.toHaveBeenCalled()
+    tracker.recordFailure(fetchFailed(), info)
+    tracker.recordResponse()
+    for (let i = 0; i < 3; i++) tracker.recordFailure(fetchFailed(), info)
+    expect(report).toHaveBeenCalledTimes(2)
+  })
+
+  it('ignores failures while the browser reports being offline', () => {
+    const report = vi.fn()
+    const tracker = new NetworkFailureTracker(report, () => false, 3)
+    for (let i = 0; i < 5; i++) tracker.recordFailure(fetchFailed(), info)
+    expect(report).not.toHaveBeenCalled()
+  })
+
+  it('ignores requests the page aborted itself', () => {
+    const report = vi.fn()
+    const tracker = new NetworkFailureTracker(report, () => true, 3)
+    const abort = new Error('The user aborted a request.')
+    abort.name = 'AbortError'
+    for (let i = 0; i < 5; i++) tracker.recordFailure(abort, info)
+    expect(report).not.toHaveBeenCalled()
   })
 })
 
