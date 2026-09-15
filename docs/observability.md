@@ -364,6 +364,12 @@ Uncaught Vue errors, `window.onerror`, and unhandled promise rejections are
 reported; unexpected API failures (5xx or no response at all) surfaced
 through the shared `ApiClient` are reported the same way a 4xx is not.
 
+The browser sends events straight to your DSN's ingest host, so that origin
+must be allowed in the UI's Content-Security-Policy `connect-src`, or the
+browser blocks every event silently. For self-host, add it to the CSP in
+`deploy/Caddyfile` (for example `https://o123456.ingest.de.sentry.io`); the
+hosted cloud allows its own in `ui/public/_headers`.
+
 ### What never reaches Sentry, on either side
 
 Both `beforeSend` scrubbers (server and browser) strip, before an event

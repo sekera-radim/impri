@@ -53,6 +53,8 @@ app.impri.dev {
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "geolocation=(), camera=(), microphone=()"
 		# Content-Security-Policy — tighten per your actual asset sources.
+		# Setting VITE_SENTRY_DSN? Add its ingest origin to connect-src, or the
+		# browser blocks Sentry events (see docs/observability.md).
 		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.impri.dev; frame-ancestors 'none'"
 		-Server
 	}
