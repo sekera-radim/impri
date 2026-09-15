@@ -652,8 +652,11 @@ track user error instead of breakage.</p>
 </tbody></table>
 </div>
 <p>Uncaught Vue errors, <code>window.onerror</code>, and unhandled promise rejections are
-reported; unexpected API failures (5xx or no response at all) surfaced
-through the shared <code>ApiClient</code> are reported the same way a 4xx is not.</p>
+reported. Through the shared <code>ApiClient</code>, a 5xx is reported every time and a
+4xx never is. A request that gets no response at all is reported only after
+3 such failures in a row while the browser says it is online, and once per
+streak: the inbox polls every few seconds, so a single Wi-Fi drop or a reload
+mid-request is not an outage. Aborted requests are not reported.</p>
 <p>The browser sends events straight to your DSN&#39;s ingest host, so that origin
 must be allowed in the UI&#39;s Content-Security-Policy <code>connect-src</code>, or the
 browser blocks every event silently. For self-host, add it to the CSP in
