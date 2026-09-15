@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Human Approval for Amazon Bedrock AgentCore Agents — Impri Docs</title>
+<meta name="description" content="Bedrock AgentCore agents can call real AWS APIs on their own schedule — this shows how to put an actual human decision, not just an AWS trace log, between an AgentCore tool and the action it takes.">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Human Approval for Amazon Bedrock AgentCore Agents — Impri Docs">
+<meta property="og:description" content="Bedrock AgentCore agents can call real AWS APIs on their own schedule — this shows how to put an actual human decision, not just an AWS trace log, between an AgentCore tool and the action it takes.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://impri.dev/docs/human-approval-amazon-bedrock-agentcore">
+<meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Impri — human-in-the-loop approval inbox for AI agents">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
+<link rel="canonical" href="https://impri.dev/docs/human-approval-amazon-bedrock-agentcore">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human Approval for Amazon Bedrock AgentCore Agents","description":"Bedrock AgentCore agents can call real AWS APIs on their own schedule — this shows how to put an actual human decision, not just an AWS trace log, between an AgentCore tool and the action it takes.","url":"https://impri.dev/docs/human-approval-amazon-bedrock-agentcore","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting" class="sl">Self-hosting</a>
+<a href="../docs/observability" class="sl">Observability</a>
+</div>
+<div class="sg">
+<div class="sg-label">Install</div>
+<a href="../docs/how-to-get-human-approval-into-your-coding-agent" class="sl">Overview</a>
+<a href="../docs/claude-code-human-approval" class="sl">Claude Code</a>
+<a href="../docs/codex-human-approval" class="sl">OpenAI Codex</a>
+<a href="../docs/cursor-human-approval" class="sl">Cursor</a>
+<a href="../docs/windsurf-human-approval" class="sl">Windsurf</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets" class="sl">Watcher presets</a>
+<a href="../docs/notifications" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval" class="sl">Slack approval</a>
+<a href="../docs/discord-approval" class="sl">Discord approval</a>
+<a href="../docs/audit-log" class="sl">Audit log</a>
+<a href="../docs/billing" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr" class="sl">GDPR &amp; data export</a>
+<a href="../docs/privacy" class="sl">Privacy policy</a>
+<a href="../docs/terms" class="sl">Terms of service</a>
+<a href="../docs/operator" class="sl">Operator / admin</a>
+<a href="../docs/account-recovery" class="sl">Account recovery</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp" class="sl">MCP server</a>
+<a href="../docs/integrations" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks" class="sl">Webhooks</a>
+<a href="../docs/web-push" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Reference</span>
+      <span class="bc-sep">/</span>
+      <span>Human Approval for Amazon Bedrock AgentCore Agents</span>
+    </nav>
+    <h1>Human Approval for Amazon Bedrock AgentCore Agents</h1>
+<p>Bedrock AgentCore agents can call real AWS APIs on their own schedule — this shows how to put an actual human decision, not just an AWS trace log, between an AgentCore tool and the action it takes.</p>
+<hr>
+<h2 id="agentcore39s-tracing-isn39t-the-same-as-someone-saying-yes">AgentCore&#39;s tracing isn&#39;t the same as someone saying yes</h2>
+<p>AgentCore Runtime gives you session isolation, a gateway for tool invocation, and a governance layer for rolling agents out incrementally. That&#39;s infrastructure for running the agent safely — it is not the same as a person looking at <em>this specific claim, this specific payout, this specific customer</em> and deciding it&#39;s correct before it goes out. A trace you can review after the fact tells you what happened. A gate tells you before it happens, and lets someone stop it.</p>
+<p>The pattern below wraps a single AgentCore tool function so the side effect it triggers cannot run without an approved decision coming back from Impri.</p>
+<hr>
+<h2 id="the-gate-three-calls-around-your-agentcore-tool">The gate: three calls around your AgentCore tool</h2>
+<p>This is a claims-payout tool exposed to the agent. The tool itself is the chokepoint — the agent has no other path to <code>issue_payout</code>.</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> os, time, requests
+
+IMPRI = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
+HEADERS = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{os.environ[<span class="hljs-string">&#x27;IMPRI_API_KEY&#x27;</span>]}</span>&quot;</span>}
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">close_insurance_claim</span>(<span class="hljs-params">claim_id: <span class="hljs-built_in">str</span>, payout_usd: <span class="hljs-built_in">float</span>, summary: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">dict</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Tool exposed to the AgentCore agent via the Gateway.&quot;&quot;&quot;</span>
+    action = requests.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI}</span>/v1/actions&quot;</span>, headers=HEADERS, json={
+        <span class="hljs-string">&quot;kind&quot;</span>: <span class="hljs-string">&quot;claim.payout&quot;</span>,
+        <span class="hljs-string">&quot;title&quot;</span>: <span class="hljs-string">f&quot;Approve payout $<span class="hljs-subst">{payout_usd:,<span class="hljs-number">.2</span>f}</span> for claim <span class="hljs-subst">{claim_id}</span>&quot;</span>,
+        <span class="hljs-string">&quot;preview&quot;</span>: {<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: summary},
+        <span class="hljs-string">&quot;idempotent&quot;</span>: <span class="hljs-literal">False</span>,
+        <span class="hljs-string">&quot;undo&quot;</span>: <span class="hljs-string">f&quot;Reverse payout via claims-admin console for <span class="hljs-subst">{claim_id}</span>&quot;</span>,
+        <span class="hljs-string">&quot;expires_in&quot;</span>: <span class="hljs-number">14400</span>,
+    }).json()
+
+    <span class="hljs-keyword">while</span> <span class="hljs-literal">True</span>:
+        result = requests.get(<span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI}</span>/v1/actions/<span class="hljs-subst">{action[<span class="hljs-string">&#x27;id&#x27;</span>]}</span>&quot;</span>, headers=HEADERS).json()
+        <span class="hljs-keyword">if</span> result[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;pending&quot;</span>:
+            <span class="hljs-keyword">break</span>
+        time.sleep(<span class="hljs-number">10</span>)
+
+    <span class="hljs-keyword">if</span> result[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;approved&quot;</span>:
+        <span class="hljs-keyword">return</span> {<span class="hljs-string">&quot;status&quot;</span>: result[<span class="hljs-string">&quot;status&quot;</span>], <span class="hljs-string">&quot;executed&quot;</span>: <span class="hljs-literal">False</span>}
+
+    payout_id = issue_payout(claim_id, payout_usd)  <span class="hljs-comment"># your actual AWS-side call</span>
+    requests.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI}</span>/v1/actions/<span class="hljs-subst">{action[<span class="hljs-string">&#x27;id&#x27;</span>]}</span>/result&quot;</span>, headers=HEADERS,
+                  json={<span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;executed&quot;</span>, <span class="hljs-string">&quot;payload&quot;</span>: {<span class="hljs-string">&quot;payout_id&quot;</span>: payout_id}})
+    <span class="hljs-keyword">return</span> {<span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;approved&quot;</span>, <span class="hljs-string">&quot;executed&quot;</span>: <span class="hljs-literal">True</span>, <span class="hljs-string">&quot;payout_id&quot;</span>: payout_id}</code></pre></div>
+<p><code>issue_payout</code> — wherever it lives, Lambda, Step Functions, a direct SDK call — only runs after <code>result[&quot;status&quot;] == &quot;approved&quot;</code>. There&#39;s no branch in this function that reaches it otherwise.</p>
+<hr>
+<h2 id="don39t-block-a-runtime-session-past-its-budget">Don&#39;t block a Runtime session past its budget</h2>
+<p>Bedrock AgentCore Runtime sessions run for a bounded duration, and a claim payout might sit unreviewed for hours, not seconds. If your approval SLA is longer than a session can afford to hold open, don&#39;t poll synchronously inside the tool call. Instead:</p>
+<ol>
+<li>The tool pushes the Impri action and returns immediately with <code>{&quot;status&quot;: &quot;pending&quot;, &quot;action_id&quot;: ...}</code>.</li>
+<li>A separate process — an EventBridge-scheduled Lambda, or a small worker outside AgentCore — polls <code>GET /v1/actions/:id</code> on its own cadence.</li>
+<li>Once <code>status != &quot;pending&quot;</code>, that worker calls <code>issue_payout</code> and posts the result, then notifies the requester (Slack, email, whatever your stack already uses) that the claim was closed.</li>
+</ol>
+<p>The AgentCore session ends; the approval record and the eventual execution don&#39;t depend on it staying open.</p>
+<hr>
+<h2 id="where-responsibilities-split">Where responsibilities split</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Owned by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Running the agent, invoking tools, session isolation</td>
+<td>AgentCore Runtime</td>
+</tr>
+<tr>
+<td>Enterprise-wide tracing and rollout governance</td>
+<td>AgentCore&#39;s governance layer</td>
+</tr>
+<tr>
+<td>Whether <em>this</em> payout is correct</td>
+<td>A human, via the Impri inbox card</td>
+</tr>
+<tr>
+<td>Storing the decision and the audit trail of who approved what</td>
+<td>Impri</td>
+</tr>
+<tr>
+<td>Actually moving the money</td>
+<td>Your <code>issue_payout</code> code</td>
+</tr>
+</tbody></table>
+</div>
+<p>Impri doesn&#39;t know what a valid insurance claim looks like, and it doesn&#39;t touch AWS. It stores the proposed action, shows it to a person, and hands back a decision your code has to act on.</p>
+<hr>
+<h2 id="what-this-doesn39t-protect-against">What this doesn&#39;t protect against</h2>
+<p>If the agent (or something impersonating it) has the AWS credentials to call the payout API directly, wrapping one tool function doesn&#39;t stop that path — Impri is only a gate on the code that calls it. Keep the payout credential scoped to the wrapped tool, not handed to the agent&#39;s general-purpose execution environment. And treat any claim summary sourced from an external form or email as data, not instructions, before it lands in <code>preview.body</code> — AgentCore doesn&#39;t sanitize that for you either.</p>
+<hr>
+<p>Next: the <a href="quickstart">quickstart</a> covers getting an API key for cloud or self-host, the <a href="sdk-python">Python SDK</a> wraps these three calls if you&#39;d rather not hand-roll the polling loop, and <a href="audit-log">audit log</a> covers what&#39;s retained for compliance review after a payout is approved.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#agentcore39s-tracing-isn39t-the-same-as-someone-saying-yes">AgentCore's tracing isn't the same as someone saying yes</a></li>
+<li class="ptoc-h2"><a href="#the-gate-three-calls-around-your-agentcore-tool">The gate: three calls around your AgentCore tool</a></li>
+<li class="ptoc-h2"><a href="#don39t-block-a-runtime-session-past-its-budget">Don't block a Runtime session past its budget</a></li>
+<li class="ptoc-h2"><a href="#where-responsibilities-split">Where responsibilities split</a></li>
+<li class="ptoc-h2"><a href="#what-this-doesn39t-protect-against">What this doesn't protect against</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/terms">Terms</a>
+    <a href="https://sekera.dev">Contact</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>.</span></div>
+</footer>
+</body>
+</html>

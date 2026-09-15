@@ -623,6 +623,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human Approval for AI Sales Outreach Agents: https://impri.dev/docs/human-approval-for-ai-sales-outreach
 - Human Approval for AI Social Media Management: https://impri.dev/docs/human-approval-for-ai-social-media-management
 - Human Approval for AI Trading Agents: https://impri.dev/docs/human-approval-for-ai-trading-agents
+- Human Approval for Amazon Bedrock AgentCore Agents: https://impri.dev/docs/human-approval-amazon-bedrock-agentcore
 - Human Approval for Background AI Workers: https://impri.dev/docs/human-approval-for-background-ai-workers
 - Human Approval for Fintech AI Agents: https://impri.dev/docs/human-approval-for-fintech-ai-agents
 - Human Approval for Google Agent Development Kit (ADK) Agents: https://impri.dev/docs/human-approval-google-agent-development-kit
@@ -656,6 +657,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human-in-the-Loop for DevOps AI Agents: https://impri.dev/docs/human-in-the-loop-for-devops-ai-agents
 - Human-in-the-Loop for E-commerce AI Agents: https://impri.dev/docs/human-in-the-loop-for-ecommerce-ai-agents
 - Human-in-the-Loop for Healthcare AI Messaging: https://impri.dev/docs/human-in-the-loop-for-healthcare-ai-messaging
+- Human-in-the-Loop for LangChain Deep Agents: https://impri.dev/docs/human-in-the-loop-langchain-deep-agents
 - Human-in-the-Loop for LlamaIndex Agents: https://impri.dev/docs/human-in-the-loop-llamaindex-agents
 - Human-in-the-Loop for Microsoft Semantic Kernel Agents: https://impri.dev/docs/human-in-the-loop-semantic-kernel
 - Human-in-the-Loop for Personal AI Assistants: https://impri.dev/docs/human-in-the-loop-for-personal-ai-assistants

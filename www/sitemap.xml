@@ -58,6 +58,7 @@
   <url><loc>https://impri.dev/docs/how-to-get-human-approval-into-your-coding-agent</loc><lastmod>2026-09-15</lastmod></url>
   <url><loc>https://impri.dev/docs/how-to-pause-an-ai-agent-for-human-input</loc><lastmod>2026-09-15</lastmod></url>
   <url><loc>https://impri.dev/docs/how-to-review-ai-content-before-it-goes-out</loc><lastmod>2026-09-15</lastmod></url>
+  <url><loc>https://impri.dev/docs/human-approval-amazon-bedrock-agentcore</loc><lastmod>2026-09-15</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-autogen-agents</loc><lastmod>2026-09-15</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-before-an-agent-deletes-data</loc><lastmod>2026-09-15</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-before-an-agent-posts-to-social-media</loc><lastmod>2026-09-15</lastmod></url>
@@ -107,6 +108,7 @@
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-langchain-agents</loc><lastmod>2026-09-15</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-personal-ai-assistants</loc><lastmod>2026-09-15</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-rag-agents-that-act</loc><lastmod>2026-09-15</lastmod></url>
+  <url><loc>https://impri.dev/docs/human-in-the-loop-langchain-deep-agents</loc><lastmod>2026-09-15</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-langgraph</loc><lastmod>2026-09-15</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-llamaindex-agents</loc><lastmod>2026-09-15</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-microsoft-agent-framework</loc><lastmod>2026-09-15</lastmod></url>
