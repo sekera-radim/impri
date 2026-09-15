@@ -30,6 +30,7 @@ import { runWatcherTick, startWatcherScheduler } from './scheduler.js';
 import { buildOpenApiDocument } from './openapi.js';
 import { initMetrics, renderMetrics, incCounter, obsHistogram } from './metrics.js';
 import { safeEqual } from './notify.js';
+import { initSentry, sentryConfigFromEnv, type ErrorReporter } from './sentry.js';
 import type { Db } from './db.js';
 
 // Read package version once at startup (no dynamic import needed — we embed it).
@@ -45,7 +46,12 @@ const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET ?? 'change-me-in-production';
 // Initialize metrics definitions once at module load — idempotent.
 initMetrics();
 
-export async function createApp(db: Db) {
+// Error reporting: no-op unless SENTRY_DSN is set (self-host default, and any
+// cloud deploy that hasn't opted in). See sentry.ts for the scrubbing that
+// runs on every event before it leaves the process.
+const errorReporter: ErrorReporter = initSentry(sentryConfigFromEnv(PKG_VERSION));
+
+export async function createApp(db: Db, reporter: ErrorReporter = errorReporter) {
   const app = Fastify({
     logger: {
       // Never log the Authorization header — it carries the raw API key.
@@ -75,10 +81,17 @@ export async function createApp(db: Db) {
   app.setErrorHandler((err, request, reply) => {
     const statusCode = (err as { statusCode?: number }).statusCode ?? 500;
     if (statusCode < 500) {
+      // Expected client error (validation, auth, not-found, ...) — already
+      // carries a safe, specific message. Not reported: Sentry volume should
+      // track bugs, not the person's own mistakes.
       reply.status(statusCode).send(err);
       return;
     }
     request.log.error({ err }, 'unhandled error in route handler');
+    // route pattern (e.g. "/v1/actions/:id"), never the real URL — no query
+    // string, no path params that could carry an id or token.
+    const route = (request.routeOptions as { url?: string }).url ?? 'unknown';
+    reporter.captureError(err, { route, method: request.method, statusCode });
     reply.status(statusCode).send({ error: 'internal_error', message: 'Something went wrong' });
   });
 
@@ -343,23 +356,29 @@ async function main() {
   const app = await createApp(db);
   const log = app.log;
 
-  // Expiry + webhook + channel digest tick every 60 s.
+  // Expiry + webhook + channel digest tick every 60 s. These run unattended
+  // with no HTTP request/error-handler boundary, so an unhandled rejection
+  // here would otherwise only ever reach the log — reported explicitly so it
+  // isn't silently lost.
   setInterval(() => {
-    runExpiryTick(db, WEBHOOK_SECRET, log).catch(err =>
-      log.error({ err: err instanceof Error ? err.message : String(err) }, 'expiry/webhook tick failed'),
-    );
-    runChannelDigestTick(db, log).catch(err =>
-      log.error({ err: err instanceof Error ? err.message : String(err) }, 'channel digest tick failed'),
-    );
+    runExpiryTick(db, WEBHOOK_SECRET, log).catch(err => {
+      log.error({ err: err instanceof Error ? err.message : String(err) }, 'expiry/webhook tick failed');
+      errorReporter.captureError(err, { job: 'expiry_tick' });
+    });
+    runChannelDigestTick(db, log).catch(err => {
+      log.error({ err: err instanceof Error ? err.message : String(err) }, 'channel digest tick failed');
+      errorReporter.captureError(err, { job: 'channel_digest_tick' });
+    });
   }, 60_000);
 
   // Watcher scheduler tick every 60s (no-op when DISABLE_WATCHER_SCHEDULER=1)
-  startWatcherScheduler(db, log);
+  startWatcherScheduler(db, log, errorReporter);
 
   // Also run one watcher tick immediately on startup (handles missed runs — PLAYBOOK B3)
-  runWatcherTick(db, log).catch(err =>
-    log.error({ err: err instanceof Error ? err.message : String(err) }, 'initial watcher tick failed'),
-  );
+  runWatcherTick(db, log, errorReporter).catch(err => {
+    log.error({ err: err instanceof Error ? err.message : String(err) }, 'initial watcher tick failed');
+    errorReporter.captureError(err, { job: 'watcher_tick_initial' });
+  });
 
   await app.listen({ port: PORT, host: HOST });
   console.log(`Impri server running on http://${HOST}:${PORT}`);

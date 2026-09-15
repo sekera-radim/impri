@@ -29,6 +29,7 @@ import type {
   RecoverResponse,
   RecoveryCodeResponse,
 } from '../types'
+import { reportUnexpectedApiFailure } from '../utils/sentryReporting'
 
 export class ApiClientError extends Error {
   constructor(
@@ -53,14 +54,21 @@ export class ApiClient {
   }
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      method,
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    })
+    let response: Response
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, {
+        method,
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+      })
+    } catch (err) {
+      // No response at all (offline, DNS, CORS) — a bug/outage, not a 4xx.
+      reportUnexpectedApiFailure(err, { method, path })
+      throw err
+    }
 
     if (response.status === 204) {
       return undefined as T
@@ -69,6 +77,14 @@ export class ApiClient {
     const json = await response.json() as T | ApiError
 
     if (!response.ok) {
+      // 5xx is a bug in the API; 4xx is the caller's own mistake (bad key,
+      // failed validation) and deliberately not reported — see
+      // reportUnexpectedApiFailure() in utils/sentryReporting.ts.
+      reportUnexpectedApiFailure(new Error(`API ${method} failed with ${response.status}`), {
+        status: response.status,
+        method,
+        path,
+      })
       throw new ApiClientError(response.status, json as ApiError)
     }
 

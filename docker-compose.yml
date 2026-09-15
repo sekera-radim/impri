@@ -13,6 +13,9 @@ services:
       HOST: "0.0.0.0"
       BASE_URL: "http://localhost:8080"
       WEBHOOK_SECRET: "${WEBHOOK_SECRET:-change-me-in-production}"
+      # Optional — no-op (no Sentry SDK calls at all) when SENTRY_DSN is unset.
+      SENTRY_DSN: "${SENTRY_DSN:-}"
+      SENTRY_ENVIRONMENT: "${SENTRY_ENVIRONMENT:-self-hosted}"
     restart: unless-stopped
     healthcheck:
       # 127.0.0.1, not localhost: in the alpine container `localhost` resolves to ::1
@@ -28,6 +31,12 @@ services:
     build:
       context: ./ui
       dockerfile: Dockerfile
+      args:
+        # Optional — baked into the built JS at image-build time (Vite env
+        # var), so this must be set before `docker compose build`, not just
+        # before `up`. No-op (no @sentry/browser import at all) when unset.
+        VITE_SENTRY_DSN: "${VITE_SENTRY_DSN:-}"
+        VITE_SENTRY_ENVIRONMENT: "${VITE_SENTRY_ENVIRONMENT:-self-hosted}"
     ports:
       - "8080:8080"
     depends_on:

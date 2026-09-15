@@ -5,6 +5,7 @@ import { genId, nowSec, hashContent } from './db.js';
 import { fetchGuarded } from './net-guard.js';
 import { isFetchAllowed } from './robots.js';
 import { incCounter, noopLogger, type Logger } from './metrics.js';
+import { noopReporter, type ErrorReporter } from './sentry.js';
 
 const WATCHER_USER_AGENT = 'Impri-Watcher/1.0 (+https://impri.dev/bot)';
 const FETCH_TIMEOUT_MS = 15_000;
@@ -711,7 +712,11 @@ export async function processWatcher(db: Db, watcher: WatcherRow, log: Logger = 
  * Scheduler tick: finds all due watchers and processes them.
  * Called every 60 s from main(); can also be called directly in tests.
  */
-export async function runWatcherTick(db: Db, log: Logger = noopLogger): Promise<void> {
+export async function runWatcherTick(
+  db: Db,
+  log: Logger = noopLogger,
+  reporter: ErrorReporter = noopReporter,
+): Promise<void> {
   const now = nowSec();
   const due = db.prepare(`
     SELECT * FROM watchers
@@ -722,9 +727,14 @@ export async function runWatcherTick(db: Db, log: Logger = noopLogger): Promise<
     try {
       await processWatcher(db, watcher, log);
     } catch (err) {
-      // Unexpected error — log but continue processing other watchers
+      // Unexpected error (a bug in processWatcher, not a fetch/network failure
+      // — those are caught inside processWatcher and turned into watcher
+      // status transitions instead). Log AND report: this loop swallows the
+      // error to keep processing other watchers, so the log line above is the
+      // only trace of it unless it's also reported here.
       log.error({ err: err instanceof Error ? err.message : String(err), watcher_id: watcher.id },
         'unexpected error in watcher tick');
+      reporter.captureError(err, { job: 'watcher_tick', watcherId: watcher.id, kind: watcher.kind });
     }
   }
 }
@@ -734,15 +744,20 @@ export async function runWatcherTick(db: Db, log: Logger = noopLogger): Promise<
  * Set DISABLE_WATCHER_SCHEDULER=1 to disable (used in tests).
  * Uses unref() so it doesn't hold the event loop (ARCHITECTURE.md).
  */
-export function startWatcherScheduler(db: Db, log: Logger = noopLogger): ReturnType<typeof setInterval> | null {
+export function startWatcherScheduler(
+  db: Db,
+  log: Logger = noopLogger,
+  reporter: ErrorReporter = noopReporter,
+): ReturnType<typeof setInterval> | null {
   if (process.env.DISABLE_WATCHER_SCHEDULER === '1') {
     return null;
   }
 
   const interval = setInterval(() => {
-    runWatcherTick(db, log).catch(err =>
-      log.error({ err: err instanceof Error ? err.message : String(err) }, 'watcher tick failed'),
-    );
+    runWatcherTick(db, log, reporter).catch(err => {
+      log.error({ err: err instanceof Error ? err.message : String(err) }, 'watcher tick failed');
+      reporter.captureError(err, { job: 'watcher_tick_scheduled' });
+    });
   }, 60_000);
 
   interval.unref();

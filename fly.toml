@@ -15,6 +15,10 @@ primary_region = "fra"
   APP_URL = "https://app.impri.dev"
   CORS_ORIGIN = "https://app.impri.dev"
   ALLOW_SIGNUP = "1"
+  # SENTRY_DSN is set separately as a Fly secret (not here — see deploy docs):
+  #   fly secrets set SENTRY_DSN=https://...@....ingest.sentry.io/... -a impri-api
+  # Without it the server never calls into the Sentry SDK (see server/src/sentry.ts).
+  SENTRY_ENVIRONMENT = "production"
 
 [http_service]
   internal_port = 8484

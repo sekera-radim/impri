@@ -482,6 +482,7 @@ docker compose up -d</code></pre></div>
 <li><strong>Health endpoint</strong>: <code>GET /healthz</code> returns <code>{&quot;status&quot;:&quot;ok&quot;,&quot;ts&quot;:&lt;unix&gt;}</code> — use it for uptime checks.</li>
 <li><strong>Prometheus metrics</strong>: <code>GET /metrics</code> (if enabled in your build — check the deployment).</li>
 <li><strong>Structured logs</strong>: the server writes JSON logs via Fastify&#39;s built-in logger. API keys are redacted from all log output.</li>
+<li><strong>Error reporting (Sentry)</strong> — optional and off by default. Set <code>SENTRY_DSN</code> (server) and/or <code>VITE_SENTRY_DSN</code> (UI, baked in at <code>docker compose build</code> time — see <code>deploy/.env.example</code>) to send unexpected errors to your own Sentry project. Unset means the SDK is never invoked at all. Full details, including exactly what is scrubbed before an event is sent: <a href="observability#error-reporting-sentry">Observability → Error reporting</a>.</li>
 </ul>
 <hr>
 <h2 id="watcher-scheduler">Watcher scheduler</h2>

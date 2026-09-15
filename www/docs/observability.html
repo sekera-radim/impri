@@ -590,6 +590,81 @@ METRICS_PORT=9090</code></pre></div>
 </tbody></table>
 </div>
 <hr>
+<h2 id="error-reporting-sentry">Error reporting (Sentry)</h2>
+<p>Optional, and <strong>off by default</strong> — both the API server and the web inbox UI
+ship with the Sentry SDK wired up, but neither calls into it unless you set a
+DSN. Without one, no Sentry package code runs at all: not &quot;logs but doesn&#39;t
+send&quot;, but a genuine no-op (see <code>server/src/sentry.ts</code> and
+<code>ui/src/utils/sentryReporting.ts</code>).</p>
+<h3 id="server-fastify-api">Server (Fastify API)</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Env var</th>
+<th>Required</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SENTRY_DSN</code></td>
+<td>No</td>
+<td>Unset = no Sentry SDK calls at all.</td>
+</tr>
+<tr>
+<td><code>SENTRY_ENVIRONMENT</code></td>
+<td>No</td>
+<td>Defaults to <code>development</code>. Fly deploy sets <code>production</code> via <code>fly.toml</code>; self-host sets it in <code>.env</code> (see <code>deploy/.env.example</code>).</td>
+</tr>
+<tr>
+<td><code>SENTRY_RELEASE</code></td>
+<td>No</td>
+<td>Defaults to the running <code>package.json</code> version.</td>
+</tr>
+</tbody></table>
+</div>
+<p>What gets reported: unexpected (5xx) errors from the global Fastify error
+handler, and unhandled exceptions from the background tick functions
+(<code>runExpiryTick</code>, <code>runChannelDigestTick</code>, <code>runWatcherTick</code>) — these run
+unattended with no HTTP request to surface an error to, so without explicit
+reporting a bug there would only ever reach the log. <strong>Not</strong> reported:
+expected 4xx client errors (bad input, auth failures, not-found) — those are
+the caller&#39;s mistake, not a bug, and reporting them would make Sentry volume
+track user error instead of breakage.</p>
+<h3 id="web-inbox-ui">Web inbox UI</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Env var</th>
+<th>Required</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>VITE_SENTRY_DSN</code></td>
+<td>No</td>
+<td>Baked in at <strong>build time</strong> (Vite env var) — unset = <code>@sentry/browser</code> is never even imported. Use a separate Browser project&#39;s DSN, not the server&#39;s.</td>
+</tr>
+<tr>
+<td><code>VITE_SENTRY_ENVIRONMENT</code></td>
+<td>No</td>
+<td>Defaults to <code>production</code> in a production build, <code>development</code> otherwise.</td>
+</tr>
+</tbody></table>
+</div>
+<p>Uncaught Vue errors, <code>window.onerror</code>, and unhandled promise rejections are
+reported; unexpected API failures (5xx or no response at all) surfaced
+through the shared <code>ApiClient</code> are reported the same way a 4xx is not.</p>
+<h3 id="what-never-reaches-sentry-on-either-side">What never reaches Sentry, on either side</h3>
+<p>Both <code>beforeSend</code> scrubbers (server and browser) strip, before an event
+leaves the process:</p>
+<ul>
+<li>Email addresses, in the top-level message and anywhere inside <code>extra</code> context.</li>
+<li><code>Authorization</code>, <code>Cookie</code>, and <code>X-Api-Key</code> headers.</li>
+<li>Query strings and request bodies (<code>request.query_string</code> / <code>request.data</code> deleted outright — recovery codes, magic-link-style tokens, and approval payloads all travel this way).</li>
+<li>Any <code>extra</code> context field whose key name looks like an API key, token, secret, password, payload, request body, or approval preview — the whole value is redacted, not just scrubbed, regardless of type. Call sites are only meant to pass small, deliberate context (ids, statuses, route patterns); this is the backstop for the case where one doesn&#39;t.</li>
+<li>All breadcrumbs are dropped (or reduced to a bare pathname for HTTP breadcrumbs, server-side) — <code>tracesSampleRate</code> is <code>0</code> on both sides, so this is error capture only, never performance tracing.</li>
+</ul>
+<hr>
 <h2 id="usage-endpoint-get-v1usage">Usage endpoint (<code>GET /v1/usage</code>)</h2>
 <p>Returns a per-project usage snapshot. Useful for building dashboards, quota warnings, or self-service billing pages in your own tooling.</p>
 <p><strong>Auth:</strong> requires <code>admin</code> scope. Project is derived exclusively from the verified API key — never from a client-supplied parameter.</p>
@@ -711,6 +786,10 @@ METRICS_PORT=9090</code></pre></div>
 <li class="ptoc-h3"><a href="#background-tick-logging">Background tick logging</a></li>
 <li class="ptoc-h3"><a href="#structured-lifecycle-events">Structured lifecycle events</a></li>
 <li class="ptoc-h3"><a href="#log-levels">Log levels</a></li>
+<li class="ptoc-h2"><a href="#error-reporting-sentry">Error reporting (Sentry)</a></li>
+<li class="ptoc-h3"><a href="#server-fastify-api">Server (Fastify API)</a></li>
+<li class="ptoc-h3"><a href="#web-inbox-ui">Web inbox UI</a></li>
+<li class="ptoc-h3"><a href="#what-never-reaches-sentry-on-either-side">What never reaches Sentry, on either side</a></li>
 <li class="ptoc-h2"><a href="#usage-endpoint-get-v1usage">Usage endpoint (GET /v1/usage)</a></li>
 <li class="ptoc-h2"><a href="#security-notes">Security notes</a></li></ul>
 </nav>

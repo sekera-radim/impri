@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^10.1.0",
+    "@sentry/node": "^10.74.0",
     "@types/safe-regex": "^1.1.6",
     "argon2": "^0.41.1",
     "better-sqlite3": "^11.10.0",

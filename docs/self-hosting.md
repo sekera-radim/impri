@@ -218,6 +218,7 @@ There are no manual migration steps for v1 — schema migrations run automatical
 - **Health endpoint**: `GET /healthz` returns `{"status":"ok","ts":<unix>}` — use it for uptime checks.
 - **Prometheus metrics**: `GET /metrics` (if enabled in your build — check the deployment).
 - **Structured logs**: the server writes JSON logs via Fastify's built-in logger. API keys are redacted from all log output.
+- **Error reporting (Sentry)** — optional and off by default. Set `SENTRY_DSN` (server) and/or `VITE_SENTRY_DSN` (UI, baked in at `docker compose build` time — see `deploy/.env.example`) to send unexpected errors to your own Sentry project. Unset means the SDK is never invoked at all. Full details, including exactly what is scrubbed before an event is sent: [Observability → Error reporting](observability.md#error-reporting-sentry).
 
 ---
 

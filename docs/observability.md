@@ -328,6 +328,55 @@ Channel config (containing bot tokens and webhook URLs) is never logged.
 
 ---
 
+## Error reporting (Sentry)
+
+Optional, and **off by default** — both the API server and the web inbox UI
+ship with the Sentry SDK wired up, but neither calls into it unless you set a
+DSN. Without one, no Sentry package code runs at all: not "logs but doesn't
+send", but a genuine no-op (see `server/src/sentry.ts` and
+`ui/src/utils/sentryReporting.ts`).
+
+### Server (Fastify API)
+
+| Env var | Required | Notes |
+|---------|----------|-------|
+| `SENTRY_DSN` | No | Unset = no Sentry SDK calls at all. |
+| `SENTRY_ENVIRONMENT` | No | Defaults to `development`. Fly deploy sets `production` via `fly.toml`; self-host sets it in `.env` (see `deploy/.env.example`). |
+| `SENTRY_RELEASE` | No | Defaults to the running `package.json` version. |
+
+What gets reported: unexpected (5xx) errors from the global Fastify error
+handler, and unhandled exceptions from the background tick functions
+(`runExpiryTick`, `runChannelDigestTick`, `runWatcherTick`) — these run
+unattended with no HTTP request to surface an error to, so without explicit
+reporting a bug there would only ever reach the log. **Not** reported:
+expected 4xx client errors (bad input, auth failures, not-found) — those are
+the caller's mistake, not a bug, and reporting them would make Sentry volume
+track user error instead of breakage.
+
+### Web inbox UI
+
+| Env var | Required | Notes |
+|---------|----------|-------|
+| `VITE_SENTRY_DSN` | No | Baked in at **build time** (Vite env var) — unset = `@sentry/browser` is never even imported. Use a separate Browser project's DSN, not the server's. |
+| `VITE_SENTRY_ENVIRONMENT` | No | Defaults to `production` in a production build, `development` otherwise. |
+
+Uncaught Vue errors, `window.onerror`, and unhandled promise rejections are
+reported; unexpected API failures (5xx or no response at all) surfaced
+through the shared `ApiClient` are reported the same way a 4xx is not.
+
+### What never reaches Sentry, on either side
+
+Both `beforeSend` scrubbers (server and browser) strip, before an event
+leaves the process:
+
+- Email addresses, in the top-level message and anywhere inside `extra` context.
+- `Authorization`, `Cookie`, and `X-Api-Key` headers.
+- Query strings and request bodies (`request.query_string` / `request.data` deleted outright — recovery codes, magic-link-style tokens, and approval payloads all travel this way).
+- Any `extra` context field whose key name looks like an API key, token, secret, password, payload, request body, or approval preview — the whole value is redacted, not just scrubbed, regardless of type. Call sites are only meant to pass small, deliberate context (ids, statuses, route patterns); this is the backstop for the case where one doesn't.
+- All breadcrumbs are dropped (or reduced to a bare pathname for HTTP breadcrumbs, server-side) — `tracesSampleRate` is `0` on both sides, so this is error capture only, never performance tracing.
+
+---
+
 ## Usage endpoint (`GET /v1/usage`)
 
 Returns a per-project usage snapshot. Useful for building dashboards, quota warnings, or self-service billing pages in your own tooling.
