@@ -1,9 +1,11 @@
 /**
  * Impri status page — samostatný Cloudflare Worker (žádná externí služba).
  *
- * scheduled (cron každých 10 min): změří všechny targety a zapíše do KV
- *   - "latest"                → aktuální stav (pro hlavičku stránky)
- *   - "agg:<target>:<date>"   → denní agregát { n, fail, msSum } (90 dní TTL)
+ * scheduled (cron každých 15 min): změří všechny targety a zapíše do KV
+ *   - "latest"   → aktuální stav + "pending" (nezapsané čítače od poslední
+ *                  hodiny — viz KV-budget poznámka v runChecks) (pro hlavičku stránky)
+ *   - "history"  → 60denní okno denních agregátů { n, fail, msSum } na target,
+ *                  zapisuje se max 1×/hod (fold z "pending")
  * fetch: HTML stránka + GET /api/status (JSON).
  *
  * Vedlejší efekt cron pingů: drží scale-to-zero API stroj teplý (žádné cold starty).
@@ -51,12 +53,47 @@ async function runChecks(env) {
   for (const t of TARGETS) {
     results[t.id] = { ...(await checkTarget(t)), ts: now };
   }
-  // The whole rolling window lives in one key. The previous shape kept one key
-  // per day and loadHistory read them in a loop, so a single page view cost 61
-  // reads — roughly 1600 views exhausted the free tier's 100k/day, and a status
-  // page is precisely what monitors and bots poll. Two writes per run, and at
-  // 15-minute intervals that is 192/day against the 1000/day write limit.
-  const today = dateKey(now);
+
+  // KV budget: at 15-minute intervals that's 96 runs/day. Writing "history"
+  // (the 60-day window) on every run cost 192 writes/day against the free
+  // tier's 1000/day limit, shared with other Workers on the account. Instead
+  // we fold each run's per-target counters into "pending" — a field on
+  // "latest", which is written every run anyway, so this costs no extra
+  // write — and only fold "pending" into "history" when the UTC hour bucket
+  // changes. That's 96 "latest" writes + ~24 "history" writes ≈ 120/day.
+  const curHour = new Date(now).toISOString().slice(0, 13); // 'YYYY-MM-DDTHH', UTC
+  const prevLatest = await env.STATUS_KV.get('latest', 'json');
+  const prevPending = prevLatest?.pending ?? null;
+
+  // A day rollover is an hour rollover too ("…T23" -> "…T00"), so comparing
+  // hour buckets alone guarantees the day's last hour always flushes before
+  // the new day starts — no separate day-boundary case is needed.
+  if (prevPending && prevPending.hour !== curHour) {
+    await flushToHistory(env, prevPending, now);
+  }
+
+  const pending = prevPending && prevPending.hour === curHour
+    ? prevPending
+    : { hour: curHour, counts: {} };
+  for (const t of TARGETS) {
+    const cell = pending.counts[t.id] ?? { n: 0, fail: 0, msSum: 0 };
+    cell.n += 1;
+    if (!results[t.id].ok) cell.fail += 1;
+    cell.msSum += results[t.id].ms;
+    pending.counts[t.id] = cell;
+  }
+
+  await env.STATUS_KV.put('latest', JSON.stringify({ ts: now, results, pending }));
+  return results;
+}
+
+/**
+ * Folds one finished hour's "pending" counters into "history" and trims the
+ * window. Runs at most once an hour (called only on an hour-bucket change),
+ * which is what keeps "history" out of the per-run write budget.
+ */
+async function flushToHistory(env, finishedPending, now) {
+  const day = finishedPending.hour.slice(0, 10);
   let history = (await env.STATUS_KV.get('history', 'json')) ?? null;
 
   // One-time migration from the per-day keys. Sixty reads, once; afterwards
@@ -70,15 +107,17 @@ async function runChecks(env) {
     }
   }
 
-  const day = history[today] ?? {};
+  const cell = history[day] ?? {};
   for (const t of TARGETS) {
-    const cell = day[t.id] ?? { n: 0, fail: 0, msSum: 0 };
-    cell.n += 1;
-    if (!results[t.id].ok) cell.fail += 1;
-    cell.msSum += results[t.id].ms;
-    day[t.id] = cell;
+    const p = finishedPending.counts[t.id];
+    if (!p) continue;
+    const c = cell[t.id] ?? { n: 0, fail: 0, msSum: 0 };
+    c.n += p.n;
+    c.fail += p.fail;
+    c.msSum += p.msSum;
+    cell[t.id] = c;
   }
-  history[today] = day;
+  history[day] = cell;
 
   // Trim here rather than with a per-key TTL, which one combined key cannot have.
   const cutoff = dateKey(now - DAYS_SHOWN * 86400_000);
@@ -87,19 +126,34 @@ async function runChecks(env) {
   }
 
   await env.STATUS_KV.put('history', JSON.stringify(history));
-  await env.STATUS_KV.put('latest', JSON.stringify({ ts: now, results }));
-  return results;
 }
 
-/** One KV read for the whole window — see the note in runChecks. */
-async function loadHistory(env) {
+/**
+ * One KV read for the whole window — see the note in runChecks. "history" is
+ * up to an hour stale (it only flushes on the hour), so the still-open
+ * "pending" bucket sitting on "latest" (already read by the caller) is added
+ * in-memory for whichever day it belongs to — normally today.
+ */
+async function loadHistory(env, latest) {
   const history = (await env.STATUS_KV.get('history', 'json')) ?? {};
+  const pending = latest?.pending;
+  const pendingDay = pending ? pending.hour.slice(0, 10) : null;
+
   const out = {};
   for (const t of TARGETS) out[t.id] = [];
   const today = Date.now();
   for (let i = DAYS_SHOWN - 1; i >= 0; i--) {
     const d = dateKey(today - i * 86400_000);
-    const agg = history[d];
+    let agg = history[d];
+    if (d === pendingDay) {
+      agg = { ...agg };
+      for (const t of TARGETS) {
+        const p = pending.counts[t.id];
+        if (!p) continue;
+        const base = agg[t.id] ?? { n: 0, fail: 0, msSum: 0 };
+        agg[t.id] = { n: base.n + p.n, fail: base.fail + p.fail, msSum: base.msSum + p.msSum };
+      }
+    }
     for (const t of TARGETS) {
       const cell = agg?.[t.id];
       out[t.id].push({
@@ -193,7 +247,7 @@ function renderHtml(latest, history) {
     <span class="muted">Updated ${updated}</span>
   </div>
   ${sections}
-  <footer>Checks run every 10 minutes from Cloudflare's network. JSON: <a href="/api/status">/api/status</a></footer>
+  <footer>Checks run every 15 minutes from Cloudflare's network. JSON: <a href="/api/status">/api/status</a></footer>
 </div></body></html>`;
 }
 
@@ -225,7 +279,7 @@ export default {
     const latest = await env.STATUS_KV.get('latest', 'json');
 
     if (url.pathname === '/api/status') {
-      const history = await loadHistory(env);
+      const history = await loadHistory(env, latest);
       const res = new Response(JSON.stringify({ overall: overallState(latest).label, latest, history }, null, 2), {
         headers: {
           'Content-Type': 'application/json',
@@ -237,7 +291,7 @@ export default {
       return res;
     }
 
-    const history = await loadHistory(env);
+    const history = await loadHistory(env, latest);
     const res = new Response(renderHtml(latest, history), {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
