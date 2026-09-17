@@ -591,6 +591,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Approve AI Agent Salesforce Updates Before They Save: https://impri.dev/docs/approve-ai-agent-salesforce-updates
 - Approve AI Agent Support Ticket Escalations: https://impri.dev/docs/approve-ai-agent-support-ticket-escalations
 - Approve AI Agent Vendor Contract Terms Before They&#39;re Signed: https://impri.dev/docs/approve-ai-agent-vendor-contract-terms
+- Approve AI Voice Agent Calls Before They Dial: https://impri.dev/docs/approve-ai-voice-agent-calls-before-they-dial
 - Approve AI-Generated Content Before Publishing: https://impri.dev/docs/approve-ai-generated-content-before-publishing
 - Approve Emails Before Your AI Agent Sends Them: https://impri.dev/docs/approve-emails-before-your-ai-agent-sends-them
 - Approve GitHub Actions Runs Triggered by an AI Coding Agent: https://impri.dev/docs/approve-ai-agent-github-actions-workflows
@@ -607,6 +608,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - How to Build a Human-in-the-Loop AI Agent: https://impri.dev/docs/how-to-build-a-human-in-the-loop-ai-agent
 - How to Pause an AI Agent for Human Input: https://impri.dev/docs/how-to-pause-an-ai-agent-for-human-input
 - How to Review AI-Generated Content Before It Goes Out: https://impri.dev/docs/how-to-review-ai-content-before-it-goes-out
+- Human Approval Before a Browser Agent Submits a Form: https://impri.dev/docs/human-approval-before-a-browser-agent-submits-a-form
 - Human Approval Before an AI Agent Automates Your Browser: https://impri.dev/docs/human-approval-for-ai-agent-browser-automation
 - Human Approval Before an AI Agent Deploys Code: https://impri.dev/docs/human-approval-before-deploying-code-with-an-agent
 - Human Approval Before an AI Agent Merges a Pull Request: https://impri.dev/docs/approve-ai-agent-pull-requests-before-merge
@@ -625,12 +627,14 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human Approval for AI Trading Agents: https://impri.dev/docs/human-approval-for-ai-trading-agents
 - Human Approval for Amazon Bedrock AgentCore Agents: https://impri.dev/docs/human-approval-amazon-bedrock-agentcore
 - Human Approval for Background AI Workers: https://impri.dev/docs/human-approval-for-background-ai-workers
+- Human Approval for Claude Cowork Browser Agent Actions: https://impri.dev/docs/human-approval-for-claude-cowork-agent
 - Human Approval for Fintech AI Agents: https://impri.dev/docs/human-approval-for-fintech-ai-agents
 - Human Approval for Google Agent Development Kit (ADK) Agents: https://impri.dev/docs/human-approval-google-agent-development-kit
 - Human Approval for Jira AI Agents: https://impri.dev/docs/human-approval-for-jira-ai-agents
 - Human Approval for Legal AI Agents: https://impri.dev/docs/human-approval-for-legal-ai-agents
 - Human Approval for Mastra AI Agents: https://impri.dev/docs/human-approval-mastra-agents
 - Human Approval for Microsoft AutoGen Agents: https://impri.dev/docs/human-approval-autogen-agents
+- Human Approval for OpenAI AgentKit Workflows: https://impri.dev/docs/human-approval-for-openai-agentkit
 - Human Approval for Real Estate AI Agents: https://impri.dev/docs/human-approval-for-real-estate-ai-agents
 - Human Approval for Scheduled AI Scripts: https://impri.dev/docs/human-approval-for-scheduled-ai-scripts
 - Human Approval for Solo-Founder AI Automations: https://impri.dev/docs/human-approval-for-solo-founder-automations
