@@ -619,7 +619,9 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human Approval for AI Agencies and Freelancers: https://impri.dev/docs/human-approval-for-ai-agencies
 - Human Approval for AI Agent Secrets and API Key Rotation: https://impri.dev/docs/human-approval-for-ai-agent-secrets-rotation
 - Human Approval for AI Agent Terraform Changes: https://impri.dev/docs/human-approval-for-ai-agent-terraform-changes
+- Human Approval for AI Agents in Education: https://impri.dev/docs/human-approval-for-ai-agents-in-education
 - Human Approval for AI Content Pipelines: https://impri.dev/docs/human-approval-for-ai-content-pipelines
+- Human Approval for AI Insurance Claims Agents: https://impri.dev/docs/human-approval-for-ai-insurance-claims-agents
 - Human Approval for AI Procurement Agents: https://impri.dev/docs/human-approval-for-ai-procurement-agents
 - Human Approval for AI Recruiting Outreach: https://impri.dev/docs/human-approval-for-ai-recruiting-outreach
 - Human Approval for AI Sales Outreach Agents: https://impri.dev/docs/human-approval-for-ai-sales-outreach

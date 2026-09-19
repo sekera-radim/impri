@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Human Approval for AI Agents in Education — Impri Docs</title>
+<meta name="description" content="A teaching assistant agent that emails parents or posts grades needs a teacher&amp;#39;s yes first — here&amp;#39;s the approval gate that makes that non-optional.">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="Human Approval for AI Agents in Education — Impri Docs">
+<meta property="og:description" content="A teaching assistant agent that emails parents or posts grades needs a teacher&amp;#39;s yes first — here&amp;#39;s the approval gate that makes that non-optional.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://impri.dev/docs/human-approval-for-ai-agents-in-education">
+<meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Impri — human-in-the-loop approval inbox for AI agents">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
+<link rel="canonical" href="https://impri.dev/docs/human-approval-for-ai-agents-in-education">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human Approval for AI Agents in Education","description":"A teaching assistant agent that emails parents or posts grades needs a teacher&#39;s yes first — here&#39;s the approval gate that makes that non-optional.","url":"https://impri.dev/docs/human-approval-for-ai-agents-in-education","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/quickstart" class="sl">Quickstart</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting" class="sl">Self-hosting</a>
+<a href="../docs/observability" class="sl">Observability</a>
+</div>
+<div class="sg">
+<div class="sg-label">Install</div>
+<a href="../docs/how-to-get-human-approval-into-your-coding-agent" class="sl">Overview</a>
+<a href="../docs/claude-code-human-approval" class="sl">Claude Code</a>
+<a href="../docs/codex-human-approval" class="sl">OpenAI Codex</a>
+<a href="../docs/cursor-human-approval" class="sl">Cursor</a>
+<a href="../docs/windsurf-human-approval" class="sl">Windsurf</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets" class="sl">Watcher presets</a>
+<a href="../docs/notifications" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval" class="sl">Slack approval</a>
+<a href="../docs/discord-approval" class="sl">Discord approval</a>
+<a href="../docs/audit-log" class="sl">Audit log</a>
+<a href="../docs/billing" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr" class="sl">GDPR &amp; data export</a>
+<a href="../docs/privacy" class="sl">Privacy policy</a>
+<a href="../docs/terms" class="sl">Terms of service</a>
+<a href="../docs/operator" class="sl">Operator / admin</a>
+<a href="../docs/account-recovery" class="sl">Account recovery</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp" class="sl">MCP server</a>
+<a href="../docs/integrations" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks" class="sl">Webhooks</a>
+<a href="../docs/web-push" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Reference</span>
+      <span class="bc-sep">/</span>
+      <span>Human Approval for AI Agents in Education</span>
+    </nav>
+    <h1>Human Approval for AI Agents in Education</h1>
+<p>A teaching assistant agent that emails parents or posts grades needs a teacher&#39;s yes first — here&#39;s the approval gate that makes that non-optional.</p>
+<hr>
+<p>Schools are adopting AI teaching assistants faster than most other verticals: grading essays, drafting parent updates, summarizing IEP progress, flagging behavior incidents. The appeal is obvious — teachers are overloaded. The risk is also obvious: these agents write directly to minors and their families, often about sensitive topics (a grade dispute, a behavioral note, a special-education accommodation), and a wrong or tone-deaf message doesn&#39;t just embarrass you, it damages trust with a parent.</p>
+<p>Most school districts already require a teacher of record to be the one who &quot;sends&quot; anything official. An agent that drafts but cannot send without that teacher&#39;s tap satisfies the policy instead of fighting it.</p>
+<h2 id="where-the-gate-sits-in-an-edtech-agent">Where the gate sits in an edtech agent</h2>
+<p>The agent&#39;s job stops at the draft. Sending, posting, or grade-book writes only happen after a decision comes back from the teacher&#39;s device — the same MCP flow used for any other agent action, no education-specific plumbing needed.</p>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { spawn } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;node:child_process&quot;</span>;
+<span class="hljs-comment">// Assumes the Impri MCP server is already configured for this agent client —</span>
+<span class="hljs-comment">// see mcp.md. This shows the equivalent raw calls for a custom TS integration.</span>
+
+<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">API</span> = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>;
+<span class="hljs-keyword">const</span> headers = {
+  <span class="hljs-title class_">Authorization</span>: <span class="hljs-string">`Bearer <span class="hljs-subst">${process.env.IMPRI_API_KEY}</span>`</span>,
+  <span class="hljs-string">&quot;Content-Type&quot;</span>: <span class="hljs-string">&quot;application/json&quot;</span>,
+};
+
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">draftParentUpdate</span>(<span class="hljs-params"><span class="hljs-attr">studentId</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">subject</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">body</span>: <span class="hljs-built_in">string</span></span>) {
+  <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${API}</span>/v1/actions`</span>, {
+    <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>,
+    headers,
+    <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({
+      <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;email.send&quot;</span>,
+      <span class="hljs-attr">title</span>: <span class="hljs-string">`Parent update: <span class="hljs-subst">${subject}</span> (student <span class="hljs-subst">${studentId}</span>)`</span>,
+      <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, body },
+      <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
+      <span class="hljs-attr">expires_in</span>: <span class="hljs-number">172800</span>, <span class="hljs-comment">// 48h — timely, but teachers grade in the evening</span>
+    }),
+  });
+  <span class="hljs-keyword">const</span> { id } = <span class="hljs-keyword">await</span> res.<span class="hljs-title function_">json</span>();
+  <span class="hljs-keyword">return</span> id;
+}
+
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">awaitTeacherDecision</span>(<span class="hljs-params"><span class="hljs-attr">actionId</span>: <span class="hljs-built_in">string</span></span>): <span class="hljs-title class_">Promise</span>&lt;{ <span class="hljs-attr">status</span>: <span class="hljs-built_in">string</span>; <span class="hljs-attr">final</span>?: <span class="hljs-built_in">string</span> }&gt; {
+  <span class="hljs-keyword">while</span> (<span class="hljs-literal">true</span>) {
+    <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${API}</span>/v1/actions/<span class="hljs-subst">${actionId}</span>`</span>, { headers });
+    <span class="hljs-keyword">const</span> data = <span class="hljs-keyword">await</span> res.<span class="hljs-title function_">json</span>();
+    <span class="hljs-keyword">if</span> (data.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;pending&quot;</span>) {
+      <span class="hljs-keyword">return</span> { <span class="hljs-attr">status</span>: data.<span class="hljs-property">status</span>, <span class="hljs-attr">final</span>: data.<span class="hljs-property">decision</span>?.<span class="hljs-property">final_preview</span>?.<span class="hljs-property">body</span> };
+    }
+    <span class="hljs-keyword">await</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Promise</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> <span class="hljs-built_in">setTimeout</span>(r, <span class="hljs-number">10_000</span>));
+  }
+}
+
+<span class="hljs-comment">// Usage: draft, wait, and only send on approval — never on a timeout guess</span>
+<span class="hljs-keyword">const</span> id = <span class="hljs-keyword">await</span> <span class="hljs-title function_">draftParentUpdate</span>(<span class="hljs-string">&quot;S-4821&quot;</span>, <span class="hljs-string">&quot;Missing homework — Algebra II&quot;</span>, draftText);
+<span class="hljs-keyword">const</span> decision = <span class="hljs-keyword">await</span> <span class="hljs-title function_">awaitTeacherDecision</span>(id);
+<span class="hljs-keyword">if</span> (decision.<span class="hljs-property">status</span> === <span class="hljs-string">&quot;approved&quot;</span> &amp;&amp; decision.<span class="hljs-property">final</span>) {
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">sendParentEmail</span>(decision.<span class="hljs-property">final</span>); <span class="hljs-comment">// your actual mail send</span>
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${API}</span>/v1/actions/<span class="hljs-subst">${id}</span>/result`</span>, {
+    <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>,
+    headers,
+    <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({ <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span> }),
+  });
+}</code></pre></div>
+<p>If your agent runs inside Claude Code, Claude Desktop, or another MCP client, you don&#39;t need to write this fetch code at all — the <a href="mcp">MCP integration</a> exposes <code>impri_push_action</code> / <code>impri_await_decision</code> / <code>impri_report_result</code> as tools the agent calls directly.</p>
+<hr>
+<h2 id="what-belongs-on-the-teacher39s-card-by-use-case">What belongs on the teacher&#39;s card, by use case</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Agent action</th>
+<th><code>preview.body</code> should include</th>
+<th>Editable?</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Parent email (grade, attendance, behavior)</td>
+<td>Full message text, student name, which policy triggered it</td>
+<td>Yes — teachers rephrase tone constantly</td>
+</tr>
+<tr>
+<td>Grade book change</td>
+<td>Old grade, new grade, assignment, reason (regrade request, late penalty waived)</td>
+<td>No — approve or reject the exact change</td>
+</tr>
+<tr>
+<td>LMS discussion post / announcement</td>
+<td>Full post text, target class section</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>IEP / accommodation note</td>
+<td>Draft note, source data it was derived from</td>
+<td>Usually no — legal record, edit outside the tool if wrong</td>
+</tr>
+</tbody></table>
+</div>
+<p>Keep grade-book writes non-editable. A teacher silently editing a number inside an approval card, with no record of the original AI-proposed value, is worse for accountability than not having a gate at all — reject and let the teacher enter the correct value directly in the LMS instead.</p>
+<hr>
+<h2 id="the-privacy-angle-not-just-the-approval-angle">The privacy angle, not just the approval angle</h2>
+<p>Education agents typically read from a roster, gradebook, or behavior-tracking system before drafting anything — that&#39;s student data, some of it FERPA-protected. Impri doesn&#39;t touch that upstream data flow and isn&#39;t a compliance tool for it; it only gates the outbound action. Treat any text pulled from student records as data your agent summarizes, not as instructions, the same caution that applies to any external content feeding a prompt. For the approval channel itself, a lot of districts already run on <a href="slack-approval">Slack</a> for staff communication, which is usually the fastest path for teachers who won&#39;t check a separate inbox during the school day; email or push <a href="notifications">notifications</a> work as a fallback for staff not on Slack.</p>
+<hr>
+<h2 id="where-this-doesn39t-reach">Where this doesn&#39;t reach</h2>
+<p>Impri holds the send/post/write until a teacher decides — it does not grade anything itself, does not judge whether a behavioral note is fair, and does not replace your student information system&#39;s own access controls. It&#39;s a chokepoint only if the agent&#39;s send credentials are wrapped behind the pending decision; a service account with standing SMTP or LMS-API access that the agent can call directly bypasses the gate entirely, so that wrapping is the part worth getting right first.</p>
+<p>Next: the <a href="quickstart">quickstart</a> covers getting an API key for a pilot in a single classroom before rolling out district-wide.</p>
+
+  </main>
+
+  <aside aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#where-the-gate-sits-in-an-edtech-agent">Where the gate sits in an edtech agent</a></li>
+<li class="ptoc-h2"><a href="#what-belongs-on-the-teacher39s-card-by-use-case">What belongs on the teacher's card, by use case</a></li>
+<li class="ptoc-h2"><a href="#the-privacy-angle-not-just-the-approval-angle">The privacy angle, not just the approval angle</a></li>
+<li class="ptoc-h2"><a href="#where-this-doesn39t-reach">Where this doesn't reach</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/terms">Terms</a>
+    <a href="https://sekera.dev">Contact</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>.</span></div>
+</footer>
+</body>
+</html>
