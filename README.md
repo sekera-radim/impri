@@ -1,5 +1,7 @@
 # Impri
 
+[![M8ven Score](https://m8ven.ai/badge/mcp/sekera-radim-impri-14kdjw)](https://m8ven.ai/mcp/sekera-radim-impri-14kdjw)
+
 **Human-in-the-loop approval inbox for AI agents.**
 
 Your agent wants to send the email, post the reply, run the migration.
