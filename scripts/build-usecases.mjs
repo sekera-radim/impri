@@ -3,8 +3,11 @@
 //
 // Reads docs/use-cases/<slug>.md and renders www/use-cases/<slug>.html in the
 // landing-page style (nav, hero, sections, CTA band, footer — same classes as
-// www/index.html), plus the hub page www/use-cases/index.html and the
-// www/agents/index.html one-pager for AI agents. Also writes
+// www/index.html), plus the hub page www/use-cases.html and the
+// www/agents.html one-pager for AI agents. The hub and one-pager are flat
+// files, not <dir>/index.html: Pages would 308 /use-cases -> /use-cases/,
+// and a canonical pointing at a URL that redirects back is a loop Google
+// reports as "Redirect error". Also writes
 // www/use-cases/.manifest.json so scripts/build-docs.mjs can fold these pages
 // into sitemap.xml and llms.txt without needing to know their format.
 //
@@ -430,7 +433,6 @@ ${footerHtml()}
 // ── main ─────────────────────────────────────────────────────────────────
 function main() {
   mkdirSync(join(WWW, 'use-cases'), { recursive: true });
-  mkdirSync(join(WWW, 'agents'), { recursive: true });
 
   const files = existsSync(SRC) ? readdirSync(SRC).filter((f) => f.endsWith('.md')) : [];
   const pages = [];
@@ -447,11 +449,11 @@ function main() {
     console.log(`  ✓  use-cases/${slug}.html`);
   }
 
-  writeFileSync(join(WWW, 'use-cases', 'index.html'), renderHub(pages), 'utf8');
-  console.log(`  ✓  use-cases/index.html (hub)`);
+  writeFileSync(join(WWW, 'use-cases.html'), renderHub(pages), 'utf8');
+  console.log(`  ✓  use-cases.html (hub)`);
 
-  writeFileSync(join(WWW, 'agents', 'index.html'), renderAgents(), 'utf8');
-  console.log(`  ✓  agents/index.html`);
+  writeFileSync(join(WWW, 'agents.html'), renderAgents(), 'utf8');
+  console.log(`  ✓  agents.html`);
 
   const manifest = {
     generatedAt: new Date().toISOString(),
