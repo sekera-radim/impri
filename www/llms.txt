@@ -587,11 +587,11 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Approve AI Agent Actions From Your Phone: https://impri.dev/docs/approve-ai-agent-actions-from-your-phone
 - Approve AI Agent Actions by Email: https://impri.dev/docs/approve-ai-agent-actions-by-email
 - Approve AI Agent CRM Updates Before They Sync: https://impri.dev/docs/approve-ai-agent-crm-updates
-- Approve AI Agent Calendar Changes Before They&#39;re Sent: https://impri.dev/docs/approve-ai-agent-calendar-changes
+- Approve AI Agent Calendar Changes Before They're Sent: https://impri.dev/docs/approve-ai-agent-calendar-changes
 - Approve AI Agent Expense Reports and Invoices: https://impri.dev/docs/approve-ai-agent-expense-reports-and-invoices
 - Approve AI Agent Salesforce Updates Before They Save: https://impri.dev/docs/approve-ai-agent-salesforce-updates
 - Approve AI Agent Support Ticket Escalations: https://impri.dev/docs/approve-ai-agent-support-ticket-escalations
-- Approve AI Agent Vendor Contract Terms Before They&#39;re Signed: https://impri.dev/docs/approve-ai-agent-vendor-contract-terms
+- Approve AI Agent Vendor Contract Terms Before They're Signed: https://impri.dev/docs/approve-ai-agent-vendor-contract-terms
 - Approve AI Voice Agent Calls Before They Dial: https://impri.dev/docs/approve-ai-voice-agent-calls-before-they-dial
 - Approve AI-Generated Content Before Publishing: https://impri.dev/docs/approve-ai-generated-content-before-publishing
 - Approve Emails Before Your AI Agent Sends Them: https://impri.dev/docs/approve-emails-before-your-ai-agent-sends-them

@@ -269,7 +269,7 @@ ${footerHtml()}
 function renderHub(pages) {
   const path = '/use-cases';
   const title = 'Use cases — Impri';
-  const description = 'What people gate behind Impri: overnight coding agents, destructive database writes, outbound email and messages, deploys and infra changes, refunds and payments, and AI-generated content before it publishes.';
+  const description = 'What people gate behind Impri: coding agents, database writes, outbound messages, infra changes, payments, and AI content before it publishes.';
   const jsonLd = [
     { '@context': 'https://schema.org', '@type': 'CollectionPage', name: title, description, url: `${ORIGIN}${path}`, inLanguage: 'en' },
   ];
@@ -355,7 +355,7 @@ function installTabsHtml() {
 function renderAgents() {
   const path = '/agents';
   const title = 'Impri for AI agents — human approval over MCP';
-  const description = 'Install the Impri MCP server in Claude Code, Codex, Cursor or Windsurf, and give your agent 8 tools to propose actions, await a human decision, and report the outcome.';
+  const description = 'Install the Impri MCP server in Claude Code, Codex, Cursor or Windsurf: 8 tools to propose actions, await a decision, and report the outcome.';
   const jsonLd = [
     { '@context': 'https://schema.org', '@type': 'WebPage', name: title, description, url: `${ORIGIN}${path}`, inLanguage: 'en' },
   ];

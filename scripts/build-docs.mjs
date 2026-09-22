@@ -231,13 +231,38 @@ ${links}
 /** Extract plain-text title from H1 in rendered HTML. */
 function extractTitle(html) {
   const m = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-  return m ? m[1].replace(/<[^>]+>/g, '').trim() : 'Impri Docs';
+  return m ? decodeEntities(m[1].replace(/<[^>]+>/g, '')).trim() : 'Impri Docs';
 }
 
-/** Extract a short description from the first paragraph. */
+/**
+ * Truncate text to at most `max` chars, cutting at a word boundary and
+ * appending an ellipsis. Never truncates mid-word, so meta descriptions
+ * read cleanly instead of being sliced off mid-sentence.
+ */
+function truncateAtWord(text, max) {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max - 1); // leave room for the ellipsis char
+  const lastSpace = cut.lastIndexOf(' ');
+  // Only break on a space if it doesn't throw away most of the text.
+  const trimmed = lastSpace > max * 0.4 ? cut.slice(0, lastSpace) : cut;
+  return trimmed.replace(/[.,;:!?\-–—]+$/, '') + '…';
+}
+
+/**
+ * Extract a short description from the rendered doc body, for use in
+ * <meta name="description"> and og:description. Picks the first paragraph
+ * that's actually descriptive (skipping short leads like "_Last updated:
+ * 2026-07-12_"), then truncates to Google/Bing's ~160-char budget at a
+ * word boundary. Google/Bing flag descriptions outside 25–160 chars, so
+ * both bounds matter, not just the upper one.
+ */
 function extractDesc(html) {
-  const m = html.match(/<p>([\s\S]*?)<\/p>/i);
-  return m ? m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 200) : 'Impri documentation.';
+  const paras = [...html.matchAll(/<p>([\s\S]*?)<\/p>/gi)].map((m) =>
+    decodeEntities(m[1].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim()
+  );
+  const text = paras.find((p) => p.length >= 25) || paras[0]
+    || 'Impri documentation: add a human approval step to any AI agent.';
+  return truncateAtWord(text, 160);
 }
 
 // ── Shared assets ─────────────────────────────────────────────────────────
