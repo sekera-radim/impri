@@ -586,6 +586,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Approve AI Agent Actions From Telegram: https://impri.dev/docs/approve-ai-agent-actions-from-telegram
 - Approve AI Agent Actions From Your Phone: https://impri.dev/docs/approve-ai-agent-actions-from-your-phone
 - Approve AI Agent Actions by Email: https://impri.dev/docs/approve-ai-agent-actions-by-email
+- Approve AI Agent Ad Spend and Marketing Budget Changes: https://impri.dev/docs/approve-ai-agent-ad-spend-and-marketing-budget-changes
 - Approve AI Agent CRM Updates Before They Sync: https://impri.dev/docs/approve-ai-agent-crm-updates
 - Approve AI Agent Calendar Changes Before They're Sent: https://impri.dev/docs/approve-ai-agent-calendar-changes
 - Approve AI Agent Expense Reports and Invoices: https://impri.dev/docs/approve-ai-agent-expense-reports-and-invoices
@@ -619,11 +620,13 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human Approval Before an Agent Sends SMS: https://impri.dev/docs/human-approval-before-an-agent-sends-sms
 - Human Approval Gates in the Claude Agent SDK: https://impri.dev/docs/human-approval-claude-agent-sdk
 - Human Approval for AI Agencies and Freelancers: https://impri.dev/docs/human-approval-for-ai-agencies
+- Human Approval for AI Agent GitHub Issue and Comment Automation: https://impri.dev/docs/human-approval-for-ai-agent-github-issue-and-comment-automation
 - Human Approval for AI Agent Price and Inventory Changes: https://impri.dev/docs/human-approval-for-ai-agent-price-and-inventory-changes
 - Human Approval for AI Agent Secrets and API Key Rotation: https://impri.dev/docs/human-approval-for-ai-agent-secrets-rotation
 - Human Approval for AI Agent Terraform Changes: https://impri.dev/docs/human-approval-for-ai-agent-terraform-changes
 - Human Approval for AI Agents in Education: https://impri.dev/docs/human-approval-for-ai-agents-in-education
 - Human Approval for AI Content Pipelines: https://impri.dev/docs/human-approval-for-ai-content-pipelines
+- Human Approval for AI IT Helpdesk Agents: https://impri.dev/docs/human-approval-for-ai-it-helpdesk-agents
 - Human Approval for AI Insurance Claims Agents: https://impri.dev/docs/human-approval-for-ai-insurance-claims-agents
 - Human Approval for AI Procurement Agents: https://impri.dev/docs/human-approval-for-ai-procurement-agents
 - Human Approval for AI Recruiting Outreach: https://impri.dev/docs/human-approval-for-ai-recruiting-outreach
@@ -653,6 +656,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human-in-the-Loop Approval for LangChain Agents: https://impri.dev/docs/human-in-the-loop-for-langchain-agents
 - Human-in-the-Loop Checkpoints in LangGraph: https://impri.dev/docs/human-in-the-loop-langgraph
 - Human-in-the-Loop Tools for LLM Agents, Compared: https://impri.dev/docs/hitl-tools-for-llm-agents-compared
+- Human-in-the-Loop for AI Agent DNS and Infrastructure Changes: https://impri.dev/docs/human-in-the-loop-for-ai-agent-dns-and-infra-changes
 - Human-in-the-Loop for AI Agent Incident Response: https://impri.dev/docs/human-in-the-loop-for-ai-agent-incident-response
 - Human-in-the-Loop for AI Customer Support Agents: https://impri.dev/docs/human-in-the-loop-ai-customer-support
 - Human-in-the-Loop for AI HR Onboarding Agents: https://impri.dev/docs/human-in-the-loop-for-ai-hr-onboarding-agents
