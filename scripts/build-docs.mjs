@@ -708,7 +708,11 @@ function main() {
     if (section) {
       llms = llms.replace(/\s+$/, '') + `\n\n${GUIDES_MARKER}\n` + section.replace(/^\n/, '');
       writeFileSync(llmsPath, llms, 'utf8');
-      console.log(`  ✓  llms.txt (guides + use cases + install + agents)`);
+      // README and the SDK docs point at docs/llms.txt as the API contract.
+      // It used to be a hand-kept copy that drifted from what impri.dev serves
+      // (it was missing public endpoints), so it is now written from the same text.
+      writeFileSync(join(DOCS_SRC, 'llms.txt'), llms, 'utf8');
+      console.log(`  ✓  llms.txt (guides + use cases + install + agents; docs/llms.txt kept identical)`);
     }
   } catch (e) {
     console.log(`  note: llms.txt not updated (${e.message})`);
