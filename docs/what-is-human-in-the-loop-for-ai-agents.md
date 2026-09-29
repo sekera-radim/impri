@@ -111,4 +111,4 @@ This is intentional. A draft reply to a thread that is three days old is often n
 
 ## Next step
 
-To wire this into an existing agent in about ten minutes, follow [how to add human approval to an AI agent](how-to-add-human-approval-to-an-ai-agent.md). To get your first action into the inbox immediately, start with the [quickstart](quickstart.md).
+To wire this into an existing agent in about ten minutes, follow [how to add human approval to an AI agent](how-to-add-human-approval-to-an-ai-agent.md). To get your first action into the inbox immediately, start with the [quickstart](quickstart.md). For the decision points that turn this into a full workflow — what to gate, timeouts, escalation, audit trail — and links by use case, see [AI agent approval workflow](ai-agent-approval-workflow.md).

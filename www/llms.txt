@@ -537,6 +537,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 ## Documentation
 
 - Quickstart (self-hosted, zero to first approved action): https://impri.dev/docs/quickstart
+- AI agent approval workflow (overview + use cases):    https://impri.dev/docs/ai-agent-approval-workflow
 - How to add human approval to an AI agent:            https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent
 - Python SDK reference:                                https://impri.dev/docs/sdk-python
 - TypeScript SDK reference:                            https://impri.dev/docs/sdk-typescript

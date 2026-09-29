@@ -136,6 +136,7 @@ pre code.hljs{display:block;overflow-x:auto}
     <div class="sg">
 <div class="sg-label">Getting started</div>
 <a href="../docs/quickstart" class="sl">Quickstart</a>
+<a href="../docs/ai-agent-approval-workflow" class="sl">Approval workflow overview</a>
 <a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl active">Human approval pattern</a>
 <a href="../docs/self-hosting" class="sl">Self-hosting</a>
 <a href="../docs/observability" class="sl">Observability</a>
@@ -247,7 +248,7 @@ ACTION_ID=$(<span class="hljs-built_in">echo</span> <span class="hljs-variable">
     -d <span class="hljs-string">&#x27;{&quot;status&quot;: &quot;executed&quot;}&#x27;</span>
 <span class="hljs-keyword">fi</span></code></pre></div>
 <p>A rejected or expired action is never executed — the polling loop exits and the execution block is never reached.</p>
-<p>New to Impri? <a href="quickstart">Quickstart</a> walks through getting a key first (cloud or self-host).</p>
+<p>New to Impri? <a href="quickstart">Quickstart</a> walks through getting a key first (cloud or self-host). For the bigger picture — decision points, timeouts, escalation, and links by use case — see <a href="ai-agent-approval-workflow">AI agent approval workflow</a>.</p>
 <hr>
 <h2 id="minimal-integration-mcp">Minimal integration — MCP</h2>
 <p>For agents running inside Claude Code, Claude Desktop, or any MCP client, the Impri MCP server wraps the REST calls into tool calls. The agent handles the flow without writing any HTTP code.</p>

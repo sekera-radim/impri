@@ -64,7 +64,7 @@ fi
 
 A rejected or expired action is never executed — the polling loop exits and the execution block is never reached.
 
-New to Impri? [Quickstart](quickstart.md) walks through getting a key first (cloud or self-host).
+New to Impri? [Quickstart](quickstart.md) walks through getting a key first (cloud or self-host). For the bigger picture — decision points, timeouts, escalation, and links by use case — see [AI agent approval workflow](ai-agent-approval-workflow.md).
 
 ---
 

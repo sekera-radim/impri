@@ -88,4 +88,4 @@ A gate is only real if the wrapped call is the agent's *only* route to the side 
 - **Treating "expired" as "still fine to run."** A three-day-old draft reply is often no longer relevant. Treat expiry the same as rejection: don't execute, and re-propose if the task still matters.
 - **Putting the check in the prompt instead of the code.** Covered above, worth repeating: if the model can talk its way past the check, it isn't a gate.
 
-For the concrete REST and MCP call sequence, see [how to add human approval to an AI agent](how-to-add-human-approval-to-an-ai-agent.md). For getting a key and running the first call, start at [quickstart](quickstart.md).
+For the concrete REST and MCP call sequence, see [how to add human approval to an AI agent](how-to-add-human-approval-to-an-ai-agent.md). For getting a key and running the first call, start at [quickstart](quickstart.md). For a map of what a full approval workflow looks like end to end, plus links by use case, see [AI agent approval workflow](ai-agent-approval-workflow.md).

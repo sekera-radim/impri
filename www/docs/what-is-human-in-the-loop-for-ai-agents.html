@@ -136,6 +136,7 @@ pre code.hljs{display:block;overflow-x:auto}
     <div class="sg">
 <div class="sg-label">Getting started</div>
 <a href="../docs/quickstart" class="sl">Quickstart</a>
+<a href="../docs/ai-agent-approval-workflow" class="sl">Approval workflow overview</a>
 <a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
 <a href="../docs/self-hosting" class="sl">Self-hosting</a>
 <a href="../docs/observability" class="sl">Observability</a>
@@ -298,7 +299,7 @@ result = await_decision(action_id)
 <p>This is intentional. A draft reply to a thread that is three days old is often not worth sending. An agent working in a time-sensitive domain should set <code>expires_in</code> accordingly. Treat <code>expired</code> the same as <code>rejected</code> in your code: do not execute.</p>
 <hr>
 <h2 id="next-step">Next step</h2>
-<p>To wire this into an existing agent in about ten minutes, follow <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a>. To get your first action into the inbox immediately, start with the <a href="quickstart">quickstart</a>.</p>
+<p>To wire this into an existing agent in about ten minutes, follow <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a>. To get your first action into the inbox immediately, start with the <a href="quickstart">quickstart</a>. For the decision points that turn this into a full workflow — what to gate, timeouts, escalation, audit trail — and links by use case, see <a href="ai-agent-approval-workflow">AI agent approval workflow</a>.</p>
 
   </main>
 

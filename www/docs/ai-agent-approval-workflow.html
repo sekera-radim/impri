@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI Agent Guardrails for Real-World Actions — Impri Docs</title>
-<meta name="description" content="Real AI agent guardrails don't live in the prompt — they live in the code path between a decision and a side effect, where a human can actually intervene.">
+<title>AI Agent Approval Workflow — Impri Docs</title>
+<meta name="description" content="An AI agent approval workflow pauses an agent right before a risky action so a person can approve, reject, or edit it before anything actually runs.">
 <meta name="theme-color" content="#06070d">
-<meta property="og:title" content="AI Agent Guardrails for Real-World Actions — Impri Docs">
-<meta property="og:description" content="Real AI agent guardrails don't live in the prompt — they live in the code path between a decision and a side effect, where a human can actually intervene.">
+<meta property="og:title" content="AI Agent Approval Workflow — Impri Docs">
+<meta property="og:description" content="An AI agent approval workflow pauses an agent right before a risky action so a person can approve, reject, or edit it before anything actually runs.">
 <meta property="og:type" content="article">
-<meta property="og:url" content="https://impri.dev/docs/ai-agent-guardrails-for-real-world-actions">
+<meta property="og:url" content="https://impri.dev/docs/ai-agent-approval-workflow">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Impri — human-in-the-loop approval inbox for AI agents">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
-<link rel="canonical" href="https://impri.dev/docs/ai-agent-guardrails-for-real-world-actions">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"AI Agent Guardrails for Real-World Actions","description":"Real AI agent guardrails don't live in the prompt — they live in the code path between a decision and a side effect, where a human can actually intervene.","url":"https://impri.dev/docs/ai-agent-guardrails-for-real-world-actions","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="canonical" href="https://impri.dev/docs/ai-agent-approval-workflow">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"AI Agent Approval Workflow","description":"An AI agent approval workflow pauses an agent right before a risky action so a person can approve, reject, or edit it before anything actually runs.","url":"https://impri.dev/docs/ai-agent-approval-workflow","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -136,7 +136,7 @@ pre code.hljs{display:block;overflow-x:auto}
     <div class="sg">
 <div class="sg-label">Getting started</div>
 <a href="../docs/quickstart" class="sl">Quickstart</a>
-<a href="../docs/ai-agent-approval-workflow" class="sl">Approval workflow overview</a>
+<a href="../docs/ai-agent-approval-workflow" class="sl active">Approval workflow overview</a>
 <a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
 <a href="../docs/self-hosting" class="sl">Self-hosting</a>
 <a href="../docs/observability" class="sl">Observability</a>
@@ -197,82 +197,84 @@ pre code.hljs{display:block;overflow-x:auto}
     <nav class="breadcrumb" aria-label="Breadcrumb">
       <a href="../docs">Docs</a>
       <span class="bc-sep">/</span>
-      <span>Reference</span>
+      <span>Getting started</span>
       <span class="bc-sep">/</span>
-      <span>AI Agent Guardrails for Real-World Actions</span>
+      <span>AI Agent Approval Workflow</span>
     </nav>
-    <h1>AI Agent Guardrails for Real-World Actions</h1>
-<p>Real AI agent guardrails don&#39;t live in the prompt — they live in the code path between a decision and a side effect, where a human can actually intervene.</p>
+    <h1>AI Agent Approval Workflow</h1>
+<p>An AI agent approval workflow pauses an agent right before a risky action so a person can approve, reject, or edit it before anything actually runs.</p>
+<p>This page is the map: what the workflow looks like end to end, the decisions that shape one, and links to the specific use case closest to what your agent does.</p>
 <hr>
-<h2 id="quotguardrailsquot-usually-means-a-prompt-not-a-gate">&quot;Guardrails&quot; usually means a prompt, not a gate</h2>
-<p>Search for &quot;AI agent guardrails&quot; and most results describe system-prompt phrasing: &quot;always ask before doing X,&quot; constitutional AI, refusal training, output filters that scan for toxic content. Those are useful for <em>what the model says</em>. They do nothing for <em>what the model&#39;s tools do</em>, because a tool call bypasses the conversational layer entirely. If your agent has a <code>send_email(to, body)</code> function bound to it, a prompt instruction not to email strangers is a suggestion the model can talk itself past — via prompt injection, a misread instruction, or a plain reasoning error. The tool still runs.</p>
-<p>A structural guardrail sits below the prompt, in the function the tool calls. It does not ask the model to behave — it makes the side effect unreachable without an external signal.</p>
+<h2 id="when-you-need-one">When you need one</h2>
+<p>Not every agent action needs a person in the loop. You need an approval workflow when an agent can trigger something hard to undo — sending a message, spending money, changing a record, shipping code — and the content or target of that action is generated rather than fixed. A read-only agent that only summarizes data doesn&#39;t need this. An agent that drafts a refund, a deploy, or an outbound email does, because a bad draft executed at machine speed is a bad draft that already happened. <a href="what-is-human-in-the-loop-for-ai-agents">What is human-in-the-loop for AI agents</a> covers the underlying reasoning in more depth.</p>
 <hr>
-<h2 id="the-shape-of-a-structural-guardrail">The shape of a structural guardrail</h2>
-<p>Three properties separate a real gate from a prompt suggestion:</p>
+<h2 id="how-it-looks-in-practice">How it looks in practice</h2>
+<p>The shape is always the same three steps, regardless of what the agent does:</p>
 <ol>
-<li><strong>The side effect is wrapped, not warned about.</strong> The function that actually sends the email, writes the row, or calls the paid API checks for an approval before it runs — the model never gets a code path that skips the check.</li>
-<li><strong>The decision comes from outside the agent&#39;s context.</strong> If the &quot;approval&quot; is another LLM call or a self-check the same agent performs, a bad instruction that fooled the first agent can fool the second. A human, in a different process, breaks that chain.</li>
-<li><strong>Nothing executes on ambiguity.</strong> Pending, expired, and rejected are all &quot;no.&quot; Only an explicit approved decision reaches the executor.</li>
+<li><strong>Propose.</strong> The agent pushes the action it wants to take — a draft, a query, a request — with enough context for a human to judge it, instead of executing directly.</li>
+<li><strong>Decide.</strong> A person sees the proposal in an inbox and approves it, rejects it, or edits the draft first. Nothing runs until this happens.</li>
+<li><strong>Execute.</strong> The agent picks up the decision and only then performs the real side effect, using the human-approved (and possibly edited) version.</li>
 </ol>
-<p>Here&#39;s the wrapper pattern in Python, using Impri as the gate for a database-writing agent tool:</p>
-<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> os
-<span class="hljs-keyword">import</span> time
-<span class="hljs-keyword">import</span> requests
-
-IMPRI_BASE = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
-HEADERS = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{os.environ[<span class="hljs-string">&#x27;IMPRI_API_KEY&#x27;</span>]}</span>&quot;</span>}
-
-<span class="hljs-keyword">def</span> <span class="hljs-title function_">guarded_db_write</span>(<span class="hljs-params">table: <span class="hljs-built_in">str</span>, row: <span class="hljs-built_in">dict</span></span>) -&gt; <span class="hljs-built_in">dict</span>:
-    <span class="hljs-string">&quot;&quot;&quot;The ONLY function the agent&#x27;s tool schema exposes for writes.
-    There is no direct db.insert() in the agent&#x27;s toolset.&quot;&quot;&quot;</span>
-    resp = requests.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions&quot;</span>, headers=HEADERS, json={
-        <span class="hljs-string">&quot;kind&quot;</span>: <span class="hljs-string">&quot;db.write&quot;</span>,
-        <span class="hljs-string">&quot;title&quot;</span>: <span class="hljs-string">f&quot;Insert into <span class="hljs-subst">{table}</span>: <span class="hljs-subst">{row.get(<span class="hljs-string">&#x27;name&#x27;</span>, row)}</span>&quot;</span>,
-        <span class="hljs-string">&quot;preview&quot;</span>: {<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;plain&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: <span class="hljs-built_in">str</span>(row)},
-        <span class="hljs-string">&quot;expires_in&quot;</span>: <span class="hljs-number">1800</span>,
-        <span class="hljs-string">&quot;idempotent&quot;</span>: <span class="hljs-literal">False</span>,
-        <span class="hljs-string">&quot;undo&quot;</span>: <span class="hljs-string">f&quot;DELETE FROM <span class="hljs-subst">{table}</span> WHERE id = &lt;new_row_id&gt;&quot;</span>,
-    })
-    action_id = resp.json()[<span class="hljs-string">&quot;id&quot;</span>]
-
-    <span class="hljs-keyword">while</span> <span class="hljs-literal">True</span>:
-        status = requests.get(<span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>&quot;</span>, headers=HEADERS).json()
-        <span class="hljs-keyword">if</span> status[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;pending&quot;</span>:
-            <span class="hljs-keyword">break</span>
-        time.sleep(<span class="hljs-number">5</span>)
-
-    <span class="hljs-keyword">if</span> status[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;approved&quot;</span>:
-        <span class="hljs-keyword">return</span> {<span class="hljs-string">&quot;executed&quot;</span>: <span class="hljs-literal">False</span>, <span class="hljs-string">&quot;reason&quot;</span>: status[<span class="hljs-string">&quot;status&quot;</span>]}
-
-    row_id = db.insert(table, status[<span class="hljs-string">&quot;decision&quot;</span>][<span class="hljs-string">&quot;final_preview&quot;</span>])  <span class="hljs-comment"># your real insert</span>
-    requests.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>/result&quot;</span>, headers=HEADERS,
-                   json={<span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;executed&quot;</span>, <span class="hljs-string">&quot;payload&quot;</span>: {<span class="hljs-string">&quot;row_id&quot;</span>: row_id}})
-    <span class="hljs-keyword">return</span> {<span class="hljs-string">&quot;executed&quot;</span>: <span class="hljs-literal">True</span>, <span class="hljs-string">&quot;row_id&quot;</span>: row_id}</code></pre></div>
-<p>The agent only ever sees <code>guarded_db_write</code>. There is no <code>db.insert</code> in its tool list for it to call around the gate. That&#39;s the whole guardrail — not the polling loop, the withholding of the raw capability.</p>
+<p>This is the propose → approve → execute pattern — see <a href="the-propose-approve-execute-pattern">the propose-approve-execute pattern</a> for the mechanics and <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a> for the three-call integration over REST or MCP.</p>
+<div class="code-block"><span class="code-lang">text</span><pre><code class="hljs">Agent                          Gate                            Human
+  │                              │                                │
+  ├── propose action ───────────▶ stores it, notifies ──────────▶ inbox card
+  │                              │                                │
+  │                              │◀── approve / reject / edit ────┤
+  ├── read decision ─────────────┤                                │
+  │                              │                                │
+  └── execute (only if approved) │                                │</code></pre></div>
 <hr>
-<h2 id="where-this-breaks-down">Where this breaks down</h2>
-<p>A gate is only as strong as the narrowest path to the side effect. Two common leaks:</p>
+<h2 id="decision-points-that-shape-a-workflow">Decision points that shape a workflow</h2>
+<p>Four choices turn the generic pattern above into a workflow that fits your agent:</p>
 <ul>
-<li><strong>A second tool with the same power.</strong> If the agent also has raw shell access or a generic HTTP client tool, it can reimplement the write itself and skip <code>guarded_db_write</code> entirely. The guardrail has to be the <em>only</em> door, not one of several.</li>
-<li><strong>Credentials handed to the agent directly.</strong> If the database connection string or API key lives in the agent&#39;s environment and it can execute arbitrary code, no wrapper function matters — it can open the connection itself. Keep the real credential in the executor process, not in anything the model can read or execute against.</li>
+<li><strong>What to gate.</strong> Gate the actions that are hard to reverse or costly to get wrong — sends, spend, deploys, deletes — not everything the agent does. Gating read-only or fully reversible steps just adds latency for no safety gain.</li>
+<li><strong>Timeouts and expiry.</strong> A pending decision shouldn&#39;t wait forever, and an approved-too-late decision shouldn&#39;t execute against stale context. See <a href="handling-approval-timeouts-and-expiry-in-agents">handling approval timeouts and expiry in agents</a> for how long to set an action&#39;s expiry per kind of action.</li>
+<li><strong>Escalation and auto-decisions.</strong> Not every action needs a human every time. A rules engine can auto-approve low-stakes matches, auto-reject known-bad patterns, or route specific kinds to a named channel, so people only see what actually needs judgment — see <a href="rules">the rules engine</a>.</li>
+<li><strong>Audit trail.</strong> Once a decision is made, who made it and when needs to be recorded somewhere nobody can quietly edit afterward — see <a href="audit-trail-for-ai-agent-actions">building an audit trail for AI agent actions</a>.</li>
 </ul>
-<p>This is why &quot;add guardrails&quot; is really an architecture question before it&#39;s an API integration question: what capabilities does the agent&#39;s runtime actually expose, and is the gated function the sole path to each one?</p>
 <hr>
-<h2 id="guardrails-aren39t-a-workflow-engine">Guardrails aren&#39;t a workflow engine</h2>
-<p>Impri, which the code above uses, only stores the proposed action, notifies a human, and holds the decision — it doesn&#39;t interpret the row being written or branch on business logic. If you need conditional routing (route financial writes to one approver, content writes to another, auto-approve under a threshold) that&#39;s workflow logic your agent or an orchestrator like n8n should own; Impri is one gate you can call from inside it.</p>
-<p>For the three-call pattern in more detail, including MCP tool bindings so you don&#39;t hand-write the polling loop, see <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a>. If you&#39;re wiring this into LangChain, LangGraph, or a custom agent loop, <a href="integrations">the integrations doc</a> covers wrapping tool functions specifically. And if the guardrail should also cover an emergency stop — not just gating new actions but halting an agent mid-run — see <a href="add-a-kill-switch-to-your-ai-agent">adding a kill switch</a>.</p>
-<p>Next: <a href="quickstart">quickstart</a> to get an API key and push your first gated action in a few minutes.</p>
+<h2 id="approval-workflows-by-use-case">Approval workflows by use case</h2>
+<p>The pattern above is the same everywhere; what changes is what gets gated and what the reviewer needs to see. Pick the page closest to your agent:</p>
+<p><strong>Coding and infrastructure</strong></p>
+<ul>
+<li><a href="approve-ai-agent-github-actions-workflows">Approve AI agent GitHub Actions workflows</a> — gate a workflow file or dispatch an agent proposes before it runs in CI.</li>
+<li><a href="human-in-the-loop-ci-cd-ai-agents">Human-in-the-loop CI/CD for AI agents</a> — the broader pattern for gating build and deploy steps an agent triggers.</li>
+<li><a href="human-in-the-loop-for-ai-agent-dns-and-infra-changes">Human-in-the-loop for AI agent DNS and infra changes</a> — approval before an agent touches DNS records or infrastructure config.</li>
+<li><a href="approve-database-writes-from-an-ai-agent">Gate destructive database operations from an AI agent</a> — a human sees the actual statement before a write or schema change touches production.</li>
+<li><a href="how-to-get-human-approval-into-your-coding-agent">Get human approval into your coding agent</a> — wiring the gate into Claude Code, Cursor, Codex, or Windsurf specifically.</li>
+</ul>
+<p><strong>Communication and content</strong></p>
+<ul>
+<li><a href="human-approval-for-ai-social-media-management">Human approval for AI social media management</a> — review a post before it goes out under your account.</li>
+<li><a href="approve-ai-generated-content-before-publishing">Approve AI-generated content before it publishes</a> — the same gate applied to blog posts, docs, and marketing copy.</li>
+<li><a href="human-in-the-loop-ai-customer-support">Human-in-the-loop for AI customer support</a> — approve a support reply before it reaches a real customer.</li>
+</ul>
+<p><strong>Money and operations</strong></p>
+<ul>
+<li><a href="approval-workflow-for-ai-marketing-automation">Approval workflow for AI marketing automation</a> — sign-off on a campaign or ad spend change before it goes live.</li>
+<li><a href="approve-ai-agent-payments-and-charges">Approve AI agent payments and charges</a> — a human confirms the amount and recipient before money moves.</li>
+<li><a href="human-in-the-loop-for-ai-agent-incident-response">Human-in-the-loop for AI agent incident response</a> — approval on the remediation step an agent proposes during an incident, not on the diagnosis.</li>
+</ul>
+<p><strong>Background reading</strong></p>
+<ul>
+<li><a href="human-in-the-loop-explained">Human-in-the-loop, explained</a> — the concept without the implementation details.</li>
+<li><a href="hitl-tools-for-llm-agents-compared">HITL tools for LLM agents, compared</a> — how a dedicated approval gate differs from a workflow engine or a Slack bot you&#39;d build yourself.</li>
+</ul>
+<hr>
+<h2 id="how-impri-implements-this">How Impri implements this</h2>
+<p>Impri is the gate in the middle of that diagram, not the agent and not the execution step. An agent calls <code>POST /v1/actions</code> with a preview of what it wants to do; a human sees a card in a web, Slack, Discord, or Telegram inbox and approves, rejects, or edits it; the agent polls or receives a webhook and executes only on approval, then reports the outcome back. <a href="rules">Rules</a> can auto-decide routine matches before a human ever sees them, and every step — created, rule-applied, decided, executed — lands in an append-only <a href="audit-log">audit log</a>. Impri never executes the action itself and doesn&#39;t judge whether a decision was the right call; it holds the queue and the record. Start with <a href="quickstart">quickstart</a> for an API key, or <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a> for the full integration.</p>
 
   </main>
 
   <aside aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#quotguardrailsquot-usually-means-a-prompt-not-a-gate">&quot;Guardrails&quot; usually means a prompt, not a gate</a></li>
-<li class="ptoc-h2"><a href="#the-shape-of-a-structural-guardrail">The shape of a structural guardrail</a></li>
-<li class="ptoc-h2"><a href="#where-this-breaks-down">Where this breaks down</a></li>
-<li class="ptoc-h2"><a href="#guardrails-aren39t-a-workflow-engine">Guardrails aren't a workflow engine</a></li></ul>
+<ul><li class="ptoc-h2"><a href="#when-you-need-one">When you need one</a></li>
+<li class="ptoc-h2"><a href="#how-it-looks-in-practice">How it looks in practice</a></li>
+<li class="ptoc-h2"><a href="#decision-points-that-shape-a-workflow">Decision points that shape a workflow</a></li>
+<li class="ptoc-h2"><a href="#approval-workflows-by-use-case">Approval workflows by use case</a></li>
+<li class="ptoc-h2"><a href="#how-impri-implements-this">How Impri implements this</a></li></ul>
 </nav>
   </aside>
 </div>

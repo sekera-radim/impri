@@ -81,4 +81,4 @@ The pattern also isn't a workflow engine. It doesn't branch, schedule, or sequen
 
 ## Next step
 
-The [quickstart](quickstart.md) gets you an API key in a couple of minutes. If you're wiring this into an MCP-based agent instead of calling the REST API directly, [the MCP doc](mcp.md) shows the same three phases as three tool calls.
+The [quickstart](quickstart.md) gets you an API key in a couple of minutes. If you're wiring this into an MCP-based agent instead of calling the REST API directly, [the MCP doc](mcp.md) shows the same three phases as three tool calls. For the decisions that shape a full workflow around this pattern — what to gate, timeouts, escalation, audit — see [AI agent approval workflow](ai-agent-approval-workflow.md).

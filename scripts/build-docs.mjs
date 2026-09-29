@@ -30,6 +30,7 @@ const NAV = [
     icon: '⚡',
     pages: [
       { slug: 'quickstart',                              title: 'Quickstart' },
+      { slug: 'ai-agent-approval-workflow',               title: 'Approval workflow overview' },
       { slug: 'how-to-add-human-approval-to-an-ai-agent', title: 'Human approval pattern' },
       { slug: 'self-hosting',                            title: 'Self-hosting' },
       { slug: 'observability',                           title: 'Observability' },
