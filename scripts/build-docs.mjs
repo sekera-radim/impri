@@ -266,6 +266,26 @@ function extractDesc(html) {
   return truncateAtWord(text, 160);
 }
 
+/**
+ * Escape plain text for an HTML attribute, then re-truncate if entity
+ * expansion (`<` → `&lt;`, `"` → `&quot;`, …) pushed it past `max` chars.
+ * escHtml() alone can't guarantee the budget: a decoded description can sit
+ * at exactly 160 chars pre-escape and still land over 160 once `<base64url>`
+ * or a quoted phrase expands into multi-char entities — which is what Bing's
+ * SEO checker flags, since it measures the raw attribute content.
+ */
+function escAttrWithBudget(text, max) {
+  let plain = text;
+  let escaped = escHtml(plain);
+  while (escaped.length > max && plain.length > 0) {
+    // Shrink the plain text a bit more than the overshoot to account for
+    // further entities in the new tail, then retry.
+    plain = truncateAtWord(plain, Math.max(0, plain.length - (escaped.length - max) - 1));
+    escaped = escHtml(plain);
+  }
+  return escaped;
+}
+
 // ── Shared assets ─────────────────────────────────────────────────────────
 
 const FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E";
@@ -429,16 +449,23 @@ function renderDocPage({ slug, title, desc, section, contentHtml, sidebarHtml, p
     author:    { '@type': 'Organization', name: 'Impri', url: 'https://impri.dev' },
     publisher: { '@type': 'Organization', name: 'Impri', url: 'https://impri.dev' },
   });
+  // The <title>/og:title tag is "<H1> — Impri Docs": the H1 itself is the
+  // exact target search phrase (see scripts/seo/brief.md) and stays full
+  // length everywhere else (breadcrumb, JSON-LD headline, hub/llms.txt) —
+  // only this rendered tag gets truncated to Google/Bing's ~70-char budget.
+  const TITLE_SUFFIX = ' — Impri Docs';
+  const titleTag = escHtml(truncateAtWord(title, 70 - TITLE_SUFFIX.length)) + TITLE_SUFFIX;
+  const descAttr = escAttrWithBudget(desc, 160);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escHtml(title)} — Impri Docs</title>
-<meta name="description" content="${escHtml(desc)}">
+<title>${titleTag}</title>
+<meta name="description" content="${descAttr}">
 <meta name="theme-color" content="#06070d">
-<meta property="og:title" content="${escHtml(title)} — Impri Docs">
-<meta property="og:description" content="${escHtml(desc)}">
+<meta property="og:title" content="${titleTag}">
+<meta property="og:description" content="${descAttr}">
 <meta property="og:type" content="article">
 <meta property="og:url" content="${canonical}">
 <meta property="og:image" content="${OG_DOCS}">
