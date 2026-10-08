@@ -61,7 +61,7 @@ if [ "$(echo $STATUS | jq -r .status)" = "approved" ]; then
   BODY=$(echo $STATUS | jq -r '.decision.final_preview.body')
   post_dm_reply "$ACCOUNT" "$HANDLE" "$BODY"   # your platform call, wrapped so it can't run otherwise
   curl -s -X POST https://api.impri.dev/v1/actions/$ACTION_ID/result \
-    -H "Authorization: Bearer $IMPRI_API_KEY" -d '{"status": "executed"}'
+    -H "Authorization: Bearer $IMPRI_API_KEY" -H "Content-Type: application/json" -d '{"status": "executed"}'
 fi
 ```
 

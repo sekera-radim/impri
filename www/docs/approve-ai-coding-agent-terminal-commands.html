@@ -291,6 +291,7 @@ SAFE_PREFIXES = (<span class="hljs-string">&quot;ls&quot;</span>, <span class="h
 <p>Because the reviewer only sees a bare command string, give them the context that&#39;s normally in the agent&#39;s head. Set <code>idempotent: false</code> for anything with a side effect and describe the rollback in <code>undo</code> — both are optional fields on <code>POST /v1/actions</code> and show up directly on the approval card:</p>
 <div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -X POST https://api.impri.dev/v1/actions \
   -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
   -d <span class="hljs-string">&#x27;{
     &quot;kind&quot;: &quot;shell.execute&quot;,
     &quot;title&quot;: &quot;Run command: git push --force origin feature/cleanup&quot;,

@@ -58,6 +58,7 @@ is empty by default (no one can approve yet). Update it via the Impri UI
 ```bash
 curl -X PATCH https://api.impri.dev/v1/notification-channels/{channelId} \
   -H "Authorization: Bearer im_..." \
+  -H "Content-Type: application/json" \
   -d '{"config": {"allowed_approver_slack_user_ids": ["U0XXXXXXXX"]}}'
 ```
 

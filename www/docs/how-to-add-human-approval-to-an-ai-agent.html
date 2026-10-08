@@ -374,6 +374,7 @@ ACTION_ID=$(<span class="hljs-built_in">echo</span> <span class="hljs-variable">
 <div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Create with context hints</span>
 curl -X POST https://api.impri.dev/v1/actions \
   -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
   -d <span class="hljs-string">&#x27;{
     &quot;kind&quot;: &quot;record.create&quot;,
     &quot;title&quot;: &quot;Create customer record: Acme Corp&quot;,
@@ -385,6 +386,7 @@ curl -X POST https://api.impri.dev/v1/actions \
 <span class="hljs-comment"># Report result with receipt</span>
 curl -X POST https://api.impri.dev/v1/actions/<span class="hljs-variable">$ACTION_ID</span>/result \
   -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
   -d <span class="hljs-string">&#x27;{&quot;status&quot;: &quot;executed&quot;, &quot;payload&quot;: {&quot;customer_id&quot;: 99, &quot;url&quot;: &quot;https://app.example.com/customers/99&quot;}}&#x27;</span></code></pre></div>
 <hr>
 <h2 id="security-considerations">Security considerations</h2>

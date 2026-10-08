@@ -240,6 +240,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <p>The fourth option is a service built specifically for this loop: agent proposes, human decides, agent executes only on approval — nothing else. Impri is this option. It exists so you don&#39;t build the table, the Slack bot, the diff view, and the audit log yourself:</p>
 <div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -X POST https://api.impri.dev/v1/actions \
   -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
   -d <span class="hljs-string">&#x27;{
     &quot;kind&quot;: &quot;email.send&quot;,
     &quot;title&quot;: &quot;Reply to support ticket #4821&quot;,

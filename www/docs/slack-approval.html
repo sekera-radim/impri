@@ -250,6 +250,7 @@ is empty by default (no one can approve yet). Update it via the Impri UI
 (edit the channel and add Slack user IDs) or via the API:</p>
 <div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -X PATCH https://api.impri.dev/v1/notification-channels/{channelId} \
   -H <span class="hljs-string">&quot;Authorization: Bearer im_...&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
   -d <span class="hljs-string">&#x27;{&quot;config&quot;: {&quot;allowed_approver_slack_user_ids&quot;: [&quot;U0XXXXXXXX&quot;]}}&#x27;</span></code></pre></div>
 <p><strong>Self-hosted Impri</strong> does not provide a shared Slack app — follow the
 <a href="#setup-one-time-15-minutes">manual setup</a> below to create your own.</p>

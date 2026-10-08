@@ -58,6 +58,7 @@ The fourth option is a service built specifically for this loop: agent proposes,
 ```bash
 curl -X POST https://api.impri.dev/v1/actions \
   -H "Authorization: Bearer $IMPRI_API_KEY" \
+  -H "Content-Type: application/json" \
   -d '{
     "kind": "email.send",
     "title": "Reply to support ticket #4821",

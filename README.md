@@ -107,14 +107,15 @@ Or in plain REST, the same three calls:
 ```bash
 ACTION=$(curl -s -X POST https://api.impri.dev/v1/actions \
   -H "Authorization: Bearer $IMPRI_API_KEY" \
+  -H "Content-Type: application/json" \
   -d '{"kind":"email.send","title":"Outreach: Acme","preview":{"format":"markdown","body":"Hi Sarah, ..."}}')
-ID=$(echo "$ACTION" | jq -r .action_id)
+ID=$(echo "$ACTION" | jq -r .id)
 
 # poll (or long-poll) until a human decides
 DECISION=$(curl -s "https://api.impri.dev/v1/actions/$ID" -H "Authorization: Bearer $IMPRI_API_KEY")
 
 # only now, and only if approved
-[ "$(echo "$DECISION" | jq -r .status)" = "approved" ] && send_email "$(echo "$DECISION" | jq -r .preview.body)"
+[ "$(echo "$DECISION" | jq -r .status)" = "approved" ] && send_email "$(echo "$DECISION" | jq -r '.decision.final_preview.body // .preview.body')"
 ```
 
 The human doesn't have to be staring at a dashboard: an action can notify Slack, Discord, Telegram, ntfy, email, or a generic webhook, and the reviewer can edit the draft before approving — the agent receives that edited text back.

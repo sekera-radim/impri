@@ -207,6 +207,7 @@ In your agent, treat `expired` the same as `rejected` — do not execute and opt
 # Create with context hints
 curl -X POST https://api.impri.dev/v1/actions \
   -H "Authorization: Bearer $IMPRI_API_KEY" \
+  -H "Content-Type: application/json" \
   -d '{
     "kind": "record.create",
     "title": "Create customer record: Acme Corp",
@@ -218,6 +219,7 @@ curl -X POST https://api.impri.dev/v1/actions \
 # Report result with receipt
 curl -X POST https://api.impri.dev/v1/actions/$ACTION_ID/result \
   -H "Authorization: Bearer $IMPRI_API_KEY" \
+  -H "Content-Type: application/json" \
   -d '{"status": "executed", "payload": {"customer_id": 99, "url": "https://app.example.com/customers/99"}}'
 ```
 

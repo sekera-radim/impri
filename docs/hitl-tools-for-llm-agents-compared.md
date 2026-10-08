@@ -58,6 +58,7 @@ The fourth category is software built specifically for the agent-proposes → hu
 # Push a proposed action from any agent, any framework
 curl -X POST https://api.impri.dev/v1/actions \
   -H "Authorization: Bearer $IMPRI_API_KEY" \
+  -H "Content-Type: application/json" \
   -d '{
     "kind": "social.post",
     "title": "LinkedIn post: Q3 product update",

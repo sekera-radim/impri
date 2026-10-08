@@ -269,6 +269,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Push a proposed action from any agent, any framework</span>
 curl -X POST https://api.impri.dev/v1/actions \
   -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
   -d <span class="hljs-string">&#x27;{
     &quot;kind&quot;: &quot;social.post&quot;,
     &quot;title&quot;: &quot;LinkedIn post: Q3 product update&quot;,

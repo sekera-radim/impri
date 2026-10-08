@@ -32,6 +32,7 @@ Impri replaces the receiver you'd maintain with three calls your agent already n
 ```bash
 curl -s -X POST https://api.impri.dev/v1/actions \
   -H "Authorization: Bearer $IMPRI_API_KEY" \
+  -H "Content-Type: application/json" \
   -d '{
     "kind": "slack.message.send",
     "title": "Reply in #support: refund request from customer #4821",

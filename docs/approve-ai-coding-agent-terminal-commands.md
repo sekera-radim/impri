@@ -87,6 +87,7 @@ Because the reviewer only sees a bare command string, give them the context that
 ```bash
 curl -X POST https://api.impri.dev/v1/actions \
   -H "Authorization: Bearer $IMPRI_API_KEY" \
+  -H "Content-Type: application/json" \
   -d '{
     "kind": "shell.execute",
     "title": "Run command: git push --force origin feature/cleanup",

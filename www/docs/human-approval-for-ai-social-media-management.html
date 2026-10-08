@@ -245,7 +245,7 @@ pre code.hljs{display:block;overflow-x:auto}
   BODY=$(<span class="hljs-built_in">echo</span> <span class="hljs-variable">$STATUS</span> | jq -r <span class="hljs-string">&#x27;.decision.final_preview.body&#x27;</span>)
   post_dm_reply <span class="hljs-string">&quot;<span class="hljs-variable">$ACCOUNT</span>&quot;</span> <span class="hljs-string">&quot;<span class="hljs-variable">$HANDLE</span>&quot;</span> <span class="hljs-string">&quot;<span class="hljs-variable">$BODY</span>&quot;</span>   <span class="hljs-comment"># your platform call, wrapped so it can&#x27;t run otherwise</span>
   curl -s -X POST https://api.impri.dev/v1/actions/<span class="hljs-variable">$ACTION_ID</span>/result \
-    -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> -d <span class="hljs-string">&#x27;{&quot;status&quot;: &quot;executed&quot;}&#x27;</span>
+    -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> -d <span class="hljs-string">&#x27;{&quot;status&quot;: &quot;executed&quot;}&#x27;</span>
 <span class="hljs-keyword">fi</span></code></pre></div>
 <p>Nothing distinguishes a bulk-approved reply from an individually-approved one at this point — the agent just reads the same <code>status</code> and <code>final_preview</code> fields either way.</p>
 <h2 id="what-this-doesn39t-cover">What this doesn&#39;t cover</h2>
