@@ -303,7 +303,6 @@ section { position: relative; }
 /* ---------- responsive ---------- */
 @media (max-width: 900px) {
   .hero-grid, .code-wrap { grid-template-columns: 1fr; }
-  .card-stage { order: -1; }
   .steps { grid-template-columns: repeat(2, 1fr); }
   .features { grid-template-columns: 1fr; }
   .pricing { grid-template-columns: repeat(2, 1fr); }
@@ -403,3 +402,25 @@ section { position: relative; }
 }
 
 @media (max-width: 900px) { .features-3 { grid-template-columns: 1fr; } }
+
+/* ---------- integrations strip ---------- */
+.integrations { padding: 0 0 86px; }
+.integ-label {
+  text-align: center; font-size: 12px; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--faint); margin: 22px 0 12px;
+}
+.integ-label:first-child { margin-top: 0; }
+.integ-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.integ-chip {
+  display: inline-flex; align-items: center; padding: 8px 16px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+  font-size: 13.5px; font-weight: 600; white-space: nowrap;
+}
+.integ-more { display: block; text-align: center; margin-top: 20px; font-size: 13.5px; color: #a5b4fc; }
+.integ-more:hover { color: #c7cbff; }
+
+/* ---------- 3-up loop (how it works) ---------- */
+.steps-3 { grid-template-columns: repeat(3, 1fr); }
+.loop-note { text-align: center; color: var(--faint); font-size: 13.5px; margin-top: 30px; }
+.loop-note a { color: #a5b4fc; }
+@media (max-width: 900px) { .steps-3 { grid-template-columns: 1fr; } }

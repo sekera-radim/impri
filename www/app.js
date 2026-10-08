@@ -100,16 +100,18 @@
   const LINES = [
     '<span class="tok-flag">$</span> <span class="tok-cmd">curl</span> -X POST <span class="tok-url">https://api.impri.dev/v1/actions</span> \\',
     '    -H <span class="tok-str">"Authorization: Bearer im_…"</span> \\',
+    '    -H <span class="tok-str">"Content-Type: application/json"</span> \\',
     '    -d <span class="tok-punc">\'{</span>',
-    '      <span class="tok-key">"kind"</span><span class="tok-punc">:</span> <span class="tok-str">"reddit.comment"</span><span class="tok-punc">,</span>',
-    '      <span class="tok-key">"title"</span><span class="tok-punc">:</span> <span class="tok-str">"Reply: loan-option calls"</span><span class="tok-punc">,</span>',
-    '      <span class="tok-key">"preview"</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> <span class="tok-key">"body"</span><span class="tok-punc">:</span> <span class="tok-str">"blocking wont do much…"</span> <span class="tok-punc">},</span>',
-    '      <span class="tok-key">"editable"</span><span class="tok-punc">:</span> <span class="tok-punc">[</span><span class="tok-str">"preview.body"</span><span class="tok-punc">]</span>',
+    '      <span class="tok-key">"kind"</span><span class="tok-punc">:</span> <span class="tok-str">"payment.refund"</span><span class="tok-punc">,</span>',
+    '      <span class="tok-key">"title"</span><span class="tok-punc">:</span> <span class="tok-str">"Refund $84.00 — order #10432"</span><span class="tok-punc">,</span>',
+    '      <span class="tok-key">"preview"</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> <span class="tok-key">"body"</span><span class="tok-punc">:</span> <span class="tok-str">"Item arrived cracked, ticket #6021"</span> <span class="tok-punc">},</span>',
+    '      <span class="tok-key">"payload"</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> <span class="tok-key">"order_id"</span><span class="tok-punc">:</span> <span class="tok-str">"10432"</span><span class="tok-punc">,</span> <span class="tok-key">"amount_cents"</span><span class="tok-punc">:</span> <span class="tok-str">8400</span> <span class="tok-punc">},</span>',
+    '      <span class="tok-key">"editable"</span><span class="tok-punc">:</span> <span class="tok-punc">[</span><span class="tok-str">"payload.amount_cents"</span><span class="tok-punc">]</span>',
     '    <span class="tok-punc">}\'</span>',
     '',
-    '<span class="tok-ok">→ 201</span> <span class="tok-punc">{</span> <span class="tok-key">"id"</span><span class="tok-punc">:</span> <span class="tok-str">"act_9f3c"</span><span class="tok-punc">,</span> <span class="tok-key">"status"</span><span class="tok-punc">:</span> <span class="tok-str">"pending"</span> <span class="tok-punc">}</span>',
-    '<span class="tok-flag"># …human approves in the inbox…</span>',
-    '<span class="tok-ok">→ approved</span>  <span class="tok-flag">agent executes ✓</span>',
+    '<span class="tok-ok">→ 201</span> <span class="tok-punc">{</span> <span class="tok-key">"id"</span><span class="tok-punc">:</span> <span class="tok-str">"act_5jf8"</span><span class="tok-punc">,</span> <span class="tok-key">"status"</span><span class="tok-punc">:</span> <span class="tok-str">"pending"</span> <span class="tok-punc">}</span>',
+    '<span class="tok-flag"># …human approves the amount in the inbox…</span>',
+    '<span class="tok-ok">→ approved</span>  <span class="tok-flag">agent executes the refund ✓</span>',
   ];
   function typeTerminal() {
     if (!term) return;

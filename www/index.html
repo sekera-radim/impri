@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Impri — The imprimatur for your AI agents</title>
-  <meta name="description" content="Watchers watch the world. The approval inbox holds your AI agent's hands until a human says yes — MCP + REST, self-hostable, open-core." />
+  <title>Impri — Human Approval for AI Agents</title>
+  <meta name="description" content="Impri lets your AI agent propose an action and a human approve it before it executes. MCP and REST API, 100 free approvals a month, open-core and self-hostable." />
   <meta name="theme-color" content="#06070d" />
-  <meta property="og:title" content="Impri — The imprimatur for your AI agents" />
-  <meta property="og:description" content="Human approval for AI agents. Watchers + approval inbox. MCP + REST, self-hostable, open-core." />
+  <meta property="og:title" content="Impri — Human Approval for AI Agents" />
+  <meta property="og:description" content="Your AI agent proposes a refund, an email, a deploy. A human approves, edits or rejects it. Only then does it execute. MCP + REST API, self-hostable, open-core." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://impri.dev/" />
   <meta property="og:image" content="https://impri.dev/assets/og/og-default.png" />
@@ -24,7 +24,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/site.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=3" />
+  <link rel="stylesheet" href="styles.css?v=4" />
 </head>
 <body>
   <div class="bg-aurora"></div>
@@ -44,12 +44,12 @@
       </a>
       <div class="nav-links">
         <a class="link" href="#how">How it works</a>
-        <a class="link" href="#why">Why Impri</a>
+        <a class="link" href="#why">Why it's safe</a>
         <a class="link" href="/use-cases">Use cases</a>
         <a class="link" href="/agents">Agents</a>
         <a class="link" href="#pricing">Pricing</a>
         <a class="link" href="/docs">Docs</a>
-        <a class="btn btn-primary btn-sm magnetic" href="https://app.impri.dev/?signup=1">Get started</a>
+        <a class="btn btn-primary btn-sm magnetic" href="https://app.impri.dev/?signup=1">Create free workspace</a>
       </div>
     </div>
   </nav>
@@ -58,25 +58,34 @@
   <header class="hero" id="top">
     <div class="wrap hero-grid">
       <div>
-        <span class="eyebrow reveal">Human-in-the-loop for AI agents</span>
+        <span class="eyebrow reveal">Human sign-off for AI agents</span>
         <h1 class="reveal" data-delay="1" style="margin-top:18px">
-          The <span class="gradient-text">imprimatur</span> for your AI&nbsp;agents.
+          Let your AI agent act — <span class="gradient-text">only once you say yes.</span>
         </h1>
         <p class="lede reveal" data-delay="2">
-          Watchers watch the world. The approval inbox holds your agent's hands
-          until a human says yes — then it executes. Nothing ships without a signature.
+          Impri is the approval inbox between your agent and the real world. Your agent proposes
+          a refund, an email, a deploy — a human approves, edits or rejects it from the web inbox,
+          Slack, Telegram, Discord, email or their phone, and only then does it execute. Think of
+          it as the imprimatur your agent needs before anything ships.
         </p>
         <div class="hero-cta reveal" data-delay="3">
           <a class="btn btn-primary magnetic" href="https://app.impri.dev/?signup=1">
-            Get started free
+            Create free workspace
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </a>
-          <a class="btn btn-ghost magnetic" href="https://gitlab.com/sekera.radim/impri">Self-host instead</a>
+          <a class="btn btn-ghost magnetic" href="#demo">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M10 8.5l6 3.5-6 3.5v-7z" fill="currentColor"/></svg>
+            Watch the 27-second demo
+          </a>
         </div>
+        <p class="reveal" data-delay="3" style="margin-top:14px;color:var(--faint);font-size:13.5px">
+          Free: 100 approvals a month · no card · no email ·
+          <a href="https://gitlab.com/sekera.radim/impri" style="color:var(--faint);text-decoration:underline">self-host instead</a>
+        </p>
         <div class="hero-meta reveal" data-delay="4">
-          <span><span class="dot"></span> Self-host in 5 minutes</span>
-          <span><span class="dot"></span> MCP + REST</span>
+          <span><span class="dot"></span> MCP + REST API</span>
           <span><span class="dot"></span> Open-core, MIT</span>
+          <span><span class="dot"></span> Self-host in 5 minutes</span>
         </div>
       </div>
 
@@ -89,13 +98,13 @@
             <path d="M36 51l10 10 20-24" stroke="#34d399" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
           <div class="ac-head">
-            <span class="ac-chip">reddit.comment</span>
-            <span style="color:var(--faint);font-size:12px;font-family:var(--mono)">act_9f3c…</span>
+            <span class="ac-chip">payment.refund</span>
+            <span style="color:var(--faint);font-size:12px;font-family:var(--mono)">act_5jf8…</span>
           </div>
-          <div class="ac-title">Reply: constant loan-option calls</div>
+          <div class="ac-title">Refund $84.00 — order #10432</div>
           <div class="ac-body">
-            blocking wont do much here since they <b>spoof a new number</b> every time,
-            but the call screening you found is exactly the right tool for this…
+            Full refund requested — item arrived <b>cracked</b>, photo attached to support ticket
+            #6021. Within policy; amount is editable before approving.
           </div>
           <div class="ac-foot">
             <span class="status-pill status-pending" id="pill">
@@ -113,7 +122,7 @@
       </div>
     </div>
 
-    <div class="wrap hero-media reveal" data-delay="5">
+    <div class="wrap hero-media reveal" data-delay="5" id="demo">
       <video class="hero-loop" autoplay muted loop playsinline preload="metadata"
         poster="/assets/demo/killer-demo-poster.jpg"
         aria-label="Impri in 27 seconds: an agent proposes an action, it lands in the inbox, a human approves it, the agent executes.">
@@ -126,6 +135,34 @@
       </a>
     </div>
   </header>
+
+  <!-- INTEGRATIONS -->
+  <section class="integrations">
+    <div class="wrap">
+      <p class="integ-label">Wire it into your agent</p>
+      <div class="integ-row">
+        <span class="integ-chip">Claude Code</span>
+        <span class="integ-chip">Codex CLI</span>
+        <span class="integ-chip">Cursor</span>
+        <span class="integ-chip">Windsurf</span>
+        <span class="integ-chip">Claude Agent SDK</span>
+        <span class="integ-chip">n8n</span>
+        <span class="integ-chip">MCP server</span>
+        <span class="integ-chip">REST API</span>
+      </div>
+      <p class="integ-label">Get notified wherever you already are</p>
+      <div class="integ-row">
+        <span class="integ-chip">Slack</span>
+        <span class="integ-chip">Discord</span>
+        <span class="integ-chip">Telegram</span>
+        <span class="integ-chip">Email</span>
+        <span class="integ-chip">ntfy</span>
+        <span class="integ-chip">Webhooks</span>
+        <span class="integ-chip">Web push</span>
+      </div>
+      <a class="integ-more" href="/agents">See every agent install guide →</a>
+    </div>
+  </section>
 
   <!-- SCREENSHOTS -->
   <div class="shots-strip">
@@ -148,65 +185,60 @@
     <div class="wrap">
       <div class="section-head reveal">
         <span class="eyebrow">The loop</span>
-        <h2>Sense the world. Propose. Get a human yes. <span class="gradient-text">Then act.</span></h2>
-        <p>Impri never executes anything itself. It holds the queue and the signatures — your agent does the work, once a person approves.</p>
+        <h2>Propose. Approve or edit. <span class="gradient-text">Execute.</span></h2>
+        <p>Impri never executes anything itself. It holds the queue and the decision — your agent proposes, a human decides, your agent executes only on approve.</p>
       </div>
-      <div class="steps">
+      <div class="steps steps-3">
         <div class="step reveal" data-delay="1">
           <div class="num">01</div>
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
-          <h3>Watch</h3>
-          <p>Watchers poll RSS, Reddit and page changes, score the signal and drop the noise.</p>
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <h3>Propose</h3>
+          <p>Your agent POSTs an action with a preview — a refund, an email, a deploy, a publish — before it does anything.</p>
         </div>
         <div class="step reveal" data-delay="2">
           <div class="num">02</div>
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
-          <h3>Propose</h3>
-          <p>Your agent POSTs an action with a preview — a draft reply, an email, a publish.</p>
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>Approve or edit</h3>
+          <p>A human approves, edits the draft, or rejects it — from the web inbox, Slack, Telegram, Discord, email or their phone.</p>
         </div>
         <div class="step reveal" data-delay="3">
           <div class="num">03</div>
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <h3>Approve</h3>
-          <p>A human approves, rejects or edits the draft — from the web inbox or their phone.</p>
-        </div>
-        <div class="step reveal" data-delay="4">
-          <div class="num">04</div>
           <div class="ico"><svg viewBox="0 0 24 24" fill="none"><path d="M13 3L4 14h7l-1 7 9-11h-7l1-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <h3>Execute</h3>
-          <p>The decision returns via webhook or polling. Your agent executes — never before.</p>
+          <p>The decision returns via webhook or polling. Your agent executes the approved (possibly edited) version — never the original draft.</p>
         </div>
       </div>
+      <p class="loop-note">Optional: a <a href="/docs/watcher-presets">watcher</a> can kick off step one automatically by polling RSS, Reddit or a page for changes.</p>
     </div>
   </section>
 
-  <!-- WHY -->
+  <!-- WHY IT'S SAFE -->
   <section class="section" id="why">
     <div class="wrap">
       <div class="section-head reveal">
-        <span class="eyebrow">Why Impri</span>
+        <span class="eyebrow">Why it's safe</span>
         <h2>Built as a safety layer, not a bot.</h2>
       </div>
       <div class="features">
         <div class="feature reveal" data-delay="1">
           <div class="fico"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <h3>Human-in-the-loop by design</h3>
-          <p>Fail-closed: on any doubt, don't execute. Edit-before-approve with a signed diff. A decision is immutable and audited.</p>
+          <h3>Fail-closed by default</h3>
+          <p>Pending and expired actions never execute. The code path that sends the email or issues the refund is unreachable until an explicit human approve comes back.</p>
         </div>
         <div class="feature reveal" data-delay="2">
-          <div class="fico"><svg viewBox="0 0 24 24" fill="none"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M14 6l-4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <h3>Agent-first API</h3>
-          <p>MCP tools and a curl-friendly REST API. Idempotent, versioned, with clear failure states. Quickstart in five lines.</p>
+          <div class="fico"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
+          <h3>Edit, don't just reject</h3>
+          <p>A reviewer can tweak the draft before approving. The diff against the original ships inside the same signed payload your agent already receives.</p>
         </div>
         <div class="feature reveal" data-delay="3">
-          <div class="fico"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="12" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
-          <h3>Open-core, self-hostable</h3>
-          <p>Run the full core for free with <code style="font-family:var(--mono);color:#c7cbff">docker compose up</code> and SQLite. No license, no data hostage, full export.</p>
+          <div class="fico"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="2" width="16" height="20" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 7h8M8 11h8M8 15h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <h3>Immutable audit trail</h3>
+          <p>Every decision is append-only — no update or delete route exists for an audit row. GDPR erase leaves a tombstone showing an erasure happened, not a gap.</p>
         </div>
         <div class="feature reveal" data-delay="4">
-          <div class="fico"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <h3>Fair pricing</h3>
-          <p>A free tier you can actually use, no card. Paid tiers cheaper than the hour they save you each month. Security features on every tier.</p>
+          <div class="fico"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <h3>Signed webhooks</h3>
+          <p>Every decision webhook carries an HMAC-SHA256 signature, timestamp and nonce — verify it before you trust the payload, or just poll instead.</p>
         </div>
       </div>
     </div>
@@ -228,8 +260,65 @@
       </div>
       <div class="terminal reveal" data-delay="1">
         <div class="term-bar"><i></i><i></i><i></i><span class="term-title">agent — bash</span></div>
-        <pre id="term"></pre>
+        <pre id="term"><span class="tok-flag">$</span> <span class="tok-cmd">curl</span> -X POST <span class="tok-url">https://api.impri.dev/v1/actions</span> \
+    -H <span class="tok-str">"Authorization: Bearer im_…"</span> \
+    -H <span class="tok-str">"Content-Type: application/json"</span> \
+    -d <span class="tok-punc">'{</span>
+      <span class="tok-key">"kind"</span><span class="tok-punc">:</span> <span class="tok-str">"payment.refund"</span><span class="tok-punc">,</span>
+      <span class="tok-key">"title"</span><span class="tok-punc">:</span> <span class="tok-str">"Refund $84.00 — order #10432"</span><span class="tok-punc">,</span>
+      <span class="tok-key">"preview"</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> <span class="tok-key">"body"</span><span class="tok-punc">:</span> <span class="tok-str">"Item arrived cracked, ticket #6021"</span> <span class="tok-punc">},</span>
+      <span class="tok-key">"payload"</span><span class="tok-punc">:</span> <span class="tok-punc">{</span> <span class="tok-key">"order_id"</span><span class="tok-punc">:</span> <span class="tok-str">"10432"</span><span class="tok-punc">,</span> <span class="tok-key">"amount_cents"</span><span class="tok-punc">:</span> <span class="tok-str">8400</span> <span class="tok-punc">},</span>
+      <span class="tok-key">"editable"</span><span class="tok-punc">:</span> <span class="tok-punc">[</span><span class="tok-str">"payload.amount_cents"</span><span class="tok-punc">]</span>
+    <span class="tok-punc">}'</span>
+
+<span class="tok-ok">→ 201</span> <span class="tok-punc">{</span> <span class="tok-key">"id"</span><span class="tok-punc">:</span> <span class="tok-str">"act_5jf8"</span><span class="tok-punc">,</span> <span class="tok-key">"status"</span><span class="tok-punc">:</span> <span class="tok-str">"pending"</span> <span class="tok-punc">}</span>
+<span class="tok-flag"># …human approves the amount in the inbox…</span>
+<span class="tok-ok">→ approved</span>  <span class="tok-flag">agent executes the refund ✓</span></pre>
       </div>
+    </div>
+  </section>
+
+  <!-- USE CASES -->
+  <section class="section" id="use-cases">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">Use cases</span>
+        <h2>What people gate behind <span class="gradient-text">Impri.</span></h2>
+        <p>Six places where a human decision belongs between an AI agent and a real-world side effect.</p>
+      </div>
+      <div class="features features-3">
+        <a class="feature uc-card reveal" data-delay="1" href="/use-cases/refunds-and-payments">
+          <h3>Approve refunds and charges an AI support agent wants to issue</h3>
+          <p>Require human sign-off before an AI support or billing agent issues a refund or charge, with the amount and reason visible in the approval card.</p>
+          <span class="uc-more">Read more →</span>
+        </a>
+        <a class="feature uc-card reveal" data-delay="2" href="/use-cases/outbound-email-and-messages">
+          <h3>Approve emails, Slack and SMS an AI agent wants to send</h3>
+          <p>Hold every outbound email, Slack message, or SMS an AI agent drafts for a human to read and approve before it reaches a real inbox.</p>
+          <span class="uc-more">Read more →</span>
+        </a>
+        <a class="feature uc-card reveal" data-delay="3" href="/use-cases/overnight-coding-agent">
+          <h3>Let a coding agent run overnight, approve from your phone</h3>
+          <p>Kick off a long coding agent run before bed, gate every risky step behind Impri, and approve or reject each one from your phone in the morning.</p>
+          <span class="uc-more">Read more →</span>
+        </a>
+        <a class="feature uc-card reveal" data-delay="1" href="/use-cases/deploy-and-infra-changes">
+          <h3>Human approval before an AI agent deploys or changes infra</h3>
+          <p>Gate deploys, Terraform applies, and other infrastructure changes an AI agent proposes behind a human decision, without slowing down everything else it does.</p>
+          <span class="uc-more">Read more →</span>
+        </a>
+        <a class="feature uc-card reveal" data-delay="2" href="/use-cases/destructive-database-ops">
+          <h3>Gate destructive database operations from an AI agent</h3>
+          <p>Put human approval in front of every INSERT, UPDATE, DELETE or schema change a text-to-SQL or coding agent generates, before it touches production.</p>
+          <span class="uc-more">Read more →</span>
+        </a>
+        <a class="feature uc-card reveal" data-delay="3" href="/use-cases/content-publishing">
+          <h3>Approve AI-generated content before it publishes</h3>
+          <p>Put a human review step in front of AI-drafted blog posts, social media, and marketing copy before it goes live, without slowing down the drafting itself.</p>
+          <span class="uc-more">Read more →</span>
+        </a>
+      </div>
+      <a class="integ-more" href="/use-cases" style="margin-top:36px">See all use cases →</a>
     </div>
   </section>
 
@@ -238,43 +327,67 @@
     <div class="wrap">
       <div class="section-head reveal" style="max-width:720px">
         <span class="eyebrow">Pricing</span>
-        <h2>Start free. <span class="gradient-text">Pay only for the hosted comfort.</span></h2>
+        <h2>100 free approvals a month. <span class="gradient-text">Scale when you need to.</span></h2>
       </div>
       <div class="pricing">
         <div class="price reveal" data-delay="1">
           <div class="plan">Free</div>
           <div class="amt">$0</div>
           <ul>
-            <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>3 watchers</li>
             <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>100 approvals / month</li>
-            <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>No card required</li>
+            <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>3 watchers (optional)</li>
+            <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>No card, no email</li>
           </ul>
-          <a class="btn btn-ghost btn-sm magnetic" href="https://app.impri.dev/?signup=1" style="margin-top:20px;justify-content:center">Get started →</a>
+          <a class="btn btn-ghost btn-sm magnetic" href="https://app.impri.dev/?signup=1" style="margin-top:20px;justify-content:center">Create free workspace →</a>
         </div>
         <div class="price pop reveal" data-delay="2">
           <div class="tag">Most popular</div>
           <div class="plan">Indie</div>
           <div class="amt">$9<span> / mo</span></div>
           <ul>
-            <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>20 watchers</li>
             <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>2,000 approvals / month</li>
+            <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>20 watchers (optional)</li>
             <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Checks every 5 minutes</li>
           </ul>
-          <a class="btn btn-primary btn-sm magnetic" href="https://app.impri.dev/?signup=1" style="margin-top:20px;justify-content:center">Get started →</a>
+          <a class="btn btn-primary btn-sm magnetic" href="https://app.impri.dev/?signup=1" style="margin-top:20px;justify-content:center">Create free workspace →</a>
         </div>
         <div class="price reveal" data-delay="3">
           <div class="plan">Team</div>
           <div class="amt">$29<span> / mo</span></div>
           <ul>
-            <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Unlimited watchers</li>
             <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Unlimited approvals</li>
+            <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Unlimited watchers (optional)</li>
             <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Checks every minute</li>
           </ul>
-          <a class="btn btn-ghost btn-sm magnetic" href="https://app.impri.dev/?signup=1" style="margin-top:20px;justify-content:center">Get started →</a>
+          <a class="btn btn-ghost btn-sm magnetic" href="https://app.impri.dev/?signup=1" style="margin-top:20px;justify-content:center">Create free workspace →</a>
         </div>
       </div>
       <p class="price-note">Signed webhooks, full data export, and email / ntfy / push notifications are on every tier — security is never a paid add-on.</p>
-      <p class="price-note">Rather run it yourself? The full core is MIT and free to self-host — <a href="/docs/self-hosting">self-hosting guide</a>.</p>
+    </div>
+  </section>
+
+  <!-- OPEN SOURCE / SELF-HOST -->
+  <section class="section" id="self-host">
+    <div class="wrap code-wrap">
+      <div class="reveal">
+        <span class="eyebrow">Open source</span>
+        <h2 style="font-size:clamp(28px,3.6vw,40px);margin-top:14px">MIT, self-hostable, <span class="gradient-text">no lock-in.</span></h2>
+        <p style="color:var(--muted);margin-top:16px;font-size:16px">
+          The full core is MIT-licensed and free to run yourself — no watcher limit, no approval
+          quota, no telemetry. Same API surface as the hosted cloud, just a different base URL.
+        </p>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:22px">
+          <a class="btn btn-ghost magnetic" href="https://gitlab.com/sekera.radim/impri">Self-host instead</a>
+          <a class="btn btn-ghost magnetic" href="/docs/self-hosting">Self-hosting guide →</a>
+        </div>
+      </div>
+      <div class="terminal reveal" data-delay="1">
+        <div class="term-bar"><i></i><i></i><i></i><span class="term-title">self-host — bash</span></div>
+        <pre><span class="tok-flag">$</span> <span class="tok-cmd">git</span> clone <span class="tok-url">https://gitlab.com/sekera.radim/impri.git</span>
+<span class="tok-flag">$</span> <span class="tok-cmd">cd</span> impri
+<span class="tok-flag">$</span> <span class="tok-cmd">docker</span> compose up -d
+<span class="tok-flag"># API on :8484, web inbox on :8080 — bootstrap key printed to the server log</span></pre>
+      </div>
     </div>
   </section>
 
@@ -282,9 +395,9 @@
   <section class="cta-band">
     <div class="wrap reveal">
       <h2>Give your agent hands — <span class="gradient-text">and a conscience.</span></h2>
-      <p>Wire the MCP server into your agent today, and keep a human in the loop.</p>
+      <p>Wire the MCP server or REST API into your agent today, and keep a human in the loop.</p>
       <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
-        <a class="btn btn-primary magnetic" href="https://app.impri.dev/?signup=1">Get started free</a>
+        <a class="btn btn-primary magnetic" href="https://app.impri.dev/?signup=1">Create free workspace</a>
         <a class="btn btn-ghost magnetic" href="https://gitlab.com/sekera.radim/impri">Self-host instead</a>
       </div>
     </div>
@@ -312,6 +425,6 @@
     <div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>. Also by the same maker: <a href="https://briefgate.dev/?utm_source=impri.dev&amp;utm_medium=referral" style="color:inherit">BriefGate</a> — client intake for agencies and AI agents.</span></div>
   </footer>
 
-  <script src="app.js" defer></script>
+  <script src="app.js?v=2" defer></script>
 </body>
 </html>
