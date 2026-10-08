@@ -34,7 +34,7 @@ const WWW = join(ROOT, 'www');
 const ORIGIN = 'https://impri.dev';
 const SHOTS_DIR = join(WWW, 'assets', 'screens');
 const OG_DEFAULT = `${ORIGIN}/assets/og/og-default.png`;
-const SIGNUP = 'https://app.impri.dev';
+const SIGNUP = 'https://app.impri.dev/?signup=1';
 const GITLAB = 'https://gitlab.com/sekera.radim/impri';
 
 const escHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

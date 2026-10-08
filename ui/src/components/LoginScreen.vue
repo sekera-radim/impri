@@ -8,7 +8,47 @@
             <div class="text-body-2 text-medium-emphasis">Approval Inbox</div>
           </v-card-title>
 
-          <v-card-text class="pa-6">
+          <v-card-text v-if="mode === 'signup'" class="pa-6">
+            <div class="text-h6 font-weight-bold mb-2">Create your free workspace</div>
+            <p class="text-body-2 text-medium-emphasis mb-4">
+              Impri holds your agent's risky actions until a human approves them.
+              The free plan has 3 watchers and 100 approvals a month — no card, no email.
+            </p>
+            <p class="text-body-2 text-medium-emphasis mb-6">
+              You'll get an API key that you and your agents use to reach the inbox.
+              It's shown once, so have a password manager ready.
+            </p>
+
+            <v-btn
+              color="primary"
+              size="large"
+              block
+              :loading="creating"
+              @click="createKey"
+            >
+              Create free workspace
+            </v-btn>
+
+            <div class="text-center mt-5">
+              <v-btn variant="text" size="small" color="secondary" @click="mode = 'login'">
+                I already have an API key
+              </v-btn>
+            </div>
+
+            <v-alert
+              v-if="signupError"
+              type="info"
+              variant="tonal"
+              density="compact"
+              class="mt-3"
+              closable
+              @click:close="signupError = null"
+            >
+              {{ signupError }}
+            </v-alert>
+          </v-card-text>
+
+          <v-card-text v-else class="pa-6">
             <p class="text-body-2 text-medium-emphasis mb-6">
               Enter your operator API key to access the inbox. The key starts with
               <code class="text-primary">im_</code>.
@@ -41,20 +81,17 @@
               </v-btn>
             </v-form>
 
-            <div class="text-center mt-5">
-              <span class="text-caption text-medium-emphasis">New here?</span>
-              <v-btn
-                variant="text"
-                size="small"
-                color="primary"
-                :loading="creating"
-                @click="createKey"
-              >
-                Create an API key
-              </v-btn>
-            </div>
+            <v-btn
+              variant="outlined"
+              color="primary"
+              block
+              class="mt-4"
+              @click="mode = 'signup'"
+            >
+              New here? Create a free workspace
+            </v-btn>
 
-            <div class="text-center mt-1">
+            <div class="text-center mt-3">
               <v-btn
                 variant="text"
                 size="small"
@@ -112,18 +149,6 @@
                 </v-alert>
               </div>
             </v-expand-transition>
-
-            <v-alert
-              v-if="signupError"
-              type="info"
-              variant="tonal"
-              density="compact"
-              class="mt-3"
-              closable
-              @click:close="signupError = null"
-            >
-              {{ signupError }}
-            </v-alert>
           </v-card-text>
         </v-card>
       </v-col>
@@ -244,6 +269,14 @@ import { ApiClient, ApiClientError } from '../api/client'
 const auth = useAuthStore()
 const keyInput = ref('')
 
+// Every "Get started" link on impri.dev carries ?signup=1. Those visitors have no
+// key yet, so they land on the create step instead of a key prompt they can't use.
+// Creating a workspace stays an explicit click: a project is made the moment
+// /signup is called.
+const mode = ref<'signup' | 'login'>(
+  new URLSearchParams(window.location.search).has('signup') ? 'signup' : 'login',
+)
+
 const rawBase = (import.meta.env.VITE_API_BASE as string | undefined) ?? '/v1'
 const fullApiBase = rawBase.startsWith('http') ? rawBase : window.location.origin + rawBase
 
@@ -325,6 +358,8 @@ function copyNewRecoveryCode(): void {
 async function continueWithKey(): Promise<void> {
   await auth.login(newKey.value)
   showKeyDialog.value = false
+  // Drop ?signup so a later sign-out lands on the key prompt, not the create step.
+  window.history.replaceState(null, '', window.location.pathname + window.location.hash)
 }
 
 async function handleRecover(): Promise<void> {
