@@ -9,6 +9,7 @@
  * Usage:  node scripts/build-docs.mjs
  */
 
+import { execFileSync } from 'child_process';
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'fs';
 import { join, basename, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -29,6 +30,9 @@ const NAV = [
     section: 'Getting started',
     icon: '⚡',
     pages: [
+      { slug: 'what-is-an-approval-inbox',                title: 'What is an approval inbox?' },
+      { slug: 'what-is-human-in-the-loop-for-ai-agents',  title: 'What is human-in-the-loop?' },
+      { slug: 'what-is-an-mcp-approval-server',           title: 'What is an MCP approval server?' },
       { slug: 'quickstart',                              title: 'Quickstart' },
       { slug: 'ai-agent-approval-workflow',               title: 'Approval workflow overview' },
       { slug: 'how-to-add-human-approval-to-an-ai-agent', title: 'Human approval pattern' },
@@ -327,6 +331,8 @@ pre code.hljs{display:block;overflow-x:auto}
 const DOCS_CSS = `
 /* ── docs layout ── */
 .docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+/* The article comes first in the HTML so crawlers and AI fetchers that read top-down reach it before ~50 nav links; the grid puts the nav back on the left. */
+.doc-main{grid-column:2;grid-row:1}.docs-sidebar{grid-column:1;grid-row:1}.docs-toc{grid-column:3;grid-row:1}
 .docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
 .docs-sidebar::-webkit-scrollbar{width:4px}
 .docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
@@ -389,8 +395,8 @@ const DOCS_CSS = `
 .hub-card-pages li a:hover{color:#c7cbff}
 .hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
 /* ── responsive ── */
-@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
-@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc,.docs-toc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{grid-column:1}.doc-main{padding:16px 18px 40px}}
 @media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
 `.trim();
 
@@ -492,10 +498,6 @@ ${DOCS_CSS}
 ${buildNav(root)}
 
 <div class="docs-shell">
-  <aside class="docs-sidebar" aria-label="Documentation navigation">
-    ${sidebarHtml}
-  </aside>
-
   <main class="doc-main" id="main-content">
     <nav class="breadcrumb" aria-label="Breadcrumb">
       <a href="${root}docs">Docs</a>
@@ -507,7 +509,11 @@ ${buildNav(root)}
     ${contentHtml}
   </main>
 
-  <aside aria-label="On this page">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    ${sidebarHtml}
+  </aside>
+
+  <aside class="docs-toc" aria-label="On this page">
     ${pageTocHtml}
   </aside>
 </div>
@@ -680,23 +686,35 @@ function main() {
   // ── sitemap.xml ──────────────────────────────────────────────────────────
   // So search engines discover every doc page, including unlisted SEO pages
   // that are not in the NAV sidebar, plus the use-case/agents/pricing pages.
-  const lastmod = new Date().toISOString().slice(0, 10);
-  const urls = ['https://impri.dev/', 'https://impri.dev/docs', 'https://impri.dev/pricing'];
+  // lastmod is the date the page's source last changed in git, not the build
+  // date: a build-date lastmod tells crawlers that all ~200 pages changed on
+  // every build, so they stop trusting it. A source not committed yet is new
+  // content, so today is the honest date for it.
+  const today = new Date().toISOString().slice(0, 10);
+  const changedOn = (...paths) =>
+    execFileSync('git', ['log', '-1', '--format=%cs', '--', ...paths], { cwd: ROOT, encoding: 'utf8' }).trim() || today;
+  const entries = [
+    ['https://impri.dev/', changedOn('www/index.html')],
+    ['https://impri.dev/docs', changedOn('docs', 'scripts/build-docs.mjs')],
+    ['https://impri.dev/pricing', changedOn('www/pricing.html')],
+  ];
   for (const slug of pageIndex.keys()) {
-    urls.push(`https://impri.dev/docs/${slug}`);
+    entries.push([`https://impri.dev/docs/${slug}`, changedOn(`docs/${slug}.md`)]);
   }
   if (useCasesManifest.useCases.length) {
-    urls.push('https://impri.dev/use-cases');
-    for (const uc of useCasesManifest.useCases) urls.push(`https://impri.dev/use-cases/${uc.slug}`);
+    entries.push(['https://impri.dev/use-cases', changedOn('docs/use-cases')]);
+    for (const uc of useCasesManifest.useCases) {
+      entries.push([`https://impri.dev/use-cases/${uc.slug}`, changedOn(`docs/use-cases/${uc.slug}.md`)]);
+    }
   }
-  if (useCasesManifest.agents) urls.push('https://impri.dev/agents');
+  if (useCasesManifest.agents) entries.push(['https://impri.dev/agents', changedOn('scripts/build-usecases.mjs')]);
   const sitemap =
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    urls.map(u => `  <url><loc>${u}</loc><lastmod>${lastmod}</lastmod></url>`).join('\n') +
+    entries.map(([u, d]) => `  <url><loc>${u}</loc><lastmod>${d}</lastmod></url>`).join('\n') +
     `\n</urlset>\n`;
   writeFileSync(join(WWW, 'sitemap.xml'), sitemap, 'utf8');
-  console.log(`  ✓  sitemap.xml (${urls.length} urls)`);
+  console.log(`  ✓  sitemap.xml (${entries.length} urls)`);
 
   // ── llms.txt: keep an auto-generated index of use-case guides (unlisted pages) ──
   // Curated content above the marker is preserved; the marker section to EOF is

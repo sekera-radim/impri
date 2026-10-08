@@ -43,6 +43,8 @@ pre code.hljs{display:block;overflow-x:auto}
 .hljs-link{text-decoration:underline}
 /* ── docs layout ── */
 .docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+/* The article comes first in the HTML so crawlers and AI fetchers that read top-down reach it before ~50 nav links; the grid puts the nav back on the left. */
+.doc-main{grid-column:2;grid-row:1}.docs-sidebar{grid-column:1;grid-row:1}.docs-toc{grid-column:3;grid-row:1}
 .docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
 .docs-sidebar::-webkit-scrollbar{width:4px}
 .docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
@@ -105,8 +107,8 @@ pre code.hljs{display:block;overflow-x:auto}
 .hub-card-pages li a:hover{color:#c7cbff}
 .hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
 /* ── responsive ── */
-@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
-@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc,.docs-toc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{grid-column:1}.doc-main{padding:16px 18px 40px}}
 @media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
 .nav-links .active-nav{color:var(--text)!important}
 </style>
@@ -132,67 +134,6 @@ pre code.hljs{display:block;overflow-x:auto}
 </nav>
 
 <div class="docs-shell">
-  <aside class="docs-sidebar" aria-label="Documentation navigation">
-    <div class="sg">
-<div class="sg-label">Getting started</div>
-<a href="../docs/quickstart" class="sl">Quickstart</a>
-<a href="../docs/ai-agent-approval-workflow" class="sl">Approval workflow overview</a>
-<a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
-<a href="../docs/self-hosting" class="sl">Self-hosting</a>
-<a href="../docs/observability" class="sl">Observability</a>
-</div>
-<div class="sg">
-<div class="sg-label">Install</div>
-<a href="../docs/how-to-get-human-approval-into-your-coding-agent" class="sl">Overview</a>
-<a href="../docs/claude-code-human-approval" class="sl">Claude Code</a>
-<a href="../docs/codex-human-approval" class="sl">OpenAI Codex</a>
-<a href="../docs/cursor-human-approval" class="sl">Cursor</a>
-<a href="../docs/windsurf-human-approval" class="sl">Windsurf</a>
-</div>
-<div class="sg">
-<div class="sg-label">API reference</div>
-<a href="../docs/api-keys" class="sl">API keys &amp; scopes</a>
-<a href="../docs/rules" class="sl">Rules engine</a>
-<a href="../docs/watcher-presets" class="sl">Watcher presets</a>
-<a href="../docs/notifications" class="sl">Notification channels</a>
-<a href="../docs/telegram-approval" class="sl">Telegram approval</a>
-<a href="../docs/slack-approval" class="sl">Slack approval</a>
-<a href="../docs/discord-approval" class="sl">Discord approval</a>
-<a href="../docs/audit-log" class="sl">Audit log</a>
-<a href="../docs/billing" class="sl">Billing &amp; tiers</a>
-<a href="../docs/gdpr" class="sl">GDPR &amp; data export</a>
-<a href="../docs/privacy" class="sl">Privacy policy</a>
-<a href="../docs/terms" class="sl">Terms of service</a>
-<a href="../docs/operator" class="sl">Operator / admin</a>
-<a href="../docs/account-recovery" class="sl">Account recovery</a>
-</div>
-<div class="sg">
-<div class="sg-label">SDKs</div>
-<a href="../docs/sdk-python" class="sl">Python SDK</a>
-<a href="../docs/sdk-typescript" class="sl">TypeScript SDK</a>
-</div>
-<div class="sg">
-<div class="sg-label">Integrations</div>
-<a href="../docs/mcp" class="sl">MCP server</a>
-<a href="../docs/integrations" class="sl">LangChain / CrewAI / n8n</a>
-<a href="../docs/claude-agent-sdk" class="sl">Claude Agent SDK</a>
-</div>
-<div class="sg">
-<div class="sg-label">Inbox &amp; webhooks</div>
-<a href="../docs/inbox" class="sl">Inbox UX &amp; bulk decisions</a>
-<a href="../docs/webhooks" class="sl">Webhooks</a>
-<a href="../docs/web-push" class="sl">Web push</a>
-</div>
-<div class="sg">
-<div class="sg-label">CLI</div>
-<a href="../docs/cli" class="sl">CLI reference</a>
-</div>
-<div class="sg">
-<div class="sg-label">Cookbook</div>
-<a href="../docs/cookbook" class="sl">Cookbook</a>
-</div>
-  </aside>
-
   <main class="doc-main" id="main-content">
     <nav class="breadcrumb" aria-label="Breadcrumb">
       <a href="../docs">Docs</a>
@@ -278,7 +219,71 @@ HEADERS = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span cla
 
   </main>
 
-  <aside aria-label="On this page">
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/what-is-an-approval-inbox" class="sl">What is an approval inbox?</a>
+<a href="../docs/what-is-human-in-the-loop-for-ai-agents" class="sl">What is human-in-the-loop?</a>
+<a href="../docs/what-is-an-mcp-approval-server" class="sl">What is an MCP approval server?</a>
+<a href="../docs/quickstart" class="sl">Quickstart</a>
+<a href="../docs/ai-agent-approval-workflow" class="sl">Approval workflow overview</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting" class="sl">Self-hosting</a>
+<a href="../docs/observability" class="sl">Observability</a>
+</div>
+<div class="sg">
+<div class="sg-label">Install</div>
+<a href="../docs/how-to-get-human-approval-into-your-coding-agent" class="sl">Overview</a>
+<a href="../docs/claude-code-human-approval" class="sl">Claude Code</a>
+<a href="../docs/codex-human-approval" class="sl">OpenAI Codex</a>
+<a href="../docs/cursor-human-approval" class="sl">Cursor</a>
+<a href="../docs/windsurf-human-approval" class="sl">Windsurf</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets" class="sl">Watcher presets</a>
+<a href="../docs/notifications" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval" class="sl">Slack approval</a>
+<a href="../docs/discord-approval" class="sl">Discord approval</a>
+<a href="../docs/audit-log" class="sl">Audit log</a>
+<a href="../docs/billing" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr" class="sl">GDPR &amp; data export</a>
+<a href="../docs/privacy" class="sl">Privacy policy</a>
+<a href="../docs/terms" class="sl">Terms of service</a>
+<a href="../docs/operator" class="sl">Operator / admin</a>
+<a href="../docs/account-recovery" class="sl">Account recovery</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp" class="sl">MCP server</a>
+<a href="../docs/integrations" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks" class="sl">Webhooks</a>
+<a href="../docs/web-push" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
 <ul><li class="ptoc-h2"><a href="#the-problem-with-quotnobody39s-watchingquot">The problem with &quot;nobody's watching&quot;</a></li>

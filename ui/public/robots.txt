@@ -1,0 +1,6 @@
+# app.impri.dev is the signed-in approval inbox: nothing here is meant for a
+# search index. Product pages and docs live on https://impri.dev/.
+User-agent: *
+Disallow: /
+
+Sitemap: https://impri.dev/sitemap.xml

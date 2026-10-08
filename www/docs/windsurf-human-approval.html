@@ -43,6 +43,8 @@ pre code.hljs{display:block;overflow-x:auto}
 .hljs-link{text-decoration:underline}
 /* ── docs layout ── */
 .docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+/* The article comes first in the HTML so crawlers and AI fetchers that read top-down reach it before ~50 nav links; the grid puts the nav back on the left. */
+.doc-main{grid-column:2;grid-row:1}.docs-sidebar{grid-column:1;grid-row:1}.docs-toc{grid-column:3;grid-row:1}
 .docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
 .docs-sidebar::-webkit-scrollbar{width:4px}
 .docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
@@ -105,8 +107,8 @@ pre code.hljs{display:block;overflow-x:auto}
 .hub-card-pages li a:hover{color:#c7cbff}
 .hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
 /* ── responsive ── */
-@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
-@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc,.docs-toc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{grid-column:1}.doc-main{padding:16px 18px 40px}}
 @media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
 .nav-links .active-nav{color:var(--text)!important}
 </style>
@@ -132,9 +134,68 @@ pre code.hljs{display:block;overflow-x:auto}
 </nav>
 
 <div class="docs-shell">
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Install</span>
+      <span class="bc-sep">/</span>
+      <span>Add human approval to Windsurf with Impri</span>
+    </nav>
+    <h1>Add human approval to Windsurf with Impri</h1>
+<p>Gate Windsurf&#39;s Cascade agent on real-world side effects — deploys, database writes, outbound messages — behind a human decision in the Impri inbox.</p>
+<h2 id="60-second-install">60-second install</h2>
+<p>Open Windsurf&#39;s MCP config (Windsurf Settings → Cascade → MCP Servers → &quot;View raw config&quot;, which edits <code>~/.codeium/windsurf/mcp_config.json</code>) and add:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;mcpServers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;impri&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">&quot;command&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;npx&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;args&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;-y&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-string">&quot;@impri/mcp&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;env&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">&quot;IMPRI_API_KEY&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_your_key_here&quot;</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">&quot;IMPRI_BASE_URL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>Self-hosting? Drop the <code>IMPRI_BASE_URL</code> line entirely — it defaults to <code>http://localhost:8484</code> — or point it at your own server (see <a href="self-hosting">self-hosting</a>); get a cloud key at <a href="https://impri.dev" target="_blank" rel="noopener">impri.dev</a>. Click &quot;Refresh&quot; in the MCP Servers panel and confirm <code>impri</code> shows as connected with 8 tools.</p>
+<h2 id="tell-cascade-to-use-it">Tell Cascade to use it</h2>
+<p>Add to Windsurf&#39;s global rules or your project&#39;s <code>.windsurfrules</code>:</p>
+<div class="code-block"><span class="code-lang">markdown</span><pre><code class="hljs"><span class="hljs-section">## Human approval</span>
+Before any action with a real side effect (send, deploy, delete, pay, publish), call
+impri<span class="hljs-emphasis">_push_</span>action with a clear preview, then impri<span class="hljs-emphasis">_await_</span>decision before proceeding.</code></pre></div>
+<h2 id="what-you-see">What you see</h2>
+<p>Cascade keeps working on the rest of its task while the action sits in your Impri inbox, with the title and preview visible there and, if configured, pushed to Slack/Telegram/ntfy too. Approve, reject, or edit the draft before Cascade acts on the decision.</p>
+<h2 id="real-example-call">Real example call</h2>
+<div class="code-block"><pre><code class="hljs">impri_push_action({
+  kind: &quot;infra.terraform_apply&quot;,
+  title: &quot;terraform apply: resize db.primary to db.r6g.xlarge&quot;,
+  preview: { format: &quot;diff&quot;, body: &quot;Plan: 1 to change, 0 to destroy.\n~ aws_db_instance.primary&quot; },
+  editable: []
+})</code></pre></div>
+<p>Response:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_2v7d...&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;pending&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;inbox_url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://app.impri.dev/inbox/act_2v7d...&quot;</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<ul>
+<li><strong><code>impri</code> doesn&#39;t show as connected</strong> — the raw config is JSON; check for a trailing comma or an unescaped path separator on Windows configs.</li>
+<li><strong><code>IMPRI_API_KEY is not set</code> at call time</strong> — the <code>env</code> block only applies inside that <code>mcpServers.impri</code> entry; a key exported elsewhere in your shell isn&#39;t picked up by Windsurf&#39;s own process.</li>
+<li><strong>Cascade never calls the approval tool</strong> — the model only calls it when instructed; check that <code>.windsurfrules</code> (or the global rule) is actually active for the workspace.</li>
+</ul>
+<h2 id="next">Next</h2>
+<p><a href="how-to-add-human-approval-to-an-ai-agent">Read the full human approval pattern</a>, or see <a href="/use-cases/deploy-and-infra-changes">gating infra changes</a>.</p>
+
+  </main>
+
   <aside class="docs-sidebar" aria-label="Documentation navigation">
     <div class="sg">
 <div class="sg-label">Getting started</div>
+<a href="../docs/what-is-an-approval-inbox" class="sl">What is an approval inbox?</a>
+<a href="../docs/what-is-human-in-the-loop-for-ai-agents" class="sl">What is human-in-the-loop?</a>
+<a href="../docs/what-is-an-mcp-approval-server" class="sl">What is an MCP approval server?</a>
 <a href="../docs/quickstart" class="sl">Quickstart</a>
 <a href="../docs/ai-agent-approval-workflow" class="sl">Approval workflow overview</a>
 <a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
@@ -193,63 +254,7 @@ pre code.hljs{display:block;overflow-x:auto}
 </div>
   </aside>
 
-  <main class="doc-main" id="main-content">
-    <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../docs">Docs</a>
-      <span class="bc-sep">/</span>
-      <span>Install</span>
-      <span class="bc-sep">/</span>
-      <span>Add human approval to Windsurf with Impri</span>
-    </nav>
-    <h1>Add human approval to Windsurf with Impri</h1>
-<p>Gate Windsurf&#39;s Cascade agent on real-world side effects — deploys, database writes, outbound messages — behind a human decision in the Impri inbox.</p>
-<h2 id="60-second-install">60-second install</h2>
-<p>Open Windsurf&#39;s MCP config (Windsurf Settings → Cascade → MCP Servers → &quot;View raw config&quot;, which edits <code>~/.codeium/windsurf/mcp_config.json</code>) and add:</p>
-<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
-  <span class="hljs-attr">&quot;mcpServers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
-    <span class="hljs-attr">&quot;impri&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
-      <span class="hljs-attr">&quot;command&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;npx&quot;</span><span class="hljs-punctuation">,</span>
-      <span class="hljs-attr">&quot;args&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;-y&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-string">&quot;@impri/mcp&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
-      <span class="hljs-attr">&quot;env&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
-        <span class="hljs-attr">&quot;IMPRI_API_KEY&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_your_key_here&quot;</span><span class="hljs-punctuation">,</span>
-        <span class="hljs-attr">&quot;IMPRI_BASE_URL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
-      <span class="hljs-punctuation">}</span>
-    <span class="hljs-punctuation">}</span>
-  <span class="hljs-punctuation">}</span>
-<span class="hljs-punctuation">}</span></code></pre></div>
-<p>Self-hosting? Drop the <code>IMPRI_BASE_URL</code> line entirely — it defaults to <code>http://localhost:8484</code> — or point it at your own server (see <a href="self-hosting">self-hosting</a>); get a cloud key at <a href="https://impri.dev" target="_blank" rel="noopener">impri.dev</a>. Click &quot;Refresh&quot; in the MCP Servers panel and confirm <code>impri</code> shows as connected with 8 tools.</p>
-<h2 id="tell-cascade-to-use-it">Tell Cascade to use it</h2>
-<p>Add to Windsurf&#39;s global rules or your project&#39;s <code>.windsurfrules</code>:</p>
-<div class="code-block"><span class="code-lang">markdown</span><pre><code class="hljs"><span class="hljs-section">## Human approval</span>
-Before any action with a real side effect (send, deploy, delete, pay, publish), call
-impri<span class="hljs-emphasis">_push_</span>action with a clear preview, then impri<span class="hljs-emphasis">_await_</span>decision before proceeding.</code></pre></div>
-<h2 id="what-you-see">What you see</h2>
-<p>Cascade keeps working on the rest of its task while the action sits in your Impri inbox, with the title and preview visible there and, if configured, pushed to Slack/Telegram/ntfy too. Approve, reject, or edit the draft before Cascade acts on the decision.</p>
-<h2 id="real-example-call">Real example call</h2>
-<div class="code-block"><pre><code class="hljs">impri_push_action({
-  kind: &quot;infra.terraform_apply&quot;,
-  title: &quot;terraform apply: resize db.primary to db.r6g.xlarge&quot;,
-  preview: { format: &quot;diff&quot;, body: &quot;Plan: 1 to change, 0 to destroy.\n~ aws_db_instance.primary&quot; },
-  editable: []
-})</code></pre></div>
-<p>Response:</p>
-<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
-  <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_2v7d...&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;pending&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;inbox_url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://app.impri.dev/inbox/act_2v7d...&quot;</span>
-<span class="hljs-punctuation">}</span></code></pre></div>
-<h2 id="troubleshooting">Troubleshooting</h2>
-<ul>
-<li><strong><code>impri</code> doesn&#39;t show as connected</strong> — the raw config is JSON; check for a trailing comma or an unescaped path separator on Windows configs.</li>
-<li><strong><code>IMPRI_API_KEY is not set</code> at call time</strong> — the <code>env</code> block only applies inside that <code>mcpServers.impri</code> entry; a key exported elsewhere in your shell isn&#39;t picked up by Windsurf&#39;s own process.</li>
-<li><strong>Cascade never calls the approval tool</strong> — the model only calls it when instructed; check that <code>.windsurfrules</code> (or the global rule) is actually active for the workspace.</li>
-</ul>
-<h2 id="next">Next</h2>
-<p><a href="how-to-add-human-approval-to-an-ai-agent">Read the full human approval pattern</a>, or see <a href="/use-cases/deploy-and-infra-changes">gating infra changes</a>.</p>
-
-  </main>
-
-  <aside aria-label="On this page">
+  <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
 <ul><li class="ptoc-h2"><a href="#60-second-install">60-second install</a></li>

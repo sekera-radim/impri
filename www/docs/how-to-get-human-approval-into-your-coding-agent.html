@@ -43,6 +43,8 @@ pre code.hljs{display:block;overflow-x:auto}
 .hljs-link{text-decoration:underline}
 /* ── docs layout ── */
 .docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+/* The article comes first in the HTML so crawlers and AI fetchers that read top-down reach it before ~50 nav links; the grid puts the nav back on the left. */
+.doc-main{grid-column:2;grid-row:1}.docs-sidebar{grid-column:1;grid-row:1}.docs-toc{grid-column:3;grid-row:1}
 .docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
 .docs-sidebar::-webkit-scrollbar{width:4px}
 .docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
@@ -105,8 +107,8 @@ pre code.hljs{display:block;overflow-x:auto}
 .hub-card-pages li a:hover{color:#c7cbff}
 .hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
 /* ── responsive ── */
-@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
-@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc,.docs-toc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{grid-column:1}.doc-main{padding:16px 18px 40px}}
 @media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
 .nav-links .active-nav{color:var(--text)!important}
 </style>
@@ -132,9 +134,47 @@ pre code.hljs{display:block;overflow-x:auto}
 </nav>
 
 <div class="docs-shell">
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Install</span>
+      <span class="bc-sep">/</span>
+      <span>How to get human approval into your coding agent</span>
+    </nav>
+    <h1>How to get human approval into your coding agent</h1>
+<p>Every coding agent that can call MCP tools can be wired to pause on risky actions and wait for a human decision through Impri, with a one-line install per agent.</p>
+<p>The pattern underneath is the same everywhere: the agent calls <code>impri_push_action</code> with a preview, then <code>impri_await_decision</code>, and only acts on <code>approved</code>.</p>
+<p>Pick your agent:</p>
+<ul>
+<li><a href="claude-code-human-approval">Claude Code</a> — <code>claude mcp add impri -e IMPRI_API_KEY=... -e IMPRI_BASE_URL=https://api.impri.dev -- npx @impri/mcp</code></li>
+<li><a href="codex-human-approval">OpenAI Codex</a> — <code>codex mcp add impri --env IMPRI_API_KEY=... --env IMPRI_BASE_URL=https://api.impri.dev -- npx -y @impri/mcp</code></li>
+<li><a href="cursor-human-approval">Cursor</a> — <code>.cursor/mcp.json</code></li>
+<li><a href="windsurf-human-approval">Windsurf</a> — <code>~/.codeium/windsurf/mcp_config.json</code></li>
+</ul>
+<p>Any other MCP-compatible client works the same way — see the <a href="mcp">MCP server reference</a> for the full tool list and config shape, or the <a href="/agents">/agents overview</a> for a side-by-side of all four.</p>
+<h2 id="the-pattern-in-short">The pattern, in short</h2>
+<ol>
+<li>Get an API key at <a href="https://impri.dev" target="_blank" rel="noopener">impri.dev</a> or self-host with <code>docker compose up</code> (see <a href="self-hosting">self-hosting</a>).</li>
+<li>Register the <code>@impri/mcp</code> server with your agent&#39;s CLI or config file (links above) — set <code>IMPRI_BASE_URL</code> to <code>https://api.impri.dev</code> for the cloud, or leave it unset for self-hosted (it defaults to <code>http://localhost:8484</code>).</li>
+<li>Add a short instruction to your agent&#39;s system prompt or rules file: before any action with a real side effect, call <code>impri_push_action</code>, then <code>impri_await_decision</code>, and only proceed on <code>approved</code>.</li>
+<li>Decide from the web inbox at <a href="https://app.impri.dev" target="_blank" rel="noopener">app.impri.dev</a>, or from your phone if you&#39;ve set up <a href="notifications">notifications</a> (Slack, Discord, Telegram, ntfy, or web push).</li>
+</ol>
+<h2 id="where-to-go-deeper">Where to go deeper</h2>
+<ul>
+<li><a href="how-to-add-human-approval-to-an-ai-agent">The full human approval pattern</a> — the propose → await → report loop in detail, with REST and MCP examples side by side.</li>
+<li><a href="/use-cases">Use cases</a> — concrete gates for overnight runs, database writes, outbound messages, deploys, refunds, and publishing.</li>
+<li><a href="mcp">MCP server reference</a> — all 8 tools, full input/output schemas.</li>
+</ul>
+
+  </main>
+
   <aside class="docs-sidebar" aria-label="Documentation navigation">
     <div class="sg">
 <div class="sg-label">Getting started</div>
+<a href="../docs/what-is-an-approval-inbox" class="sl">What is an approval inbox?</a>
+<a href="../docs/what-is-human-in-the-loop-for-ai-agents" class="sl">What is human-in-the-loop?</a>
+<a href="../docs/what-is-an-mcp-approval-server" class="sl">What is an MCP approval server?</a>
 <a href="../docs/quickstart" class="sl">Quickstart</a>
 <a href="../docs/ai-agent-approval-workflow" class="sl">Approval workflow overview</a>
 <a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
@@ -193,42 +233,7 @@ pre code.hljs{display:block;overflow-x:auto}
 </div>
   </aside>
 
-  <main class="doc-main" id="main-content">
-    <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../docs">Docs</a>
-      <span class="bc-sep">/</span>
-      <span>Install</span>
-      <span class="bc-sep">/</span>
-      <span>How to get human approval into your coding agent</span>
-    </nav>
-    <h1>How to get human approval into your coding agent</h1>
-<p>Every coding agent that can call MCP tools can be wired to pause on risky actions and wait for a human decision through Impri, with a one-line install per agent.</p>
-<p>The pattern underneath is the same everywhere: the agent calls <code>impri_push_action</code> with a preview, then <code>impri_await_decision</code>, and only acts on <code>approved</code>.</p>
-<p>Pick your agent:</p>
-<ul>
-<li><a href="claude-code-human-approval">Claude Code</a> — <code>claude mcp add impri -e IMPRI_API_KEY=... -e IMPRI_BASE_URL=https://api.impri.dev -- npx @impri/mcp</code></li>
-<li><a href="codex-human-approval">OpenAI Codex</a> — <code>codex mcp add impri --env IMPRI_API_KEY=... --env IMPRI_BASE_URL=https://api.impri.dev -- npx -y @impri/mcp</code></li>
-<li><a href="cursor-human-approval">Cursor</a> — <code>.cursor/mcp.json</code></li>
-<li><a href="windsurf-human-approval">Windsurf</a> — <code>~/.codeium/windsurf/mcp_config.json</code></li>
-</ul>
-<p>Any other MCP-compatible client works the same way — see the <a href="mcp">MCP server reference</a> for the full tool list and config shape, or the <a href="/agents">/agents overview</a> for a side-by-side of all four.</p>
-<h2 id="the-pattern-in-short">The pattern, in short</h2>
-<ol>
-<li>Get an API key at <a href="https://impri.dev" target="_blank" rel="noopener">impri.dev</a> or self-host with <code>docker compose up</code> (see <a href="self-hosting">self-hosting</a>).</li>
-<li>Register the <code>@impri/mcp</code> server with your agent&#39;s CLI or config file (links above) — set <code>IMPRI_BASE_URL</code> to <code>https://api.impri.dev</code> for the cloud, or leave it unset for self-hosted (it defaults to <code>http://localhost:8484</code>).</li>
-<li>Add a short instruction to your agent&#39;s system prompt or rules file: before any action with a real side effect, call <code>impri_push_action</code>, then <code>impri_await_decision</code>, and only proceed on <code>approved</code>.</li>
-<li>Decide from the web inbox at <a href="https://app.impri.dev" target="_blank" rel="noopener">app.impri.dev</a>, or from your phone if you&#39;ve set up <a href="notifications">notifications</a> (Slack, Discord, Telegram, ntfy, or web push).</li>
-</ol>
-<h2 id="where-to-go-deeper">Where to go deeper</h2>
-<ul>
-<li><a href="how-to-add-human-approval-to-an-ai-agent">The full human approval pattern</a> — the propose → await → report loop in detail, with REST and MCP examples side by side.</li>
-<li><a href="/use-cases">Use cases</a> — concrete gates for overnight runs, database writes, outbound messages, deploys, refunds, and publishing.</li>
-<li><a href="mcp">MCP server reference</a> — all 8 tools, full input/output schemas.</li>
-</ul>
-
-  </main>
-
-  <aside aria-label="On this page">
+  <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
 <ul><li class="ptoc-h2"><a href="#the-pattern-in-short">The pattern, in short</a></li>

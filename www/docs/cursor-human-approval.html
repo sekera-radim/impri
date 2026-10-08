@@ -43,6 +43,8 @@ pre code.hljs{display:block;overflow-x:auto}
 .hljs-link{text-decoration:underline}
 /* ── docs layout ── */
 .docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+/* The article comes first in the HTML so crawlers and AI fetchers that read top-down reach it before ~50 nav links; the grid puts the nav back on the left. */
+.doc-main{grid-column:2;grid-row:1}.docs-sidebar{grid-column:1;grid-row:1}.docs-toc{grid-column:3;grid-row:1}
 .docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
 .docs-sidebar::-webkit-scrollbar{width:4px}
 .docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
@@ -105,8 +107,8 @@ pre code.hljs{display:block;overflow-x:auto}
 .hub-card-pages li a:hover{color:#c7cbff}
 .hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
 /* ── responsive ── */
-@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
-@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc,.docs-toc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{grid-column:1}.doc-main{padding:16px 18px 40px}}
 @media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
 .nav-links .active-nav{color:var(--text)!important}
 </style>
@@ -132,9 +134,69 @@ pre code.hljs{display:block;overflow-x:auto}
 </nav>
 
 <div class="docs-shell">
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Install</span>
+      <span class="bc-sep">/</span>
+      <span>Add human approval to Cursor with Impri</span>
+    </nav>
+    <h1>Add human approval to Cursor with Impri</h1>
+<p>Have Cursor&#39;s agent mode pause on real-world side effects — a push, a deploy, a database write — and wait for a human decision from Impri&#39;s inbox.</p>
+<h2 id="60-second-install">60-second install</h2>
+<p>Create <code>.cursor/mcp.json</code> in your project (or <code>~/.cursor/mcp.json</code> for all projects):</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;mcpServers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;impri&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">&quot;command&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;npx&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;args&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;-y&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-string">&quot;@impri/mcp&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;env&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">&quot;IMPRI_API_KEY&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_your_key_here&quot;</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">&quot;IMPRI_BASE_URL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>Self-hosting instead of the cloud? Drop the <code>IMPRI_BASE_URL</code> line entirely — it defaults to <code>http://localhost:8484</code> — or point it at wherever your instance actually runs (see <a href="self-hosting">self-hosting</a>). Get a cloud key at <a href="https://impri.dev" target="_blank" rel="noopener">impri.dev</a>.</p>
+<p>Reopen Cursor&#39;s MCP settings panel (Settings → MCP) and confirm <code>impri</code> shows a green dot with 8 tools listed.</p>
+<h2 id="tell-cursor39s-agent-to-use-it">Tell Cursor&#39;s agent to use it</h2>
+<p>Add to your project&#39;s <code>.cursorrules</code> or Cursor&#39;s custom instructions:</p>
+<div class="code-block"><span class="code-lang">markdown</span><pre><code class="hljs"><span class="hljs-section">## Human approval</span>
+Before any action with a real side effect (send, deploy, delete, pay, publish), call
+impri<span class="hljs-emphasis">_push_</span>action with a clear preview, then impri<span class="hljs-emphasis">_await_</span>decision before proceeding.</code></pre></div>
+<h2 id="what-you-see">What you see</h2>
+<p>Cursor keeps working while the action sits in your Impri inbox. You get the title and preview there, plus a push to Slack/Telegram/ntfy if you&#39;ve wired one up — approve, reject, or edit the draft before Cursor&#39;s agent acts on it.</p>
+<h2 id="real-example-call">Real example call</h2>
+<div class="code-block"><pre><code class="hljs">impri_push_action({
+  kind: &quot;content.publish&quot;,
+  title: &quot;Publish blog post: \&quot;5 lessons from our Q3 outage\&quot;&quot;,
+  preview: { format: &quot;markdown&quot;, body: &quot;# 5 lessons from our Q3 outage\n\nOn August 14th...&quot; },
+  editable: [&quot;preview.body&quot;]
+})</code></pre></div>
+<p>Response:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_3kx0...&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;pending&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;inbox_url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://app.impri.dev/inbox/act_3kx0...&quot;</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<ul>
+<li><strong><code>impri</code> doesn&#39;t appear in Cursor&#39;s MCP panel</strong> — <code>.cursor/mcp.json</code> must be valid JSON; a trailing comma is the usual culprit. Check Cursor&#39;s MCP logs panel for the exact parse error.</li>
+<li><strong>Server shows connected but tool calls fail</strong> — usually <code>IMPRI_API_KEY</code> is missing or wrong; the error message from the tool call itself will say so directly.</li>
+<li><strong>Works locally but not for teammates</strong> — <code>.cursor/mcp.json</code> at the project root is typically gitignored (it may contain a key); share the file without the key and have each teammate fill in their own, or use a per-project scoped key.</li>
+</ul>
+<h2 id="next">Next</h2>
+<p><a href="how-to-add-human-approval-to-an-ai-agent">Read the full human approval pattern</a>, or see <a href="/use-cases/overnight-coding-agent">letting a coding agent run overnight</a>.</p>
+
+  </main>
+
   <aside class="docs-sidebar" aria-label="Documentation navigation">
     <div class="sg">
 <div class="sg-label">Getting started</div>
+<a href="../docs/what-is-an-approval-inbox" class="sl">What is an approval inbox?</a>
+<a href="../docs/what-is-human-in-the-loop-for-ai-agents" class="sl">What is human-in-the-loop?</a>
+<a href="../docs/what-is-an-mcp-approval-server" class="sl">What is an MCP approval server?</a>
 <a href="../docs/quickstart" class="sl">Quickstart</a>
 <a href="../docs/ai-agent-approval-workflow" class="sl">Approval workflow overview</a>
 <a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
@@ -193,64 +255,7 @@ pre code.hljs{display:block;overflow-x:auto}
 </div>
   </aside>
 
-  <main class="doc-main" id="main-content">
-    <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../docs">Docs</a>
-      <span class="bc-sep">/</span>
-      <span>Install</span>
-      <span class="bc-sep">/</span>
-      <span>Add human approval to Cursor with Impri</span>
-    </nav>
-    <h1>Add human approval to Cursor with Impri</h1>
-<p>Have Cursor&#39;s agent mode pause on real-world side effects — a push, a deploy, a database write — and wait for a human decision from Impri&#39;s inbox.</p>
-<h2 id="60-second-install">60-second install</h2>
-<p>Create <code>.cursor/mcp.json</code> in your project (or <code>~/.cursor/mcp.json</code> for all projects):</p>
-<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
-  <span class="hljs-attr">&quot;mcpServers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
-    <span class="hljs-attr">&quot;impri&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
-      <span class="hljs-attr">&quot;command&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;npx&quot;</span><span class="hljs-punctuation">,</span>
-      <span class="hljs-attr">&quot;args&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;-y&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-string">&quot;@impri/mcp&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
-      <span class="hljs-attr">&quot;env&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
-        <span class="hljs-attr">&quot;IMPRI_API_KEY&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_your_key_here&quot;</span><span class="hljs-punctuation">,</span>
-        <span class="hljs-attr">&quot;IMPRI_BASE_URL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
-      <span class="hljs-punctuation">}</span>
-    <span class="hljs-punctuation">}</span>
-  <span class="hljs-punctuation">}</span>
-<span class="hljs-punctuation">}</span></code></pre></div>
-<p>Self-hosting instead of the cloud? Drop the <code>IMPRI_BASE_URL</code> line entirely — it defaults to <code>http://localhost:8484</code> — or point it at wherever your instance actually runs (see <a href="self-hosting">self-hosting</a>). Get a cloud key at <a href="https://impri.dev" target="_blank" rel="noopener">impri.dev</a>.</p>
-<p>Reopen Cursor&#39;s MCP settings panel (Settings → MCP) and confirm <code>impri</code> shows a green dot with 8 tools listed.</p>
-<h2 id="tell-cursor39s-agent-to-use-it">Tell Cursor&#39;s agent to use it</h2>
-<p>Add to your project&#39;s <code>.cursorrules</code> or Cursor&#39;s custom instructions:</p>
-<div class="code-block"><span class="code-lang">markdown</span><pre><code class="hljs"><span class="hljs-section">## Human approval</span>
-Before any action with a real side effect (send, deploy, delete, pay, publish), call
-impri<span class="hljs-emphasis">_push_</span>action with a clear preview, then impri<span class="hljs-emphasis">_await_</span>decision before proceeding.</code></pre></div>
-<h2 id="what-you-see">What you see</h2>
-<p>Cursor keeps working while the action sits in your Impri inbox. You get the title and preview there, plus a push to Slack/Telegram/ntfy if you&#39;ve wired one up — approve, reject, or edit the draft before Cursor&#39;s agent acts on it.</p>
-<h2 id="real-example-call">Real example call</h2>
-<div class="code-block"><pre><code class="hljs">impri_push_action({
-  kind: &quot;content.publish&quot;,
-  title: &quot;Publish blog post: \&quot;5 lessons from our Q3 outage\&quot;&quot;,
-  preview: { format: &quot;markdown&quot;, body: &quot;# 5 lessons from our Q3 outage\n\nOn August 14th...&quot; },
-  editable: [&quot;preview.body&quot;]
-})</code></pre></div>
-<p>Response:</p>
-<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
-  <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_3kx0...&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;pending&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;inbox_url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://app.impri.dev/inbox/act_3kx0...&quot;</span>
-<span class="hljs-punctuation">}</span></code></pre></div>
-<h2 id="troubleshooting">Troubleshooting</h2>
-<ul>
-<li><strong><code>impri</code> doesn&#39;t appear in Cursor&#39;s MCP panel</strong> — <code>.cursor/mcp.json</code> must be valid JSON; a trailing comma is the usual culprit. Check Cursor&#39;s MCP logs panel for the exact parse error.</li>
-<li><strong>Server shows connected but tool calls fail</strong> — usually <code>IMPRI_API_KEY</code> is missing or wrong; the error message from the tool call itself will say so directly.</li>
-<li><strong>Works locally but not for teammates</strong> — <code>.cursor/mcp.json</code> at the project root is typically gitignored (it may contain a key); share the file without the key and have each teammate fill in their own, or use a per-project scoped key.</li>
-</ul>
-<h2 id="next">Next</h2>
-<p><a href="how-to-add-human-approval-to-an-ai-agent">Read the full human approval pattern</a>, or see <a href="/use-cases/overnight-coding-agent">letting a coding agent run overnight</a>.</p>
-
-  </main>
-
-  <aside aria-label="On this page">
+  <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
 <ul><li class="ptoc-h2"><a href="#60-second-install">60-second install</a></li>

@@ -43,6 +43,8 @@ pre code.hljs{display:block;overflow-x:auto}
 .hljs-link{text-decoration:underline}
 /* ── docs layout ── */
 .docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+/* The article comes first in the HTML so crawlers and AI fetchers that read top-down reach it before ~50 nav links; the grid puts the nav back on the left. */
+.doc-main{grid-column:2;grid-row:1}.docs-sidebar{grid-column:1;grid-row:1}.docs-toc{grid-column:3;grid-row:1}
 .docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
 .docs-sidebar::-webkit-scrollbar{width:4px}
 .docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
@@ -105,8 +107,8 @@ pre code.hljs{display:block;overflow-x:auto}
 .hub-card-pages li a:hover{color:#c7cbff}
 .hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
 /* ── responsive ── */
-@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
-@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc,.docs-toc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{grid-column:1}.doc-main{padding:16px 18px 40px}}
 @media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
 .nav-links .active-nav{color:var(--text)!important}
 </style>
@@ -132,9 +134,65 @@ pre code.hljs{display:block;overflow-x:auto}
 </nav>
 
 <div class="docs-shell">
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Install</span>
+      <span class="bc-sep">/</span>
+      <span>Add human approval to Claude Code with Impri</span>
+    </nav>
+    <h1>Add human approval to Claude Code with Impri</h1>
+<p>Give Claude Code a way to pause on risky actions — a deploy, an email, a database write, a payment — and wait for your yes before it proceeds with any of them.</p>
+<h2 id="60-second-install">60-second install</h2>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">claude mcp add impri \
+  -e IMPRI_API_KEY=im_your_key_here \
+  -e IMPRI_BASE_URL=https://api.impri.dev \
+  -- npx @impri/mcp</code></pre></div>
+<p><code>IMPRI_BASE_URL</code> defaults to <code>http://localhost:8484</code> (self-hosted), so it must be set explicitly for the cloud API — leave it out only if you&#39;re actually running <code>docker compose up -d</code> locally.</p>
+<p>Get an API key at <a href="https://impri.dev" target="_blank" rel="noopener">impri.dev</a>, or self-host with <code>docker compose up -d</code> (see <a href="self-hosting">self-hosting</a>). Verify it loaded:</p>
+<div class="code-block"><pre><code class="hljs">/mcp</code></pre></div>
+<p>You should see <code>impri</code> listed with 8 tools.</p>
+<h2 id="tell-claude-code-to-use-it">Tell Claude Code to use it</h2>
+<p>Add three lines to your project&#39;s <code>CLAUDE.md</code> (or a global <code>~/.claude/CLAUDE.md</code>):</p>
+<div class="code-block"><span class="code-lang">markdown</span><pre><code class="hljs"><span class="hljs-section">## Human approval</span>
+Before running any command with a real side effect — sending an email, pushing to a
+remote branch, running a database write, calling a paid API — call impri<span class="hljs-emphasis">_push_</span>action
+with a clear preview, then impri<span class="hljs-emphasis">_await_</span>decision before proceeding. Never skip this.</code></pre></div>
+<h2 id="what-you-see">What you see</h2>
+<p>A card lands in your Impri inbox (web, or pushed to Telegram/Slack/ntfy if you&#39;ve set up a <a href="notifications">notification channel</a>) with the action&#39;s title and preview, and Approve / Reject buttons. Approving a diff-style preview lets you edit the text before it goes back to the agent.</p>
+<h2 id="real-example-call">Real example call</h2>
+<p>Claude Code calls the tool directly — no code required on your side:</p>
+<div class="code-block"><pre><code class="hljs">impri_push_action({
+  kind: &quot;git.push&quot;,
+  title: &quot;Push branch fix/retry-backoff to origin&quot;,
+  preview: { format: &quot;diff&quot;, body: &quot;3 files changed, 41 insertions(+), 6 deletions(-)&quot; },
+  editable: []
+})</code></pre></div>
+<p>Response:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_7g2k...&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;pending&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;inbox_url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://app.impri.dev/inbox/act_7g2k...&quot;</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>Claude Code then calls <code>impri_await_decision({ action_id: &quot;act_7g2k...&quot;, timeout_s: 600 })</code> and blocks until you decide.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<ul>
+<li><strong><code>/mcp</code> doesn&#39;t list <code>impri</code></strong> — check <code>claude mcp list</code> for a startup error; the most common cause is a missing or malformed <code>IMPRI_API_KEY</code>.</li>
+<li><strong>Tool calls fail with &quot;IMPRI_API_KEY is not set&quot;</strong> — the env var wasn&#39;t passed through; re-run the <code>claude mcp add</code> command with <code>-e IMPRI_API_KEY=...</code> rather than exporting it in the shell that starts Claude Code.</li>
+<li><strong>Self-hosted server unreachable</strong> — confirm <code>IMPRI_BASE_URL</code> has no trailing <code>/v1</code> (the client appends it) and that <code>docker compose up -d</code> is actually running on that port.</li>
+</ul>
+<h2 id="next">Next</h2>
+<p><a href="how-to-add-human-approval-to-an-ai-agent">Try the human approval pattern</a> end to end, or see it applied to a <a href="/use-cases/overnight-coding-agent">coding-agent-specific use case</a>.</p>
+
+  </main>
+
   <aside class="docs-sidebar" aria-label="Documentation navigation">
     <div class="sg">
 <div class="sg-label">Getting started</div>
+<a href="../docs/what-is-an-approval-inbox" class="sl">What is an approval inbox?</a>
+<a href="../docs/what-is-human-in-the-loop-for-ai-agents" class="sl">What is human-in-the-loop?</a>
+<a href="../docs/what-is-an-mcp-approval-server" class="sl">What is an MCP approval server?</a>
 <a href="../docs/quickstart" class="sl">Quickstart</a>
 <a href="../docs/ai-agent-approval-workflow" class="sl">Approval workflow overview</a>
 <a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
@@ -193,60 +251,7 @@ pre code.hljs{display:block;overflow-x:auto}
 </div>
   </aside>
 
-  <main class="doc-main" id="main-content">
-    <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../docs">Docs</a>
-      <span class="bc-sep">/</span>
-      <span>Install</span>
-      <span class="bc-sep">/</span>
-      <span>Add human approval to Claude Code with Impri</span>
-    </nav>
-    <h1>Add human approval to Claude Code with Impri</h1>
-<p>Give Claude Code a way to pause on risky actions — a deploy, an email, a database write, a payment — and wait for your yes before it proceeds with any of them.</p>
-<h2 id="60-second-install">60-second install</h2>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">claude mcp add impri \
-  -e IMPRI_API_KEY=im_your_key_here \
-  -e IMPRI_BASE_URL=https://api.impri.dev \
-  -- npx @impri/mcp</code></pre></div>
-<p><code>IMPRI_BASE_URL</code> defaults to <code>http://localhost:8484</code> (self-hosted), so it must be set explicitly for the cloud API — leave it out only if you&#39;re actually running <code>docker compose up -d</code> locally.</p>
-<p>Get an API key at <a href="https://impri.dev" target="_blank" rel="noopener">impri.dev</a>, or self-host with <code>docker compose up -d</code> (see <a href="self-hosting">self-hosting</a>). Verify it loaded:</p>
-<div class="code-block"><pre><code class="hljs">/mcp</code></pre></div>
-<p>You should see <code>impri</code> listed with 8 tools.</p>
-<h2 id="tell-claude-code-to-use-it">Tell Claude Code to use it</h2>
-<p>Add three lines to your project&#39;s <code>CLAUDE.md</code> (or a global <code>~/.claude/CLAUDE.md</code>):</p>
-<div class="code-block"><span class="code-lang">markdown</span><pre><code class="hljs"><span class="hljs-section">## Human approval</span>
-Before running any command with a real side effect — sending an email, pushing to a
-remote branch, running a database write, calling a paid API — call impri<span class="hljs-emphasis">_push_</span>action
-with a clear preview, then impri<span class="hljs-emphasis">_await_</span>decision before proceeding. Never skip this.</code></pre></div>
-<h2 id="what-you-see">What you see</h2>
-<p>A card lands in your Impri inbox (web, or pushed to Telegram/Slack/ntfy if you&#39;ve set up a <a href="notifications">notification channel</a>) with the action&#39;s title and preview, and Approve / Reject buttons. Approving a diff-style preview lets you edit the text before it goes back to the agent.</p>
-<h2 id="real-example-call">Real example call</h2>
-<p>Claude Code calls the tool directly — no code required on your side:</p>
-<div class="code-block"><pre><code class="hljs">impri_push_action({
-  kind: &quot;git.push&quot;,
-  title: &quot;Push branch fix/retry-backoff to origin&quot;,
-  preview: { format: &quot;diff&quot;, body: &quot;3 files changed, 41 insertions(+), 6 deletions(-)&quot; },
-  editable: []
-})</code></pre></div>
-<p>Response:</p>
-<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
-  <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_7g2k...&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;pending&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;inbox_url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://app.impri.dev/inbox/act_7g2k...&quot;</span>
-<span class="hljs-punctuation">}</span></code></pre></div>
-<p>Claude Code then calls <code>impri_await_decision({ action_id: &quot;act_7g2k...&quot;, timeout_s: 600 })</code> and blocks until you decide.</p>
-<h2 id="troubleshooting">Troubleshooting</h2>
-<ul>
-<li><strong><code>/mcp</code> doesn&#39;t list <code>impri</code></strong> — check <code>claude mcp list</code> for a startup error; the most common cause is a missing or malformed <code>IMPRI_API_KEY</code>.</li>
-<li><strong>Tool calls fail with &quot;IMPRI_API_KEY is not set&quot;</strong> — the env var wasn&#39;t passed through; re-run the <code>claude mcp add</code> command with <code>-e IMPRI_API_KEY=...</code> rather than exporting it in the shell that starts Claude Code.</li>
-<li><strong>Self-hosted server unreachable</strong> — confirm <code>IMPRI_BASE_URL</code> has no trailing <code>/v1</code> (the client appends it) and that <code>docker compose up -d</code> is actually running on that port.</li>
-</ul>
-<h2 id="next">Next</h2>
-<p><a href="how-to-add-human-approval-to-an-ai-agent">Try the human approval pattern</a> end to end, or see it applied to a <a href="/use-cases/overnight-coding-agent">coding-agent-specific use case</a>.</p>
-
-  </main>
-
-  <aside aria-label="On this page">
+  <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
 <ul><li class="ptoc-h2"><a href="#60-second-install">60-second install</a></li>

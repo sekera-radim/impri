@@ -43,6 +43,8 @@ pre code.hljs{display:block;overflow-x:auto}
 .hljs-link{text-decoration:underline}
 /* ── docs layout ── */
 .docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+/* The article comes first in the HTML so crawlers and AI fetchers that read top-down reach it before ~50 nav links; the grid puts the nav back on the left. */
+.doc-main{grid-column:2;grid-row:1}.docs-sidebar{grid-column:1;grid-row:1}.docs-toc{grid-column:3;grid-row:1}
 .docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
 .docs-sidebar::-webkit-scrollbar{width:4px}
 .docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
@@ -105,8 +107,8 @@ pre code.hljs{display:block;overflow-x:auto}
 .hub-card-pages li a:hover{color:#c7cbff}
 .hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
 /* ── responsive ── */
-@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
-@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc,.docs-toc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{grid-column:1}.doc-main{padding:16px 18px 40px}}
 @media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
 .nav-links .active-nav{color:var(--text)!important}
 </style>
@@ -132,9 +134,54 @@ pre code.hljs{display:block;overflow-x:auto}
 </nav>
 
 <div class="docs-shell">
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>API reference</span>
+      <span class="bc-sep">/</span>
+      <span>Terms of Service</span>
+    </nav>
+    <h1>Terms of Service</h1>
+<p><em>Last updated: 2026-07-12</em></p>
+<p>Plain-language terms for the hosted Impri cloud (<code>app.impri.dev</code> / <code>api.impri.dev</code>). The self-hosted server is separate — it is licensed under the <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a> and these terms do not apply to it. Impri is an early-stage product; this is a starting-point agreement, not exhaustive legal boilerplate.</p>
+<h2 id="1-acceptance">1. Acceptance</h2>
+<p>By creating a project or using the hosted service, you agree to these terms. If you don&#39;t agree, don&#39;t use the hosted service (self-hosting is always an option).</p>
+<h2 id="2-the-service">2. The service</h2>
+<p>Impri is a human-in-the-loop approval gate for AI agents: an agent proposes an action, a human approves or rejects it, and the agent executes only after approval. The hosted service provides this as a managed instance.</p>
+<h2 id="3-beta-status-provided-quotas-isquot">3. Beta status — provided &quot;as is&quot;</h2>
+<p>The hosted service is in <strong>early beta</strong>. It is provided <strong>as is</strong>, without warranties of any kind. We do our best to keep it available and correct, but we do not guarantee uptime, and there is no SLA during beta. For anything critical, self-host — you keep full control and your data stays on your infrastructure.</p>
+<h2 id="4-your-account-and-api-keys">4. Your account and API keys</h2>
+<ul>
+<li>A project is identified by an <strong>API key</strong> — there is no email or password. <strong>The key is your only credential; keep it secret.</strong></li>
+<li>You are responsible for all activity under your keys and for the content your agents push.</li>
+<li>We recommend creating a <strong>second key as a backup</strong> and storing keys in a password manager. Losing all of your keys for an anonymous project may mean the project cannot be recovered (see <a href="privacy">Privacy</a> and <a href="gdpr">GDPR</a>).</li>
+</ul>
+<h2 id="5-acceptable-use">5. Acceptable use</h2>
+<p>Don&#39;t use the service to store or transmit illegal content, to abuse or overload the infrastructure, or to attempt to break project isolation or security. We may suspend or terminate accounts that do.</p>
+<h2 id="6-approvals-are-your-decision">6. Approvals are your decision</h2>
+<p>Impri holds a proposed action until a human approves it, then hands the decision back to your agent. <strong>Once you approve an action, the action and its consequences are yours.</strong> Impri is a tool that surfaces and gates decisions; it does not make them for you and is not responsible for what an approved action does.</p>
+<h2 id="7-billing">7. Billing</h2>
+<p>Paid tiers are processed by <strong>Stripe</strong>. You can cancel at any time; access continues until the end of the current billing period. Card data is handled by Stripe and never stored by us.</p>
+<h2 id="8-limitation-of-liability">8. Limitation of liability</h2>
+<p>To the maximum extent permitted by law, Impri and its operator are not liable for any indirect, incidental, or consequential damages, or for loss of data, revenue, or profits. Total liability for any claim is limited to the fees you paid for the service in the three months before the claim.</p>
+<h2 id="9-termination">9. Termination</h2>
+<p>You can stop using the service at any time and erase your data (<code>DELETE /v1/project/data</code>). We may suspend or terminate access for violations of these terms or to protect the service.</p>
+<h2 id="10-changes">10. Changes</h2>
+<p>We may update these terms; material changes will be reflected here with a new date. Continued use after a change means you accept it.</p>
+<h2 id="11-governing-law">11. Governing law</h2>
+<p>These terms are governed by the laws of the Czech Republic, where the operator is based.</p>
+<h2 id="12-contact">12. Contact</h2>
+<p>Questions about these terms: <a href="https://sekera.dev" target="_blank" rel="noopener">sekera.dev</a>.</p>
+
+  </main>
+
   <aside class="docs-sidebar" aria-label="Documentation navigation">
     <div class="sg">
 <div class="sg-label">Getting started</div>
+<a href="../docs/what-is-an-approval-inbox" class="sl">What is an approval inbox?</a>
+<a href="../docs/what-is-human-in-the-loop-for-ai-agents" class="sl">What is human-in-the-loop?</a>
+<a href="../docs/what-is-an-mcp-approval-server" class="sl">What is an MCP approval server?</a>
 <a href="../docs/quickstart" class="sl">Quickstart</a>
 <a href="../docs/ai-agent-approval-workflow" class="sl">Approval workflow overview</a>
 <a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
@@ -193,49 +240,7 @@ pre code.hljs{display:block;overflow-x:auto}
 </div>
   </aside>
 
-  <main class="doc-main" id="main-content">
-    <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../docs">Docs</a>
-      <span class="bc-sep">/</span>
-      <span>API reference</span>
-      <span class="bc-sep">/</span>
-      <span>Terms of Service</span>
-    </nav>
-    <h1>Terms of Service</h1>
-<p><em>Last updated: 2026-07-12</em></p>
-<p>Plain-language terms for the hosted Impri cloud (<code>app.impri.dev</code> / <code>api.impri.dev</code>). The self-hosted server is separate — it is licensed under the <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a> and these terms do not apply to it. Impri is an early-stage product; this is a starting-point agreement, not exhaustive legal boilerplate.</p>
-<h2 id="1-acceptance">1. Acceptance</h2>
-<p>By creating a project or using the hosted service, you agree to these terms. If you don&#39;t agree, don&#39;t use the hosted service (self-hosting is always an option).</p>
-<h2 id="2-the-service">2. The service</h2>
-<p>Impri is a human-in-the-loop approval gate for AI agents: an agent proposes an action, a human approves or rejects it, and the agent executes only after approval. The hosted service provides this as a managed instance.</p>
-<h2 id="3-beta-status-provided-quotas-isquot">3. Beta status — provided &quot;as is&quot;</h2>
-<p>The hosted service is in <strong>early beta</strong>. It is provided <strong>as is</strong>, without warranties of any kind. We do our best to keep it available and correct, but we do not guarantee uptime, and there is no SLA during beta. For anything critical, self-host — you keep full control and your data stays on your infrastructure.</p>
-<h2 id="4-your-account-and-api-keys">4. Your account and API keys</h2>
-<ul>
-<li>A project is identified by an <strong>API key</strong> — there is no email or password. <strong>The key is your only credential; keep it secret.</strong></li>
-<li>You are responsible for all activity under your keys and for the content your agents push.</li>
-<li>We recommend creating a <strong>second key as a backup</strong> and storing keys in a password manager. Losing all of your keys for an anonymous project may mean the project cannot be recovered (see <a href="privacy">Privacy</a> and <a href="gdpr">GDPR</a>).</li>
-</ul>
-<h2 id="5-acceptable-use">5. Acceptable use</h2>
-<p>Don&#39;t use the service to store or transmit illegal content, to abuse or overload the infrastructure, or to attempt to break project isolation or security. We may suspend or terminate accounts that do.</p>
-<h2 id="6-approvals-are-your-decision">6. Approvals are your decision</h2>
-<p>Impri holds a proposed action until a human approves it, then hands the decision back to your agent. <strong>Once you approve an action, the action and its consequences are yours.</strong> Impri is a tool that surfaces and gates decisions; it does not make them for you and is not responsible for what an approved action does.</p>
-<h2 id="7-billing">7. Billing</h2>
-<p>Paid tiers are processed by <strong>Stripe</strong>. You can cancel at any time; access continues until the end of the current billing period. Card data is handled by Stripe and never stored by us.</p>
-<h2 id="8-limitation-of-liability">8. Limitation of liability</h2>
-<p>To the maximum extent permitted by law, Impri and its operator are not liable for any indirect, incidental, or consequential damages, or for loss of data, revenue, or profits. Total liability for any claim is limited to the fees you paid for the service in the three months before the claim.</p>
-<h2 id="9-termination">9. Termination</h2>
-<p>You can stop using the service at any time and erase your data (<code>DELETE /v1/project/data</code>). We may suspend or terminate access for violations of these terms or to protect the service.</p>
-<h2 id="10-changes">10. Changes</h2>
-<p>We may update these terms; material changes will be reflected here with a new date. Continued use after a change means you accept it.</p>
-<h2 id="11-governing-law">11. Governing law</h2>
-<p>These terms are governed by the laws of the Czech Republic, where the operator is based.</p>
-<h2 id="12-contact">12. Contact</h2>
-<p>Questions about these terms: <a href="https://sekera.dev" target="_blank" rel="noopener">sekera.dev</a>.</p>
-
-  </main>
-
-  <aside aria-label="On this page">
+  <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
 <ul><li class="ptoc-h2"><a href="#1-acceptance">1. Acceptance</a></li>

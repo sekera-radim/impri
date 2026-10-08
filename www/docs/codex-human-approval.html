@@ -43,6 +43,8 @@ pre code.hljs{display:block;overflow-x:auto}
 .hljs-link{text-decoration:underline}
 /* ── docs layout ── */
 .docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+/* The article comes first in the HTML so crawlers and AI fetchers that read top-down reach it before ~50 nav links; the grid puts the nav back on the left. */
+.doc-main{grid-column:2;grid-row:1}.docs-sidebar{grid-column:1;grid-row:1}.docs-toc{grid-column:3;grid-row:1}
 .docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
 .docs-sidebar::-webkit-scrollbar{width:4px}
 .docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
@@ -105,8 +107,8 @@ pre code.hljs{display:block;overflow-x:auto}
 .hub-card-pages li a:hover{color:#c7cbff}
 .hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
 /* ── responsive ── */
-@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc{display:none}}
-@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{padding:16px 18px 40px}}
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc,.docs-toc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{grid-column:1}.doc-main{padding:16px 18px 40px}}
 @media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
 .nav-links .active-nav{color:var(--text)!important}
 </style>
@@ -132,9 +134,62 @@ pre code.hljs{display:block;overflow-x:auto}
 </nav>
 
 <div class="docs-shell">
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Install</span>
+      <span class="bc-sep">/</span>
+      <span>Add human approval to OpenAI Codex with Impri</span>
+    </nav>
+    <h1>Add human approval to OpenAI Codex with Impri</h1>
+<p>Wrap Codex&#39;s risky tool calls — deploys, database writes, outbound messages, refunds — behind an explicit human decision before any of them are allowed to run.</p>
+<h2 id="60-second-install">60-second install</h2>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">codex mcp add impri \
+  --<span class="hljs-built_in">env</span> IMPRI_API_KEY=im_your_key_here \
+  --<span class="hljs-built_in">env</span> IMPRI_BASE_URL=https://api.impri.dev \
+  -- npx -y @impri/mcp</code></pre></div>
+<p><code>IMPRI_BASE_URL</code> defaults to <code>http://localhost:8484</code> (self-hosted) — set it explicitly for the cloud API as above, or drop it entirely if you&#39;re actually running <code>docker compose up -d</code> locally.</p>
+<p>Get a key at <a href="https://impri.dev" target="_blank" rel="noopener">impri.dev</a> or self-host per <a href="self-hosting">self-hosting</a>. List configured servers with <code>codex mcp list</code> to confirm <code>impri</code> shows up with its 8 tools.</p>
+<h2 id="tell-codex-to-use-it">Tell Codex to use it</h2>
+<p>Add to your <code>AGENTS.md</code> or system prompt:</p>
+<div class="code-block"><span class="code-lang">markdown</span><pre><code class="hljs"><span class="hljs-section">## Human approval</span>
+Before any action with a real side effect (send, deploy, delete, pay, publish), call
+impri<span class="hljs-emphasis">_push_</span>action with a clear preview and impri<span class="hljs-emphasis">_await_</span>decision before proceeding.
+Do not execute on rejection or timeout — report it and stop that step.</code></pre></div>
+<h2 id="what-you-see">What you see</h2>
+<p>The action appears in the Impri inbox with its title, preview, and a Approve/Reject/Edit control. If a <a href="notifications">notification channel</a> is configured, you also get pushed a card in Slack, Discord, Telegram, or as a web push — so you don&#39;t have to keep a browser tab open while Codex runs.</p>
+<h2 id="real-example-call">Real example call</h2>
+<div class="code-block"><pre><code class="hljs">impri_push_action({
+  kind: &quot;payment.refund&quot;,
+  title: &quot;Refund $84.00 to order #10432 — damaged item&quot;,
+  preview: { format: &quot;plain&quot;, body: &quot;Order #10432, $84.00 full refund. Customer provided photos.&quot; },
+  payload: { order_id: &quot;10432&quot;, amount_cents: 8400, currency: &quot;USD&quot; },
+  editable: [&quot;payload.amount_cents&quot;]
+})</code></pre></div>
+<p>Response:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_5jf8...&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;pending&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;inbox_url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://app.impri.dev/inbox/act_5jf8...&quot;</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<ul>
+<li><strong><code>codex mcp add</code> accepted but tools never show up</strong> — check the server started at all with <code>codex mcp list</code>; a missing <code>-- npx -y @impri/mcp</code> (note the <code>--</code> separator) is the most common typo.</li>
+<li><strong><code>IMPRI_API_KEY is not set</code> at call time</strong> — env vars passed with <code>--env</code> are per-server; confirm you didn&#39;t fat-finger the flag on a re-run and end up with two <code>impri</code> entries, one without the key.</li>
+<li><strong>Codex times out waiting on <code>impri_await_decision</code></strong> — that&#39;s expected if nobody has decided yet; the default is 5 minutes, pass a longer <code>timeout_s</code> for anything that should survive an overnight run.</li>
+</ul>
+<h2 id="next">Next</h2>
+<p><a href="how-to-add-human-approval-to-an-ai-agent">Read the full human approval pattern</a>, or see <a href="/use-cases/refunds-and-payments">gating refunds and payments</a> end to end.</p>
+
+  </main>
+
   <aside class="docs-sidebar" aria-label="Documentation navigation">
     <div class="sg">
 <div class="sg-label">Getting started</div>
+<a href="../docs/what-is-an-approval-inbox" class="sl">What is an approval inbox?</a>
+<a href="../docs/what-is-human-in-the-loop-for-ai-agents" class="sl">What is human-in-the-loop?</a>
+<a href="../docs/what-is-an-mcp-approval-server" class="sl">What is an MCP approval server?</a>
 <a href="../docs/quickstart" class="sl">Quickstart</a>
 <a href="../docs/ai-agent-approval-workflow" class="sl">Approval workflow overview</a>
 <a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
@@ -193,57 +248,7 @@ pre code.hljs{display:block;overflow-x:auto}
 </div>
   </aside>
 
-  <main class="doc-main" id="main-content">
-    <nav class="breadcrumb" aria-label="Breadcrumb">
-      <a href="../docs">Docs</a>
-      <span class="bc-sep">/</span>
-      <span>Install</span>
-      <span class="bc-sep">/</span>
-      <span>Add human approval to OpenAI Codex with Impri</span>
-    </nav>
-    <h1>Add human approval to OpenAI Codex with Impri</h1>
-<p>Wrap Codex&#39;s risky tool calls — deploys, database writes, outbound messages, refunds — behind an explicit human decision before any of them are allowed to run.</p>
-<h2 id="60-second-install">60-second install</h2>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">codex mcp add impri \
-  --<span class="hljs-built_in">env</span> IMPRI_API_KEY=im_your_key_here \
-  --<span class="hljs-built_in">env</span> IMPRI_BASE_URL=https://api.impri.dev \
-  -- npx -y @impri/mcp</code></pre></div>
-<p><code>IMPRI_BASE_URL</code> defaults to <code>http://localhost:8484</code> (self-hosted) — set it explicitly for the cloud API as above, or drop it entirely if you&#39;re actually running <code>docker compose up -d</code> locally.</p>
-<p>Get a key at <a href="https://impri.dev" target="_blank" rel="noopener">impri.dev</a> or self-host per <a href="self-hosting">self-hosting</a>. List configured servers with <code>codex mcp list</code> to confirm <code>impri</code> shows up with its 8 tools.</p>
-<h2 id="tell-codex-to-use-it">Tell Codex to use it</h2>
-<p>Add to your <code>AGENTS.md</code> or system prompt:</p>
-<div class="code-block"><span class="code-lang">markdown</span><pre><code class="hljs"><span class="hljs-section">## Human approval</span>
-Before any action with a real side effect (send, deploy, delete, pay, publish), call
-impri<span class="hljs-emphasis">_push_</span>action with a clear preview and impri<span class="hljs-emphasis">_await_</span>decision before proceeding.
-Do not execute on rejection or timeout — report it and stop that step.</code></pre></div>
-<h2 id="what-you-see">What you see</h2>
-<p>The action appears in the Impri inbox with its title, preview, and a Approve/Reject/Edit control. If a <a href="notifications">notification channel</a> is configured, you also get pushed a card in Slack, Discord, Telegram, or as a web push — so you don&#39;t have to keep a browser tab open while Codex runs.</p>
-<h2 id="real-example-call">Real example call</h2>
-<div class="code-block"><pre><code class="hljs">impri_push_action({
-  kind: &quot;payment.refund&quot;,
-  title: &quot;Refund $84.00 to order #10432 — damaged item&quot;,
-  preview: { format: &quot;plain&quot;, body: &quot;Order #10432, $84.00 full refund. Customer provided photos.&quot; },
-  payload: { order_id: &quot;10432&quot;, amount_cents: 8400, currency: &quot;USD&quot; },
-  editable: [&quot;payload.amount_cents&quot;]
-})</code></pre></div>
-<p>Response:</p>
-<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
-  <span class="hljs-attr">&quot;action_id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;act_5jf8...&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;status&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;pending&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;inbox_url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://app.impri.dev/inbox/act_5jf8...&quot;</span>
-<span class="hljs-punctuation">}</span></code></pre></div>
-<h2 id="troubleshooting">Troubleshooting</h2>
-<ul>
-<li><strong><code>codex mcp add</code> accepted but tools never show up</strong> — check the server started at all with <code>codex mcp list</code>; a missing <code>-- npx -y @impri/mcp</code> (note the <code>--</code> separator) is the most common typo.</li>
-<li><strong><code>IMPRI_API_KEY is not set</code> at call time</strong> — env vars passed with <code>--env</code> are per-server; confirm you didn&#39;t fat-finger the flag on a re-run and end up with two <code>impri</code> entries, one without the key.</li>
-<li><strong>Codex times out waiting on <code>impri_await_decision</code></strong> — that&#39;s expected if nobody has decided yet; the default is 5 minutes, pass a longer <code>timeout_s</code> for anything that should survive an overnight run.</li>
-</ul>
-<h2 id="next">Next</h2>
-<p><a href="how-to-add-human-approval-to-an-ai-agent">Read the full human approval pattern</a>, or see <a href="/use-cases/refunds-and-payments">gating refunds and payments</a> end to end.</p>
-
-  </main>
-
-  <aside aria-label="On this page">
+  <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
 <ul><li class="ptoc-h2"><a href="#60-second-install">60-second install</a></li>
