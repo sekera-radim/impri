@@ -22,7 +22,48 @@ IMPRI_BASE_URL=https://api.impri.dev
 
 ---
 
-## Configuration
+## Hosted remote server (no install)
+
+`https://api.impri.dev/mcp` is a hosted Streamable HTTP MCP endpoint — the same 8 tools as `@impri/mcp`, with nothing to install or run locally. Any MCP client that supports a remote (HTTP) server can connect with just the URL and your API key as a Bearer token.
+
+Use this when your agent runs on a hosted platform that can't spawn an `npx` process, or when a directory/registry only accepts a remote URL. Use the `npx @impri/mcp` package below when you want a local process (e.g. to point `IMPRI_BASE_URL` at a self-hosted server instead of the cloud).
+
+**Claude Code:**
+
+```bash
+claude mcp add --transport http impri https://api.impri.dev/mcp --header "Authorization: Bearer $IMPRI_API_KEY"
+```
+
+**Cursor / Windsurf / VS Code (`mcp.json`):**
+
+```json
+{
+  "mcpServers": {
+    "impri": {
+      "url": "https://api.impri.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer im_your_key"
+      }
+    }
+  }
+}
+```
+
+**OpenAI Codex (`~/.codex/config.toml`):**
+
+```toml
+[mcp_servers.impri]
+url = "https://api.impri.dev/mcp"
+bearer_token_env_var = "IMPRI_API_KEY"
+```
+
+The endpoint is stateless (no session id, no server-initiated stream) and authenticates every request independently — there's nothing to log in or out of beyond the Bearer header. A machine-readable description of it (tool list, auth scheme) is published at [`/.well-known/mcp/server-card.json`](https://api.impri.dev/.well-known/mcp/server-card.json), which is what lets directories list this server without needing a live connection to scan it.
+
+One difference from the local package: `impri_await_decision`'s `timeout_s` is capped at 20 seconds server-side on the hosted endpoint (a single HTTP request can't stay open indefinitely behind a proxy). Call it again if the action is still pending — that's the intended polling pattern either way.
+
+---
+
+## Local package (`npx @impri/mcp`)
 
 ### Claude Code (`~/.claude/mcp.json`)
 

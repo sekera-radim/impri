@@ -26,6 +26,20 @@ Impri turns that instruction into a data dependency instead. The agent pushes a 
 
 ## 60-second install
 
+No install at all — connect straight to the hosted endpoint if your client supports a remote MCP server:
+
+```bash
+claude mcp add --transport http impri https://api.impri.dev/mcp --header "Authorization: Bearer $IMPRI_API_KEY"
+```
+
+```bash
+codex mcp add impri --url https://api.impri.dev/mcp
+# then add to ~/.codex/config.toml under [mcp_servers.impri]:
+#   bearer_token_env_var = "IMPRI_API_KEY"
+```
+
+Or run the local package (needed if you're pointing at a self-hosted server instead of the cloud):
+
 **Claude Code:**
 
 ```bash

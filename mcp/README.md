@@ -4,6 +4,14 @@ MCP server for [Impri](https://impri.dev) — human-in-the-loop approval inbox f
 
 Agents submit actions for human review (approve/reject/edit) and poll for the decision before executing anything with side effects. Full audit trail in the Impri web and mobile inbox.
 
+**Don't want to run a local process?** The same 8 tools are also served over Streamable HTTP at `https://api.impri.dev/mcp` — no install, just a URL and your API key as a Bearer token:
+
+```bash
+claude mcp add --transport http impri https://api.impri.dev/mcp --header "Authorization: Bearer $IMPRI_API_KEY"
+```
+
+See [impri.dev/docs/mcp](https://impri.dev/docs/mcp#hosted-remote-server-no-install) for Cursor/Windsurf/Codex config and details (e.g. the hosted endpoint caps `impri_await_decision`'s wait at 20s). The rest of this README covers the local `npx @impri/mcp` package below.
+
 ## Quickstart (Claude Code)
 
 **1. Get an API key** at [impri.dev](https://impri.dev) or spin up the self-hosted server:
