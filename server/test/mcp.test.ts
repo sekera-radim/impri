@@ -128,6 +128,14 @@ describe('POST /mcp — protocol', () => {
     for (const t of body.result.tools) {
       expect(t).toHaveProperty('description');
       expect(t).toHaveProperty('inputSchema');
+      expect(t.title, t.name).toBeTruthy();
+      expect(t.annotations, t.name).toBeTruthy();
+      expect(t.annotations.readOnlyHint, t.name).toBeTypeOf('boolean');
+      expect(t.annotations.destructiveHint, t.name).toBeTypeOf('boolean');
+      expect(t.annotations.idempotentHint, t.name).toBeTypeOf('boolean');
+      expect(t.annotations.openWorldHint, t.name).toBeTypeOf('boolean');
+      expect(t.outputSchema, t.name).toBeTruthy();
+      expect(t.outputSchema.type).toBe('object');
     }
   });
 
@@ -219,6 +227,27 @@ describe('POST /mcp — tools/call happy path', () => {
     expect(inboxBody.result.content[0].text).toContain(pushText.action_id);
   });
 
+  it('impri_push_action result carries structuredContent matching its outputSchema', async () => {
+    const { app, adminKey } = await setup();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/mcp',
+      headers: auth(adminKey),
+      payload: rpc('tools/call', {
+        name: 'impri_push_action',
+        arguments: { kind: 'test.mcp', title: 'x', preview: { format: 'plain', body: 'x' } },
+      }),
+    });
+    const body = res.json();
+    expect(body.result.structuredContent).toEqual({
+      action_id: expect.stringMatching(/^act_/),
+      status: 'pending',
+      inbox_url: expect.any(String),
+    });
+    // text and structuredContent must describe the same thing, not drift.
+    expect(JSON.parse(body.result.content[0].text)).toEqual(body.result.structuredContent);
+  });
+
   it('calling an unknown tool returns a JSON-RPC error, not a 500', async () => {
     const { app, adminKey } = await setup();
     const res = await app.inject({
@@ -295,5 +324,64 @@ describe('GET /.well-known/mcp/server-card.json', () => {
     expect(card.transport.url).toMatch(/\/mcp$/);
     expect(card.authentication).toEqual({ required: true, schemes: ['bearer'] });
     expect(card.tools.map((t: { name: string }) => t.name).sort()).toEqual(TOOLS.map(t => t.name).sort());
+    // The richer metadata (title/annotations/outputSchema) is what raised the
+    // Smithery quality score — assert it actually reaches this public card.
+    for (const t of card.tools) {
+      expect(t.title, t.name).toBeTruthy();
+      expect(t.annotations, t.name).toBeTruthy();
+      expect(t.outputSchema, t.name).toBeTruthy();
+    }
+  });
+});
+
+describe('POST /mcp — Authorization without the "Bearer " prefix (Smithery gateway compat)', () => {
+  it('accepts a bare "im_…" key, same as "Bearer im_…"', async () => {
+    const { app, adminKey } = await setup();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/mcp',
+      headers: { Authorization: adminKey, 'Content-Type': 'application/json' },
+      payload: rpc('tools/list'),
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().result.tools).toHaveLength(8);
+  });
+
+  it('still accepts the canonical "Bearer im_…" form', async () => {
+    const { app, adminKey } = await setup();
+    const res = await app.inject({ method: 'POST', url: '/mcp', headers: auth(adminKey), payload: rpc('tools/list') });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('rejects a bare invalid key the same as before', async () => {
+    const { app } = await setup();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/mcp',
+      headers: { Authorization: 'im_totally_bogus_key_0000000000000000', 'Content-Type': 'application/json' },
+      payload: rpc('tools/list'),
+    });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('rejects an unrelated auth scheme (not treated as public, not treated as a key)', async () => {
+    const { app } = await setup();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/mcp',
+      headers: { Authorization: 'Basic dXNlcjpwYXNz', 'Content-Type': 'application/json' },
+      payload: rpc('tools/list'),
+    });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('also works on a plain REST route (shared preHandler), and never logs the bare key', async () => {
+    const { app, adminKey } = await setup();
+    let res!: Awaited<ReturnType<typeof app.inject>>;
+    const stdout = await captureStdout(async () => {
+      res = await app.inject({ method: 'GET', url: '/v1/actions?status=pending', headers: { Authorization: adminKey } });
+    });
+    expect(res.statusCode).toBe(200);
+    expect(stdout).not.toContain(adminKey);
   });
 });
