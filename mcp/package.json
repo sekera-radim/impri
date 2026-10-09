@@ -29,7 +29,8 @@
     "./tools": "./dist/tools.js",
     "./toolDefs": "./dist/toolDefs.js",
     "./client": "./dist/client.js",
-    "./dispatch": "./dist/dispatch.js"
+    "./dispatch": "./dist/dispatch.js",
+    "./serverInfo": "./dist/serverInfo.js"
   },
   "bin": {
     "impri-mcp": "dist/index.js"

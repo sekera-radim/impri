@@ -348,7 +348,7 @@ export async function createApp(db: Db, reporter: ErrorReporter = errorReporter)
   // Hosted streamable-HTTP MCP endpoint (/mcp) + public server card
   // (/.well-known/mcp/server-card.json). Same 8 tools as the stdio @impri/mcp
   // package, executed in-process via app.inject — see routes/mcp.ts.
-  registerMcpRoutes(app, db, PKG_VERSION);
+  registerMcpRoutes(app, db);
 
   return app;
 }

@@ -17,6 +17,7 @@ import { createDb } from '../src/db.js';
 import { bootstrapAdminKey } from '../src/auth.js';
 import { createApp } from '../src/index.js';
 import { TOOLS } from '@impri/mcp/toolDefs';
+import { VERSION as MCP_PKG_VERSION } from '@impri/mcp/serverInfo';
 
 process.env.DISABLE_WATCHER_SCHEDULER = '1';
 
@@ -112,7 +113,21 @@ describe('POST /mcp — protocol', () => {
     const body = res.json();
     expect(body.result.protocolVersion).toBe('2025-06-18');
     expect(body.result.serverInfo.name).toBe('@impri/mcp');
-    expect(typeof body.result.serverInfo.version).toBe('string');
+    expect(body.result.serverInfo.title).toBe('Impri');
+    // Must track @impri/mcp's own version, not @impri/server's — this used
+    // to leak the server package's version (0.1.0) while mcp was at 0.1.2.
+    expect(body.result.serverInfo.version).toBe(MCP_PKG_VERSION);
+  });
+
+  it('initialize returns server-level instructions (push/await/report flow)', async () => {
+    const { app, adminKey } = await setup();
+    const res = await app.inject({ method: 'POST', url: '/mcp', headers: auth(adminKey), payload: rpc('initialize', { protocolVersion: '2025-06-18' }) });
+    const body = res.json();
+    expect(typeof body.result.instructions).toBe('string');
+    expect(body.result.instructions.length).toBeGreaterThan(100);
+    expect(body.result.instructions).toContain('impri_push_action');
+    expect(body.result.instructions).toContain('impri_await_decision');
+    expect(body.result.instructions).toContain('impri_report_result');
   });
 
   it('tools/list returns exactly the 8 shared tool definitions', async () => {
@@ -331,6 +346,11 @@ describe('GET /.well-known/mcp/server-card.json', () => {
       expect(t.annotations, t.name).toBeTruthy();
       expect(t.outputSchema, t.name).toBeTruthy();
     }
+    // Same version/instructions gap the /mcp initialize response had to fix.
+    expect(card.serverInfo.title).toBe('Impri');
+    expect(card.serverInfo.version).toBe(MCP_PKG_VERSION);
+    expect(typeof card.instructions).toBe('string');
+    expect(card.instructions.length).toBeGreaterThan(100);
   });
 });
 

@@ -7,9 +7,9 @@ import { buildServerCard } from '../mcp/serverCard.js';
 import { TOOLS } from '@impri/mcp/toolDefs';
 import { callTool } from '@impri/mcp/dispatch';
 import type { ImpriConfig, Transport } from '@impri/mcp/client';
+import { INSTRUCTIONS, SERVER_NAME, SERVER_TITLE, VERSION } from '@impri/mcp/serverInfo';
 
 const PROTOCOL_VERSION = '2025-06-18';
-const SERVER_NAME = '@impri/mcp';
 
 // Fly's edge proxy and most MCP clients assume a tool call resolves well
 // under a minute. impri_await_decision normally polls for up to 300s — here
@@ -73,7 +73,7 @@ function makeInjectTransport(app: FastifyInstance, keyId: string): Transport {
   };
 }
 
-export function registerMcpRoutes(app: FastifyInstance, db: Db, pkgVersion: string): void {
+export function registerMcpRoutes(app: FastifyInstance, db: Db): void {
   // ---------------------------------------------------------------------------
   // GET /.well-known/mcp/server-card.json — PUBLIC, no Authorization required.
   // Directories (Smithery, the Claude connectors directory, ...) fetch this
@@ -83,7 +83,7 @@ export function registerMcpRoutes(app: FastifyInstance, db: Db, pkgVersion: stri
   app.get('/.well-known/mcp/server-card.json', async (_request, reply) => {
     const baseUrl = process.env.BASE_URL ?? `http://localhost:${process.env.PORT ?? '8484'}`;
     reply.header('Cache-Control', 'public, max-age=300');
-    return buildServerCard(baseUrl, pkgVersion);
+    return buildServerCard(baseUrl);
   });
 
   // GET /mcp — this is a stateless server (no sessions, no server-initiated
@@ -144,7 +144,8 @@ export function registerMcpRoutes(app: FastifyInstance, db: Db, pkgVersion: stri
         return rpcResult(id, {
           protocolVersion: PROTOCOL_VERSION,
           capabilities: { tools: {} },
-          serverInfo: { name: SERVER_NAME, version: pkgVersion },
+          serverInfo: { name: SERVER_NAME, title: SERVER_TITLE, version: VERSION },
+          instructions: INSTRUCTIONS,
         });
 
       // Notifications never get a JSON-RPC response body — 202 and done.
