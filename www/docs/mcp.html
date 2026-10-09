@@ -153,7 +153,30 @@ pre code.hljs{display:block;overflow-x:auto}
 <span class="hljs-comment"># Optional — defaults to http://localhost:8484 (self-hosted)</span>
 IMPRI_BASE_URL=https://api.impri.dev</code></pre></div>
 <hr>
-<h2 id="configuration">Configuration</h2>
+<h2 id="hosted-remote-server-no-install">Hosted remote server (no install)</h2>
+<p><code>https://api.impri.dev/mcp</code> is a hosted Streamable HTTP MCP endpoint — the same 8 tools as <code>@impri/mcp</code>, with nothing to install or run locally. Any MCP client that supports a remote (HTTP) server can connect with just the URL and your API key as a Bearer token.</p>
+<p>Use this when your agent runs on a hosted platform that can&#39;t spawn an <code>npx</code> process, or when a directory/registry only accepts a remote URL. Use the <code>npx @impri/mcp</code> package below when you want a local process (e.g. to point <code>IMPRI_BASE_URL</code> at a self-hosted server instead of the cloud).</p>
+<p><strong>Claude Code:</strong></p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">claude mcp add --transport http impri https://api.impri.dev/mcp --header <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span></code></pre></div>
+<p><strong>Cursor / Windsurf / VS Code (<code>mcp.json</code>):</strong></p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;mcpServers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">&quot;impri&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">&quot;url&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://api.impri.dev/mcp&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;headers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">&quot;Authorization&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Bearer im_your_key&quot;</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p><strong>OpenAI Codex (<code>~/.codex/config.toml</code>):</strong></p>
+<div class="code-block"><span class="code-lang">toml</span><pre><code class="hljs"><span class="hljs-section">[mcp_servers.impri]</span>
+<span class="hljs-attr">url</span> = <span class="hljs-string">&quot;https://api.impri.dev/mcp&quot;</span>
+<span class="hljs-attr">bearer_token_env_var</span> = <span class="hljs-string">&quot;IMPRI_API_KEY&quot;</span></code></pre></div>
+<p>The endpoint is stateless (no session id, no server-initiated stream) and authenticates every request independently — there&#39;s nothing to log in or out of beyond the Bearer header. A machine-readable description of it (tool list, auth scheme) is published at <a href="https://api.impri.dev/.well-known/mcp/server-card.json" target="_blank" rel="noopener">`/.well-known/mcp/server-card.json`</a>, which is what lets directories list this server without needing a live connection to scan it.</p>
+<p>One difference from the local package: <code>impri_await_decision</code>&#39;s <code>timeout_s</code> is capped at 20 seconds server-side on the hosted endpoint (a single HTTP request can&#39;t stay open indefinitely behind a proxy). Call it again if the action is still pending — that&#39;s the intended polling pattern either way.</p>
+<hr>
+<h2 id="local-package-npx-imprimcp">Local package (<code>npx @impri/mcp</code>)</h2>
 <h3 id="claude-code-claudemcpjson">Claude Code (<code>~/.claude/mcp.json</code>)</h3>
 <div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
   <span class="hljs-attr">&quot;mcpServers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
@@ -554,7 +577,8 @@ Community:
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
 <ul><li class="ptoc-h2"><a href="#installation">Installation</a></li>
-<li class="ptoc-h2"><a href="#configuration">Configuration</a></li>
+<li class="ptoc-h2"><a href="#hosted-remote-server-no-install">Hosted remote server (no install)</a></li>
+<li class="ptoc-h2"><a href="#local-package-npx-imprimcp">Local package (npx @impri/mcp)</a></li>
 <li class="ptoc-h3"><a href="#claude-code-claudemcpjson">Claude Code (~/.claude/mcp.json)</a></li>
 <li class="ptoc-h3"><a href="#claude-desktop-claudedesktopconfigjson">Claude Desktop (claude_desktop_config.json)</a></li>
 <li class="ptoc-h3"><a href="#cursor-cursormcpjson">Cursor (~/.cursor/mcp.json)</a></li>

@@ -470,6 +470,14 @@ Exit codes: 0 success, 1 error, 2 conflict (already decided).
 
 ### MCP server
 
+Hosted remote endpoint (no install): `https://api.impri.dev/mcp`, Streamable HTTP, stateless, auth via `Authorization: Bearer im_...` on every request. 401 (with `WWW-Authenticate: Bearer`) if missing/invalid. Public metadata card (no auth) at `/.well-known/mcp/server-card.json`. `impri_await_decision`'s `timeout_s` is capped at 20s server-side on this endpoint (poll again if still pending).
+
+```bash
+claude mcp add --transport http impri https://api.impri.dev/mcp --header "Authorization: Bearer $IMPRI_API_KEY"
+```
+
+Local package (self-hosted servers, or when a client can't do remote HTTP):
+
 ```bash
 IMPRI_API_KEY=im_... npx @impri/mcp
 # IMPRI_BASE_URL=https://api.impri.dev (default: http://localhost:8484)
