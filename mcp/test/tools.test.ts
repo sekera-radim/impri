@@ -299,7 +299,7 @@ describe("awaitDecision", () => {
 
 describe("reportResult", () => {
   it("reports executed status", async () => {
-    mockFetch.mockResolvedValue(mockOk({}, 204));
+    mockFetch.mockResolvedValue(mockOk({ id: "act_007", status: "executed", updated_at: 1_700_000_000 }));
 
     const result = await reportResult(config, {
       action_id: "act_007",
@@ -309,13 +309,18 @@ describe("reportResult", () => {
     expect(result.text).toContain("act_007");
     expect(result.text).toContain("executed");
     expect(result.isError).toBeFalsy();
+    expect(result.structuredContent).toEqual({
+      action_id: "act_007",
+      status: "executed",
+      updated_at: 1_700_000_000,
+    });
     expect(mockFetch).toHaveBeenCalledOnce();
     const [url] = mockFetch.mock.calls[0]!;
     expect(url).toBe("http://localhost:8484/v1/actions/act_007/result");
   });
 
   it("reports execute_failed with error detail", async () => {
-    mockFetch.mockResolvedValue(mockOk({}, 204));
+    mockFetch.mockResolvedValue(mockOk({ id: "act_008", status: "execute_failed", updated_at: 1_700_000_100 }));
 
     const result = await reportResult(config, {
       action_id: "act_008",
@@ -326,6 +331,12 @@ describe("reportResult", () => {
     expect(result.text).toContain("act_008");
     expect(result.text).toContain("execute_failed");
     expect(result.text).toContain("Network timeout");
+    expect(result.structuredContent).toEqual({
+      action_id: "act_008",
+      status: "execute_failed",
+      updated_at: 1_700_000_100,
+      detail: "Network timeout when posting to Reddit",
+    });
   });
 });
 

@@ -27,8 +27,11 @@ export function buildServerCard(baseUrl: string, serverVersion: string) {
     },
     tools: TOOLS.map(t => ({
       name: t.name,
+      title: t.title,
       description: t.description,
       inputSchema: t.inputSchema,
+      ...(t.outputSchema ? { outputSchema: t.outputSchema } : {}),
+      annotations: t.annotations,
     })),
     prompts: [],
     resources: [],

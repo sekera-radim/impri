@@ -8,6 +8,7 @@ import {
   listWatchers,
   pushAction,
   reportResult,
+  type ToolResult,
 } from "./tools.js";
 
 export interface ToolCallContent {
@@ -18,11 +19,24 @@ export interface ToolCallContent {
 export interface ToolCallResult {
   content: ToolCallContent[];
   isError?: boolean;
+  structuredContent?: Record<string, unknown>;
   // Index signature so this structurally satisfies the MCP SDK's broader
   // CallToolResult/ServerResult union (which has optional fields like `task`
   // for other response shapes we don't use) when returned through a named
   // type instead of an inline literal.
   [key: string]: unknown;
+}
+
+// Shared by every case below: turns a tools.ts ToolResult into the MCP
+// CallToolResult shape, carrying structuredContent through untouched when
+// the tool set one (see each TOOLS entry's outputSchema comment in
+// toolDefs.ts for which results do).
+function toCallResult(result: ToolResult): ToolCallResult {
+  return {
+    content: [{ type: "text", text: result.text }],
+    ...(result.isError ? { isError: true } : {}),
+    ...(result.structuredContent ? { structuredContent: result.structuredContent } : {}),
+  };
 }
 
 /**
@@ -49,7 +63,7 @@ export async function callTool(
           idempotency_key: args["idempotency_key"] as string | undefined,
           editable: args["editable"] as string[] | undefined,
         });
-        return { content: [{ type: "text", text: result.text }], ...(result.isError ? { isError: true } : {}) };
+        return toCallResult(result);
       }
 
       case "impri_await_decision": {
@@ -57,7 +71,7 @@ export async function callTool(
           action_id: args["action_id"] as string,
           timeout_s: args["timeout_s"] as number | undefined,
         });
-        return { content: [{ type: "text", text: result.text }], ...(result.isError ? { isError: true } : {}) };
+        return toCallResult(result);
       }
 
       case "impri_report_result": {
@@ -66,27 +80,27 @@ export async function callTool(
           status: args["status"] as "executed" | "execute_failed",
           detail: args["detail"] as string | undefined,
         });
-        return { content: [{ type: "text", text: result.text }], ...(result.isError ? { isError: true } : {}) };
+        return toCallResult(result);
       }
 
       case "impri_inbox_status": {
         const result = await inboxStatus(config);
-        return { content: [{ type: "text", text: result.text }], ...(result.isError ? { isError: true } : {}) };
+        return toCallResult(result);
       }
 
       case "impri_create_watcher": {
         const result = await createWatcher(config, { spec: args["spec"] });
-        return { content: [{ type: "text", text: result.text }], ...(result.isError ? { isError: true } : {}) };
+        return toCallResult(result);
       }
 
       case "impri_list_watchers": {
         const result = await listWatchers(config, { status: args["status"] as string | undefined });
-        return { content: [{ type: "text", text: result.text }], ...(result.isError ? { isError: true } : {}) };
+        return toCallResult(result);
       }
 
       case "impri_list_watcher_presets": {
         const result = await listWatcherPresets(config);
-        return { content: [{ type: "text", text: result.text }], ...(result.isError ? { isError: true } : {}) };
+        return toCallResult(result);
       }
 
       case "impri_create_watcher_from_preset": {
@@ -98,7 +112,7 @@ export async function callTool(
             | { every?: string; jitter?: string; window?: string }
             | undefined,
         });
-        return { content: [{ type: "text", text: result.text }], ...(result.isError ? { isError: true } : {}) };
+        return toCallResult(result);
       }
 
       default:
