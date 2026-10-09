@@ -85,6 +85,24 @@ function checkRateLimitSqlite(db: Db, keyId: string, route: string, windowStart:
   return true;
 }
 
+// Smithery's hosted gateway forwards a user-provided parameter value
+// straight into the upstream Authorization header, with no "Bearer " scheme
+// added — a user who pastes just the raw key ends up sending
+// "Authorization: im_xxxx" instead of "Authorization: Bearer im_xxxx". Accept
+// both forms on every route (this feeds the one global auth preHandler in
+// index.ts, shared by /mcp and the REST API), while "Bearer im_…" stays the
+// documented canonical form in docs/mcp.md and the README. This only
+// loosens header *syntax* — the extracted key still goes through
+// verifyApiKey()'s argon2 check unchanged, so anything else (missing
+// header, wrong scheme, garbage value) still falls through to a 401 same as
+// before.
+export function extractRawApiKey(authHeader: string | undefined): string | null {
+  if (!authHeader) return null;
+  if (authHeader.startsWith('Bearer im_')) return authHeader.slice('Bearer '.length);
+  if (authHeader.startsWith('im_')) return authHeader;
+  return null;
+}
+
 export async function verifyApiKey(db: Db, rawKey: string): Promise<ApiKeyRecord | null> {
   if (!rawKey.startsWith('im_')) return null;
   const prefix = rawKey.slice(0, 16);

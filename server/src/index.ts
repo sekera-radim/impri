@@ -2,7 +2,7 @@ import './types.js';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { createDb } from './db.js';
-import { verifyApiKey, bootstrapAdminKey, verifyInternalAuthToken, lookupApiKeyById } from './auth.js';
+import { verifyApiKey, bootstrapAdminKey, verifyInternalAuthToken, lookupApiKeyById, extractRawApiKey } from './auth.js';
 import { registerActionRoutes } from './routes/actions.js';
 import { registerKeyRoutes } from './routes/keys.js';
 import { registerWatcherRoutes } from './routes/watchers.js';
@@ -264,12 +264,12 @@ export async function createApp(db: Db, reporter: ErrorReporter = errorReporter)
       return;
     }
 
-    const auth = request.headers.authorization;
-    if (!auth?.startsWith('Bearer im_')) {
+    // Accepts "Bearer im_…" (canonical) and bare "im_…" (see extractRawApiKey).
+    const rawKey = extractRawApiKey(request.headers.authorization);
+    if (!rawKey) {
       // Public endpoints don't need auth
       return;
     }
-    const rawKey = auth.slice('Bearer '.length);
     const keyRecord = await verifyApiKey(db, rawKey);
     if (!keyRecord) {
       return reply.status(401).send({ error: 'Unauthorized', message: 'Invalid or revoked API key' });
