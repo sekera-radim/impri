@@ -111,18 +111,32 @@ export function registerMcpRoutes(app: FastifyInstance, db: Db): void {
   // is separately capped at 256 KB by POST /v1/actions itself).
   app.post('/mcp', { bodyLimit: 512 * 1024 }, async (request, reply) => {
     const key = request.apiKey;
-    if (!key) {
-      return reply
-        .status(401)
-        .header('WWW-Authenticate', 'Bearer realm="impri"')
-        .send(rpcError(null, -32001, 'Unauthorized: missing or invalid API key'));
-    }
-
-    // Generic envelope-level rate limit (initialize/list/ping floods). Each
-    // tools/call additionally runs through the target REST route's own
-    // rate limit (e.g. actions:create 60/min) via the inject transport below.
-    if (!(await checkRateLimit(db, key.keyId, 'mcp:request', 120))) {
-      return reply.status(429).send(rpcError(null, -32000, 'Rate limit: 120 requests/min per key'));
+    // An Authorization header that IS present but doesn't verify already
+    // 401s in the shared preHandler (index.ts) before this handler ever
+    // runs — so reaching here with no `key` always means no header was
+    // sent at all, never a wrong one silently downgraded to anonymous.
+    if (key) {
+      // Generic envelope-level rate limit (initialize/list/ping floods). Each
+      // tools/call additionally runs through the target REST route's own
+      // rate limit (e.g. actions:create 60/min) via the inject transport below.
+      if (!(await checkRateLimit(db, key.keyId, 'mcp:request', 120))) {
+        return reply.status(429).send(rpcError(null, -32000, 'Rate limit: 120 requests/min per key'));
+      }
+    } else {
+      // Anonymous metadata browsing (directories, Smithery's "works without
+      // a key" check) is allowed for everything except tools/call — see the
+      // 'tools/call' case below — but still gets its own per-IP bucket so it
+      // can't be used to flood the server for free. Never touches argon2:
+      // that only runs inside verifyApiKey, for a request that presents a
+      // key at all (see the preHandler).
+      const ip =
+        (request.headers['fly-client-ip'] as string | undefined) ??
+        (request.headers['cf-connecting-ip'] as string | undefined) ??
+        request.ip ??
+        'unknown';
+      if (!(await checkRateLimit(db, `ip:${ip}`, 'mcp:anon', 60))) {
+        return reply.status(429).send(rpcError(null, -32000, 'Rate limit: 60 anonymous requests/min per IP'));
+      }
     }
 
     if (Array.isArray(request.body)) {
@@ -160,6 +174,21 @@ export function registerMcpRoutes(app: FastifyInstance, db: Db): void {
         return rpcResult(id, { tools: TOOLS });
 
       case 'tools/call': {
+        // The only method that actually does something — everything above
+        // (initialize/tools/list/ping/notifications) just describes the
+        // server, which the public server card already exposes with no
+        // auth at all.
+        if (!key) {
+          return reply
+            .status(401)
+            .header('WWW-Authenticate', 'Bearer realm="impri"')
+            .send(rpcError(
+              id,
+              -32001,
+              'Impri API key required: pass Authorization: Bearer im_… — create a free workspace at https://app.impri.dev',
+            ));
+        }
+
         const params = (rpc.params ?? {}) as { name?: unknown; arguments?: unknown };
         const toolName = typeof params.name === 'string' ? params.name : '';
         const rawArgs = { ...((params.arguments ?? {}) as Record<string, unknown>) };

@@ -61,8 +61,20 @@ afterEach(() => {
   delete process.env.MCP_AWAIT_DECISION_MAX_S;
 });
 
-describe('POST /mcp — auth', () => {
-  it('401s with no Authorization header and sets WWW-Authenticate', async () => {
+describe('POST /mcp — anonymous access (metadata only, same as the public server card)', () => {
+  it('initialize works with no Authorization header', async () => {
+    const { app } = await setup();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/mcp',
+      headers: { 'Content-Type': 'application/json' },
+      payload: rpc('initialize', { protocolVersion: '2025-06-18' }),
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().result.serverInfo.name).toBe('@impri/mcp');
+  });
+
+  it('tools/list works with no Authorization header', async () => {
     const { app } = await setup();
     const res = await app.inject({
       method: 'POST',
@@ -70,20 +82,63 @@ describe('POST /mcp — auth', () => {
       headers: { 'Content-Type': 'application/json' },
       payload: rpc('tools/list'),
     });
-    expect(res.statusCode).toBe(401);
-    expect(res.headers['www-authenticate']).toMatch(/Bearer/);
-    expect(res.json().error.code).toBe(-32001);
+    expect(res.statusCode).toBe(200);
+    expect(res.json().result.tools).toHaveLength(8);
   });
 
-  it('401s with a wrong/invalid key', async () => {
+  it('ping works with no Authorization header', async () => {
     const { app } = await setup();
     const res = await app.inject({
       method: 'POST',
       url: '/mcp',
-      headers: auth('im_totally_bogus_key_0000000000000000'),
-      payload: rpc('tools/list'),
+      headers: { 'Content-Type': 'application/json' },
+      payload: rpc('ping'),
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('tools/call 401s with no Authorization header, explaining how to fix it', async () => {
+    const { app } = await setup();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/mcp',
+      headers: { 'Content-Type': 'application/json' },
+      payload: rpc('tools/call', { name: 'impri_inbox_status', arguments: {} }),
     });
     expect(res.statusCode).toBe(401);
+    expect(res.headers['www-authenticate']).toMatch(/Bearer/);
+    const body = res.json();
+    expect(body.error.code).toBe(-32001);
+    expect(body.error.message).toContain('Authorization: Bearer im_');
+    expect(body.error.message).toContain('https://app.impri.dev');
+    // The error still carries the request's own id, unlike the old blanket
+    // 401 (which couldn't — it ran before the body was even parsed).
+    expect(body.id).toBe(1);
+  });
+
+  it('anonymous requests are rate-limited per IP, separately from keyed traffic', async () => {
+    const { app } = await setup();
+    for (let i = 0; i < 60; i++) {
+      const res = await app.inject({ method: 'POST', url: '/mcp', headers: { 'Content-Type': 'application/json' }, payload: rpc('ping') });
+      expect(res.statusCode).toBe(200);
+    }
+    const res = await app.inject({ method: 'POST', url: '/mcp', headers: { 'Content-Type': 'application/json' }, payload: rpc('ping') });
+    expect(res.statusCode).toBe(429);
+  });
+});
+
+describe('POST /mcp — auth', () => {
+  it('401s with a wrong/invalid key, for every method (never silently downgraded to anonymous)', async () => {
+    const { app } = await setup();
+    for (const method of ['initialize', 'tools/list', 'ping']) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/mcp',
+        headers: auth('im_totally_bogus_key_0000000000000000'),
+        payload: rpc(method),
+      });
+      expect(res.statusCode, method).toBe(401);
+    }
   });
 
   it('never logs the raw API key, valid or invalid', async () => {
@@ -384,15 +439,23 @@ describe('POST /mcp — Authorization without the "Bearer " prefix (Smithery gat
     expect(res.statusCode).toBe(401);
   });
 
-  it('rejects an unrelated auth scheme (not treated as public, not treated as a key)', async () => {
+  it('an unrelated auth scheme is treated as anonymous, not as a key (extractRawApiKey returns null for it, same as no header)', async () => {
     const { app } = await setup();
-    const res = await app.inject({
+    const listRes = await app.inject({
       method: 'POST',
       url: '/mcp',
       headers: { Authorization: 'Basic dXNlcjpwYXNz', 'Content-Type': 'application/json' },
       payload: rpc('tools/list'),
     });
-    expect(res.statusCode).toBe(401);
+    expect(listRes.statusCode).toBe(200);
+
+    const callRes = await app.inject({
+      method: 'POST',
+      url: '/mcp',
+      headers: { Authorization: 'Basic dXNlcjpwYXNz', 'Content-Type': 'application/json' },
+      payload: rpc('tools/call', { name: 'impri_inbox_status', arguments: {} }),
+    });
+    expect(callRes.statusCode).toBe(401);
   });
 
   it('also works on a plain REST route (shared preHandler), and never logs the bare key', async () => {

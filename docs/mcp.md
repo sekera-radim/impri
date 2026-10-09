@@ -61,6 +61,8 @@ The endpoint is stateless (no session id, no server-initiated stream) and authen
 
 `Authorization: Bearer im_your_key` is the documented form, but `/mcp` also accepts the bare key with no `Bearer ` prefix, for gateways (e.g. Smithery) that forward a pasted key straight into the header.
 
+The tool list can be browsed without a key at all (`initialize`/`tools/list`/`ping` work anonymously, same as the server card) — an API key is only required to actually call a tool.
+
 One difference from the local package: `impri_await_decision`'s `timeout_s` is capped at 20 seconds server-side on the hosted endpoint (a single HTTP request can't stay open indefinitely behind a proxy). Call it again if the action is still pending — that's the intended polling pattern either way.
 
 ---
