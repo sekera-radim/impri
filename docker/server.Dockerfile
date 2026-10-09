@@ -1,12 +1,21 @@
 # Build context = repo root (see docker-compose.yml) — the npm workspace
-# lockfile lives there, not in server/.
+# lockfile lives there, not in server/. server/ now depends on the @impri/mcp
+# workspace package (shared MCP tool definitions/logic for the /mcp route —
+# see server/src/routes/mcp.ts), so both workspaces' manifests and sources
+# must be present before `npm ci`/build.
 FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY server/package.json server/package.json
+COPY mcp/package.json mcp/package.json
 RUN npm ci --ignore-scripts
+
+COPY mcp/tsconfig.json mcp/tsconfig.json
+COPY mcp/tsconfig.build.json mcp/tsconfig.build.json
+COPY mcp/src mcp/src
+RUN npm run build --workspace=@impri/mcp
 
 COPY server/tsconfig.json server/tsconfig.json
 COPY server/src server/src
@@ -24,8 +33,10 @@ RUN apk add --no-cache python3 make g++
 
 COPY package.json package-lock.json ./
 COPY server/package.json server/package.json
+COPY mcp/package.json mcp/package.json
 RUN npm ci --omit=dev
 
+COPY --from=builder /app/mcp/dist ./mcp/dist
 COPY --from=builder /app/server/dist ./server/dist
 
 # Litestream: kontinuální SQLite replikace do S3 (aktivní jen s BUCKET_NAME, viz entrypoint)

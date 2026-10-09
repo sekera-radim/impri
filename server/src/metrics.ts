@@ -182,6 +182,10 @@ export function initMetrics(): void {
   // Rate limiting
   defineCounter('impri_rate_limited_total',
     'Total rate-limited requests by bucket name');
+
+  // Hosted MCP endpoint (/mcp)
+  defineCounter('impri_mcp_tool_calls_total',
+    'Total tools/call invocations on the hosted MCP endpoint by tool and result');
 }
 
 // ---------------------------------------------------------------------------

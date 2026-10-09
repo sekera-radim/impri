@@ -2,7 +2,7 @@ import './types.js';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { createDb } from './db.js';
-import { verifyApiKey, bootstrapAdminKey } from './auth.js';
+import { verifyApiKey, bootstrapAdminKey, verifyInternalAuthToken, lookupApiKeyById } from './auth.js';
 import { registerActionRoutes } from './routes/actions.js';
 import { registerKeyRoutes } from './routes/keys.js';
 import { registerWatcherRoutes } from './routes/watchers.js';
@@ -22,6 +22,7 @@ import { registerDiscordInteractionRoutes } from './routes/discord-interactions.
 import { registerAuditRoutes } from './routes/audit.js';
 import { registerUsageRoutes } from './routes/usage.js';
 import { registerRecoveryRoutes } from './routes/recovery.js';
+import { registerMcpRoutes } from './routes/mcp.js';
 import { billingActive } from './billing.js';
 import { pushEnabled } from './push.js';
 import { runExpiryTick } from './webhooks.js';
@@ -55,7 +56,10 @@ export async function createApp(db: Db, reporter: ErrorReporter = errorReporter)
   const app = Fastify({
     logger: {
       // Never log the Authorization header — it carries the raw API key.
-      redact: ['req.headers.authorization', 'req.headers.cookie'],
+      // x-impri-internal-auth is short-lived (5s) and process-scoped but
+      // redacted too, for the same reason: no credential-shaped value
+      // belongs in logs even when its blast radius is small.
+      redact: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["x-impri-internal-auth"]'],
     },
   });
 
@@ -238,8 +242,28 @@ export async function createApp(db: Db, reporter: ErrorReporter = errorReporter)
     done();
   });
 
-  // Auth preHandler: extract and verify Bearer key
+  // Auth preHandler: extract and verify Bearer key.
   app.addHook('preHandler', async (request, reply) => {
+    // Internal fast lane: the /mcp endpoint re-enters these same routes via
+    // app.inject to execute tool calls (see routes/mcp.ts) and would
+    // otherwise pay a second argon2.verify for a key already verified once
+    // for the outer /mcp request. See auth.ts for why this header can only
+    // be produced by this same process.
+    const internalToken = request.headers['x-impri-internal-auth'];
+    if (typeof internalToken === 'string') {
+      const keyId = verifyInternalAuthToken(internalToken);
+      const keyRecord = keyId ? lookupApiKeyById(db, keyId) : null;
+      if (!keyRecord) {
+        return reply.status(401).send({ error: 'Unauthorized', message: 'Invalid internal auth token' });
+      }
+      request.apiKey = {
+        keyId: keyRecord.id,
+        projectId: keyRecord.project_id,
+        scopes: keyRecord.scopes,
+      };
+      return;
+    }
+
     const auth = request.headers.authorization;
     if (!auth?.startsWith('Bearer im_')) {
       // Public endpoints don't need auth
@@ -320,6 +344,11 @@ export async function createApp(db: Db, reporter: ErrorReporter = errorReporter)
 
   // Recovery code rotation + project recovery (public /v1/recover, authed /v1/recovery-code)
   registerRecoveryRoutes(app, db);
+
+  // Hosted streamable-HTTP MCP endpoint (/mcp) + public server card
+  // (/.well-known/mcp/server-card.json). Same 8 tools as the stdio @impri/mcp
+  // package, executed in-process via app.inject — see routes/mcp.ts.
+  registerMcpRoutes(app, db, PKG_VERSION);
 
   return app;
 }

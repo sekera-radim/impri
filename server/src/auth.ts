@@ -1,5 +1,5 @@
 import argon2 from 'argon2';
-import { randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { Redis } from 'ioredis';
 import type { Db } from './db.js';
 import { nowSec, genId } from './db.js';
@@ -111,6 +111,75 @@ export async function verifyApiKey(db: Db, rawKey: string): Promise<ApiKeyRecord
 
 export function hasScope(scopes: string[], scope: string): boolean {
   return scopes.includes(scope) || scopes.includes('admin');
+}
+
+// ---------------------------------------------------------------------------
+// Internal fast-lane auth token — lets the server re-enter its own REST
+// routes (the /mcp endpoint invokes them via Fastify `app.inject` to reuse
+// their auth/scope/rate-limit/validation logic verbatim for tool calls)
+// without paying a second argon2.verify for a key that was already
+// authenticated once in the same request. argon2's default cost (~tens of
+// ms) is fine to pay once per HTTP request but not twice per MCP tool call.
+//
+// Security: the HMAC secret is generated fresh per process, lives only in
+// memory, and is never logged, returned by any endpoint, or sent over the
+// network — an external caller has no way to produce a valid token, so this
+// grants no new trust to real network requests. It only shortcuts a
+// same-process caller that already holds a verified ApiKeyRecord.
+const INTERNAL_TOKEN_SECRET = randomBytes(32);
+const INTERNAL_TOKEN_TTL_MS = 5_000;
+
+export function mintInternalAuthToken(keyId: string): string {
+  const ts = Date.now().toString();
+  const sig = createHmac('sha256', INTERNAL_TOKEN_SECRET).update(`${keyId}.${ts}`).digest('hex');
+  return `${keyId}.${ts}.${sig}`;
+}
+
+// Returns the keyId when the token is a validly-signed, unexpired token
+// minted by mintInternalAuthToken in this same process — null otherwise.
+// Caller still has to look up the key row (it may have been revoked since).
+export function verifyInternalAuthToken(token: string): string | null {
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [keyId, ts, sig] = parts;
+  if (!keyId || !ts || !sig) return null;
+
+  const expected = createHmac('sha256', INTERNAL_TOKEN_SECRET).update(`${keyId}.${ts}`).digest('hex');
+  let sigBuf: Buffer;
+  let expBuf: Buffer;
+  try {
+    sigBuf = Buffer.from(sig, 'hex');
+    expBuf = Buffer.from(expected, 'hex');
+  } catch {
+    return null;
+  }
+  if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) return null;
+
+  const age = Date.now() - Number(ts);
+  if (!Number.isFinite(age) || age < 0 || age > INTERNAL_TOKEN_TTL_MS) return null;
+
+  return keyId;
+}
+
+// Looks up an api_keys row by id (no secret comparison — the caller already
+// proved it holds a token only this process could have minted). Used by the
+// preHandler's internal-token branch instead of verifyApiKey's argon2 path.
+export function lookupApiKeyById(db: Db, keyId: string): ApiKeyRecord | null {
+  const row = db.prepare(
+    'SELECT * FROM api_keys WHERE id = ? AND revoked_at IS NULL',
+  ).get(keyId) as Record<string, unknown> | undefined;
+  if (!row) return null;
+
+  db.prepare('UPDATE api_keys SET last_used_at = ? WHERE id = ?').run(nowSec(), row.id);
+
+  return {
+    id: row.id as string,
+    project_id: row.project_id as string,
+    name: row.name as string,
+    scopes: JSON.parse(row.scopes as string) as string[],
+    key_hash: row.key_hash as string,
+    key_prefix: row.key_prefix as string,
+  };
 }
 
 export interface BootstrapResult {
