@@ -2,7 +2,8 @@
   "name": "impri",
   "private": true,
   "workspaces": [
-    "server"
+    "server",
+    "mcp"
   ],
   "scripts": {
     "dev": "npm run dev --workspace=server",
