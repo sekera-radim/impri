@@ -1,6 +1,21 @@
+/**
+ * A transport swaps out the network hop for an in-process call — used by the
+ * server's own /mcp endpoint to execute tools against its Fastify routes
+ * directly (via `app.inject`) instead of making a real HTTP request back to
+ * itself. Shape mirrors just enough of `Response` for `apiRequest` below.
+ */
+export interface TransportResponse {
+  status: number;
+  json: () => Promise<unknown>;
+}
+
+export type Transport = (method: string, path: string, body?: unknown) => Promise<TransportResponse>;
+
 export interface ImpriConfig {
   apiKey: string;
   baseUrl: string;
+  /** Optional in-process transport. When set, `baseUrl`/`fetch` are not used. */
+  transport?: Transport;
 }
 
 export interface ActionCreated {
@@ -46,22 +61,28 @@ export async function apiRequest<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
-  const url = `${config.baseUrl}/v1${path}`;
-  const init: RequestInit = {
-    method,
-    headers: {
-      Authorization: `Bearer ${config.apiKey}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-  };
-  if (body !== undefined) {
-    init.body = JSON.stringify(body);
+  let res: TransportResponse;
+
+  if (config.transport) {
+    res = await config.transport(method, path, body);
+  } else {
+    const url = `${config.baseUrl}/v1${path}`;
+    const init: RequestInit = {
+      method,
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    };
+    if (body !== undefined) {
+      init.body = JSON.stringify(body);
+    }
+    const fetchRes = await fetch(url, init);
+    res = { status: fetchRes.status, json: () => fetchRes.json() };
   }
 
-  const res = await fetch(url, init);
-
-  if (!res.ok) {
+  if (res.status < 200 || res.status >= 300) {
     return throwApiError(res);
   }
 
@@ -72,13 +93,13 @@ export async function apiRequest<T>(
   return res.json() as Promise<T>;
 }
 
-async function throwApiError(res: Response): Promise<never> {
+async function throwApiError(res: TransportResponse): Promise<never> {
   let detail = "";
   try {
     const body = (await res.json()) as { message?: string; error?: string };
     detail = body.message ?? body.error ?? "";
   } catch {
-    detail = res.statusText;
+    detail = "";
   }
 
   switch (res.status) {
@@ -109,7 +130,7 @@ async function throwApiError(res: Response): Promise<never> {
       );
     default:
       throw new Error(
-        `Impri API error ${res.status}: ${detail || res.statusText}`,
+        `Impri API error ${res.status}${detail ? `: ${detail}` : ""}`,
       );
   }
 }

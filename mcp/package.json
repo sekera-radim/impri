@@ -25,7 +25,11 @@
   "main": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js",
-    "./webhook": "./dist/webhook.js"
+    "./webhook": "./dist/webhook.js",
+    "./tools": "./dist/tools.js",
+    "./toolDefs": "./dist/toolDefs.js",
+    "./client": "./dist/client.js",
+    "./dispatch": "./dist/dispatch.js"
   },
   "bin": {
     "impri-mcp": "dist/index.js"
