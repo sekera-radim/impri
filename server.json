@@ -10,6 +10,28 @@
     "subfolder": "mcp"
   },
   "version": "0.1.2",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://api.impri.dev/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Impri API key as a Bearer token. Get one at impri.dev.",
+          "isRequired": true,
+          "isSecret": true,
+          "value": "Bearer {api_key}",
+          "variables": {
+            "api_key": {
+              "description": "Impri API key (im_...)",
+              "isRequired": true,
+              "isSecret": true
+            }
+          }
+        }
+      ]
+    }
+  ],
   "packages": [
     {
       "registryType": "npm",
