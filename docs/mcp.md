@@ -59,6 +59,8 @@ bearer_token_env_var = "IMPRI_API_KEY"
 
 The endpoint is stateless (no session id, no server-initiated stream) and authenticates every request independently — there's nothing to log in or out of beyond the Bearer header. A machine-readable description of it (tool list, auth scheme) is published at [`/.well-known/mcp/server-card.json`](https://api.impri.dev/.well-known/mcp/server-card.json), which is what lets directories list this server without needing a live connection to scan it.
 
+`Authorization: Bearer im_your_key` is the documented form, but `/mcp` also accepts the bare key with no `Bearer ` prefix, for gateways (e.g. Smithery) that forward a pasted key straight into the header.
+
 One difference from the local package: `impri_await_decision`'s `timeout_s` is capped at 20 seconds server-side on the hosted endpoint (a single HTTP request can't stay open indefinitely behind a proxy). Call it again if the action is still pending — that's the intended polling pattern either way.
 
 ---
