@@ -1,5 +1,5 @@
 import argon2 from 'argon2';
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { Redis } from 'ioredis';
 import type { Db } from './db.js';
 import { nowSec, genId } from './db.js';
@@ -103,8 +103,53 @@ export function extractRawApiKey(authHeader: string | undefined): string | null 
   return null;
 }
 
-export async function verifyApiKey(db: Db, rawKey: string): Promise<ApiKeyRecord | null> {
-  if (!rawKey.startsWith('im_')) return null;
+// Verified-key cache. argon2.verify at the library defaults (64 MiB, t=3, p=4)
+// costs several hundred ms of CPU on the shared vCPU; paying it on every
+// request let a single inbox tab polling every 5 s out-spend the machine's CPU
+// baseline until the host throttled it and every request took 15+ s. A raw key
+// that passed argon2 is remembered by its SHA-256 (keys carry 256 bits of
+// entropy, so the digest is not guessable) and later requests skip argon2.
+// A hit still re-reads the row, so revocation applies on the very next request
+// and the TTL only bounds how long a key goes without a full re-verification.
+const VERIFIED_KEY_TTL_MS = 5 * 60_000;
+const VERIFIED_KEY_CACHE_MAX = 1_000;
+
+interface VerifiedKeyEntry {
+  keyId: string;
+  keyHash: string;
+  expiresAt: number;
+}
+
+const verifiedKeys = new Map<string, VerifiedKeyEntry>();
+const inFlightVerifications = new Map<string, Promise<ApiKeyRecord | null>>();
+
+function lookupVerifiedKey(db: Db, digest: string): ApiKeyRecord | null {
+  const entry = verifiedKeys.get(digest);
+  if (!entry) return null;
+
+  if (entry.expiresAt > Date.now()) {
+    const record = lookupApiKeyById(db, entry.keyId);
+    // The entry vouches for one specific stored hash, not for the key id.
+    if (record && record.key_hash === entry.keyHash) return record;
+  }
+  verifiedKeys.delete(digest);
+  return null;
+}
+
+function rememberVerifiedKey(digest: string, record: ApiKeyRecord): void {
+  if (verifiedKeys.size >= VERIFIED_KEY_CACHE_MAX) {
+    // Map iterates in insertion order, so the first key is the oldest entry.
+    const oldest = verifiedKeys.keys().next().value;
+    if (oldest !== undefined) verifiedKeys.delete(oldest);
+  }
+  verifiedKeys.set(digest, {
+    keyId: record.id,
+    keyHash: record.key_hash,
+    expiresAt: Date.now() + VERIFIED_KEY_TTL_MS,
+  });
+}
+
+async function verifyApiKeyWithArgon2(db: Db, rawKey: string, digest: string): Promise<ApiKeyRecord | null> {
   const prefix = rawKey.slice(0, 16);
   const row = db.prepare(
     'SELECT * FROM api_keys WHERE key_prefix = ? AND revoked_at IS NULL',
@@ -117,7 +162,7 @@ export async function verifyApiKey(db: Db, rawKey: string): Promise<ApiKeyRecord
   // Update last_used_at
   db.prepare('UPDATE api_keys SET last_used_at = ? WHERE id = ?').run(nowSec(), row.id);
 
-  return {
+  const record: ApiKeyRecord = {
     id: row.id as string,
     project_id: row.project_id as string,
     name: row.name as string,
@@ -125,6 +170,26 @@ export async function verifyApiKey(db: Db, rawKey: string): Promise<ApiKeyRecord
     key_hash: row.key_hash as string,
     key_prefix: row.key_prefix as string,
   };
+  rememberVerifiedKey(digest, record);
+  return record;
+}
+
+export async function verifyApiKey(db: Db, rawKey: string): Promise<ApiKeyRecord | null> {
+  if (!rawKey.startsWith('im_')) return null;
+
+  const digest = createHash('sha256').update(rawKey).digest('hex');
+  const cached = lookupVerifiedKey(db, digest);
+  if (cached) return cached;
+
+  // Single-flight: a page load fires several requests at once, and on a cold
+  // cache each would otherwise run its own argon2.verify for the same key.
+  let pending = inFlightVerifications.get(digest);
+  if (!pending) {
+    pending = verifyApiKeyWithArgon2(db, rawKey, digest)
+      .finally(() => inFlightVerifications.delete(digest));
+    inFlightVerifications.set(digest, pending);
+  }
+  return pending;
 }
 
 export function hasScope(scopes: string[], scope: string): boolean {
