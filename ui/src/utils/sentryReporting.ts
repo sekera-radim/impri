@@ -9,7 +9,7 @@
 // (briefgate's context does not), so `extra` context is scrubbed by KEY NAME
 // as well as by content — see SENSITIVE_KEY_PATTERN.
 
-import type { ErrorEvent as SentryEvent, EventHint } from '@sentry/browser';
+import type { BrowserOptions, ErrorEvent as SentryEvent, EventHint } from '@sentry/browser';
 
 // Matches an email address anywhere in a string. Error text can echo one back
 // (a watcher keyword, a feedback message, an API error wrapping a server
@@ -100,8 +100,9 @@ export function scrubEvent(event: SentryEvent, _hint: EventHint): SentryEvent {
 
 /**
  * Browser-side noise that is not a bug in this app, matched by Sentry's
- * `ignoreErrors` against the message / exception value before an event is
- * even built (so it costs no quota, unlike dropping it in beforeSend):
+ * `ignoreErrors` (the eventFilters integration, see buildSentryOptions()
+ * below) against the message / exception value, so a match is dropped in the
+ * browser and never sent:
  *  - "Object Not Found Matching Id:N, MethodName:update, ParamCount:4" is
  *    thrown by Microsoft's link scanner (Outlook SafeLinks / Edge) opening a
  *    link from an email in a headless page.
@@ -139,29 +140,52 @@ export function resetSentryReportingForTests(): void {
   sentryPromise = null;
 }
 
+/**
+ * The options Sentry.init() runs with. Split out of ensureSentryInitialized()
+ * so tests/sentryReporting.test.ts can boot the real SDK with exactly these
+ * and assert what does and does not get sent — a pattern list that matches on
+ * its own says nothing about whether the SDK ever applies it.
+ */
+export function buildSentryOptions(
+  Sentry: typeof import('@sentry/browser'),
+  { dsn, environment, release }: SentryReportingConfig,
+): BrowserOptions {
+  return {
+    dsn,
+    environment,
+    release,
+    // A short, hand-picked integration list rather than Sentry's browser
+    // defaults: no session tracking, no automatic breadcrumbs (dropped in
+    // scrubEvent above anyway — this keeps them from being collected at
+    // all), no built-in global error/rejection handlers (main.ts wires
+    // those itself so every capture path funnels through reportError()).
+    // Two default integrations are kept:
+    //  - httpContext, purely so beforeSend has a request.url to scrub down
+    //    to a pathname.
+    //  - eventFilters, because it is what implements `ignoreErrors` below.
+    //    The option is read by that integration, not by the client, so
+    //    without it the patterns are accepted and silently never applied.
+    //    disableErrorDefaults keeps the ignored set to exactly
+    //    IGNORED_ERROR_PATTERNS instead of adding Sentry's built-in list on
+    //    top of it.
+    defaultIntegrations: false,
+    integrations: [
+      Sentry.httpContextIntegration(),
+      Sentry.eventFiltersIntegration({ disableErrorDefaults: true }),
+    ],
+    tracesSampleRate: 0,
+    sendDefaultPii: false,
+    ignoreErrors: IGNORED_ERROR_PATTERNS,
+    beforeSend: scrubEvent,
+  };
+}
+
 async function ensureSentryInitialized(): Promise<typeof import('@sentry/browser') | null> {
   if (!config) return null;
-  const { dsn, environment, release } = config;
+  const reportingConfig = config;
   if (!sentryPromise) {
     sentryPromise = import('@sentry/browser').then((Sentry) => {
-      Sentry.init({
-        dsn,
-        environment,
-        release,
-        // A short, hand-picked integration list rather than Sentry's browser
-        // defaults: no session tracking, no automatic breadcrumbs (dropped in
-        // scrubEvent above anyway — this keeps them from being collected at
-        // all), no built-in global error/rejection handlers (main.ts wires
-        // those itself so every capture path funnels through reportError()).
-        // httpContext is the one default integration kept, purely so
-        // beforeSend has a request.url to scrub down to a pathname.
-        defaultIntegrations: false,
-        integrations: [Sentry.httpContextIntegration()],
-        tracesSampleRate: 0,
-        sendDefaultPii: false,
-        ignoreErrors: IGNORED_ERROR_PATTERNS,
-        beforeSend: scrubEvent,
-      });
+      Sentry.init(buildSentryOptions(Sentry, reportingConfig));
       return Sentry;
     });
   }

@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import * as Sentry from '@sentry/browser'
 import {
   scrubEvent,
   pathnameOnly,
+  buildSentryOptions,
   configureSentryReporting,
   reportError,
   reportUnexpectedApiFailure,
@@ -99,6 +101,62 @@ describe('IGNORED_ERROR_PATTERNS', () => {
 
   it('does not match a real application error message', () => {
     expect(IGNORED_ERROR_PATTERNS.some(p => p.test('Cannot read properties of undefined'))).toBe(false)
+  })
+})
+
+// The patterns above only matter if the SDK applies them, and it does that in
+// an integration this app has to opt into (defaultIntegrations is off). So
+// this boots the real SDK with the production options and looks at what
+// reaches the transport — in briefgate the same link-scanner error kept
+// arriving in Sentry while the pattern tests above were green.
+describe('Sentry booted with buildSentryOptions()', () => {
+  const SCANNER_ERROR = 'Object Not Found Matching Id:3, MethodName:update, ParamCount:4'
+
+  let sentBodies: string[]
+
+  beforeEach(() => {
+    sentBodies = []
+    Sentry.init({
+      ...buildSentryOptions(Sentry, { dsn: 'https://public@o0.ingest.sentry.io/0', environment: 'test' }),
+      transport: transportOptions =>
+        Sentry.createTransport(transportOptions, async (request) => {
+          sentBodies.push(String(request.body))
+          return { statusCode: 200 }
+        }),
+    })
+  })
+
+  afterEach(async () => {
+    await Sentry.close()
+  })
+
+  it('sends a real error, so an empty transport below means "filtered", not "broken"', async () => {
+    Sentry.captureException(new Error('Cannot read properties of undefined'))
+    await Sentry.flush()
+
+    expect(sentBodies).toHaveLength(1)
+    expect(sentBodies[0]).toContain('Cannot read properties of undefined')
+  })
+
+  it('drops the link-scanner rejection, which arrives as a bare string reason', async () => {
+    Sentry.captureException(SCANNER_ERROR)
+    await Sentry.flush()
+
+    expect(sentBodies).toHaveLength(0)
+  })
+
+  it('drops the link-scanner error when it arrives as an Error object', async () => {
+    Sentry.captureException(new Error(SCANNER_ERROR))
+    await Sentry.flush()
+
+    expect(sentBodies).toHaveLength(0)
+  })
+
+  it('drops the cross-origin "Script error." placeholder', async () => {
+    Sentry.captureException('Script error.')
+    await Sentry.flush()
+
+    expect(sentBodies).toHaveLength(0)
   })
 })
 
