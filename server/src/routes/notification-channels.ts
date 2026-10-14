@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { ZodTypeAny } from 'zod';
 import { randomBytes } from 'node:crypto';
 import type { Db } from '../db.js';
@@ -9,8 +9,21 @@ import {
   dispatchChannelType,
   deriveWebhookSecret,
   isPublicBaseUrl,
+  emailDeliveryConfigured,
+  htmlEscape,
+  EMAIL_NOT_CONFIGURED_MESSAGE,
 } from '../notify.js';
 import { fetchGuarded } from '../net-guard.js';
+import { deleteEmailSend, normalizeEmailAddress, reserveNotifyEmail } from '../email-sends.js';
+import {
+  sendChannelVerification,
+  resetChannelVerification,
+  verificationFailureMessage,
+  inspectVerifyToken,
+  confirmVerifyToken,
+  type VerificationResult,
+  type TokenState,
+} from '../email-verification.js';
 import {
   SlackConfig,
   DiscordConfig,
@@ -52,18 +65,27 @@ interface ChannelRow {
   last_error: string | null;
   created_at: number;
   updated_at: number;
+  verified_at: number | null;
+  verify_token_hash: string | null;
+  verify_sent_at: number | null;
 }
 
 // Serialize a DB row to the API response shape: masked config, boolean enabled,
-// no digest_queue (internal implementation detail).
+// no digest_queue or verify_token_hash (internal implementation details).
+// `verified` is always true for non-email types: only email addresses need
+// confirming before delivery.
 function serializeChannel(channel: ChannelRow) {
   const rawConfig = JSON.parse(channel.config) as Record<string, unknown>;
+  const isEmail = channel.type === 'email';
   return {
     id: channel.id,
     project_id: channel.project_id,
     name: channel.name,
     type: channel.type,
     enabled: channel.enabled === 1,
+    verified: !isEmail || channel.verified_at !== null,
+    verified_at: isEmail ? channel.verified_at ?? undefined : undefined,
+    verification_sent_at: isEmail ? channel.verify_sent_at ?? undefined : undefined,
     digest_window_sec: channel.digest_window_sec,
     config: maskConfig(channel.type, rawConfig),
     last_fired_at: channel.last_fired_at ?? undefined,
@@ -72,6 +94,93 @@ function serializeChannel(channel: ChannelRow) {
     created_at: channel.created_at,
     updated_at: channel.updated_at,
   };
+}
+
+// Extra response fields after a create/update that triggered a confirmation email.
+function verificationFields(result: VerificationResult) {
+  return result.sent
+    ? { verification_sent: true }
+    : { verification_sent: false, verification_error: verificationFailureMessage(result.reason) };
+}
+
+function loadChannel(db: Db, id: string): ChannelRow {
+  return db.prepare('SELECT * FROM notification_channels WHERE id = ?').get(id) as ChannelRow;
+}
+
+// ---------------------------------------------------------------------------
+// Public confirmation page (GET shows a button, POST confirms)
+// ---------------------------------------------------------------------------
+
+// 32 random bytes, base64url without padding.
+const VERIFY_TOKEN_RE = /^[A-Za-z0-9_-]{43}$/;
+
+// The page carries the token, so: no caching, no referrer, no framing, no
+// script; the form may only post back to this origin.
+const VERIFY_PAGE_CSP =
+  "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'";
+
+function sendVerifyPage(reply: FastifyReply, status: number, heading: string, bodyHtml: string) {
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>${htmlEscape(heading)} · Impri</title>
+<style>
+body{margin:0;font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;background:#0f1115;color:#e8e8ea;display:flex;min-height:100vh;align-items:center;justify-content:center}
+main{max-width:440px;margin:24px 16px;padding:32px;background:#181b22;border-radius:12px}
+h1{font-size:22px;margin:0 0 12px}
+p{margin:0 0 16px;color:#b8bcc6}
+button{font:inherit;font-weight:600;padding:10px 18px;border:0;border-radius:8px;background:#7c5cff;color:#fff;cursor:pointer}
+a{color:#a996ff}
+</style>
+</head>
+<body><main><h1>${htmlEscape(heading)}</h1>${bodyHtml}</main></body>
+</html>`;
+  return reply
+    .status(status)
+    .header('Content-Type', 'text/html; charset=utf-8')
+    .header('Content-Security-Policy', VERIFY_PAGE_CSP)
+    .header('Cache-Control', 'no-store')
+    .header('Referrer-Policy', 'no-referrer')
+    .header('X-Content-Type-Options', 'nosniff')
+    .send(html);
+}
+
+const RESEND_HINT =
+  '<p>You can request a new confirmation email in Impri under Settings &gt; Notifications.</p>';
+
+function sendTokenProblemPage(reply: FastifyReply, state: Exclude<TokenState, 'valid'>) {
+  if (state === 'expired') {
+    return sendVerifyPage(reply, 410, 'This link has expired', `<p>Confirmation links are valid for 7 days.</p>${RESEND_HINT}`);
+  }
+  return sendVerifyPage(
+    reply,
+    404,
+    'This link is not valid',
+    `<p>It may have been used already — if you confirmed this address before, you're all set.</p>${RESEND_HINT}`,
+  );
+}
+
+function clientIp(request: FastifyRequest): string {
+  // Same order as signup/recovery: Fly sets fly-client-ip, clients cannot override it.
+  return (
+    (request.headers['fly-client-ip'] as string | undefined) ??
+    (request.headers['cf-connecting-ip'] as string | undefined) ??
+    request.ip ??
+    'unknown'
+  );
+}
+
+// The form posts application/x-www-form-urlencoded; its parser in index.ts
+// keeps the raw string (Slack signature needs it) and leaves body empty.
+function tokenFromBody(request: FastifyRequest): string {
+  if (typeof request.rawSlackBody === 'string') {
+    return new URLSearchParams(request.rawSlackBody).get('token') ?? '';
+  }
+  const body = request.body as { token?: unknown } | undefined;
+  return typeof body?.token === 'string' ? body.token : '';
 }
 
 // Strip secret config values from an error message before returning to callers.
@@ -189,6 +298,10 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
     }
     const body = parsed.data;
 
+    if (body.type === 'email' && !emailDeliveryConfigured()) {
+      return reply.status(400).send({ error: 'Bad Request', message: EMAIL_NOT_CONFIGURED_MESSAGE });
+    }
+
     // For telegram and discord approval-mode channels, auto-generate hmac_secret
     // when the operator omits it. Inject BEFORE Zod validation so the schema's
     // min(16) constraint is satisfied and the generated secret is stored.
@@ -236,9 +349,15 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
       "INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, 'channel.created', ?, ?, ?)",
     ).run(key.projectId, key.keyId, JSON.stringify({ channel_id: id, type: body.type }), now);
 
-    const created = db.prepare(
-      'SELECT * FROM notification_channels WHERE id = ?',
-    ).get(id) as ChannelRow;
+    // Email: the address must be confirmed before anything else is sent to it.
+    // A failed or rate-limited confirmation does not fail the create — the
+    // channel exists, the response says why no email went out, and the
+    // background tick retries later.
+    const verification = body.type === 'email'
+      ? await sendChannelVerification(db, id, key.keyId, request.log)
+      : null;
+
+    const created = loadChannel(db, id);
 
     // Register Telegram webhook when approval_mode is enabled and the channel
     // is enabled. Fire-and-forget — failure is logged but does not fail the
@@ -252,7 +371,9 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
     }
 
     reply.status(201);
-    return serializeChannel(created);
+    return verification
+      ? { ...serializeChannel(created), ...verificationFields(verification) }
+      : serializeChannel(created);
   });
 
   // GET /v1/notification-channels/:id
@@ -304,7 +425,8 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
 
     // Shallow merge: provided config fields override existing ones; omitted
     // fields are preserved. Use a new channel creation to fully replace config.
-    let mergedConfig = JSON.parse(channel.config) as Record<string, unknown>;
+    const previousConfig = JSON.parse(channel.config) as Record<string, unknown>;
+    let mergedConfig = previousConfig;
     let configChanged = false;
     if (body.config !== undefined) {
       mergedConfig = { ...mergedConfig, ...(body.config as Record<string, unknown>) };
@@ -313,6 +435,15 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
         return reply.status(400).send({ error: 'Bad Request', message: 'Invalid config', issues: cv.error.issues });
       }
       configChanged = true;
+    }
+
+    // A different email address is a new, unconfirmed recipient.
+    const addressChanged =
+      channel.type === 'email' &&
+      normalizeEmailAddress(String(mergedConfig.address ?? '')) !==
+        normalizeEmailAddress(String(previousConfig.address ?? ''));
+    if (addressChanged && !emailDeliveryConfigured()) {
+      return reply.status(400).send({ error: 'Bad Request', message: EMAIL_NOT_CONFIGURED_MESSAGE });
     }
 
     const newName = body.name ?? channel.name;
@@ -340,9 +471,13 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
       "INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, 'channel.updated', ?, ?, ?)",
     ).run(key.projectId, key.keyId, JSON.stringify({ channel_id: channel.id, type: channel.type }), now);
 
-    const updated = db.prepare(
-      'SELECT * FROM notification_channels WHERE id = ?',
-    ).get(channel.id) as ChannelRow;
+    let verification: VerificationResult | null = null;
+    if (addressChanged) {
+      resetChannelVerification(db, channel.id);
+      verification = await sendChannelVerification(db, channel.id, key.keyId, request.log);
+    }
+
+    const updated = loadChannel(db, channel.id);
 
     // Manage Telegram webhook when approval_mode or enabled state changes.
     if (channel.type === 'telegram' && (body.config !== undefined || body.enabled !== undefined)) {
@@ -360,7 +495,9 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
       }
     }
 
-    return serializeChannel(updated);
+    return verification
+      ? { ...serializeChannel(updated), ...verificationFields(verification) }
+      : serializeChannel(updated);
   });
 
   // DELETE /v1/notification-channels/:id
@@ -420,9 +557,26 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
 
     if (!channel) return reply.status(404).send({ error: 'Not Found' });
 
+    if (channel.type === 'email' && channel.verified_at === null) {
+      return reply.status(409).send({
+        error: 'Conflict',
+        message: 'Confirm the email address first: open the confirmation link we sent to it. ' +
+          'You can resend the confirmation email from the channel settings.',
+      });
+    }
+
     // Load raw (unmasked) config for the actual send.
     const rawConfig = JSON.parse(channel.config) as Record<string, unknown>;
     const inboxUrl = `${process.env.BASE_URL ?? 'http://localhost:8484'}/inbox`;
+
+    // Test emails count toward the project's daily email cap like any other.
+    let emailSendId: number | null = null;
+    if (channel.type === 'email' && emailDeliveryConfigured()) {
+      emailSendId = reserveNotifyEmail(db, channel.project_id, channel.id, String(rawConfig.address), nowSec());
+      if (emailSendId === null) {
+        return { ok: false, error: 'Daily email limit for this project reached. Try again later.' };
+      }
+    }
 
     let ok = false;
     let errorMsg: string | undefined;
@@ -437,6 +591,7 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
       );
       ok = true;
     } catch (err) {
+      if (emailSendId !== null) deleteEmailSend(db, emailSendId);
       // Sanitize error message — must not echo secrets (URL, token, etc.).
       const raw = err instanceof Error ? err.message : String(err);
       errorMsg = sanitizeErrorMsg(raw, rawConfig);
@@ -449,6 +604,99 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
 
     if (ok) return { ok: true };
     return { ok: false, error: errorMsg };
+  });
+
+  // POST /v1/notification-channels/:id/resend-verification
+  // Send a new confirmation email for an unconfirmed email channel. Each send
+  // issues a new link (the previous one stops working). Limited per channel
+  // (10 min cooldown), per address and per project (rolling 24 h) → 429.
+  app.post<{ Params: { id: string } }>('/v1/notification-channels/:id/resend-verification', async (request, reply) => {
+    const key = request.apiKey;
+    if (!key || !hasScope(key.scopes, 'admin')) {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Scope "admin" required' });
+    }
+
+    if (!(await checkRateLimit(db, key.keyId, 'channels:write', 30))) {
+      return reply.status(429).send({ error: 'Too Many Requests', message: 'Rate limit: 30 requests/min per key' });
+    }
+
+    const channel = db.prepare(
+      'SELECT * FROM notification_channels WHERE id = ? AND project_id = ?',
+    ).get(request.params.id, key.projectId) as ChannelRow | undefined;
+
+    if (!channel) return reply.status(404).send({ error: 'Not Found' });
+    if (channel.type !== 'email') {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Only email channels need address confirmation' });
+    }
+    if (channel.verified_at !== null) {
+      return reply.status(409).send({ error: 'Conflict', message: 'This email address is already confirmed' });
+    }
+
+    const result = await sendChannelVerification(db, channel.id, key.keyId, request.log);
+    if (result.sent) {
+      return { ok: true, channel: serializeChannel(loadChannel(db, channel.id)) };
+    }
+    const message = verificationFailureMessage(result.reason);
+    switch (result.reason) {
+      case 'email_not_configured':
+        return reply.status(400).send({ error: 'Bad Request', message });
+      case 'cooldown':
+      case 'address_limit':
+      case 'project_limit':
+        return reply.status(429).send({ error: 'Too Many Requests', message });
+      case 'send_failed':
+        return reply.status(502).send({ error: 'Bad Gateway', message });
+    }
+  });
+
+  // GET /v1/notification-channels/verify?token=… — public, no API key.
+  // Shows a confirmation button only. Mail scanners and link previews fetch
+  // links in incoming email, so a GET must never confirm the address.
+  app.get<{ Querystring: { token?: string } }>('/v1/notification-channels/verify', async (request, reply) => {
+    if (!(await checkRateLimit(db, `ip:${clientIp(request)}`, 'channel-verify', 30))) {
+      return sendVerifyPage(reply, 429, 'Too many attempts', '<p>Please wait a minute and try again.</p>');
+    }
+
+    const token = typeof request.query.token === 'string' ? request.query.token : '';
+    if (!VERIFY_TOKEN_RE.test(token)) return sendTokenProblemPage(reply, 'invalid');
+
+    const state = inspectVerifyToken(db, token);
+    if (state !== 'valid') return sendTokenProblemPage(reply, state);
+
+    return sendVerifyPage(
+      reply,
+      200,
+      'Confirm your email address',
+      '<p>Confirm that this address should receive Impri notifications when an AI agent is waiting for your approval.</p>' +
+        '<form method="post" action="/v1/notification-channels/verify">' +
+        `<input type="hidden" name="token" value="${htmlEscape(token)}">` +
+        '<p><button type="submit">Confirm email address</button></p>' +
+        '</form>' +
+        "<p>If you didn't set this up, close this page — nothing will be sent to this address.</p>",
+    );
+  });
+
+  // POST /v1/notification-channels/verify — public, no API key. The token is
+  // the credential: single use, 7-day lifetime, stored only as a sha256 hash.
+  app.post('/v1/notification-channels/verify', async (request, reply) => {
+    if (!(await checkRateLimit(db, `ip:${clientIp(request)}`, 'channel-verify', 30))) {
+      return sendVerifyPage(reply, 429, 'Too many attempts', '<p>Please wait a minute and try again.</p>');
+    }
+
+    const token = tokenFromBody(request);
+    if (!VERIFY_TOKEN_RE.test(token)) return sendTokenProblemPage(reply, 'invalid');
+
+    const state = confirmVerifyToken(db, token);
+    if (state !== 'valid') return sendTokenProblemPage(reply, state);
+
+    const appUrl = process.env.APP_URL;
+    return sendVerifyPage(
+      reply,
+      200,
+      'Email confirmed',
+      '<p>Impri notifications will now be delivered to this address. You can close this page.</p>' +
+        (appUrl ? `<p><a href="${htmlEscape(appUrl)}">Open Impri</a></p>` : ''),
+    );
   });
 
   // POST /v1/notification-channels/:id/setup-webhook

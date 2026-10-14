@@ -219,7 +219,12 @@ CREATE TABLE IF NOT EXISTS notification_channels (
   fail_count        INTEGER NOT NULL DEFAULT 0,
   last_error        TEXT,
   created_at        INTEGER NOT NULL,
-  updated_at        INTEGER NOT NULL
+  updated_at        INTEGER NOT NULL,
+  -- Email channels only: the address must be confirmed via a link before
+  -- anything but the confirmation email is sent to it (see email-verification.ts).
+  verified_at       INTEGER,
+  verify_token_hash TEXT,
+  verify_sent_at    INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS idx_notification_channels_project
@@ -229,6 +234,25 @@ CREATE INDEX IF NOT EXISTS idx_notification_channels_project
 CREATE INDEX IF NOT EXISTS idx_notification_channels_digest_due
   ON notification_channels(last_fired_at)
   WHERE enabled = 1 AND digest_queue != '[]';
+
+-- Every email Impri sends to a project-supplied address, kept ~2 days so the
+-- per-address / per-project limits can be counted over a rolling 24 h window.
+-- Addresses are stored as sha256 only.
+CREATE TABLE IF NOT EXISTS email_sends (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id   TEXT    NOT NULL,
+  channel_id   TEXT,
+  kind         TEXT    NOT NULL CHECK(kind IN ('verify','notify')),
+  address_hash TEXT    NOT NULL,
+  sent_at      INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_sends_address
+  ON email_sends(address_hash, kind, sent_at);
+CREATE INDEX IF NOT EXISTS idx_email_sends_project
+  ON email_sends(project_id, kind, sent_at);
+CREATE INDEX IF NOT EXISTS idx_email_sends_sent_at
+  ON email_sends(sent_at);
 
 CREATE TABLE IF NOT EXISTS feedback (
   id         TEXT PRIMARY KEY,
@@ -324,6 +348,29 @@ function migrate(db: Db): void {
         WHERE enabled = 1 AND digest_queue != '[]';
     `);
   }
+
+  // Email address verification. Existing email channels start unverified on
+  // purpose: an address nobody confirmed must not receive notifications.
+  const channelCols = columns('notification_channels');
+  if (!channelCols.has('verified_at')) {
+    db.exec('ALTER TABLE notification_channels ADD COLUMN verified_at INTEGER');
+  }
+  if (!channelCols.has('verify_token_hash')) {
+    db.exec('ALTER TABLE notification_channels ADD COLUMN verify_token_hash TEXT');
+  }
+  if (!channelCols.has('verify_sent_at')) {
+    db.exec('ALTER TABLE notification_channels ADD COLUMN verify_sent_at INTEGER');
+  }
+  // Created here, not in SCHEMA_SQL: on an existing DB SCHEMA_SQL runs before
+  // the columns above exist, so the index would fail to build.
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_notification_channels_verify_token
+      ON notification_channels(verify_token_hash)
+      WHERE verify_token_hash IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_notification_channels_verify_pending
+      ON notification_channels(created_at)
+      WHERE type = 'email' AND enabled = 1 AND verified_at IS NULL AND verify_sent_at IS NULL;
+  `);
 
   if (!columns('watchers').has('color')) {
     db.exec('ALTER TABLE watchers ADD COLUMN color TEXT');

@@ -154,7 +154,8 @@ function buildAuditWhere(
   // JSON paths covered:
   //   action_id column  — action.created, action.approved, action.rejected, …
   //   $.rule_id         — rule.created, rule.updated, rule.deleted
-  //   $.channel_id      — channel.created, channel.updated, channel.deleted, channel.tested
+  //   $.channel_id      — channel.created, channel.updated, channel.deleted, channel.tested,
+  //                       channel.verification_sent, channel.verified
   //   $.watcher_id      — watcher.created, watcher.updated, watcher.deleted
   //   $.new_key_id      — key.created
   //   $.revoked_key_id  — key.revoked

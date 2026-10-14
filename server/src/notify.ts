@@ -7,6 +7,7 @@ import { nowSec } from './db.js';
 import { fetchGuarded, isPrivateIp } from './net-guard.js';
 import { signWebhookBody } from './webhooks.js';
 import { incCounter, noopLogger, type Logger } from './metrics.js';
+import { deleteEmailSend, emailDailyCap, pruneEmailSends, reserveNotifyEmail } from './email-sends.js';
 
 export interface NotifyPayload {
   actionId: string;
@@ -190,29 +191,42 @@ export async function notifyNtfy(payload: NotifyPayload): Promise<void> {
   }
 }
 
-// Email adapter: nodemailer SMTP (global path)
-export async function notifyEmail(payload: NotifyPayload): Promise<void> {
-  const smtpHost = process.env.SMTP_HOST;
-  if (!smtpHost) {
-    console.log(`[notify] email (no SMTP): "${payload.title}" → ${payload.inboxUrl}`);
-    return;
-  }
+// Email delivery needs an SMTP server configured by the operator. Without
+// one, email channels cannot be created and per-channel sends fail loudly.
+export function emailDeliveryConfigured(): boolean {
+  return Boolean(process.env.SMTP_HOST);
+}
 
-  const transporter = nodemailer.createTransport({
-    host: smtpHost,
+export function createSmtpTransport() {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT ?? 587),
     secure: process.env.SMTP_SECURE === 'true',
     auth: process.env.SMTP_USER
       ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS ?? '' }
       : undefined,
   });
+}
+
+export function smtpFrom(): string {
+  return process.env.SMTP_FROM ?? 'impri@localhost';
+}
+
+// Email adapter: nodemailer SMTP (global path)
+export async function notifyEmail(payload: NotifyPayload): Promise<void> {
+  if (!emailDeliveryConfigured()) {
+    console.log(`[notify] email (no SMTP): "${payload.title}" → ${payload.inboxUrl}`);
+    return;
+  }
+
+  const transporter = createSmtpTransport();
 
   const to = process.env.NOTIFY_EMAIL;
   if (!to) return;
 
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_FROM ?? 'impri@localhost',
+      from: smtpFrom(),
       to,
       subject: `[Impri] ${payload.title}`,
       text: `A new action requires your decision.\n\nTitle: ${payload.title}\nKind: ${payload.kind}\n\nReview: ${payload.inboxUrl}`,
@@ -253,7 +267,14 @@ interface ChannelRow {
   last_error: string | null;
   created_at: number;
   updated_at: number;
+  verified_at: number | null;
+  verify_token_hash: string | null;
+  verify_sent_at: number | null;
 }
+
+// Unconfirmed email channels receive nothing but the confirmation email, so
+// every delivery query filters them out (see email-verification.ts).
+const DELIVERABLE_CHANNEL_SQL = "(type != 'email' OR verified_at IS NOT NULL)";
 
 interface QueueItem {
   actionId: string;
@@ -659,32 +680,29 @@ async function sendNtfyChannel(
   if (!res.ok) throw new Error(`ntfy HTTP ${res.status}`);
 }
 
+export const EMAIL_NOT_CONFIGURED_MESSAGE = 'Email delivery is not configured on this server';
+
 async function sendEmailChannel(
   config: Record<string, unknown>,
   title: string,
   kind: string,
   inboxUrl: string,
 ): Promise<void> {
-  const smtpHost = process.env.SMTP_HOST;
-  if (!smtpHost) {
-    // Same no-op behaviour as the global adapter when SMTP_HOST is absent.
-    console.warn('[notify-channel] email: SMTP_HOST not configured, skipping delivery');
-    return;
+  // Throw rather than skip: a silent no-op made the test endpoint report
+  // ok:true for email that never left the server.
+  if (!emailDeliveryConfigured()) {
+    throw new Error(`${EMAIL_NOT_CONFIGURED_MESSAGE} (SMTP_HOST is not set)`);
   }
-  const transporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: Number(process.env.SMTP_PORT ?? 587),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: process.env.SMTP_USER
-      ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS ?? '' }
-      : undefined,
-  });
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM ?? 'impri@localhost',
+  await createSmtpTransport().sendMail({
+    from: smtpFrom(),
     to: String(config.address),
     // headerSafe strips CR/LF from subject line (email header injection guard).
     subject: `[Impri] ${headerSafe(title)}`,
-    text: `A new action requires your decision.\n\nTitle: ${title}\nKind: ${kind}\n\nReview: ${inboxUrl}`,
+    text:
+      `A new action requires your decision.\n\nTitle: ${title}\nKind: ${kind}\n\nReview: ${inboxUrl}\n\n` +
+      '--\n' +
+      'You get this email because this address is a confirmed email notification channel of an Impri project.\n' +
+      'To stop these emails, disable or delete the channel in Impri under Settings > Notifications.\n',
   });
 }
 
@@ -832,7 +850,7 @@ function onChannelFailure(db: Db, channel: ChannelRow, msg: string, now: number,
 // Called once per channel on every notifyChannels() invocation.
 // ---------------------------------------------------------------------------
 
-async function fireChannel(db: Db, channel: ChannelRow, payload: ChannelPayload): Promise<void> {
+async function fireChannel(db: Db, channel: ChannelRow, payload: ChannelPayload, log: Logger = noopLogger): Promise<void> {
   const now = nowSec();
   const config = JSON.parse(channel.config) as Record<string, unknown>;
   const queue = JSON.parse(channel.digest_queue) as QueueItem[];
@@ -881,11 +899,21 @@ async function fireChannel(db: Db, channel: ChannelRow, payload: ChannelPayload)
   const { title, kind, inboxUrl, primaryActionId } = buildDigestMessage(queue);
   const isDigest = queue.length > 1;
 
+  let emailSendId: number | null = null;
+  if (channel.type === 'email') {
+    emailSendId = reserveChannelEmail(db, channel, config, now, log);
+    // Cap reached: the queue is already persisted and last_fired_at is left
+    // alone, so the digest tick (or the next action) retries once the rolling
+    // window frees up. Not a delivery failure — no fail_count, no auto-disable.
+    if (emailSendId === null) return;
+  }
+
   try {
     await dispatchChannelType(channel.type, config, title, kind, inboxUrl, primaryActionId, payload.escalate, isDigest);
     onChannelSuccess(db, channel.id, now);
     incCounter('impri_notifications_total', { channel_type: channel.type, result: 'ok' });
   } catch (err) {
+    if (emailSendId !== null) deleteEmailSend(db, emailSendId);
     // Sanitize before storing AND before re-throwing so no secret can reach
     // the notifyChannels log site via err.message (tokens appear in URLs for
     // Telegram/Slack/Discord/webhook network errors).
@@ -895,6 +923,30 @@ async function fireChannel(db: Db, channel: ChannelRow, payload: ChannelPayload)
     incCounter('impri_notifications_total', { channel_type: channel.type, result: 'error' });
     throw new Error(msg);
   }
+}
+
+/**
+ * Reserve one notification email against the project's rolling daily cap
+ * (IMPRI_EMAIL_DAILY_CAP). Returns the reservation id, or null when the cap
+ * is reached — logged without the address.
+ */
+function reserveChannelEmail(
+  db: Db,
+  channel: ChannelRow,
+  config: Record<string, unknown>,
+  now: number,
+  log: Logger,
+): number | null {
+  const id = reserveNotifyEmail(db, channel.project_id, channel.id, String(config.address), now);
+  if (id === null) {
+    log.warn({
+      event: 'channel.email_daily_cap',
+      channel_id: channel.id,
+      project_id: channel.project_id,
+      cap: emailDailyCap(),
+    });
+  }
+  return id;
 }
 
 // ---------------------------------------------------------------------------
@@ -911,6 +963,13 @@ async function flushChannelQueue(db: Db, channel: ChannelRow, log: Logger = noop
   const { title, kind, inboxUrl, primaryActionId } = buildDigestMessage(queue);
   const isDigest = queue.length > 1;
 
+  let emailSendId: number | null = null;
+  if (channel.type === 'email') {
+    emailSendId = reserveChannelEmail(db, channel, config, now, log);
+    // Cap reached: keep the queue; a later tick retries (see fireChannel).
+    if (emailSendId === null) return;
+  }
+
   incCounter('impri_notification_digest_flushes_total', { channel_type: channel.type });
 
   try {
@@ -918,6 +977,7 @@ async function flushChannelQueue(db: Db, channel: ChannelRow, log: Logger = noop
     onChannelSuccess(db, channel.id, now);
     incCounter('impri_notifications_total', { channel_type: channel.type, result: 'ok' });
   } catch (err) {
+    if (emailSendId !== null) deleteEmailSend(db, emailSendId);
     const raw = err instanceof Error ? err.message : String(err);
     const msg = sanitizeError(raw, config);
     onChannelFailure(db, channel, msg, now, log);
@@ -938,12 +998,12 @@ async function flushChannelQueue(db: Db, channel: ChannelRow, log: Logger = noop
  */
 export async function notifyChannels(db: Db, projectId: string, payload: ChannelPayload, log: Logger = noopLogger): Promise<void> {
   const channels = db.prepare(
-    'SELECT * FROM notification_channels WHERE project_id = ? AND enabled = 1',
+    `SELECT * FROM notification_channels WHERE project_id = ? AND enabled = 1 AND ${DELIVERABLE_CHANNEL_SQL}`,
   ).all(projectId) as ChannelRow[];
 
   await Promise.allSettled(
     channels.map(channel =>
-      fireChannel(db, channel, payload).catch(() => {
+      fireChannel(db, channel, payload, log).catch(() => {
         // Error already logged inside fireChannel/onChannelFailure.
         // Log channel_id and channel_type only — no secrets/config.
         log.error({ event: 'channel.notification', channel_id: channel.id, channel_type: channel.type, result: 'error', action_id: payload.actionId });
@@ -966,9 +1026,12 @@ export async function runChannelDigestTick(db: Db, log: Logger = noopLogger): Pr
       AND digest_queue != '[]'
       AND last_fired_at IS NOT NULL
       AND (last_fired_at + digest_window_sec) <= ?
+      AND ${DELIVERABLE_CHANNEL_SQL}
   `).all(now) as ChannelRow[];
 
   for (const channel of due) {
     await flushChannelQueue(db, channel, log);
   }
+
+  pruneEmailSends(db, now);
 }

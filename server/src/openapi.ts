@@ -9,6 +9,8 @@ import {
   CreateWatcherBody,
   UpdateWatcherBody,
   ListWatchersQuery,
+  CreateChannelBody,
+  UpdateChannelBody,
 } from './schemas.js';
 
 export function buildOpenApiDocument(baseUrl = 'http://localhost:8484'): unknown {
@@ -40,6 +42,8 @@ export function buildOpenApiDocument(baseUrl = 'http://localhost:8484'): unknown
         CreateWatcherBody: zodToJsonSchema(CreateWatcherBody, { name: 'CreateWatcherBody' }),
         UpdateWatcherBody: zodToJsonSchema(UpdateWatcherBody, { name: 'UpdateWatcherBody' }),
         ListWatchersQuery: zodToJsonSchema(ListWatchersQuery, { name: 'ListWatchersQuery' }),
+        CreateChannelBody: zodToJsonSchema(CreateChannelBody, { name: 'CreateChannelBody' }),
+        UpdateChannelBody: zodToJsonSchema(UpdateChannelBody, { name: 'UpdateChannelBody' }),
       },
     },
     paths: {
@@ -248,6 +252,99 @@ export function buildOpenApiDocument(baseUrl = 'http://localhost:8484'): unknown
           operationId: 'stripeWebhook',
           summary: 'Stripe webhook (public; verified by Stripe signature, not API key)',
           responses: { 200: { description: 'Event processed' }, 400: { description: 'Bad signature' } },
+        },
+      },
+      '/notification-channels': {
+        get: {
+          operationId: 'listNotificationChannels',
+          summary: 'List notification channels with masked config (admin scope)',
+          responses: { 200: { description: '{ items } — each channel has `verified` (false only for an unconfirmed email channel)' } },
+        },
+        post: {
+          operationId: 'createNotificationChannel',
+          summary: 'Create a notification channel (admin scope). Email: sends a confirmation email; nothing else is delivered until the address is confirmed',
+          requestBody: {
+            required: true,
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateChannelBody' } } },
+          },
+          responses: {
+            201: { description: 'Channel created. Email channels add `verification_sent` and, when false, `verification_error`' },
+            400: { description: 'Invalid config, or email delivery not configured on the server' },
+          },
+        },
+      },
+      '/notification-channels/{id}': {
+        get: {
+          operationId: 'getNotificationChannel',
+          summary: 'Get a notification channel with masked config (admin scope)',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: { 200: { description: 'Channel' }, 404: { description: 'Not found' } },
+        },
+        patch: {
+          operationId: 'updateNotificationChannel',
+          summary: 'Update a channel; config is merged (admin scope). A new email address must be confirmed again',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          requestBody: {
+            required: true,
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/UpdateChannelBody' } } },
+          },
+          responses: { 200: { description: 'Updated channel' }, 400: { description: 'Invalid config' }, 404: { description: 'Not found' } },
+        },
+        delete: {
+          operationId: 'deleteNotificationChannel',
+          summary: 'Delete a notification channel (admin scope)',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: { 204: { description: 'Deleted' }, 404: { description: 'Not found' } },
+        },
+      },
+      '/notification-channels/{id}/test': {
+        post: {
+          operationId: 'testNotificationChannel',
+          summary: 'Send a test message now (admin scope; 5/min)',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: {
+            200: { description: '{ ok } or { ok: false, error }' },
+            404: { description: 'Not found' },
+            409: { description: 'Email channel whose address is not confirmed yet' },
+          },
+        },
+      },
+      '/notification-channels/{id}/resend-verification': {
+        post: {
+          operationId: 'resendChannelVerification',
+          summary: 'Send a new confirmation email for an unconfirmed email channel (admin scope)',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          responses: {
+            200: { description: '{ ok: true, channel }' },
+            400: { description: 'Not an email channel, or email delivery not configured' },
+            404: { description: 'Not found' },
+            409: { description: 'Address already confirmed' },
+            429: { description: 'Limit reached: 10 min per channel, 3 per address / 5 per project per 24 h' },
+            502: { description: 'The email could not be sent' },
+          },
+        },
+      },
+      '/notification-channels/verify': {
+        get: {
+          operationId: 'channelVerificationPage',
+          summary: 'Confirmation page linked from the email (public; shows a button, never confirms on GET)',
+          security: [],
+          parameters: [{ name: 'token', in: 'query', required: true, schema: { type: 'string' } }],
+          responses: {
+            200: { description: 'HTML page with a confirm button' },
+            404: { description: 'HTML: invalid or already used link' },
+            410: { description: 'HTML: expired link (7 days)' },
+          },
+        },
+        post: {
+          operationId: 'confirmChannelVerification',
+          summary: 'Confirm the email address (public; form field or JSON `token`; single use)',
+          security: [],
+          responses: {
+            200: { description: 'HTML: confirmed' },
+            404: { description: 'HTML: invalid or already used link' },
+            410: { description: 'HTML: expired link (7 days)' },
+          },
         },
       },
       '/push/vapid-public-key': {

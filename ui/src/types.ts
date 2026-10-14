@@ -254,6 +254,21 @@ export interface NotificationChannel {
   last_error?: string | null
   created_at: number
   updated_at: number
+  /**
+   * False only for an email channel whose address has not been confirmed yet.
+   * Unconfirmed email channels receive nothing but the confirmation email.
+   */
+  verified: boolean
+  verified_at?: number
+  verification_sent_at?: number
+  /** Present on create/update responses that triggered a confirmation email. */
+  verification_sent?: boolean
+  verification_error?: string
+}
+
+export interface ResendVerificationResponse {
+  ok: boolean
+  channel: NotificationChannel
 }
 
 export interface ListChannelsResponse {

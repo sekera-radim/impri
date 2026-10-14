@@ -103,6 +103,16 @@
                 disabled
               </v-chip>
               <v-chip
+                v-if="awaitingConfirmation(ch)"
+                size="x-small"
+                color="warning"
+                variant="tonal"
+                label
+              >
+                <v-icon start size="10">mdi-email-alert-outline</v-icon>
+                Awaiting confirmation
+              </v-chip>
+              <v-chip
                 v-if="ch.fail_count >= 5"
                 size="x-small"
                 color="error"
@@ -145,6 +155,29 @@
                 {{ ch.last_error }}
               </span>
             </div>
+            <!-- Unconfirmed email address: nothing is delivered until the link is opened -->
+            <div
+              v-if="awaitingConfirmation(ch)"
+              class="d-flex align-center flex-wrap gap-2 mt-2 text-caption"
+            >
+              <span class="text-medium-emphasis">
+                {{
+                  ch.verification_sent_at
+                    ? `Confirmation email sent ${formatRelative(ch.verification_sent_at)} to ${String(ch.config['address'] ?? '')}.`
+                    : `A confirmation email to ${String(ch.config['address'] ?? '')} is on its way.`
+                }}
+                Notifications start once the link in it is opened.
+              </span>
+              <v-btn
+                size="x-small"
+                variant="tonal"
+                prepend-icon="mdi-email-sync-outline"
+                :loading="resending.has(ch.id)"
+                @click="resendConfirmation(ch)"
+              >
+                Resend confirmation email
+              </v-btn>
+            </div>
           </div>
 
           <!-- Per-row actions -->
@@ -186,6 +219,17 @@
               @click="openDeleteConfirm(ch)"
             />
           </div>
+        </div>
+
+        <!-- Resend confirmation result (auto-clears after 8 s) -->
+        <div v-if="resendResultByChannel.has(ch.id)" class="mt-2">
+          <v-alert
+            :type="resendResultByChannel.get(ch.id)!.ok ? 'success' : 'warning'"
+            variant="tonal"
+            density="compact"
+          >
+            {{ resendResultByChannel.get(ch.id)!.message }}
+          </v-alert>
         </div>
 
         <!-- Test result (auto-clears after 5 s) -->
@@ -907,7 +951,7 @@ U1XXXXXXXX"
             variant="outlined"
             density="comfortable"
             placeholder="you@example.com"
-            hint="Requires SMTP to be configured on your Impri server (SMTP_HOST env var)."
+            hint="We'll email a confirmation link to this address. Notifications start once it's confirmed. (Self-hosted: requires SMTP on your Impri server.)"
             persistent-hint
             class="mb-4"
           />
@@ -1022,6 +1066,18 @@ U1XXXXXXXX"
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <!-- ─── Email confirmation notice after saving ─── -->
+  <v-snackbar
+    v-model="verificationSnackbar.show"
+    :color="verificationSnackbar.ok ? 'success' : 'warning'"
+    timeout="8000"
+  >
+    {{ verificationSnackbar.message }}
+    <template #actions>
+      <v-btn variant="text" @click="verificationSnackbar.show = false">Close</v-btn>
+    </template>
+  </v-snackbar>
 
   <!-- ─── Slack OAuth return snackbar ─── -->
   <v-snackbar v-model="slackConnectedSnackbar" color="success" timeout="5000">
@@ -1189,8 +1245,20 @@ const testing = ref(new Set<string>())
 const testResultByChannel = ref(new Map<string, { ok: boolean; error?: string }>())
 
 async function sendTest(ch: NotificationChannel): Promise<void> {
-  testing.value.add(ch.id)
   testResultByChannel.value.delete(ch.id)
+  // The server refuses tests (409) until the address is confirmed; say why
+  // here instead of making a request that can only fail.
+  if (awaitingConfirmation(ch)) {
+    testResultByChannel.value.set(ch.id, {
+      ok: false,
+      error: 'Confirm the email address first — open the link in the confirmation email, then send a test.',
+    })
+    setTimeout(() => {
+      testResultByChannel.value.delete(ch.id)
+    }, 5000)
+    return
+  }
+  testing.value.add(ch.id)
   try {
     const result = await store.testChannel(ch.id)
     testResultByChannel.value.set(ch.id, { ok: result.ok, error: result.error })
@@ -1206,6 +1274,51 @@ async function sendTest(ch: NotificationChannel): Promise<void> {
       testResultByChannel.value.delete(ch.id)
     }, 5000)
   }
+}
+
+// ─── Email address confirmation ──────────────────────────────────────────────
+
+function awaitingConfirmation(ch: NotificationChannel): boolean {
+  return ch.type === 'email' && !ch.verified
+}
+
+const resending = ref(new Set<string>())
+const resendResultByChannel = ref(new Map<string, { ok: boolean; message: string }>())
+
+async function resendConfirmation(ch: NotificationChannel): Promise<void> {
+  resending.value.add(ch.id)
+  resendResultByChannel.value.delete(ch.id)
+  try {
+    await store.resendVerification(ch.id)
+    resendResultByChannel.value.set(ch.id, {
+      ok: true,
+      message: 'Confirmation email sent. Check your inbox (and spam folder).',
+    })
+  } catch (err) {
+    // 429 (cooldown / daily limits) carries a human-readable message.
+    resendResultByChannel.value.set(ch.id, {
+      ok: false,
+      message: err instanceof Error ? err.message : 'Could not send the confirmation email',
+    })
+  } finally {
+    resending.value.delete(ch.id)
+    setTimeout(() => {
+      resendResultByChannel.value.delete(ch.id)
+    }, 8000)
+  }
+}
+
+const verificationSnackbar = reactive({ show: false, ok: true, message: '' })
+
+// Create/update responses for email channels say whether a confirmation
+// email went out (and why not, e.g. a rate limit).
+function announceVerification(ch: NotificationChannel): void {
+  if (ch.verification_sent === undefined) return
+  verificationSnackbar.ok = ch.verification_sent
+  verificationSnackbar.message = ch.verification_sent
+    ? `Confirmation email sent to ${String(ch.config['address'] ?? '')}. Open the link in it to start receiving notifications.`
+    : (ch.verification_error ?? 'The confirmation email could not be sent.')
+  verificationSnackbar.show = true
 }
 
 // ─── Delete ──────────────────────────────────────────────────────────────────
@@ -1772,15 +1885,15 @@ async function submitDialog(): Promise<void> {
       if (Object.keys(config).length > 0) {
         patch.config = config
       }
-      await store.updateChannel(editingChannel.value.id, patch)
+      announceVerification(await store.updateChannel(editingChannel.value.id, patch))
     } else {
-      await store.createChannel({
+      announceVerification(await store.createChannel({
         name: form.name.trim(),
         type: form.type,
         config,
         enabled: form.enabled,
         digest_window_sec: form.digestWindowSec,
-      })
+      }))
     }
 
     showDialog.value = false

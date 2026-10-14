@@ -27,6 +27,7 @@ import { billingActive } from './billing.js';
 import { pushEnabled } from './push.js';
 import { runExpiryTick } from './webhooks.js';
 import { runChannelDigestTick } from './notify.js';
+import { runEmailVerificationTick } from './email-verification.js';
 import { runWatcherTick, startWatcherScheduler } from './scheduler.js';
 import { buildOpenApiDocument } from './openapi.js';
 import { initMetrics, renderMetrics, incCounter, obsHistogram } from './metrics.js';
@@ -385,7 +386,7 @@ async function main() {
   const app = await createApp(db);
   const log = app.log;
 
-  // Expiry + webhook + channel digest tick every 60 s. These run unattended
+  // Expiry + webhook + channel digest + email verification tick every 60 s. These run unattended
   // with no HTTP request/error-handler boundary, so an unhandled rejection
   // here would otherwise only ever reach the log — reported explicitly so it
   // isn't silently lost.
@@ -397,6 +398,10 @@ async function main() {
     runChannelDigestTick(db, log).catch(err => {
       log.error({ err: err instanceof Error ? err.message : String(err) }, 'channel digest tick failed');
       errorReporter.captureError(err, { job: 'channel_digest_tick' });
+    });
+    runEmailVerificationTick(db, log).catch(err => {
+      log.error({ err: err instanceof Error ? err.message : String(err) }, 'email verification tick failed');
+      errorReporter.captureError(err, { job: 'email_verification_tick' });
     });
   }, 60_000);
 

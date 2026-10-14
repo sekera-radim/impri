@@ -266,7 +266,7 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
         kind: body.kind,
         inboxUrl,
         escalate: rule?.action === 'escalate',
-      }).catch(() => {});
+      }, request.log).catch(() => {});
     }
 
     reply.status(201);

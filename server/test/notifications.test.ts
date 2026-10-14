@@ -10,6 +10,8 @@
  * - Admin-scope enforcement (actions-scope key must be denied)
  * - digest window logic (items queued within window, sent on next fire)
  * - auto-disable after IMPRI_CHANNEL_MAX_FAILS consecutive failures
+ *
+ * Email address confirmation, limits and the daily cap: email-verification.test.ts.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -20,6 +22,12 @@ import { maskConfig } from '../src/notify.js';
 
 // Prevent the watcher scheduler from spawning background timers in tests.
 process.env.DISABLE_WATCHER_SCHEDULER = '1';
+
+// Email channels can only be created when SMTP is configured; the transport
+// is mocked so no test ever opens a real SMTP connection.
+process.env.SMTP_HOST = 'smtp.test.invalid';
+const sendMail = vi.hoisted(() => vi.fn().mockResolvedValue({ messageId: 'test' }));
+vi.mock('nodemailer', () => ({ default: { createTransport: () => ({ sendMail }) } }));
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -279,6 +287,22 @@ describe('CRUD — email channel (simplest, no secrets)', () => {
     expect(body.config.address).toBe('ops@example.com'); // not a secret — returned as-is
     expect(body.digest_window_sec).toBe(60);
     expect(body.fail_count).toBe(0);
+    // New address → unconfirmed until the confirmation link is used.
+    expect(body.verified).toBe(false);
+    expect(body.verification_sent).toBe(true);
+  });
+
+  it('non-email channels are reported as verified', async () => {
+    const { app, adminKey } = await setup();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/notification-channels',
+      headers: auth(adminKey),
+      payload: { name: 'Slack', type: 'slack', config: { url: VALID_SLACK_URL } },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.json().verified).toBe(true);
+    expect(res.json().verification_sent).toBeUndefined();
   });
 
   it('GET /v1/notification-channels lists created channel', async () => {
@@ -856,8 +880,7 @@ describe('POST /v1/notification-channels/:id/test', () => {
     expect(res.statusCode).toBe(404);
   });
 
-  it('email channel test succeeds without SMTP (skip + ok:true)', async () => {
-    delete process.env.SMTP_HOST;
+  it('email channel test is refused (409) until the address is confirmed', async () => {
     const { app, adminKey } = await setup();
 
     const ch = await app.inject({
@@ -868,14 +891,41 @@ describe('POST /v1/notification-channels/:id/test', () => {
     });
     const { id } = ch.json() as { id: string };
 
-    // No SMTP_HOST → sendEmailChannel returns early without throwing
     const res = await app.inject({
       method: 'POST',
       url: `/v1/notification-channels/${id}/test`,
       headers: auth(adminKey),
     });
-    expect(res.statusCode).toBe(200);
-    expect(res.json().ok).toBe(true);
+    expect(res.statusCode).toBe(409);
+    expect(res.json().message).toMatch(/confirm/i);
+  });
+
+  it('email channel test reports ok:false (not a silent ok) when SMTP is gone', async () => {
+    const { app, adminKey, db } = await setup();
+
+    const ch = await app.inject({
+      method: 'POST',
+      url: '/v1/notification-channels',
+      headers: auth(adminKey),
+      payload: { name: 'Email', type: 'email', config: { address: 'test@example.com' } },
+    });
+    const { id } = ch.json() as { id: string };
+    db.prepare('UPDATE notification_channels SET verified_at = 1 WHERE id = ?').run(id);
+
+    const prevHost = process.env.SMTP_HOST;
+    delete process.env.SMTP_HOST;
+    try {
+      const res = await app.inject({
+        method: 'POST',
+        url: `/v1/notification-channels/${id}/test`,
+        headers: auth(adminKey),
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().ok).toBe(false);
+      expect(res.json().error).toMatch(/not configured/i);
+    } finally {
+      process.env.SMTP_HOST = prevHost;
+    }
   });
 });
 

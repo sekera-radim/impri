@@ -25,6 +25,7 @@ import type {
   CreateChannelRequest,
   UpdateChannelRequest,
   TestChannelResponse,
+  ResendVerificationResponse,
   UsageResponse,
   RecoverResponse,
   RecoveryCodeResponse,
@@ -253,6 +254,10 @@ export class ApiClient {
 
   async testChannel(id: string): Promise<TestChannelResponse> {
     return this.request<TestChannelResponse>('POST', `/notification-channels/${id}/test`)
+  }
+
+  async resendChannelVerification(id: string): Promise<ResendVerificationResponse> {
+    return this.request<ResendVerificationResponse>('POST', `/notification-channels/${id}/resend-verification`)
   }
 
   // --- Audit log (admin scope required) ---

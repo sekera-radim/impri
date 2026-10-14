@@ -72,6 +72,14 @@ export const useChannelsStore = defineStore('channels', () => {
     return client.testChannel(id)
   }
 
+  async function resendVerification(id: string): Promise<NotificationChannel> {
+    const client = auth.client
+    if (!client) throw new Error('Not authenticated')
+    const res = await client.resendChannelVerification(id)
+    replaceChannel(res.channel)
+    return res.channel
+  }
+
   function replaceChannel(updated: NotificationChannel): void {
     const idx = channels.value.findIndex((c) => c.id === updated.id)
     if (idx !== -1) {
@@ -88,5 +96,6 @@ export const useChannelsStore = defineStore('channels', () => {
     updateChannel,
     deleteChannel,
     testChannel,
+    resendVerification,
   }
 })
