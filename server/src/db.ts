@@ -224,7 +224,8 @@ CREATE TABLE IF NOT EXISTS notification_channels (
   -- anything but the confirmation email is sent to it (see email-verification.ts).
   verified_at       INTEGER,
   verify_token_hash TEXT,
-  verify_sent_at    INTEGER
+  verify_sent_at    INTEGER,
+  verify_attempted_at INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS idx_notification_channels_project
@@ -361,6 +362,9 @@ function migrate(db: Db): void {
   if (!channelCols.has('verify_sent_at')) {
     db.exec('ALTER TABLE notification_channels ADD COLUMN verify_sent_at INTEGER');
   }
+  if (!channelCols.has('verify_attempted_at')) {
+    db.exec('ALTER TABLE notification_channels ADD COLUMN verify_attempted_at INTEGER');
+  }
   // Created here, not in SCHEMA_SQL: on an existing DB SCHEMA_SQL runs before
   // the columns above exist, so the index would fail to build.
   db.exec(`
@@ -369,7 +373,8 @@ function migrate(db: Db): void {
       WHERE verify_token_hash IS NOT NULL;
     CREATE INDEX IF NOT EXISTS idx_notification_channels_verify_pending
       ON notification_channels(created_at)
-      WHERE type = 'email' AND enabled = 1 AND verified_at IS NULL AND verify_sent_at IS NULL;
+      WHERE type = 'email' AND enabled = 1 AND verified_at IS NULL AND verify_sent_at IS NULL
+        AND verify_attempted_at IS NULL;
   `);
 
   if (!columns('watchers').has('color')) {

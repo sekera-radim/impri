@@ -356,8 +356,9 @@ it went out:
 
 or, when it could not be sent, `"verification_sent": false` with a
 `"verification_error"` explaining why (rate limit, delivery failure).
-The channel is created either way; the server retries a first
-confirmation that could not be sent.
+The channel is created either way; send the confirmation again with
+`POST /v1/notification-channels/:id/resend-verification` (or
+**Resend confirmation email** in the dashboard).
 
 Opening the link shows a page with a **Confirm email address** button.
 Only that button (a `POST`) confirms the address — mail scanners that

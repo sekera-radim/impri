@@ -1,5 +1,5 @@
 import './types.js';
-import Fastify from 'fastify';
+import Fastify, { type FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import { createDb } from './db.js';
 import { verifyApiKey, bootstrapAdminKey, verifyInternalAuthToken, lookupApiKeyById, extractRawApiKey } from './auth.js';
@@ -53,6 +53,12 @@ initMetrics();
 // runs on every event before it leaves the process.
 const errorReporter: ErrorReporter = initSentry(sentryConfigFromEnv(PKG_VERSION));
 
+const URL_SECRET_PARAM = /([?&]token=)[^&#]*/g;
+
+export function redactUrlSecrets(url: string): string {
+  return url.replace(URL_SECRET_PARAM, '$1[redacted]');
+}
+
 export async function createApp(db: Db, reporter: ErrorReporter = errorReporter) {
   const app = Fastify({
     logger: {
@@ -61,6 +67,17 @@ export async function createApp(db: Db, reporter: ErrorReporter = errorReporter)
       // redacted too, for the same reason: no credential-shaped value
       // belongs in logs even when its blast radius is small.
       redact: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["x-impri-internal-auth"]'],
+      // Same as Fastify's default req serializer, except the URL: the email
+      // confirmation link carries its single-use token in the query string.
+      serializers: {
+        req: (req: FastifyRequest) => ({
+          method: req.method,
+          url: redactUrlSecrets(req.url),
+          host: req.host,
+          remoteAddress: req.ip,
+          remotePort: req.socket?.remotePort,
+        }),
+      },
     },
   });
 

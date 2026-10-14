@@ -151,8 +151,7 @@ export async function sendChannelVerification(
 
   const result = await attemptSend(db, channel, log);
   // Only actual sends are audited. Skips and failures are reported to the API
-  // caller (or logged), and the background tick retries them every minute —
-  // auditing those would flood the project's audit log.
+  // caller (or logged); the owner retries them with resend-verification.
   if (result.sent) {
     db.prepare(
       "INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, 'channel.verification_sent', ?, ?, ?)",
@@ -167,6 +166,12 @@ async function attemptSend(
   log: Logger,
 ): Promise<VerificationResult> {
   if (!emailDeliveryConfigured()) return { sent: false, reason: 'email_not_configured' };
+
+  // Marks the channel as handled for the background tick whatever the outcome.
+  // Retrying limit-blocked channels automatically would let a project with
+  // hundreds of channels pointed at one stranger drip 3 emails a day at them
+  // for as long as the channels exist.
+  db.prepare('UPDATE notification_channels SET verify_attempted_at = ? WHERE id = ?').run(nowSec(), channel.id);
 
   const address = String((JSON.parse(channel.config) as { address?: unknown }).address ?? '');
   const token = randomBytes(32).toString('base64url');
@@ -207,7 +212,7 @@ async function attemptSend(
 /** New address on an existing channel: it must be confirmed again. */
 export function resetChannelVerification(db: Db, channelId: string): void {
   db.prepare(
-    'UPDATE notification_channels SET verified_at = NULL, verify_token_hash = NULL, verify_sent_at = NULL WHERE id = ?',
+    'UPDATE notification_channels SET verified_at = NULL, verify_token_hash = NULL, verify_sent_at = NULL, verify_attempted_at = NULL WHERE id = ?',
   ).run(channelId);
 }
 
@@ -252,10 +257,10 @@ export function confirmVerifyToken(db: Db, token: string): TokenState {
 }
 
 /**
- * Background tick: send the first confirmation email for enabled email
- * channels that never got one — channels created before verification existed,
- * or whose create-time send hit a limit or failed (a failed send restores
- * verify_sent_at, so the next tick retries).
+ * Background tick: one confirmation attempt for enabled email channels that
+ * never had one — in practice channels created before verification existed,
+ * or while email delivery was not configured. A channel whose attempt hit a
+ * limit or failed is not retried here; the owner uses resend-verification.
  */
 export async function runEmailVerificationTick(db: Db, log: Logger = noopLogger): Promise<void> {
   if (!emailDeliveryConfigured()) return;
@@ -263,6 +268,7 @@ export async function runEmailVerificationTick(db: Db, log: Logger = noopLogger)
   const pending = db.prepare(`
     SELECT id FROM notification_channels
     WHERE type = 'email' AND enabled = 1 AND verified_at IS NULL AND verify_sent_at IS NULL
+      AND verify_attempted_at IS NULL
     ORDER BY created_at
     LIMIT ?
   `).all(TICK_BATCH) as { id: string }[];

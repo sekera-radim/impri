@@ -2,7 +2,7 @@
 
 _Last updated: 2026-10-15_
 
-Impri is built to be privacy-friendly by default: **self-hosting sends no telemetry and nothing phones home**, and the hosted cloud collects no account email, no password, and runs no analytics or tracking. This policy explains what the hosted cloud (`app.impri.dev` / `api.impri.dev`) does with data. If you self-host, you are the data controller and this policy is for reference only.
+Impri is built to be privacy-friendly by default: **self-hosting sends no telemetry and nothing phones home**, and the hosted cloud collects no account email and no password, sets no tracking cookies, and measures page views only in aggregate (Cloudflare Web Analytics, cookieless). This policy explains what the hosted cloud (`app.impri.dev` / `api.impri.dev`) does with data. If you self-host, you are the data controller and this policy is for reference only.
 
 ## Who we are
 
@@ -26,7 +26,7 @@ We only ever receive the content your agents choose to push. We do not scan, sel
 ## What we do **not** collect
 
 - **No email or password** at sign-up (a project is created anonymously and identified by an API key).
-- **No analytics, tracking pixels, or telemetry.** The self-hosted server makes no outbound calls home.
+- **No tracking cookies, advertising pixels, or telemetry.** Page views on `impri.dev` and `app.impri.dev` are counted with Cloudflare Web Analytics, which sets no cookies and builds no profile of you. The self-hosted server makes no outbound calls home.
 - **No card data.** Payments are processed by Stripe; card numbers never touch our servers — we store only Stripe's customer and subscription identifiers.
 
 ## Cookies and local storage
@@ -39,9 +39,9 @@ The hosted cloud relies on:
 
 - **Fly.io** — application hosting (EU, Frankfurt)
 - **Tigris** — encrypted off-site database backups (continuous replication)
-- **Cloudflare** — static delivery of the web app and marketing site (Pages)
+- **Cloudflare** — static delivery of the web app and marketing site (Pages) and cookieless, aggregate page-view statistics (Web Analytics)
 - **Stripe** — payment processing
-- **Resend** — delivery of emails to the address of an email notification channel (confirmation and notifications)
+- **Resend** — delivery of emails to the address of an email notification channel (confirmation and notifications), sent from its EU region (Ireland)
 
 ## Retention
 

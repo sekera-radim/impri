@@ -21,7 +21,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createDb, nowSec } from '../src/db.js';
 import { bootstrapAdminKey, createProjectWithAdminKey } from '../src/auth.js';
-import { createApp } from '../src/index.js';
+import { createApp, redactUrlSecrets } from '../src/index.js';
 import { runChannelDigestTick } from '../src/notify.js';
 import { runEmailVerificationTick, sendChannelVerification } from '../src/email-verification.js';
 import { hashEmailAddress } from '../src/email-sends.js';
@@ -381,7 +381,7 @@ describe('resend-verification and limits', () => {
     expect(r3.statusCode).toBe(403);
   });
 
-  it('a failed send gives the slot back and the tick retries it', async () => {
+  it('a failed send gives the slot back; the owner retries, not the tick', async () => {
     const ctx = await setup();
     sendMail.mockRejectedValueOnce(Object.assign(new Error('550 rejected <fail@example.com>'), { code: 'EENVELOPE', responseCode: 550 }));
     const res = await createEmailChannel(ctx, ctx.adminKey, 'fail@example.com');
@@ -393,18 +393,39 @@ describe('resend-verification and limits', () => {
     expect(ctx.db.prepare('SELECT COUNT(*) AS c FROM email_sends').get()).toEqual({ c: 0 });
 
     await runEmailVerificationTick(ctx.db);
+    expect(verifyMails()).toHaveLength(1); // only the failed attempt
+    expect(channelRow(ctx.db, id).verify_sent_at).toBeNull();
+
+    const resend = await ctx.app.inject({
+      method: 'POST', url: `/v1/notification-channels/${id}/resend-verification`, headers: auth(ctx.adminKey),
+    });
+    expect(resend.statusCode).toBe(200);
+    expect(verifyMails()).toHaveLength(2); // the failed attempt + the owner's retry
     expect(channelRow(ctx.db, id).verify_sent_at).not.toBeNull();
-    expect(verifyMails()).toHaveLength(2); // the failed attempt + the retry
-    // A second tick does not resend.
+  });
+
+  it('channels blocked by the address limit are never mailed later by the tick', async () => {
+    const ctx = await setup();
+    const ids: string[] = [];
+    for (let i = 0; i < 6; i++) {
+      ids.push((await createEmailChannel(ctx, ctx.adminKey, 'stranger@example.com')).json().id as string);
+    }
+    expect(verifyMails()).toHaveLength(3);
+
+    // A day later the per-address window is empty again…
+    ctx.db.prepare('UPDATE email_sends SET sent_at = sent_at - ?').run(2 * 86_400);
     await runEmailVerificationTick(ctx.db);
-    expect(verifyMails()).toHaveLength(2);
+    await runEmailVerificationTick(ctx.db);
+    // …but the blocked channels stay unsent: nothing drips to the stranger.
+    expect(verifyMails()).toHaveLength(3);
+    expect(ids.slice(3).map(id => channelRow(ctx.db, id).verify_sent_at)).toEqual([null, null, null]);
   });
 
   it('logs a failed send without the address or the token', async () => {
     const ctx = await setup();
     const res = await createEmailChannel(ctx, ctx.adminKey, 'quiet@example.com');
     const id = res.json().id as string;
-    ctx.db.prepare('UPDATE notification_channels SET verify_sent_at = NULL WHERE id = ?').run(id);
+    ctx.db.prepare('UPDATE notification_channels SET verify_sent_at = NULL, verify_attempted_at = NULL WHERE id = ?').run(id);
     sendMail.mockRejectedValueOnce(Object.assign(new Error('550 <quiet@example.com> unknown'), { code: 'EENVELOPE' }));
 
     const logged: unknown[] = [];
@@ -537,6 +558,7 @@ describe('migration of a pre-verification database', () => {
       ALTER TABLE notification_channels DROP COLUMN verified_at;
       ALTER TABLE notification_channels DROP COLUMN verify_token_hash;
       ALTER TABLE notification_channels DROP COLUMN verify_sent_at;
+      ALTER TABLE notification_channels DROP COLUMN verify_attempted_at;
       DROP TABLE email_sends;
     `);
     raw.prepare(`
@@ -558,5 +580,15 @@ describe('migration of a pre-verification database', () => {
     const audit = db.prepare("SELECT actor FROM audit_log WHERE event = 'channel.verification_sent'").all();
     expect(audit).toEqual([{ actor: 'system' }]);
     db.close();
+  });
+});
+
+describe('request logging', () => {
+  it('redacts the confirmation token from logged URLs', () => {
+    const token = 'A'.repeat(43);
+    expect(redactUrlSecrets(`/v1/notification-channels/verify?token=${token}`))
+      .toBe('/v1/notification-channels/verify?token=[redacted]');
+    expect(redactUrlSecrets(`/x?a=1&token=${token}&b=2`)).toBe('/x?a=1&token=[redacted]&b=2');
+    expect(redactUrlSecrets('/v1/actions?status=pending')).toBe('/v1/actions?status=pending');
   });
 });

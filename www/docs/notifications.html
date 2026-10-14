@@ -516,8 +516,9 @@ it went out:</p>
   <span class="hljs-attr">&quot;verification_sent_at&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1792000000</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;verification_sent&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span> … <span class="hljs-punctuation">}</span></code></pre></div>
 <p>or, when it could not be sent, <code>&quot;verification_sent&quot;: false</code> with a
 <code>&quot;verification_error&quot;</code> explaining why (rate limit, delivery failure).
-The channel is created either way; the server retries a first
-confirmation that could not be sent.</p>
+The channel is created either way; send the confirmation again with
+<code>POST /v1/notification-channels/:id/resend-verification</code> (or
+<strong>Resend confirmation email</strong> in the dashboard).</p>
 <p>Opening the link shows a page with a <strong>Confirm email address</strong> button.
 Only that button (a <code>POST</code>) confirms the address — mail scanners that
 prefetch links cannot confirm it for you. Each link works once. After

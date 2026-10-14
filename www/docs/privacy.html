@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy Policy — Impri Docs</title>
-<meta name="description" content="Impri is built to be privacy-friendly by default: self-hosting sends no telemetry and nothing phones home, and the hosted cloud collects no account email, no…">
+<meta name="description" content="Impri is built to be privacy-friendly by default: self-hosting sends no telemetry and nothing phones home, and the hosted cloud collects no account email and…">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="Privacy Policy — Impri Docs">
-<meta property="og:description" content="Impri is built to be privacy-friendly by default: self-hosting sends no telemetry and nothing phones home, and the hosted cloud collects no account email, no…">
+<meta property="og:description" content="Impri is built to be privacy-friendly by default: self-hosting sends no telemetry and nothing phones home, and the hosted cloud collects no account email and…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/privacy">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/privacy">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Privacy Policy","description":"Impri is built to be privacy-friendly by default: self-hosting sends no telemetry and nothing phones home, and the hosted cloud collects no account email, no…","url":"https://impri.dev/docs/privacy","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Privacy Policy","description":"Impri is built to be privacy-friendly by default: self-hosting sends no telemetry and nothing phones home, and the hosted cloud collects no account email and…","url":"https://impri.dev/docs/privacy","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -144,7 +144,7 @@ pre code.hljs{display:block;overflow-x:auto}
     </nav>
     <h1>Privacy Policy</h1>
 <p><em>Last updated: 2026-10-15</em></p>
-<p>Impri is built to be privacy-friendly by default: <strong>self-hosting sends no telemetry and nothing phones home</strong>, and the hosted cloud collects no account email, no password, and runs no analytics or tracking. This policy explains what the hosted cloud (<code>app.impri.dev</code> / <code>api.impri.dev</code>) does with data. If you self-host, you are the data controller and this policy is for reference only.</p>
+<p>Impri is built to be privacy-friendly by default: <strong>self-hosting sends no telemetry and nothing phones home</strong>, and the hosted cloud collects no account email and no password, sets no tracking cookies, and measures page views only in aggregate (Cloudflare Web Analytics, cookieless). This policy explains what the hosted cloud (<code>app.impri.dev</code> / <code>api.impri.dev</code>) does with data. If you self-host, you are the data controller and this policy is for reference only.</p>
 <h2 id="who-we-are">Who we are</h2>
 <p>The data controller for the hosted cloud is <strong>Radim Sekera</strong>. Contact: <a href="https://sekera.dev" target="_blank" rel="noopener">sekera.dev</a>. Data is stored in the EU (Fly.io, Frankfurt).</p>
 <h2 id="what-we-collect-and-why">What we collect and why</h2>
@@ -202,7 +202,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <h2 id="what-we-do-not-collect">What we do <strong>not</strong> collect</h2>
 <ul>
 <li><strong>No email or password</strong> at sign-up (a project is created anonymously and identified by an API key).</li>
-<li><strong>No analytics, tracking pixels, or telemetry.</strong> The self-hosted server makes no outbound calls home.</li>
+<li><strong>No tracking cookies, advertising pixels, or telemetry.</strong> Page views on <code>impri.dev</code> and <code>app.impri.dev</code> are counted with Cloudflare Web Analytics, which sets no cookies and builds no profile of you. The self-hosted server makes no outbound calls home.</li>
 <li><strong>No card data.</strong> Payments are processed by Stripe; card numbers never touch our servers — we store only Stripe&#39;s customer and subscription identifiers.</li>
 </ul>
 <h2 id="cookies-and-local-storage">Cookies and local storage</h2>
@@ -212,9 +212,9 @@ pre code.hljs{display:block;overflow-x:auto}
 <ul>
 <li><strong>Fly.io</strong> — application hosting (EU, Frankfurt)</li>
 <li><strong>Tigris</strong> — encrypted off-site database backups (continuous replication)</li>
-<li><strong>Cloudflare</strong> — static delivery of the web app and marketing site (Pages)</li>
+<li><strong>Cloudflare</strong> — static delivery of the web app and marketing site (Pages) and cookieless, aggregate page-view statistics (Web Analytics)</li>
 <li><strong>Stripe</strong> — payment processing</li>
-<li><strong>Resend</strong> — delivery of emails to the address of an email notification channel (confirmation and notifications)</li>
+<li><strong>Resend</strong> — delivery of emails to the address of an email notification channel (confirmation and notifications), sent from its EU region (Ireland)</li>
 </ul>
 <h2 id="retention">Retention</h2>
 <p>Your content is kept until you erase it (<code>DELETE /v1/project/data</code>) or the account is deleted. Audit rows are kept indefinitely by default; operators can enable automatic purging after N days. See <a href="gdpr">GDPR & Data Management</a> for the export and erasure endpoints.</p>

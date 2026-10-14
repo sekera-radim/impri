@@ -351,8 +351,8 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
 
     // Email: the address must be confirmed before anything else is sent to it.
     // A failed or rate-limited confirmation does not fail the create — the
-    // channel exists, the response says why no email went out, and the
-    // background tick retries later.
+    // channel exists, the response says why no email went out, and the owner
+    // can retry with resend-verification.
     const verification = body.type === 'email'
       ? await sendChannelVerification(db, id, key.keyId, request.log)
       : null;
