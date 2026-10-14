@@ -1,6 +1,6 @@
 # Privacy Policy
 
-_Last updated: 2026-07-12_
+_Last updated: 2026-10-15_
 
 Impri is built to be privacy-friendly by default: **self-hosting sends no telemetry and nothing phones home**, and the hosted cloud collects no account email, no password, and runs no analytics or tracking. This policy explains what the hosted cloud (`app.impri.dev` / `api.impri.dev`) does with data. If you self-host, you are the data controller and this policy is for reference only.
 
@@ -15,6 +15,8 @@ The data controller for the hosted cloud is **Radim Sekera**. Contact: [sekera.d
 | Project name (optional, you provide it) | Label your project | Preserved with the account |
 | Content you send — action titles, previews, payloads, and your decisions | To provide the approval service (the core function) | Yes |
 | Notification channel config — e.g. Slack/Discord/Telegram bot tokens, channel IDs | To deliver approvals to your chat | Yes (masked in API responses, never logged) |
+| Email address of an email notification channel (only if you add one) | To send one confirmation email and, once you confirm it, approval notifications | Yes (delete the channel; never logged) |
+| Email send log — a SHA-256 hash of the address and the send time | Limits that stop the service being used to email people who did not ask for it | Deleted automatically after 2 days |
 | Request IP addresses | Security and abuse prevention | Yes (stored in a separate `pii_log`, erased on request) |
 | API key hashes (argon2) and prefixes | Authentication | Preserved for account continuity |
 | Stripe customer / subscription IDs | Billing | Preserved while the account exists |
@@ -39,6 +41,7 @@ The hosted cloud relies on:
 - **Tigris** — encrypted off-site database backups (continuous replication)
 - **Cloudflare** — static delivery of the web app and marketing site (Pages)
 - **Stripe** — payment processing
+- **Resend** — delivery of emails to the address of an email notification channel (confirmation and notifications)
 
 ## Retention
 

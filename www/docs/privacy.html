@@ -143,7 +143,7 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>Privacy Policy</span>
     </nav>
     <h1>Privacy Policy</h1>
-<p><em>Last updated: 2026-07-12</em></p>
+<p><em>Last updated: 2026-10-15</em></p>
 <p>Impri is built to be privacy-friendly by default: <strong>self-hosting sends no telemetry and nothing phones home</strong>, and the hosted cloud collects no account email, no password, and runs no analytics or tracking. This policy explains what the hosted cloud (<code>app.impri.dev</code> / <code>api.impri.dev</code>) does with data. If you self-host, you are the data controller and this policy is for reference only.</p>
 <h2 id="who-we-are">Who we are</h2>
 <p>The data controller for the hosted cloud is <strong>Radim Sekera</strong>. Contact: <a href="https://sekera.dev" target="_blank" rel="noopener">sekera.dev</a>. Data is stored in the EU (Fly.io, Frankfurt).</p>
@@ -170,6 +170,16 @@ pre code.hljs{display:block;overflow-x:auto}
 <td>Notification channel config — e.g. Slack/Discord/Telegram bot tokens, channel IDs</td>
 <td>To deliver approvals to your chat</td>
 <td>Yes (masked in API responses, never logged)</td>
+</tr>
+<tr>
+<td>Email address of an email notification channel (only if you add one)</td>
+<td>To send one confirmation email and, once you confirm it, approval notifications</td>
+<td>Yes (delete the channel; never logged)</td>
+</tr>
+<tr>
+<td>Email send log — a SHA-256 hash of the address and the send time</td>
+<td>Limits that stop the service being used to email people who did not ask for it</td>
+<td>Deleted automatically after 2 days</td>
 </tr>
 <tr>
 <td>Request IP addresses</td>
@@ -204,6 +214,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <li><strong>Tigris</strong> — encrypted off-site database backups (continuous replication)</li>
 <li><strong>Cloudflare</strong> — static delivery of the web app and marketing site (Pages)</li>
 <li><strong>Stripe</strong> — payment processing</li>
+<li><strong>Resend</strong> — delivery of emails to the address of an email notification channel (confirmation and notifications)</li>
 </ul>
 <h2 id="retention">Retention</h2>
 <p>Your content is kept until you erase it (<code>DELETE /v1/project/data</code>) or the account is deleted. Audit rows are kept indefinitely by default; operators can enable automatic purging after N days. See <a href="gdpr">GDPR & Data Management</a> for the export and erasure endpoints.</p>

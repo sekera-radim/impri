@@ -109,6 +109,8 @@ Raw key material and hashes are never stored in `data`.
 | `channel.updated` | Yes — `notification-channels.ts:246` | key ID | `{channel_id, type}` |
 | `channel.deleted` | Yes — `notification-channels.ts:277` | key ID | `{channel_id}` |
 | `channel.tested` | Yes — `notification-channels.ts:329` | key ID | `{channel_id, type, ok}` |
+| `channel.verification_sent` | Yes — `email-verification.ts` (confirmation email actually sent) | key ID, or `system` for the background retry | `{channel_id}` |
+| `channel.verified` | Yes — `email-verification.ts` (confirmation link used) | `email-link` | `{channel_id}` |
 
 Channel config (Slack tokens, webhook URLs, Telegram bot tokens) is never
 written to any audit row.
@@ -280,6 +282,8 @@ are never written to `audit_log`. Channel events store only `channel_id` and
 `type`. API key events store only the key ID and granted scopes, never the raw
 secret or its hash. Webhook signing secrets are never logged. The
 `channel.tested` event stores only `channel_id`, `type`, and `ok` (boolean).
+Email confirmation events store only `channel_id` — never the address or the
+confirmation token.
 Every new recording point must be reviewed against this rule before merging.
 
 ### Append-only guarantee

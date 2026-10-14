@@ -75,7 +75,10 @@ Impri can notify you via email (SMTP) and/or ntfy. Both are optional; the server
 | `SMTP_USER` | unset | SMTP username for authentication. |
 | `SMTP_PASS` | unset | SMTP password. |
 | `SMTP_FROM` | `impri@localhost` | From address for outgoing notification emails. |
-| `NOTIFY_EMAIL` | unset | Recipient address for approval notifications. Without this, no emails are sent even if SMTP is configured. |
+| `NOTIFY_EMAIL` | unset | Instance-wide recipient address for approval notifications (operator-configured, no confirmation). Without this, the instance-wide email is not sent even if SMTP is configured. |
+| `IMPRI_EMAIL_DAILY_CAP` | `100` | Notification emails each project may send through its email channels per rolling 24 h. |
+
+Per-project **email notification channels** (Settings → Notifications) use the same SMTP settings. Without `SMTP_HOST` they cannot be created. Each channel's address must be confirmed through a link Impri emails to it before notifications are delivered; the link points at `BASE_URL`, so set `BASE_URL` to the public URL of your API. Email channels created before this check existed are sent one confirmation email after the upgrade. See [Notification channels → Email address confirmation](notifications.md#email-address-confirmation).
 
 **ntfy (recommended for self-hosters):**
 

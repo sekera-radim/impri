@@ -10,7 +10,7 @@ Slack, Discord, and Telegram are the obvious channels for approval notifications
 
 ## Setting up the email channel
 
-Email is a notification channel like Slack or Telegram — configured once per project with an admin-scope key, not per action. The server needs SMTP configured to actually deliver mail; once that's in place, adding the channel is a single request:
+Email is a notification channel like Slack or Telegram — configured once per project with an admin-scope key, not per action. On the hosted cloud mail delivery is already set up (a self-hosted server needs SMTP configured), so adding the channel is a single request — or **Settings → Notifications → Add channel** in the web inbox:
 
 ```python
 import requests
@@ -21,13 +21,15 @@ resp = requests.post(
     json={
         "name": "Ops inbox",
         "type": "email",
-        "config": {"to": "ops@example.com"},
+        "config": {"address": "ops@example.com"},
         "enabled": True,
         "digest_window_sec": 300,
     },
 )
 channel = resp.json()
 ```
+
+Impri then sends one confirmation email to that address. Nothing else arrives until someone opens the link and clicks **Confirm email address** — so a typo, or someone else's address, never gets your approval traffic. The channel's `verified` field turns `true` once that happens; if the email got lost, `POST /v1/notification-channels/{id}/resend-verification` (or the button next to the channel) sends a fresh link.
 
 `digest_window_sec` matters more for email than for chat channels. Set it to 300-600 seconds and a burst of actions landing within that window arrives as one email instead of ten separate ones hitting your inbox back to back.
 
@@ -75,7 +77,7 @@ if result["status"] == "approved":
     )
 ```
 
-The reviewer gets an email with the meeting details and a link into the inbox. They can adjust the time in `preview.body` before approving — the agent reads `final_preview`, not the original draft, so the edit is what actually gets booked.
+The reviewer gets an email with the action title — "Book: Product sync w/ Acme Corp, Thu 3pm" — and a link to the action in the inbox, where the full preview is. They can adjust the time in `preview.body` before approving — the agent reads `final_preview`, not the original draft, so the edit is what actually gets booked.
 
 ---
 
@@ -83,7 +85,7 @@ The reviewer gets an email with the meeting details and a link into the inbox. T
 
 The email is a notification, not the approval surface itself. It tells you an action is pending and links you into the inbox — it doesn't carry inline approve/reject buttons the way a Slack message can. That's a deliberate boundary: email has no reliable way to authenticate a one-click decision without exposing something equivalent to a bearer token in a link, so the actual decision stays behind the same authenticated inbox every channel points back to. If you want closer to true one-tap approval from a notification, [approving from Telegram](telegram-approval.md) gets nearer that; email suits "I'll review this in the next few minutes," not "decide in one thumb-tap."
 
-Five consecutive delivery failures — bad SMTP config, a bounced address — disable the channel automatically instead of retrying silently. Check Settings → Notifications if approvals stop arriving by mail.
+Five consecutive delivery failures — for example the mail server rejecting the address — disable the channel automatically instead of retrying silently. Check Settings → Notifications if approvals stop arriving by mail. A project sends at most 100 notification emails per rolling 24 hours; past that, notifications wait in the channel's digest and go out once the window frees up.
 
 ---
 

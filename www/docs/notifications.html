@@ -174,7 +174,7 @@ an <strong>admin-scope</strong> API key.</p>
 </tr>
 <tr>
 <td><code>email</code></td>
-<td>Recipient e-mail address (SMTP configured server-side)</td>
+<td>Recipient e-mail address — confirmed via a link before anything is delivered (SMTP configured server-side)</td>
 </tr>
 <tr>
 <td><code>webhook</code></td>
@@ -203,9 +203,13 @@ POST   /v1/notification-channels           Create a channel
 GET    /v1/notification-channels/:id       Get a channel (masked secrets)
 PATCH  /v1/notification-channels/:id       Update name / config / enabled / window
 DELETE /v1/notification-channels/:id       Delete a channel
-POST   /v1/notification-channels/:id/test  Send a test message now</code></pre></div>
+POST   /v1/notification-channels/:id/test  Send a test message now
+POST   /v1/notification-channels/:id/resend-verification  Resend the confirmation email (email channels)</code></pre></div>
 <p>Rate limits: 30 req/min per key on write routes; 5 req/min per key on
 the <code>/test</code> endpoint.</p>
+<p>Every channel in a response carries <code>verified</code> — always <code>true</code> except
+for an email channel whose address has not been confirmed yet (see
+<a href="#email-address-confirmation">Email address confirmation</a>).</p>
 <p><strong>Create a channel (POST /v1/notification-channels):</strong></p>
 <div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
   <span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;My Slack workspace&quot;</span><span class="hljs-punctuation">,</span>
@@ -486,14 +490,84 @@ headers — identical to the global ntfy adapter in <code>notify.ts</code>.</p>
 <span class="hljs-punctuation">}</span></code></pre></div>
 <p>Sends a plain-text email using the SMTP transport configured via
 environment variables (<code>SMTP_HOST</code>, <code>SMTP_PORT</code>, <code>SMTP_SECURE</code>,
-<code>SMTP_USER</code>, <code>SMTP_PASS</code>, <code>SMTP_FROM</code>). If <code>SMTP_HOST</code> is not set,
-delivery is silently skipped (a warning is logged), matching the
-behaviour of the global <code>notifyEmail()</code> adapter.</p>
+<code>SMTP_USER</code>, <code>SMTP_PASS</code>, <code>SMTP_FROM</code>). On the hosted cloud this is
+already set up; mail comes from <code>notifications@impri.dev</code>.</p>
+<p>Without <code>SMTP_HOST</code>, creating an email channel (or changing its address)
+returns <code>400 Email delivery is not configured on this server</code>, and a
+send through an existing email channel fails with that error — the
+<code>/test</code> endpoint reports <code>{&quot;ok&quot;: false, ...}</code> instead of pretending the
+email went out.</p>
 <p><code>address</code> is validated as an e-mail address by Zod. It is not a secret
-and is returned as-is in API responses.</p>
+and is returned as-is in API responses. <strong>The address must be confirmed
+before Impri sends it anything but the confirmation email</strong> — see
+<a href="#email-address-confirmation">Email address confirmation</a>.</p>
 <p>The email subject is <code>[Impri] {title}</code> with CR/LF stripped (header
 injection guard). The body is plain text only — no HTML — to avoid
-template injection surface.</p>
+template injection surface. It contains the action title, kind and a
+link into the inbox, plus a footer saying why the email arrives and how
+to stop it (disable or delete the channel).</p>
+<h3 id="email-address-confirmation">Email address confirmation</h3>
+<p>An Impri project does not need an email address, so an email channel&#39;s
+address is unverified input. Creating an email channel therefore sends
+one <strong>confirmation email</strong> (fixed text, nothing from your project in it)
+with a link that is valid for 7 days. The create response says whether
+it went out:</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;id&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;nchan_…&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;email&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;verified&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;verification_sent_at&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1792000000</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;verification_sent&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span> … <span class="hljs-punctuation">}</span></code></pre></div>
+<p>or, when it could not be sent, <code>&quot;verification_sent&quot;: false</code> with a
+<code>&quot;verification_error&quot;</code> explaining why (rate limit, delivery failure).
+The channel is created either way; the server retries a first
+confirmation that could not be sent.</p>
+<p>Opening the link shows a page with a <strong>Confirm email address</strong> button.
+Only that button (a <code>POST</code>) confirms the address — mail scanners that
+prefetch links cannot confirm it for you. Each link works once. After
+confirmation the channel reports <code>&quot;verified&quot;: true</code> and notifications
+start.</p>
+<p>Until then the channel receives nothing: new actions do not notify it,
+queued digests are not flushed to it, and <code>POST …/test</code> returns
+<code>409 Conflict</code>. Changing the address with <code>PATCH</code> resets the channel to
+unconfirmed and sends a new confirmation email; changing only letter
+case or surrounding whitespace does not.</p>
+<div class="code-block"><pre><code class="hljs">POST /v1/notification-channels/:id/resend-verification</code></pre></div>
+<p>Sends a new confirmation email (the previous link stops working).
+Returns <code>{ &quot;ok&quot;: true, &quot;channel&quot;: {…} }</code>, <code>400</code> for a non-email channel,
+<code>409</code> when the address is already confirmed, <code>429</code> when a limit applies,
+<code>502</code> when the email could not be sent. Limits on confirmation emails:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Per channel</td>
+<td>one email per 10 minutes</td>
+</tr>
+<tr>
+<td>Per address, across all projects</td>
+<td>3 per rolling 24 h</td>
+</tr>
+<tr>
+<td>Per project</td>
+<td>5 per rolling 24 h</td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>Daily cap on notification emails:</strong> a project sends at most
+<code>IMPRI_EMAIL_DAILY_CAP</code> notification emails (default 100, test sends
+included) per rolling 24 h. When the cap is reached, notifications stay
+queued in the channel&#39;s digest and go out once the window frees up;
+this does not count as a delivery failure and never auto-disables the
+channel.</p>
+<p>To enforce these limits the server keeps, for 2 days, a row per email
+sent: project, channel, kind (<code>verify</code> / <code>notify</code>), a SHA-256 hash of
+the lower-cased address and the time. The address itself is never
+logged.</p>
+<p><strong>Self-hosted upgrade note:</strong> email channels that existed before this
+change start unconfirmed. The server sends each of them one confirmation
+email within a minute of starting (if SMTP is configured); notifications
+resume once the link is opened.</p>
 <hr>
 <h3 id="webhook">Webhook</h3>
 <div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
@@ -543,6 +617,9 @@ attempt.</p>
 <div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;ok&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;error&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;connection refused&quot;</span> <span class="hljs-punctuation">}</span></code></pre></div>
 <p>The error string is sanitised — it will not contain the secret from the
 channel config.</p>
+<p>For an email channel whose address is not confirmed yet the endpoint
+returns <code>409 Conflict</code> without sending anything. Test emails count
+toward the project&#39;s daily email cap.</p>
 <hr>
 <h2 id="digest-window-and-deduplication">Digest window and deduplication</h2>
 <p>Each channel has a <code>digest_window_sec</code> (default 60 s). The window
@@ -756,7 +833,19 @@ touches existing tables or rows):</p>
   fail_count        <span class="hljs-type">INTEGER</span> <span class="hljs-keyword">NOT NULL</span> <span class="hljs-keyword">DEFAULT</span> <span class="hljs-number">0</span>,
   last_error        TEXT,
   created_at        <span class="hljs-type">INTEGER</span> <span class="hljs-keyword">NOT NULL</span>,
-  updated_at        <span class="hljs-type">INTEGER</span> <span class="hljs-keyword">NOT NULL</span>
+  updated_at        <span class="hljs-type">INTEGER</span> <span class="hljs-keyword">NOT NULL</span>,
+  verified_at       <span class="hljs-type">INTEGER</span>,  <span class="hljs-comment">-- email channels: when the address was confirmed</span>
+  verify_token_hash TEXT,     <span class="hljs-comment">-- sha256 of the pending confirmation token</span>
+  verify_sent_at    <span class="hljs-type">INTEGER</span>   <span class="hljs-comment">-- when the last confirmation email was sent</span>
+);
+
+<span class="hljs-keyword">CREATE TABLE</span> email_sends (
+  id           <span class="hljs-type">INTEGER</span> <span class="hljs-keyword">PRIMARY KEY</span> AUTOINCREMENT,
+  project_id   TEXT    <span class="hljs-keyword">NOT NULL</span>,
+  channel_id   TEXT,
+  kind         TEXT    <span class="hljs-keyword">NOT NULL</span> <span class="hljs-keyword">CHECK</span>(kind <span class="hljs-keyword">IN</span> (<span class="hljs-string">&#x27;verify&#x27;</span>,<span class="hljs-string">&#x27;notify&#x27;</span>)),
+  address_hash TEXT    <span class="hljs-keyword">NOT NULL</span>,  <span class="hljs-comment">-- sha256(lower-cased address)</span>
+  sent_at      <span class="hljs-type">INTEGER</span> <span class="hljs-keyword">NOT NULL</span>   <span class="hljs-comment">-- rows older than 2 days are pruned</span>
 );</code></pre></div>
 <p><code>digest_queue</code> is a JSON array of <code>{actionId, title, kind}</code> objects.
 <code>last_error</code> records the sanitised reason for the last delivery failure
@@ -816,7 +905,7 @@ in the database.</p>
 </thead>
 <tbody><tr>
 <td><code>SMTP_HOST</code></td>
-<td>SMTP server for the <code>email</code> channel type. Absent = email delivery skipped.</td>
+<td>SMTP server for the <code>email</code> channel type. Absent = email channels cannot be created and sends fail.</td>
 </tr>
 <tr>
 <td><code>SMTP_PORT</code></td>
@@ -837,6 +926,14 @@ in the database.</p>
 <tr>
 <td><code>SMTP_FROM</code></td>
 <td>From address used in outbound emails (default <code>impri@localhost</code>).</td>
+</tr>
+<tr>
+<td><code>BASE_URL</code></td>
+<td>Public API URL; the confirmation link points to <code>${BASE_URL}/v1/notification-channels/verify</code>.</td>
+</tr>
+<tr>
+<td><code>IMPRI_EMAIL_DAILY_CAP</code></td>
+<td>Notification emails a project may send per rolling 24 h (default 100).</td>
 </tr>
 <tr>
 <td><code>IMPRI_ALLOW_PRIVATE_TARGETS</code></td>
@@ -941,6 +1038,7 @@ in-channel Approve / Reject buttons using Discord&#39;s Interactions API
 <li class="ptoc-h3"><a href="#telegram">Telegram</a></li>
 <li class="ptoc-h3"><a href="#ntfy">ntfy</a></li>
 <li class="ptoc-h3"><a href="#email">Email</a></li>
+<li class="ptoc-h3"><a href="#email-address-confirmation">Email address confirmation</a></li>
 <li class="ptoc-h3"><a href="#webhook">Webhook</a></li>
 <li class="ptoc-h2"><a href="#test-endpoint">Test endpoint</a></li>
 <li class="ptoc-h2"><a href="#digest-window-and-deduplication">Digest window and deduplication</a></li>

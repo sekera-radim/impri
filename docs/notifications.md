@@ -15,7 +15,7 @@ an **admin-scope** API key.
 | `discord` | Discord Webhook URL |
 | `telegram` | Telegram Bot token + chat/channel ID |
 | `ntfy` | ntfy server URL + topic name |
-| `email` | Recipient e-mail address (SMTP configured server-side) |
+| `email` | Recipient e-mail address — confirmed via a link before anything is delivered (SMTP configured server-side) |
 | `webhook` | Any HTTPS endpoint; optional HMAC signing |
 
 Each channel has a **digest window** (`digest_window_sec`, default 60 s).
@@ -49,10 +49,15 @@ GET    /v1/notification-channels/:id       Get a channel (masked secrets)
 PATCH  /v1/notification-channels/:id       Update name / config / enabled / window
 DELETE /v1/notification-channels/:id       Delete a channel
 POST   /v1/notification-channels/:id/test  Send a test message now
+POST   /v1/notification-channels/:id/resend-verification  Resend the confirmation email (email channels)
 ```
 
 Rate limits: 30 req/min per key on write routes; 5 req/min per key on
 the `/test` endpoint.
+
+Every channel in a response carries `verified` — always `true` except
+for an email channel whose address has not been confirmed yet (see
+[Email address confirmation](#email-address-confirmation)).
 
 **Create a channel (POST /v1/notification-channels):**
 
@@ -316,16 +321,87 @@ headers — identical to the global ntfy adapter in `notify.ts`.
 
 Sends a plain-text email using the SMTP transport configured via
 environment variables (`SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`,
-`SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`). If `SMTP_HOST` is not set,
-delivery is silently skipped (a warning is logged), matching the
-behaviour of the global `notifyEmail()` adapter.
+`SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`). On the hosted cloud this is
+already set up; mail comes from `notifications@impri.dev`.
+
+Without `SMTP_HOST`, creating an email channel (or changing its address)
+returns `400 Email delivery is not configured on this server`, and a
+send through an existing email channel fails with that error — the
+`/test` endpoint reports `{"ok": false, ...}` instead of pretending the
+email went out.
 
 `address` is validated as an e-mail address by Zod. It is not a secret
-and is returned as-is in API responses.
+and is returned as-is in API responses. **The address must be confirmed
+before Impri sends it anything but the confirmation email** — see
+[Email address confirmation](#email-address-confirmation).
 
 The email subject is `[Impri] {title}` with CR/LF stripped (header
 injection guard). The body is plain text only — no HTML — to avoid
-template injection surface.
+template injection surface. It contains the action title, kind and a
+link into the inbox, plus a footer saying why the email arrives and how
+to stop it (disable or delete the channel).
+
+### Email address confirmation
+
+An Impri project does not need an email address, so an email channel's
+address is unverified input. Creating an email channel therefore sends
+one **confirmation email** (fixed text, nothing from your project in it)
+with a link that is valid for 7 days. The create response says whether
+it went out:
+
+```json
+{ "id": "nchan_…", "type": "email", "verified": false,
+  "verification_sent_at": 1792000000, "verification_sent": true, … }
+```
+
+or, when it could not be sent, `"verification_sent": false` with a
+`"verification_error"` explaining why (rate limit, delivery failure).
+The channel is created either way; the server retries a first
+confirmation that could not be sent.
+
+Opening the link shows a page with a **Confirm email address** button.
+Only that button (a `POST`) confirms the address — mail scanners that
+prefetch links cannot confirm it for you. Each link works once. After
+confirmation the channel reports `"verified": true` and notifications
+start.
+
+Until then the channel receives nothing: new actions do not notify it,
+queued digests are not flushed to it, and `POST …/test` returns
+`409 Conflict`. Changing the address with `PATCH` resets the channel to
+unconfirmed and sends a new confirmation email; changing only letter
+case or surrounding whitespace does not.
+
+```
+POST /v1/notification-channels/:id/resend-verification
+```
+
+Sends a new confirmation email (the previous link stops working).
+Returns `{ "ok": true, "channel": {…} }`, `400` for a non-email channel,
+`409` when the address is already confirmed, `429` when a limit applies,
+`502` when the email could not be sent. Limits on confirmation emails:
+
+| Limit | Value |
+|---|---|
+| Per channel | one email per 10 minutes |
+| Per address, across all projects | 3 per rolling 24 h |
+| Per project | 5 per rolling 24 h |
+
+**Daily cap on notification emails:** a project sends at most
+`IMPRI_EMAIL_DAILY_CAP` notification emails (default 100, test sends
+included) per rolling 24 h. When the cap is reached, notifications stay
+queued in the channel's digest and go out once the window frees up;
+this does not count as a delivery failure and never auto-disables the
+channel.
+
+To enforce these limits the server keeps, for 2 days, a row per email
+sent: project, channel, kind (`verify` / `notify`), a SHA-256 hash of
+the lower-cased address and the time. The address itself is never
+logged.
+
+**Self-hosted upgrade note:** email channels that existed before this
+change start unconfirmed. The server sends each of them one confirmation
+email within a minute of starting (if SMTP is configured); notifications
+resume once the link is opened.
 
 ---
 
@@ -408,6 +484,10 @@ or on failure:
 
 The error string is sanitised — it will not contain the secret from the
 channel config.
+
+For an email channel whose address is not confirmed yet the endpoint
+returns `409 Conflict` without sending anything. Test emails count
+toward the project's daily email cap.
 
 ---
 
@@ -560,7 +640,19 @@ CREATE TABLE notification_channels (
   fail_count        INTEGER NOT NULL DEFAULT 0,
   last_error        TEXT,
   created_at        INTEGER NOT NULL,
-  updated_at        INTEGER NOT NULL
+  updated_at        INTEGER NOT NULL,
+  verified_at       INTEGER,  -- email channels: when the address was confirmed
+  verify_token_hash TEXT,     -- sha256 of the pending confirmation token
+  verify_sent_at    INTEGER   -- when the last confirmation email was sent
+);
+
+CREATE TABLE email_sends (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id   TEXT    NOT NULL,
+  channel_id   TEXT,
+  kind         TEXT    NOT NULL CHECK(kind IN ('verify','notify')),
+  address_hash TEXT    NOT NULL,  -- sha256(lower-cased address)
+  sent_at      INTEGER NOT NULL   -- rows older than 2 days are pruned
 );
 ```
 
@@ -630,12 +722,14 @@ in the database.
 
 | Variable | Purpose |
 |---|---|
-| `SMTP_HOST` | SMTP server for the `email` channel type. Absent = email delivery skipped. |
+| `SMTP_HOST` | SMTP server for the `email` channel type. Absent = email channels cannot be created and sends fail. |
 | `SMTP_PORT` | SMTP port (default 587). |
 | `SMTP_SECURE` | Set to `"true"` for implicit TLS (port 465). |
 | `SMTP_USER` | SMTP username (omit for open relay). |
 | `SMTP_PASS` | SMTP password. |
 | `SMTP_FROM` | From address used in outbound emails (default `impri@localhost`). |
+| `BASE_URL` | Public API URL; the confirmation link points to `${BASE_URL}/v1/notification-channels/verify`. |
+| `IMPRI_EMAIL_DAILY_CAP` | Notification emails a project may send per rolling 24 h (default 100). |
 | `IMPRI_ALLOW_PRIVATE_TARGETS` | Set to `"1"` to allow channel URLs that resolve to private/RFC1918 addresses (intranet use). Off by default. |
 
 The global `NTFY_URL` / `NTFY_TOPIC` variables configure the

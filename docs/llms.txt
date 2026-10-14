@@ -156,7 +156,10 @@ POST   /v1/notification-channels           Create channel; SSRF guard; auto-setW
 GET    /v1/notification-channels/:id       Get single channel with masked config (admin scope)
 PATCH  /v1/notification-channels/:id       Partial update; config merge + re-validation; resets fail_count on config change (admin scope)
 DELETE /v1/notification-channels/:id       Hard-delete; deregisters Telegram webhook if approval_mode (admin scope)
-POST   /v1/notification-channels/:id/test  Test message bypassing digest window (5/min rate limit; admin scope)
+POST   /v1/notification-channels/:id/test  Test message bypassing digest window (5/min rate limit; admin scope; 409 for an unconfirmed email channel)
+POST   /v1/notification-channels/:id/resend-verification  Resend the address confirmation email of an email channel (admin scope; 429 on limits)
+GET    /v1/notification-channels/verify?token=…  Public confirmation page (button only; GET never confirms)
+POST   /v1/notification-channels/verify        Public: confirm the address (form or JSON {token}; single use, 7-day link)
 POST   /v1/notification-channels/:id/setup-webhook  Re-register Telegram setWebhook (admin scope)
 ```
 
@@ -165,12 +168,13 @@ Channel types and required config fields:
 - `discord`:  `{"url"}` — Discord Webhook URL; approval_mode adds bot_token + application_id + public_key + channel_id + allowed_approver_discord_user_ids + hmac_secret (auto-gen)
 - `telegram`: `{"bot_token", "chat_id"}` — approval_mode adds allowed_approver_user_ids + hmac_secret
 - `ntfy`:     `{"url", "topic"}` — ntfy server root + topic name
-- `email`:    `{"address"}` — requires SMTP env vars
+- `email`:    `{"address"}` — requires SMTP env vars; the address must be confirmed via an emailed link before anything else is sent (`verified: false` until then); max 3 confirmation emails per address and 5 per project per 24 h; notification emails capped at IMPRI_EMAIL_DAILY_CAP (default 100) per project per 24 h
 - `webhook`:  `{"url", "hmac_secret?"}` — any HTTPS endpoint; optional HMAC signing
 
 `digest_window_sec` (10–3600, default 60): coalesces bursts within the window.
 First notification always fires immediately. Auto-disabled after 5 consecutive failures.
 Config secrets masked to `****{last4}` in all responses.
+Every channel response has `verified` (always true for non-email types).
 
 ### Telegram approval bot
 
@@ -317,7 +321,8 @@ Key environment variables:
 - BASE_URL            Public URL; used in inbox links and Telegram webhook setup
 - DB_PATH             SQLite path (default: data/impri.db)
 - NTFY_URL / NTFY_TOPIC   ntfy push notifications
-- SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS / NOTIFY_EMAIL   email notifications
+- SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS / SMTP_FROM / NOTIFY_EMAIL   email notifications (email channels cannot be created without SMTP_HOST)
+- IMPRI_EMAIL_DAILY_CAP   Notification emails per project per rolling 24 h (default 100)
 - AUDIT_RETENTION_DAYS    Opt-in audit log pruning
 - OPERATOR_PROJECT_ID     Unlocks GET /v1/admin/stats for that project
 - ALLOW_SIGNUP            Enables POST /v1/signup for self-serve onboarding
@@ -600,6 +605,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Approve AI Agent Calendar Changes Before They're Sent: https://impri.dev/docs/approve-ai-agent-calendar-changes
 - Approve AI Agent Expense Reports and Invoices: https://impri.dev/docs/approve-ai-agent-expense-reports-and-invoices
 - Approve AI Agent Google Sheets and Spreadsheet Changes: https://impri.dev/docs/approve-ai-agent-google-sheets-and-spreadsheet-changes
+- Approve AI Agent IAM and Access Permission Grants: https://impri.dev/docs/approve-ai-agent-access-permission-grants
 - Approve AI Agent Salesforce Updates Before They Save: https://impri.dev/docs/approve-ai-agent-salesforce-updates
 - Approve AI Agent Support Ticket Escalations: https://impri.dev/docs/approve-ai-agent-support-ticket-escalations
 - Approve AI Agent Vendor Contract Terms Before They're Signed: https://impri.dev/docs/approve-ai-agent-vendor-contract-terms
@@ -633,6 +639,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human Approval for AI Agencies and Freelancers: https://impri.dev/docs/human-approval-for-ai-agencies
 - Human Approval for AI Agent App Store and Play Store Submissions: https://impri.dev/docs/human-approval-for-ai-agent-app-store-submissions
 - Human Approval for AI Agent Bulk Operations and Mass Updates: https://impri.dev/docs/human-approval-for-ai-agent-bulk-operations
+- Human Approval for AI Agent Customer Data Exports and GDPR Requests: https://impri.dev/docs/human-approval-for-ai-agent-customer-data-exports
 - Human Approval for AI Agent GitHub Issue and Comment Automation: https://impri.dev/docs/human-approval-for-ai-agent-github-issue-and-comment-automation
 - Human Approval for AI Agent Price and Inventory Changes: https://impri.dev/docs/human-approval-for-ai-agent-price-and-inventory-changes
 - Human Approval for AI Agent Secrets and API Key Rotation: https://impri.dev/docs/human-approval-for-ai-agent-secrets-rotation

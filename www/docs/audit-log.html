@@ -448,6 +448,18 @@ The machine-parseable id (<code>sl:{id}</code> / <code>dc:{id}</code> / <code>tg
 <td>key ID</td>
 <td><code>{channel_id, type, ok}</code></td>
 </tr>
+<tr>
+<td><code>channel.verification_sent</code></td>
+<td>Yes — <code>email-verification.ts</code> (confirmation email actually sent)</td>
+<td>key ID, or <code>system</code> for the background retry</td>
+<td><code>{channel_id}</code></td>
+</tr>
+<tr>
+<td><code>channel.verified</code></td>
+<td>Yes — <code>email-verification.ts</code> (confirmation link used)</td>
+<td><code>email-link</code></td>
+<td><code>{channel_id}</code></td>
+</tr>
 </tbody></table>
 </div>
 <p>Channel config (Slack tokens, webhook URLs, Telegram bot tokens) is never
@@ -655,6 +667,8 @@ are never written to <code>audit_log</code>. Channel events store only <code>cha
 <code>type</code>. API key events store only the key ID and granted scopes, never the raw
 secret or its hash. Webhook signing secrets are never logged. The
 <code>channel.tested</code> event stores only <code>channel_id</code>, <code>type</code>, and <code>ok</code> (boolean).
+Email confirmation events store only <code>channel_id</code> — never the address or the
+confirmation token.
 Every new recording point must be reviewed against this rule before merging.</p>
 <h3 id="append-only-guarantee">Append-only guarantee</h3>
 <p>No <code>UPDATE</code> or <code>DELETE</code> routes exist on individual <code>audit_log</code> rows. The only
