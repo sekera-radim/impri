@@ -262,7 +262,7 @@ export interface NotificationChannel {
   verified_at?: number
   verification_sent_at?: number
   /** Present on create/update responses that triggered a confirmation email. */
-  verification_sent?: boolean
+  verification_queued?: boolean
   verification_error?: string
 }
 

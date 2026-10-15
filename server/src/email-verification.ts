@@ -36,6 +36,7 @@ export type VerificationFailure =
   | 'send_failed';
 
 export type VerificationResult = { sent: true } | { sent: false; reason: VerificationFailure };
+export type QueuedVerification = { queued: true } | { queued: false; reason: VerificationFailure };
 
 const FAILURE_MESSAGES: Record<VerificationFailure, string> = {
   email_not_configured: 'Email delivery is not configured on this server.',
@@ -135,7 +136,9 @@ function verificationEmailText(link: string): string {
 }
 
 /**
- * Send (or re-send) the confirmation email for an email channel.
+ * Send (or re-send) the confirmation email for an email channel and wait for
+ * the SMTP server. Used where the caller needs the real outcome: the owner's
+ * resend-verification request and the background tick.
  * Never logs the address or the token.
  */
 export async function sendChannelVerification(
@@ -144,28 +147,59 @@ export async function sendChannelVerification(
   actor: string,
   log: Logger = noopLogger,
 ): Promise<VerificationResult> {
+  const prepared = prepareSend(db, channelId);
+  if (!prepared.ok) return { sent: false, reason: prepared.reason };
+  return (await deliver(db, prepared.send, actor, log)) ? { sent: true } : { sent: false, reason: 'send_failed' };
+}
+
+/**
+ * Check the limits and reserve the send now, then hand the SMTP call to the
+ * background. Channel create/update use this: talking to the SMTP server
+ * takes over a second (measured ~1.2 s to Resend), which the API response
+ * should not wait for. Limit refusals are still reported synchronously; an
+ * SMTP failure leaves the channel without `verify_sent_at`, so the owner
+ * sees it unsent and retries with resend-verification.
+ */
+export function queueChannelVerification(
+  db: Db,
+  channelId: string,
+  actor: string,
+  log: Logger = noopLogger,
+): QueuedVerification {
+  const prepared = prepareSend(db, channelId);
+  if (!prepared.ok) return { queued: false, reason: prepared.reason };
+  deliver(db, prepared.send, actor, log).catch(err => {
+    // deliver() handles SMTP errors itself; this is a DB failure while
+    // recording the outcome.
+    log.error({
+      event: 'channel.verification_record_failed',
+      channel_id: prepared.send.channelId,
+      err: err instanceof Error ? err.message : String(err),
+    });
+  });
+  return { queued: true };
+}
+
+interface PreparedSend {
+  channelId: string;
+  projectId: string;
+  address: string;
+  token: string;
+  tokenHash: string;
+  sendId: number;
+  previousTokenHash: string | null;
+  previousSentAt: number | null;
+}
+
+function prepareSend(
+  db: Db,
+  channelId: string,
+): { ok: true; send: PreparedSend } | { ok: false; reason: VerificationFailure } {
   const channel = db.prepare(
     "SELECT id, project_id, config FROM notification_channels WHERE id = ? AND type = 'email'",
   ).get(channelId) as Pick<PendingChannel, 'id' | 'project_id' | 'config'> | undefined;
-  if (!channel) return { sent: false, reason: 'send_failed' };
-
-  const result = await attemptSend(db, channel, log);
-  // Only actual sends are audited. Skips and failures are reported to the API
-  // caller (or logged); the owner retries them with resend-verification.
-  if (result.sent) {
-    db.prepare(
-      "INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, 'channel.verification_sent', ?, ?, ?)",
-    ).run(channel.project_id, actor, JSON.stringify({ channel_id: channel.id }), nowSec());
-  }
-  return result;
-}
-
-async function attemptSend(
-  db: Db,
-  channel: Pick<PendingChannel, 'id' | 'project_id' | 'config'>,
-  log: Logger,
-): Promise<VerificationResult> {
-  if (!emailDeliveryConfigured()) return { sent: false, reason: 'email_not_configured' };
+  if (!channel) return { ok: false, reason: 'send_failed' };
+  if (!emailDeliveryConfigured()) return { ok: false, reason: 'email_not_configured' };
 
   // Marks the channel as handled for the background tick whatever the outcome.
   // Retrying limit-blocked channels automatically would let a project with
@@ -175,38 +209,63 @@ async function attemptSend(
 
   const address = String((JSON.parse(channel.config) as { address?: unknown }).address ?? '');
   const token = randomBytes(32).toString('base64url');
-  const now = nowSec();
-  const reservation = reserveVerificationSend(db, channel.id, hashEmailAddress(address), hashVerifyToken(token), now);
-  if (!reservation.ok) return { sent: false, reason: reservation.reason };
+  const tokenHash = hashVerifyToken(token);
+  const reservation = reserveVerificationSend(db, channel.id, hashEmailAddress(address), tokenHash, nowSec());
+  if (!reservation.ok) return { ok: false, reason: reservation.reason };
 
+  return {
+    ok: true,
+    send: {
+      channelId: channel.id,
+      projectId: channel.project_id,
+      address,
+      token,
+      tokenHash,
+      sendId: reservation.sendId,
+      previousTokenHash: reservation.previousTokenHash,
+      previousSentAt: reservation.previousSentAt,
+    },
+  };
+}
+
+/** SMTP send of a reserved confirmation email. Resolves to whether it was sent. */
+async function deliver(db: Db, send: PreparedSend, actor: string, log: Logger): Promise<boolean> {
   try {
     await createSmtpTransport().sendMail({
       from: smtpFrom(),
-      to: address,
+      to: send.address,
       subject: 'Confirm your email for Impri notifications',
-      text: verificationEmailText(verificationLink(token)),
+      text: verificationEmailText(verificationLink(send.token)),
     });
-    return { sent: true };
   } catch (err) {
     // Nothing reached the recipient: give the slot back and restore the
-    // previous token so an earlier, still-valid link keeps working.
+    // previous token so an earlier, still-valid link keeps working. Only if
+    // the channel still holds this send's token: a newer send (e.g. after a
+    // PATCH to another address) may have replaced it while SMTP was busy.
     db.transaction(() => {
-      deleteEmailSend(db, reservation.sendId);
+      deleteEmailSend(db, send.sendId);
       db.prepare(
-        'UPDATE notification_channels SET verify_token_hash = ?, verify_sent_at = ? WHERE id = ?',
-      ).run(reservation.previousTokenHash, reservation.previousSentAt, channel.id);
+        'UPDATE notification_channels SET verify_token_hash = ?, verify_sent_at = ? WHERE id = ? AND verify_token_hash = ?',
+      ).run(send.previousTokenHash, send.previousSentAt, send.channelId, send.tokenHash);
     })();
     // SMTP error messages can echo the recipient, so log only the codes.
     const e = err as { code?: unknown; responseCode?: unknown };
     log.warn({
       event: 'channel.verification_send_failed',
-      channel_id: channel.id,
-      project_id: channel.project_id,
+      channel_id: send.channelId,
+      project_id: send.projectId,
       code: typeof e.code === 'string' ? e.code : undefined,
       response_code: typeof e.responseCode === 'number' ? e.responseCode : undefined,
     });
-    return { sent: false, reason: 'send_failed' };
+    return false;
   }
+
+  // Only actual sends are audited. Skips and failures are reported to the API
+  // caller (or logged); the owner retries them with resend-verification.
+  db.prepare(
+    "INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, 'channel.verification_sent', ?, ?, ?)",
+  ).run(send.projectId, actor, JSON.stringify({ channel_id: send.channelId }), nowSec());
+  return true;
 }
 
 /** New address on an existing channel: it must be confirmed again. */

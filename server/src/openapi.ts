@@ -268,7 +268,7 @@ export function buildOpenApiDocument(baseUrl = 'http://localhost:8484'): unknown
             content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateChannelBody' } } },
           },
           responses: {
-            201: { description: 'Channel created. Email channels add `verification_sent` and, when false, `verification_error`' },
+            201: { description: 'Channel created. Email channels add `verification_queued` (the confirmation email is sent right after the response) and, when false, `verification_error`' },
             400: { description: 'Invalid config, or email delivery not configured on the server' },
           },
         },
@@ -288,7 +288,7 @@ export function buildOpenApiDocument(baseUrl = 'http://localhost:8484'): unknown
             required: true,
             content: { 'application/json': { schema: { $ref: '#/components/schemas/UpdateChannelBody' } } },
           },
-          responses: { 200: { description: 'Updated channel' }, 400: { description: 'Invalid config' }, 404: { description: 'Not found' } },
+          responses: { 200: { description: 'Updated channel. A new email address adds `verification_queued` and, when false, `verification_error`' }, 400: { description: 'Invalid config' }, 404: { description: 'Not found' } },
         },
         delete: {
           operationId: 'deleteNotificationChannel',

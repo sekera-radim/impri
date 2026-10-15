@@ -346,19 +346,24 @@ to stop it (disable or delete the channel).
 An Impri project does not need an email address, so an email channel's
 address is unverified input. Creating an email channel therefore sends
 one **confirmation email** (fixed text, nothing from your project in it)
-with a link that is valid for 7 days. The create response says whether
-it went out:
+with a link that is valid for 7 days. The limits below are checked
+before the create responds; the email itself is sent right after the
+response, so the API does not wait for the mail server. The create
+response says whether it was queued:
 
 ```json
 { "id": "nchan_…", "type": "email", "verified": false,
-  "verification_sent_at": 1792000000, "verification_sent": true, … }
+  "verification_sent_at": 1792000000, "verification_queued": true, … }
 ```
 
-or, when it could not be sent, `"verification_sent": false` with a
-`"verification_error"` explaining why (rate limit, delivery failure).
-The channel is created either way; send the confirmation again with
+or, when a limit applies, `"verification_queued": false` with a
+`"verification_error"` explaining why. If the mail server then rejects
+the email, the channel's `verification_sent_at` goes back to empty
+(the dashboard shows that no confirmation email has gone out). The
+channel is created either way; send the confirmation again with
 `POST /v1/notification-channels/:id/resend-verification` (or
-**Resend confirmation email** in the dashboard).
+**Resend confirmation email** in the dashboard), which waits for the
+mail server and reports a failed send.
 
 Opening the link shows a page with a **Confirm email address** button.
 Only that button (a `POST`) confirms the address — mail scanners that
@@ -369,8 +374,9 @@ start.
 Until then the channel receives nothing: new actions do not notify it,
 queued digests are not flushed to it, and `POST …/test` returns
 `409 Conflict`. Changing the address with `PATCH` resets the channel to
-unconfirmed and sends a new confirmation email; changing only letter
-case or surrounding whitespace does not.
+unconfirmed and queues a new confirmation email (the response carries
+`verification_queued` the same way); changing only letter case or
+surrounding whitespace does not.
 
 ```
 POST /v1/notification-channels/:id/resend-verification

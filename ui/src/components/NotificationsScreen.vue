@@ -164,7 +164,7 @@
                 {{
                   ch.verification_sent_at
                     ? `Confirmation email sent ${formatRelative(ch.verification_sent_at)} to ${String(ch.config['address'] ?? '')}.`
-                    : `A confirmation email to ${String(ch.config['address'] ?? '')} is on its way.`
+                    : `No confirmation email has gone out to ${String(ch.config['address'] ?? '')} yet.`
                 }}
                 Notifications start once the link in it is opened.
               </span>
@@ -1311,12 +1311,14 @@ async function resendConfirmation(ch: NotificationChannel): Promise<void> {
 const verificationSnackbar = reactive({ show: false, ok: true, message: '' })
 
 // Create/update responses for email channels say whether a confirmation
-// email went out (and why not, e.g. a rate limit).
+// email was queued (and why not, e.g. a rate limit). The server sends it
+// right after responding; if that fails, the channel stays "Awaiting
+// confirmation" and Resend reports the error.
 function announceVerification(ch: NotificationChannel): void {
-  if (ch.verification_sent === undefined) return
-  verificationSnackbar.ok = ch.verification_sent
-  verificationSnackbar.message = ch.verification_sent
-    ? `Confirmation email sent to ${String(ch.config['address'] ?? '')}. Open the link in it to start receiving notifications.`
+  if (ch.verification_queued === undefined) return
+  verificationSnackbar.ok = ch.verification_queued
+  verificationSnackbar.message = ch.verification_queued
+    ? `Sending a confirmation email to ${String(ch.config['address'] ?? '')}. Open the link in it to start receiving notifications.`
     : (ch.verification_error ?? 'The confirmation email could not be sent.')
   verificationSnackbar.show = true
 }

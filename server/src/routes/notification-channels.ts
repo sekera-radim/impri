@@ -17,11 +17,12 @@ import { fetchGuarded } from '../net-guard.js';
 import { deleteEmailSend, normalizeEmailAddress, reserveNotifyEmail } from '../email-sends.js';
 import {
   sendChannelVerification,
+  queueChannelVerification,
   resetChannelVerification,
   verificationFailureMessage,
   inspectVerifyToken,
   confirmVerifyToken,
-  type VerificationResult,
+  type QueuedVerification,
   type TokenState,
 } from '../email-verification.js';
 import {
@@ -96,11 +97,12 @@ function serializeChannel(channel: ChannelRow) {
   };
 }
 
-// Extra response fields after a create/update that triggered a confirmation email.
-function verificationFields(result: VerificationResult) {
-  return result.sent
-    ? { verification_sent: true }
-    : { verification_sent: false, verification_error: verificationFailureMessage(result.reason) };
+// Extra response fields after a create/update that triggered a confirmation
+// email. "Queued" is all the response can promise: the SMTP call runs after it.
+function verificationFields(result: QueuedVerification) {
+  return result.queued
+    ? { verification_queued: true }
+    : { verification_queued: false, verification_error: verificationFailureMessage(result.reason) };
 }
 
 function loadChannel(db: Db, id: string): ChannelRow {
@@ -354,7 +356,7 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
     // channel exists, the response says why no email went out, and the owner
     // can retry with resend-verification.
     const verification = body.type === 'email'
-      ? await sendChannelVerification(db, id, key.keyId, request.log)
+      ? queueChannelVerification(db, id, key.keyId, request.log)
       : null;
 
     const created = loadChannel(db, id);
@@ -471,10 +473,10 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
       "INSERT INTO audit_log (project_id, event, actor, data, created_at) VALUES (?, 'channel.updated', ?, ?, ?)",
     ).run(key.projectId, key.keyId, JSON.stringify({ channel_id: channel.id, type: channel.type }), now);
 
-    let verification: VerificationResult | null = null;
+    let verification: QueuedVerification | null = null;
     if (addressChanged) {
       resetChannelVerification(db, channel.id);
-      verification = await sendChannelVerification(db, channel.id, key.keyId, request.log);
+      verification = queueChannelVerification(db, channel.id, key.keyId, request.log);
     }
 
     const updated = loadChannel(db, channel.id);
@@ -632,6 +634,8 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
       return reply.status(409).send({ error: 'Conflict', message: 'This email address is already confirmed' });
     }
 
+    // Unlike create/update, this waits for the SMTP server: it is how the owner
+    // finds out that a queued confirmation email did not go out.
     const result = await sendChannelVerification(db, channel.id, key.keyId, request.log);
     if (result.sent) {
       return { ok: true, channel: serializeChannel(loadChannel(db, channel.id)) };

@@ -10,7 +10,9 @@
  * - PATCH with a new address resets confirmation
  * - unconfirmed channels skipped by notifyChannels and the digest tick
  * - IMPRI_EMAIL_DAILY_CAP: capped sends are retried, never count as failures
- * - send failures release the limit slot; the tick retries
+ * - create/PATCH queue the confirmation email and respond before SMTP does;
+ *   a late failure does not wipe a newer link; the SMTP transport has timeouts
+ * - send failures release the limit slot; the owner retries, not the tick
  * - migration of a pre-verification DB + background tick
  */
 
@@ -31,7 +33,15 @@ process.env.DISABLE_WATCHER_SCHEDULER = '1';
 process.env.BASE_URL = 'https://api.example.test';
 
 const sendMail = vi.hoisted(() => vi.fn());
-vi.mock('nodemailer', () => ({ default: { createTransport: () => ({ sendMail }) } }));
+const transportOptions = vi.hoisted(() => [] as Record<string, unknown>[]);
+vi.mock('nodemailer', () => ({
+  default: {
+    createTransport: (options: Record<string, unknown>) => {
+      transportOptions.push(options);
+      return { sendMail };
+    },
+  },
+}));
 
 interface SentMail { to: string; subject: string; text: string }
 
@@ -45,6 +55,12 @@ function verifyMails(): SentMail[] {
 
 function notifyMails(): SentMail[] {
   return mails().filter(m => m.subject.startsWith('[Impri] '));
+}
+
+// Create/PATCH send the confirmation email after responding. The mocked
+// sendMail settles on a microtask, so one macrotask turn lets it finish.
+function flushQueuedSends(): Promise<void> {
+  return new Promise(resolve => setImmediate(resolve));
 }
 
 function tokenFrom(mail: SentMail): string {
@@ -68,12 +84,14 @@ function auth(key: string) {
 }
 
 async function createEmailChannel(ctx: Pick<Ctx, 'app'>, key: string, address: string, extra: Record<string, unknown> = {}) {
-  return ctx.app.inject({
+  const res = await ctx.app.inject({
     method: 'POST',
     url: '/v1/notification-channels',
     headers: auth(key),
     payload: { name: 'Ops mail', type: 'email', config: { address }, ...extra },
   });
+  await flushQueuedSends();
+  return res;
 }
 
 async function postForm(ctx: Pick<Ctx, 'app'>, token: string) {
@@ -114,6 +132,7 @@ beforeEach(() => {
   delete process.env.IMPRI_EMAIL_DAILY_CAP;
   sendMail.mockReset();
   sendMail.mockResolvedValue({ messageId: 'test' });
+  transportOptions.length = 0;
 });
 
 afterEach(() => {
@@ -129,7 +148,7 @@ describe('confirmation flow', () => {
     expect(res.statusCode).toBe(201);
     const body = res.json();
     expect(body.verified).toBe(false);
-    expect(body.verification_sent).toBe(true);
+    expect(body.verification_queued).toBe(true);
     expect(body.verification_sent_at).toBeTypeOf('number');
     expect(body.verify_token_hash).toBeUndefined();
 
@@ -239,16 +258,17 @@ describe('confirmation flow', () => {
     });
     expect(same.statusCode).toBe(200);
     expect(same.json().verified).toBe(true);
-    expect(same.json().verification_sent).toBeUndefined();
+    expect(same.json().verification_queued).toBeUndefined();
     expect(verifyMails()).toHaveLength(1);
 
     const changed = await ctx.app.inject({
       method: 'PATCH', url: `/v1/notification-channels/${id}`, headers: auth(ctx.adminKey),
       payload: { config: { address: 'second@example.com' } },
     });
+    await flushQueuedSends();
     expect(changed.statusCode).toBe(200);
     expect(changed.json().verified).toBe(false);
-    expect(changed.json().verification_sent).toBe(true);
+    expect(changed.json().verification_queued).toBe(true);
     expect(verifyMails()).toHaveLength(2);
     expect(verifyMails()[1].to).toBe('second@example.com');
   });
@@ -321,12 +341,12 @@ describe('resend-verification and limits', () => {
 
     for (let i = 0; i < 3; i++) {
       const res = await createEmailChannel(ctx, keys[i], 'victim@example.com');
-      expect(res.json().verification_sent).toBe(true);
+      expect(res.json().verification_queued).toBe(true);
     }
     // Normalisation: case and whitespace do not open a new bucket.
     const fourth = await createEmailChannel(ctx, keys[3], 'Victim@Example.com');
     expect(fourth.statusCode).toBe(201); // the channel exists…
-    expect(fourth.json().verification_sent).toBe(false); // …but nothing was sent
+    expect(fourth.json().verification_queued).toBe(false); // …but nothing was sent
     expect(fourth.json().verification_error).toMatch(/this address/);
     expect(verifyMails()).toHaveLength(3);
 
@@ -339,10 +359,10 @@ describe('resend-verification and limits', () => {
     const ctx = await setup();
     for (let i = 0; i < 5; i++) {
       const res = await createEmailChannel(ctx, ctx.adminKey, `user${i}@example.com`);
-      expect(res.json().verification_sent).toBe(true);
+      expect(res.json().verification_queued).toBe(true);
     }
     const sixth = await createEmailChannel(ctx, ctx.adminKey, 'user5@example.com');
-    expect(sixth.json().verification_sent).toBe(false);
+    expect(sixth.json().verification_queued).toBe(false);
     expect(sixth.json().verification_error).toMatch(/project/);
 
     ctx.db.prepare('UPDATE notification_channels SET verify_sent_at = ? WHERE id = ?')
@@ -387,8 +407,9 @@ describe('resend-verification and limits', () => {
     const res = await createEmailChannel(ctx, ctx.adminKey, 'fail@example.com');
     const id = res.json().id as string;
     expect(res.statusCode).toBe(201);
-    expect(res.json().verification_sent).toBe(false);
-    expect(res.json().verification_error).toMatch(/could not be sent/);
+    // The SMTP failure happens after the response, so the create only knows
+    // the email was queued; the channel shows it unsent afterwards.
+    expect(res.json().verification_queued).toBe(true);
     expect(channelRow(ctx.db, id).verify_sent_at).toBeNull();
     expect(ctx.db.prepare('SELECT COUNT(*) AS c FROM email_sends').get()).toEqual({ c: 0 });
 
@@ -437,6 +458,62 @@ describe('resend-verification and limits', () => {
     expect(text).toContain('EENVELOPE');
     expect(text).not.toContain('quiet@');
     expect(text).not.toContain('token');
+  });
+});
+
+// ---------------------------------------------------------------------------
+
+describe('queued confirmation email', () => {
+  function deferredSend() {
+    let settle!: { resolve: (v: unknown) => void; reject: (e: unknown) => void };
+    const promise = new Promise((resolve, reject) => { settle = { resolve, reject }; });
+    sendMail.mockReturnValueOnce(promise);
+    return settle;
+  }
+
+  it('create responds before the SMTP server does; the audit entry follows the actual send', async () => {
+    const ctx = await setup();
+    const smtp = deferredSend();
+    const res = await createEmailChannel(ctx, ctx.adminKey, 'slow@example.com');
+    expect(res.statusCode).toBe(201);
+    expect(res.json().verification_queued).toBe(true);
+    expect(sendMail).toHaveBeenCalledTimes(1);
+    const sentAudit = "SELECT COUNT(*) AS c FROM audit_log WHERE event = 'channel.verification_sent'";
+    expect(ctx.db.prepare(sentAudit).get()).toEqual({ c: 0 });
+
+    smtp.resolve({ messageId: 'late' });
+    await flushQueuedSends();
+    expect(ctx.db.prepare(sentAudit).get()).toEqual({ c: 1 });
+    expect((await postForm(ctx, tokenFrom(verifyMails()[0]))).statusCode).toBe(200);
+  });
+
+  it('a send that fails after a PATCH reserved a newer one leaves the newer link working', async () => {
+    const ctx = await setup();
+    const first = deferredSend();
+    const res = await createEmailChannel(ctx, ctx.adminKey, 'old@example.com');
+    const id = res.json().id as string;
+
+    const patched = await ctx.app.inject({
+      method: 'PATCH', url: `/v1/notification-channels/${id}`, headers: auth(ctx.adminKey),
+      payload: { config: { address: 'new@example.com' } },
+    });
+    await flushQueuedSends();
+    expect(patched.json().verification_queued).toBe(true);
+    const newToken = tokenFrom(verifyMails()[1]);
+
+    first.reject(Object.assign(new Error('timeout'), { code: 'ETIMEDOUT' }));
+    await flushQueuedSends();
+    expect(channelRow(ctx.db, id).verify_sent_at).not.toBeNull();
+    expect((await postForm(ctx, newToken)).statusCode).toBe(200);
+  });
+
+  it('the SMTP transport has bounded timeouts', async () => {
+    const ctx = await setup();
+    await createEmailChannel(ctx, ctx.adminKey, 'timeouts@example.com');
+    const options = transportOptions.at(-1);
+    expect(options?.connectionTimeout).toBeLessThanOrEqual(10_000);
+    expect(options?.greetingTimeout).toBeLessThanOrEqual(10_000);
+    expect(options?.socketTimeout).toBeLessThanOrEqual(30_000);
   });
 });
 

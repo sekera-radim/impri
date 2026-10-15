@@ -278,7 +278,7 @@ docker compose up -d</code></pre></div>
 </tr>
 </tbody></table>
 </div>
-<p>Per-project <strong>email notification channels</strong> (Settings → Notifications) use the same SMTP settings. Without <code>SMTP_HOST</code> they cannot be created. Each channel&#39;s address must be confirmed through a link Impri emails to it before notifications are delivered; the link points at <code>BASE_URL</code>, so set <code>BASE_URL</code> to the public URL of your API. Email channels created before this check existed are sent one confirmation email after the upgrade. See <a href="notifications#email-address-confirmation">Notification channels → Email address confirmation</a>.</p>
+<p>Per-project <strong>email notification channels</strong> (Settings → Notifications) use the same SMTP settings. Without <code>SMTP_HOST</code> they cannot be created. Each channel&#39;s address must be confirmed through a link Impri emails to it before notifications are delivered; the link points at <code>BASE_URL</code>, so set <code>BASE_URL</code> to the public URL of your API. Email channels created before this check existed are sent one confirmation email after the upgrade. Impri gives up on the SMTP server after 10 s without a connection or greeting and after 20 s of silence on an open connection. See <a href="notifications#email-address-confirmation">Notification channels → Email address confirmation</a>.</p>
 <p><strong>ntfy (recommended for self-hosters):</strong></p>
 <p>ntfy is an open-source push notification service with mobile apps. It works with the public <code>ntfy.sh</code> instance or your own self-hosted ntfy server, and requires no registration for basic use.</p>
 <div class="table-wrap"><table>

@@ -289,7 +289,7 @@ describe('CRUD — email channel (simplest, no secrets)', () => {
     expect(body.fail_count).toBe(0);
     // New address → unconfirmed until the confirmation link is used.
     expect(body.verified).toBe(false);
-    expect(body.verification_sent).toBe(true);
+    expect(body.verification_queued).toBe(true);
   });
 
   it('non-email channels are reported as verified', async () => {
@@ -302,7 +302,7 @@ describe('CRUD — email channel (simplest, no secrets)', () => {
     });
     expect(res.statusCode).toBe(201);
     expect(res.json().verified).toBe(true);
-    expect(res.json().verification_sent).toBeUndefined();
+    expect(res.json().verification_queued).toBeUndefined();
   });
 
   it('GET /v1/notification-channels lists created channel', async () => {

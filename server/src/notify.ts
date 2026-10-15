@@ -202,6 +202,11 @@ export function createSmtpTransport() {
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT ?? 587),
     secure: process.env.SMTP_SECURE === 'true',
+    // nodemailer waits up to 2 min to connect and 10 min on an idle socket by
+    // default; a stalled SMTP server would hold API requests and ticks that long.
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
     auth: process.env.SMTP_USER
       ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS ?? '' }
       : undefined,
