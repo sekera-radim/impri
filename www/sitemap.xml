@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://impri.dev/</loc><lastmod>2026-10-09</lastmod></url>
-  <url><loc>https://impri.dev/docs</loc><lastmod>2026-10-15</lastmod></url>
+  <url><loc>https://impri.dev/docs</loc><lastmod>2026-10-16</lastmod></url>
   <url><loc>https://impri.dev/pricing</loc><lastmod>2026-10-08</lastmod></url>
   <url><loc>https://impri.dev/docs/account-recovery</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/add-a-kill-switch-to-your-ai-agent</loc><lastmod>2026-07-13</lastmod></url>
@@ -121,6 +121,7 @@
   <url><loc>https://impri.dev/docs/human-in-the-loop-cloudflare-agents</loc><lastmod>2026-09-04</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-copilotkit-ag-ui</loc><lastmod>2026-09-21</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-explained</loc><lastmod>2026-09-29</lastmod></url>
+  <url><loc>https://impri.dev/docs/human-in-the-loop-for-ai-agent-database-migrations</loc><lastmod>2026-10-16</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-ai-agent-dns-and-infra-changes</loc><lastmod>2026-09-25</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-ai-agent-incident-response</loc><lastmod>2026-09-14</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-ai-hr-onboarding-agents</loc><lastmod>2026-09-13</lastmod></url>
