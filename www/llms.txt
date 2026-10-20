@@ -606,6 +606,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Approve AI Agent Expense Reports and Invoices: https://impri.dev/docs/approve-ai-agent-expense-reports-and-invoices
 - Approve AI Agent Google Sheets and Spreadsheet Changes: https://impri.dev/docs/approve-ai-agent-google-sheets-and-spreadsheet-changes
 - Approve AI Agent IAM and Access Permission Grants: https://impri.dev/docs/approve-ai-agent-access-permission-grants
+- Approve AI Agent Outbound Webhooks and Third-Party API Calls: https://impri.dev/docs/approve-ai-agent-outbound-webhooks-and-api-calls
 - Approve AI Agent Salesforce Updates Before They Save: https://impri.dev/docs/approve-ai-agent-salesforce-updates
 - Approve AI Agent Support Ticket Escalations: https://impri.dev/docs/approve-ai-agent-support-ticket-escalations
 - Approve AI Agent Vendor Contract Terms Before They're Signed: https://impri.dev/docs/approve-ai-agent-vendor-contract-terms

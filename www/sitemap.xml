@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://impri.dev/</loc><lastmod>2026-10-09</lastmod></url>
-  <url><loc>https://impri.dev/docs</loc><lastmod>2026-10-16</lastmod></url>
+  <url><loc>https://impri.dev/docs</loc><lastmod>2026-10-21</lastmod></url>
   <url><loc>https://impri.dev/pricing</loc><lastmod>2026-10-08</lastmod></url>
   <url><loc>https://impri.dev/docs/account-recovery</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/add-a-kill-switch-to-your-ai-agent</loc><lastmod>2026-07-13</lastmod></url>
@@ -29,6 +29,7 @@
   <url><loc>https://impri.dev/docs/approve-ai-agent-expense-reports-and-invoices</loc><lastmod>2026-09-20</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-ai-agent-github-actions-workflows</loc><lastmod>2026-09-08</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-ai-agent-google-sheets-and-spreadsheet-changes</loc><lastmod>2026-09-26</lastmod></url>
+  <url><loc>https://impri.dev/docs/approve-ai-agent-outbound-webhooks-and-api-calls</loc><lastmod>2026-10-21</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-ai-agent-payments-and-charges</loc><lastmod>2026-07-18</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-ai-agent-pull-requests-before-merge</loc><lastmod>2026-09-06</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-ai-agent-salesforce-updates</loc><lastmod>2026-09-14</lastmod></url>
