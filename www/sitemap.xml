@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://impri.dev/</loc><lastmod>2026-10-09</lastmod></url>
   <url><loc>https://impri.dev/docs</loc><lastmod>2026-10-24</lastmod></url>
-  <url><loc>https://impri.dev/pricing</loc><lastmod>2026-10-08</lastmod></url>
+  <url><loc>https://impri.dev/pricing</loc><lastmod>2026-10-24</lastmod></url>
   <url><loc>https://impri.dev/docs/account-recovery</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/add-a-kill-switch-to-your-ai-agent</loc><lastmod>2026-07-13</lastmod></url>
   <url><loc>https://impri.dev/docs/adding-an-audit-log-to-your-ai-agent</loc><lastmod>2026-08-20</lastmod></url>
@@ -14,8 +14,8 @@
   <url><loc>https://impri.dev/docs/approval-gate-for-ai-data-pipelines</loc><lastmod>2026-08-04</lastmod></url>
   <url><loc>https://impri.dev/docs/approval-gate-for-overnight-ai-agents</loc><lastmod>2026-07-23</lastmod></url>
   <url><loc>https://impri.dev/docs/approval-gate-for-webhook-triggered-agents</loc><lastmod>2026-07-25</lastmod></url>
-  <url><loc>https://impri.dev/docs/approval-inbox-for-ai-agents</loc><lastmod>2026-08-17</lastmod></url>
-  <url><loc>https://impri.dev/docs/approval-inbox-vs-slack-buttons</loc><lastmod>2026-10-08</lastmod></url>
+  <url><loc>https://impri.dev/docs/approval-inbox-for-ai-agents</loc><lastmod>2026-10-24</lastmod></url>
+  <url><loc>https://impri.dev/docs/approval-inbox-vs-slack-buttons</loc><lastmod>2026-10-24</lastmod></url>
   <url><loc>https://impri.dev/docs/approval-workflow-for-ai-marketing-automation</loc><lastmod>2026-08-02</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-ai-agent-access-permission-grants</loc><lastmod>2026-10-13</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-ai-agent-actions-by-email</loc><lastmod>2026-10-15</lastmod></url>
@@ -63,9 +63,9 @@
   <url><loc>https://impri.dev/docs/gate-a-cron-job-with-human-approval</loc><lastmod>2026-07-13</lastmod></url>
   <url><loc>https://impri.dev/docs/gdpr</loc><lastmod>2026-07-12</lastmod></url>
   <url><loc>https://impri.dev/docs/handling-approval-timeouts-and-expiry-in-agents</loc><lastmod>2026-08-23</lastmod></url>
-  <url><loc>https://impri.dev/docs/hitl-tools-for-llm-agents-compared</loc><lastmod>2026-10-08</lastmod></url>
-  <url><loc>https://impri.dev/docs/how-to-add-a-review-step-to-an-mcp-tool</loc><lastmod>2026-08-25</lastmod></url>
-  <url><loc>https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent</loc><lastmod>2026-10-08</lastmod></url>
+  <url><loc>https://impri.dev/docs/hitl-tools-for-llm-agents-compared</loc><lastmod>2026-10-24</lastmod></url>
+  <url><loc>https://impri.dev/docs/how-to-add-a-review-step-to-an-mcp-tool</loc><lastmod>2026-10-24</lastmod></url>
+  <url><loc>https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent</loc><lastmod>2026-10-24</lastmod></url>
   <url><loc>https://impri.dev/docs/how-to-build-a-human-in-the-loop-ai-agent</loc><lastmod>2026-07-13</lastmod></url>
   <url><loc>https://impri.dev/docs/how-to-get-human-approval-into-your-coding-agent</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/how-to-pause-an-ai-agent-for-human-input</loc><lastmod>2026-08-21</lastmod></url>
@@ -126,7 +126,7 @@
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-ai-agent-dns-and-infra-changes</loc><lastmod>2026-09-25</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-ai-agent-incident-response</loc><lastmod>2026-09-14</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-ai-hr-onboarding-agents</loc><lastmod>2026-09-13</lastmod></url>
-  <url><loc>https://impri.dev/docs/human-in-the-loop-for-ai-in-ecommerce</loc><lastmod>2026-08-26</lastmod></url>
+  <url><loc>https://impri.dev/docs/human-in-the-loop-for-ai-in-ecommerce</loc><lastmod>2026-10-24</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-ai-in-hr</loc><lastmod>2026-08-30</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-ai-in-saas-operations</loc><lastmod>2026-08-30</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-ai-newsletter-automation</loc><lastmod>2026-08-30</lastmod></url>
@@ -140,14 +140,14 @@
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-rag-agents-that-act</loc><lastmod>2026-07-24</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-supply-chain-ai-agents</loc><lastmod>2026-09-23</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-travel-booking-ai-agents</loc><lastmod>2026-09-23</lastmod></url>
-  <url><loc>https://impri.dev/docs/human-in-the-loop-langchain-deep-agents</loc><lastmod>2026-09-15</lastmod></url>
+  <url><loc>https://impri.dev/docs/human-in-the-loop-langchain-deep-agents</loc><lastmod>2026-10-24</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-langgraph</loc><lastmod>2026-07-14</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-llamaindex-agents</loc><lastmod>2026-07-15</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-microsoft-agent-framework</loc><lastmod>2026-09-03</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-openai-agents-sdk</loc><lastmod>2026-07-13</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-pydantic-ai</loc><lastmod>2026-07-16</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-semantic-kernel</loc><lastmod>2026-09-05</lastmod></url>
-  <url><loc>https://impri.dev/docs/human-in-the-loop-temporal-workflows-for-ai-agents</loc><lastmod>2026-09-28</lastmod></url>
+  <url><loc>https://impri.dev/docs/human-in-the-loop-temporal-workflows-for-ai-agents</loc><lastmod>2026-10-24</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-vs-full-autonomy</loc><lastmod>2026-08-07</lastmod></url>
   <url><loc>https://impri.dev/docs/human-oversight-for-agentic-ai</loc><lastmod>2026-07-29</lastmod></url>
   <url><loc>https://impri.dev/docs/human-oversight-vs-automation-in-ai-agents</loc><lastmod>2026-09-03</lastmod></url>
@@ -178,9 +178,9 @@
   <url><loc>https://impri.dev/docs/self-hosting</loc><lastmod>2026-10-15</lastmod></url>
   <url><loc>https://impri.dev/docs/slack-approval</loc><lastmod>2026-10-08</lastmod></url>
   <url><loc>https://impri.dev/docs/stop-your-ai-agent-sending-emails-without-approval</loc><lastmod>2026-07-26</lastmod></url>
-  <url><loc>https://impri.dev/docs/telegram-approval</loc><lastmod>2026-07-11</lastmod></url>
+  <url><loc>https://impri.dev/docs/telegram-approval</loc><lastmod>2026-10-24</lastmod></url>
   <url><loc>https://impri.dev/docs/terms</loc><lastmod>2026-07-12</lastmod></url>
-  <url><loc>https://impri.dev/docs/the-propose-approve-execute-pattern</loc><lastmod>2026-09-29</lastmod></url>
+  <url><loc>https://impri.dev/docs/the-propose-approve-execute-pattern</loc><lastmod>2026-10-24</lastmod></url>
   <url><loc>https://impri.dev/docs/the-risks-of-autonomous-ai-agents-taking-actions</loc><lastmod>2026-08-30</lastmod></url>
   <url><loc>https://impri.dev/docs/trust-boundaries-for-ai-agents</loc><lastmod>2026-09-01</lastmod></url>
   <url><loc>https://impri.dev/docs/watcher-presets</loc><lastmod>2026-07-11</lastmod></url>
