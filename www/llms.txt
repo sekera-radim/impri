@@ -23,7 +23,7 @@ Open-core (MIT), self-hostable. Source: https://gitlab.com/sekera.radim/impri  D
 
 ## Authentication
 
-All API endpoints (except /healthz, /v1/openapi.json, /v1/push/vapid-public-key, /v1/billing/webhook, /v1/integrations/telegram/webhook/:id, /v1/integrations/slack/interactions/:id, and /v1/integrations/discord/interactions/:id) require:
+All API endpoints require the header below, except: health and spec (/healthz, /readyz, /v1/openapi.json; /metrics uses its own METRICS_TOKEN), account (/v1/signup, /v1/recover), callbacks that carry their own signature or token (/v1/billing/webhook, /v1/notification-channels/verify, /v1/integrations/telegram/webhook/:id, /v1/integrations/slack/interactions and /v1/integrations/slack/interactions/:id, /v1/integrations/slack/oauth/callback, /v1/integrations/discord/interactions/:id), and public discovery (/v1/push/vapid-public-key, /v1/integrations/slack/app-info, /.well-known/mcp/server-card.json):
 
   Authorization: Bearer im_<key>
 
@@ -99,6 +99,7 @@ GET    /v1/watchers         List watchers (filters: status, kind, cursor)
 GET    /v1/watchers/:id     Get watcher with item_count
 PATCH  /v1/watchers/:id     Partial update; reactivation resets fail_count
 DELETE /v1/watchers/:id     Delete watcher and cascade items
+POST   /v1/watchers/:id/run Run now: fetch, score, dedup, publish to the inbox; restarts the schedule (watch scope; 20/min)
 ```
 
 Watcher kinds: `rss`, `reddit_search`, `url_diff`.
@@ -200,6 +201,10 @@ Slack interaction receiver (public):
   name from the Slack payload (e.g. `radim (Slack)`) so the audit shows WHO decided.
   Shared official app (one-click Add to Slack): `POST /v1/integrations/slack/interactions`
   (no :channelId) verifies via the app-level signing secret; channel looked up by team_id+channel_id.
+Shared app install (cloud, one-click Add to Slack):
+  `GET /v1/integrations/slack/app-info` — public; `{"available": bool}` = a shared Slack app is configured
+  `POST /v1/integrations/slack/install-url` — admin scope; Slack OAuth v2 install URL with a signed, replay-safe state token
+  `GET /v1/integrations/slack/oauth/callback` — Slack redirects here; 302 to the inbox with `?slack=connected` or `?slack=error`
 
 ### Discord approval bot
 
@@ -229,6 +234,15 @@ DELETE /v1/project/data                   GDPR erasure: wipes actions/decisions/
 
 GDPR export includes: project, actions, decisions, watchers, audit_log. Not included: api_keys, pii_log, push_subscriptions.
 GDPR erase records a single gdpr.erase tombstone after wiping all other audit rows.
+
+### Account recovery
+
+```
+POST   /v1/recover         Exchange {project_id, recovery_code} for a new admin key + a new recovery code (public; rate-limited per IP and per project)
+POST   /v1/recovery-code   Rotate the recovery code; the new code is returned once (admin scope; 10/min)
+```
+
+Signup and first-run bootstrap return `recovery_code` once; only its argon2 hash is stored. Guide: https://impri.dev/docs/account-recovery
 
 ### Billing
 
@@ -279,7 +293,10 @@ Retention: opt-in via AUDIT_RETENTION_DAYS env var (unset = unlimited).
 ### Operator admin
 
 ```
-GET    /v1/admin/stats   Platform totals: signups, by_tier, paid, activity (operator-only; 404 for all others)
+GET    /v1/admin/stats        Platform totals: signups, by_tier, paid, activity (operator-only; 404 for all others)
+GET    /v1/admin/stats/daily  Daily series for the last N days (?days=1-90, default 7) (operator-only)
+GET    /v1/admin/feedback     Recent product feedback across projects (operator-only)
+POST   /v1/admin/comp-tier    Grant a project a tier {project_id, tier, expires_in?} without Stripe (operator-only; 10/min)
 ```
 
 Gate: OPERATOR_PROJECT_ID env var must be set; caller's key must belong to that project.
@@ -293,7 +310,9 @@ GET    /readyz           Readiness probe (public; no auth; checks DB reachable +
 GET    /metrics          Prometheus text metrics (opt-in: METRICS_ENABLED=1; optional bearer METRICS_TOKEN)
 GET    /v1/usage         Per-project usage snapshot (admin scope; 60/min)
 GET    /v1/openapi.json  Live OpenAPI 3.1 specification (public; no auth)
-POST   /v1/signup        Create project + admin key (public; gated on ALLOW_SIGNUP env var)
+POST   /v1/signup        Create project + admin key + recovery code (public; gated on ALLOW_SIGNUP env var)
+POST   /v1/feedback      Send product feedback {message, rating?, contact?, context?} (any valid key; 10/min)
+GET    /.well-known/mcp/server-card.json  MCP server card for directories (public; no auth)
 ```
 
 /metrics env vars: METRICS_ENABLED=1 (required to activate), METRICS_TOKEN (bearer token; omit to skip token check but restrict at network layer), METRICS_HOST (bind address for separate listener), METRICS_PORT (separate port — if set, a second Fastify instance on METRICS_HOST:METRICS_PORT serves /metrics only).
@@ -549,7 +568,12 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 
 ## Documentation
 
+- Website:                                             https://impri.dev/
+- Pricing (tiers, limits, how billing works):          https://impri.dev/pricing
 - Quickstart (self-hosted, zero to first approved action): https://impri.dev/docs/quickstart
+- What is human-in-the-loop for AI agents:             https://impri.dev/docs/what-is-human-in-the-loop-for-ai-agents
+- What is an approval inbox:                           https://impri.dev/docs/what-is-an-approval-inbox
+- What is an MCP approval server:                      https://impri.dev/docs/what-is-an-mcp-approval-server
 - AI agent approval workflow (overview + use cases):    https://impri.dev/docs/ai-agent-approval-workflow
 - How to add human approval to an AI agent:            https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent
 - Python SDK reference:                                https://impri.dev/docs/sdk-python
@@ -570,6 +594,9 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - API keys (scopes, lifecycle, security):              https://impri.dev/docs/api-keys
 - Billing (tiers, limits, Stripe):                     https://impri.dev/docs/billing
 - GDPR (export, erasure):                              https://impri.dev/docs/gdpr
+- Account recovery (lost API key, recovery codes):     https://impri.dev/docs/account-recovery
+- Privacy policy:                                      https://impri.dev/docs/privacy
+- Terms of service:                                    https://impri.dev/docs/terms
 - Web push notifications (VAPID setup):                https://impri.dev/docs/web-push
 - Operator / multi-tenant stats:                       https://impri.dev/docs/operator
 - Self-hosting (docker compose, env vars, HTTPS):      https://impri.dev/docs/self-hosting
