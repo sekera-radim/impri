@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Telegram Approval Bot — Impri Docs</title>
-<meta name="description" content="Impri can send pending-action notifications to a Telegram chat with Approve and Reject buttons that let your team decide without ever opening a browser. The…">
+<title>Telegram Approval Bot: Setup and Security Model — Impri Docs</title>
+<meta name="description" content="Configure Telegram approval buttons for AI agent actions: bot token, webhook, allow-listed approvers, and the security model behind every tap.">
 <meta name="theme-color" content="#06070d">
-<meta property="og:title" content="Telegram Approval Bot — Impri Docs">
-<meta property="og:description" content="Impri can send pending-action notifications to a Telegram chat with Approve and Reject buttons that let your team decide without ever opening a browser. The…">
+<meta property="og:title" content="Telegram Approval Bot: Setup and Security Model — Impri Docs">
+<meta property="og:description" content="Configure Telegram approval buttons for AI agent actions: bot token, webhook, allow-listed approvers, and the security model behind every tap.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/telegram-approval">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/telegram-approval">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Telegram Approval Bot","description":"Impri can send pending-action notifications to a Telegram chat with Approve and Reject buttons that let your team decide without ever opening a browser. The…","url":"https://impri.dev/docs/telegram-approval","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Telegram Approval Bot: Setup and Security Model","description":"Configure Telegram approval buttons for AI agent actions: bot token, webhook, allow-listed approvers, and the security model behind every tap.","url":"https://impri.dev/docs/telegram-approval","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -140,13 +140,11 @@ pre code.hljs{display:block;overflow-x:auto}
       <span class="bc-sep">/</span>
       <span>API reference</span>
       <span class="bc-sep">/</span>
-      <span>Telegram Approval Bot</span>
+      <span>Telegram Approval Bot: Setup and Security Model</span>
     </nav>
-    <h1>Telegram Approval Bot</h1>
-<p>Impri can send pending-action notifications to a Telegram chat with
-<strong>Approve</strong> and <strong>Reject</strong> buttons that let your team decide without
-ever opening a browser. The decision is recorded in Impri with the same
-integrity guarantees as a web-inbox decision.</p>
+    <h1>Telegram Approval Bot: Setup and Security Model</h1>
+<p>Configure Telegram approval buttons for AI agent actions: bot token, webhook, allow-listed approvers, and the security model behind every tap.</p>
+<p>The decision is recorded in Impri with the same integrity guarantees as a web-inbox decision.</p>
 <p>This is an extension of the existing <code>telegram</code> notification channel
 (see <a href="notifications">Notification channels</a>). When <code>approval_mode</code>
 is <code>false</code> (the default), the channel behaves exactly as before —

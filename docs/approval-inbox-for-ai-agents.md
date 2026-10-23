@@ -1,6 +1,6 @@
-# An Approval Inbox for AI Agents
+# One Approval Inbox for All Your AI Agents
 
-A single approval inbox for AI agents means every pending action — from every agent, on every channel — lands in one triage queue instead of scattered across chat pings you can lose track of.
+One approval inbox for every AI agent: pending actions from every agent, on every channel, land in a single triage queue instead of scattered chat pings.
 
 ---
 

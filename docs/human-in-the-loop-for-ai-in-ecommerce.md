@@ -1,6 +1,6 @@
-# Human-in-the-Loop for AI in E-commerce
+# Human-in-the-Loop AI for E-commerce Discounts
 
-Human-in-the-loop for AI in e-commerce means gating discount codes and order cancellations behind a human tap before an agent's mistake touches revenue.
+Gate discount codes and order cancellations behind a human tap, so an AI agent's mistake in your store can't touch revenue before someone signs off.
 
 ---
 

@@ -1,6 +1,6 @@
-# How to Add a Review Step to an MCP Tool
+# Add a Human Approval Step to Any MCP Tool
 
-Wrap any MCP tool's execute handler so it pauses for a human decision before running — turning a one-shot agent action into a reviewable one.
+Wrap any MCP tool's execute handler so it pauses for human approval before running, turning a one-shot agent action into a reviewable, auditable one.
 
 ---
 

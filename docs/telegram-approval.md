@@ -1,9 +1,8 @@
-# Telegram Approval Bot
+# Telegram Approval Bot: Setup and Security Model
 
-Impri can send pending-action notifications to a Telegram chat with
-**Approve** and **Reject** buttons that let your team decide without
-ever opening a browser. The decision is recorded in Impri with the same
-integrity guarantees as a web-inbox decision.
+Configure Telegram approval buttons for AI agent actions: bot token, webhook, allow-listed approvers, and the security model behind every tap.
+
+The decision is recorded in Impri with the same integrity guarantees as a web-inbox decision.
 
 This is an extension of the existing `telegram` notification channel
 (see [Notification channels](notifications.md)). When `approval_mode`

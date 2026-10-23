@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Approval Inbox vs Slack Buttons for Agent Sign-off — Impri Docs</title>
-<meta name="description" content="Comparing a homegrown Slack approve/reject bot to a dedicated approval inbox for AI agent actions, covering audit trail, mobile use, expiry, and edits.">
+<title>Approval Inbox vs Slack Buttons: What You Lose — Impri Docs</title>
+<meta name="description" content="A Slack approve/reject bot looks simple until you need an audit trail, mobile access, expiring requests, or an editable draft before the agent acts.">
 <meta name="theme-color" content="#06070d">
-<meta property="og:title" content="Approval Inbox vs Slack Buttons for Agent Sign-off — Impri Docs">
-<meta property="og:description" content="Comparing a homegrown Slack approve/reject bot to a dedicated approval inbox for AI agent actions, covering audit trail, mobile use, expiry, and edits.">
+<meta property="og:title" content="Approval Inbox vs Slack Buttons: What You Lose — Impri Docs">
+<meta property="og:description" content="A Slack approve/reject bot looks simple until you need an audit trail, mobile access, expiring requests, or an editable draft before the agent acts.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/approval-inbox-vs-slack-buttons">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/approval-inbox-vs-slack-buttons">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Approval Inbox vs Slack Buttons for Agent Sign-off","description":"Comparing a homegrown Slack approve/reject bot to a dedicated approval inbox for AI agent actions, covering audit trail, mobile use, expiry, and edits.","url":"https://impri.dev/docs/approval-inbox-vs-slack-buttons","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Approval Inbox vs Slack Buttons: What You Lose","description":"A Slack approve/reject bot looks simple until you need an audit trail, mobile access, expiring requests, or an editable draft before the agent acts.","url":"https://impri.dev/docs/approval-inbox-vs-slack-buttons","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -140,10 +140,10 @@ pre code.hljs{display:block;overflow-x:auto}
       <span class="bc-sep">/</span>
       <span>Reference</span>
       <span class="bc-sep">/</span>
-      <span>Approval Inbox vs Slack Buttons for Agent Sign-off</span>
+      <span>Approval Inbox vs Slack Buttons: What You Lose</span>
     </nav>
-    <h1>Approval Inbox vs Slack Buttons for Agent Sign-off</h1>
-<p>Comparing a homegrown Slack approve/reject bot to a dedicated approval inbox for AI agent actions, covering audit trail, mobile use, expiry, and edits.</p>
+    <h1>Approval Inbox vs Slack Buttons: What You Lose</h1>
+<p>A Slack approve/reject bot looks simple until you need an audit trail, mobile access, expiring requests, or an editable draft before the agent acts.</p>
 <hr>
 <h2 id="the-instinct-just-add-slack-buttons">The instinct: just add Slack buttons</h2>
 <p>The first time someone needs a human to sign off on an agent action, the plan is almost always the same: post to Slack with Block Kit &quot;Approve&quot; / &quot;Reject&quot; buttons, stand up a small webhook receiver for the <code>interaction</code> payload, and flip a flag in your own database on click. It looks like an afternoon of work, and for a while it is.</p>

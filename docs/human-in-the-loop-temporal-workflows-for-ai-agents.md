@@ -1,6 +1,6 @@
-# Human-in-the-Loop for AI Agents on Temporal Workflows
+# Pause an AI Agent for Approval on Temporal
 
-Add human-in-the-loop approval to an AI agent running on Temporal: push the proposed action to Impri, sleep durably in the workflow, and execute only on approval.
+Add a human approval step to an AI agent running on Temporal: push the proposed action to Impri, sleep durably in the workflow, execute only on approval.
 
 ---
 

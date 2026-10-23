@@ -1,6 +1,6 @@
 # Human-in-the-Loop for LangChain Deep Agents
 
-Deep Agents pause on `interrupt_on` and wait for *any* resume value — pairing that pause with Impri turns it into a real approval, with a mobile inbox card, an editable draft, and a decision record.
+Deep Agents pause on `interrupt_on` and wait for *any* resume value. Pair that pause with Impri for a mobile inbox card, an editable draft, and an audit record.
 
 ---
 

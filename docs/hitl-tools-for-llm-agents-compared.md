@@ -1,6 +1,6 @@
-# Human-in-the-Loop Tools for LLM Agents, Compared
+# 4 Types of Human-in-the-Loop Tools, Compared
 
-A practical comparison of the four categories of human-in-the-loop tooling for LLM agents — framework-native interrupts, workflow-engine nodes, general approval software, and dedicated gates — so you pick by category, not by name.
+Framework interrupts, workflow-engine nodes, general approval software, and dedicated gates: a practical comparison so you pick a HITL tool by category.
 
 ---
 

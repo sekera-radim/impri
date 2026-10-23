@@ -1,6 +1,6 @@
 # How to Add Human Approval to an AI Agent
 
-AI agents are good at drafting. They are bad at knowing when to stop and ask. This guide shows the pattern: your agent proposes an action, a human says yes or no, and only then does the agent act.
+AI agents are great at drafting but bad at knowing when to stop. This guide shows the pattern: agent proposes, human approves, only then does it act.
 
 Three calls, either over REST or MCP. Code first, the reasoning behind it further down.
 

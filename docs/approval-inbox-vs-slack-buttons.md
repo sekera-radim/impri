@@ -1,6 +1,6 @@
-# Approval Inbox vs Slack Buttons for Agent Sign-off
+# Approval Inbox vs Slack Buttons: What You Lose
 
-Comparing a homegrown Slack approve/reject bot to a dedicated approval inbox for AI agent actions, covering audit trail, mobile use, expiry, and edits.
+A Slack approve/reject bot looks simple until you need an audit trail, mobile access, expiring requests, or an editable draft before the agent acts.
 
 ---
 

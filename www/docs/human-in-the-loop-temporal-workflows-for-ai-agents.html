@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Human-in-the-Loop for AI Agents on Temporal Workflows — Impri Docs</title>
-<meta name="description" content="Add human-in-the-loop approval to an AI agent running on Temporal: push the proposed action to Impri, sleep durably in the workflow, and execute only on…">
+<title>Pause an AI Agent for Approval on Temporal — Impri Docs</title>
+<meta name="description" content="Add a human approval step to an AI agent running on Temporal: push the proposed action to Impri, sleep durably in the workflow, execute only on approval.">
 <meta name="theme-color" content="#06070d">
-<meta property="og:title" content="Human-in-the-Loop for AI Agents on Temporal Workflows — Impri Docs">
-<meta property="og:description" content="Add human-in-the-loop approval to an AI agent running on Temporal: push the proposed action to Impri, sleep durably in the workflow, and execute only on…">
+<meta property="og:title" content="Pause an AI Agent for Approval on Temporal — Impri Docs">
+<meta property="og:description" content="Add a human approval step to an AI agent running on Temporal: push the proposed action to Impri, sleep durably in the workflow, execute only on approval.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/human-in-the-loop-temporal-workflows-for-ai-agents">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/human-in-the-loop-temporal-workflows-for-ai-agents">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human-in-the-Loop for AI Agents on Temporal Workflows","description":"Add human-in-the-loop approval to an AI agent running on Temporal: push the proposed action to Impri, sleep durably in the workflow, and execute only on…","url":"https://impri.dev/docs/human-in-the-loop-temporal-workflows-for-ai-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Pause an AI Agent for Approval on Temporal","description":"Add a human approval step to an AI agent running on Temporal: push the proposed action to Impri, sleep durably in the workflow, execute only on approval.","url":"https://impri.dev/docs/human-in-the-loop-temporal-workflows-for-ai-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -140,10 +140,10 @@ pre code.hljs{display:block;overflow-x:auto}
       <span class="bc-sep">/</span>
       <span>Reference</span>
       <span class="bc-sep">/</span>
-      <span>Human-in-the-Loop for AI Agents on Temporal Workflows</span>
+      <span>Pause an AI Agent for Approval on Temporal</span>
     </nav>
-    <h1>Human-in-the-Loop for AI Agents on Temporal Workflows</h1>
-<p>Add human-in-the-loop approval to an AI agent running on Temporal: push the proposed action to Impri, sleep durably in the workflow, and execute only on approval.</p>
+    <h1>Pause an AI Agent for Approval on Temporal</h1>
+<p>Add a human approval step to an AI agent running on Temporal: push the proposed action to Impri, sleep durably in the workflow, execute only on approval.</p>
 <hr>
 <h2 id="why-temporal-alone-doesn39t-give-you-the-approval-ui">Why Temporal alone doesn&#39;t give you the approval UI</h2>
 <p>Temporal is very good at the hard part of waiting: a workflow can sit for days, survive worker restarts, and resume exactly where it stopped. What it does not give you is the human side — somewhere for a person to see the proposed action, edit it, and say yes or no from their phone.</p>

@@ -1,6 +1,6 @@
-# The Propose, Approve, Execute Pattern for AI Agents
+# The Propose-Approve-Execute Pattern for AI Agents
 
-Propose, approve, execute splits every risky agent action into three phases so a human decision — not a prompt instruction — is what actually gates the side effect.
+Propose, approve, execute splits every risky agent action into three phases, so a human decision, not a prompt instruction, gates the side effect.
 
 ---
 
