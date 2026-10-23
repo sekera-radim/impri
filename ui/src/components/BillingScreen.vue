@@ -352,7 +352,6 @@ const plans = [
     id: 'free',
     name: 'Free',
     monthlyPrice: 'Free',
-    yearlyPrice: null as string | null,
     features: [
       '3 watchers',
       '100 approvals / month',
@@ -363,7 +362,6 @@ const plans = [
     id: 'indie',
     name: 'Indie',
     monthlyPrice: '$9',
-    yearlyPrice: '$97',
     features: [
       '20 watchers',
       '2,000 approvals / month',
@@ -374,7 +372,6 @@ const plans = [
     id: 'team',
     name: 'Team',
     monthlyPrice: '$29',
-    yearlyPrice: '$290',
     features: [
       'Unlimited watchers',
       'Unlimited approvals',
