@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pricing — Impri</title>
+  <title>Impri Pricing: Free Tier, Indie $9/mo, Team $29/mo</title>
   <meta name="description" content="Impri pricing: a free tier with 100 approvals/month, no card. Indie $9/mo, Team $29/mo. Signed webhooks and data export on every tier. Self-host free." />
   <meta name="theme-color" content="#06070d" />
-  <meta property="og:title" content="Pricing — Impri" />
+  <meta property="og:title" content="Impri Pricing: Free Tier, Indie $9/mo, Team $29/mo" />
   <meta property="og:description" content="A free tier you can actually use, no card. Paid tiers cheaper than the hour they save you each month. Or self-host the full core for free, forever." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://impri.dev/pricing" />
@@ -23,7 +23,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/site.webmanifest" />
   <link rel="stylesheet" href="/styles.css" />
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Pricing — Impri","url":"https://impri.dev/pricing","inLanguage":"en"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Impri Pricing: Free Tier, Indie $9/mo, Team $29/mo","url":"https://impri.dev/pricing","inLanguage":"en"}</script>
 </head>
 <body>
   <div class="bg-aurora"></div>
@@ -52,7 +52,7 @@
     <div class="wrap" style="max-width:760px">
       <span class="eyebrow reveal">Pricing</span>
       <h1 class="reveal" data-delay="1" style="margin-top:18px">Start free. <span class="gradient-text">Pay only for the hosted comfort.</span></h1>
-      <p class="lede reveal" data-delay="2">Every security feature — signed webhooks, full data export, audit log — is on every tier, including free. Or skip billing entirely and self-host the same core for free, forever.</p>
+      <p class="lede reveal" data-delay="2">Free up to 100 approvals a month. Indie is $9/mo, Team is $29/mo. Every security feature — signed webhooks, full data export, audit log — is on every tier, including free. Or skip billing entirely and self-host the same core for free, forever.</p>
     </div>
   </header>
 
@@ -67,6 +67,7 @@
             <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>3 watchers</li>
             <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>100 approvals / month</li>
             <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>No card required</li>
+            <li><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Checks every 15 minutes</li>
           </ul>
           <a class="btn btn-ghost btn-sm magnetic" href="https://app.impri.dev/?signup=1" style="margin-top:20px;justify-content:center">Get started →</a>
         </div>
@@ -94,6 +95,38 @@
       </div>
       <p class="price-note">Signed webhooks, full data export, and email / ntfy / push notifications are on every tier — security is never a paid add-on.</p>
       <p class="price-note">Rather run it yourself? The full core is MIT and free to self-host — <a href="/docs/self-hosting">self-hosting guide</a>.</p>
+    </div>
+  </section>
+
+  <!-- BILLING DETAILS -->
+  <section class="section" id="how-billing-works">
+    <div class="wrap" style="max-width:760px">
+      <div class="section-head reveal">
+        <span class="eyebrow">How billing works</span>
+        <h2>The details behind the three plans.</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:28px">
+        <div>
+          <h3>How approvals are counted</h3>
+          <p style="color:var(--muted);margin-top:10px;font-size:16px">An approval counts as a decision — approved or rejected — made in the current calendar month (UTC), not every action your agent submits for review. An action that expires without anyone deciding on it doesn't count against your quota.</p>
+        </div>
+        <div>
+          <h3>What happens if you hit a limit</h3>
+          <p style="color:var(--muted);margin-top:10px;font-size:16px">The monthly approval quota and watcher limit only gate creating something new — the API returns <code>402 Payment Required</code> with the limit and your current tier, but deciding on actions that are already pending is never blocked. Upgrade and Stripe's webhook updates your tier right after checkout completes.</p>
+        </div>
+        <div>
+          <h3>Monthly billing, cancel anytime</h3>
+          <p style="color:var(--muted);margin-top:10px;font-size:16px">Indie and Team are monthly subscriptions. Subscribe from the dashboard and Stripe charges the card on file every month until you cancel.</p>
+        </div>
+        <div>
+          <h3>Changing or cancelling a plan</h3>
+          <p style="color:var(--muted);margin-top:10px;font-size:16px">Change plan, update your payment method, or cancel from the self-serve billing portal — no email or support ticket needed. Once a cancelled subscription actually ends on Stripe's side, the webhook moves the project back to the free tier automatically.</p>
+        </div>
+        <div>
+          <h3>Self-host vs. cloud</h3>
+          <p style="color:var(--muted);margin-top:10px;font-size:16px">The self-hosted core runs the same API with no watcher limit, no approval quota, and no billing at all — <code>docker compose up</code> and it's ready. The hosted cloud at <code>app.impri.dev</code> runs and updates it for you, in exchange for the tier limits above.</p>
+        </div>
+      </div>
     </div>
   </section>
 
