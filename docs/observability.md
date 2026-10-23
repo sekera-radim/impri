@@ -362,10 +362,15 @@ track user error instead of breakage.
 
 Uncaught Vue errors, `window.onerror`, and unhandled promise rejections are
 reported. Through the shared `ApiClient`, a 5xx is reported every time and a
-4xx never is. A request that gets no response at all is reported only after
-3 such failures in a row while the browser says it is online, and once per
-streak: the inbox polls every few seconds, so a single Wi-Fi drop or a reload
-mid-request is not an outage. Aborted requests are not reported.
+4xx never is. Requests that get no response at all are reported only when
+they keep failing for a full minute (at least three failures) while the
+browser says it is online, and once per streak. The inbox polls every few
+seconds, and waking a laptop, switching Wi-Fi or reloading mid-request each
+cause a few seconds of failed requests that are not an outage. Failures more
+than 30 seconds apart start a new streak (90 seconds in a hidden tab, where
+browsers slow polling to about once a minute), so time when the page was not
+running (a sleeping laptop, a frozen tab) does not count. Going offline starts
+the streak over too. Aborted requests are not reported.
 
 The browser sends events straight to your DSN's ingest host, so that origin
 must be allowed in the UI's Content-Security-Policy `connect-src`, or the

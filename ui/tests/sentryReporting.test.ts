@@ -10,6 +10,10 @@ import {
   resetSentryReportingForTests,
   IGNORED_ERROR_PATTERNS,
   NetworkFailureTracker,
+  NETWORK_FAILURE_MIN_STREAK_MS,
+  NETWORK_FAILURE_MAX_GAP_MS,
+  NETWORK_FAILURE_MAX_GAP_HIDDEN_MS,
+  NETWORK_FAILURE_MIN_FAILURES,
 } from '../src/utils/sentryReporting'
 import type { ErrorEvent as SentryEvent, EventHint } from '@sentry/browser'
 
@@ -209,62 +213,160 @@ describe('reportUnexpectedApiFailure', () => {
 
 describe('NetworkFailureTracker', () => {
   const info = { method: 'GET', path: '/v1/actions?status=pending' }
-  const fetchFailed = () => new TypeError('Failed to fetch')
+  const loadFailed = () => new TypeError('Load failed')
+  const SEC = 1_000
 
-  it('does not report a single failed request (a Wi-Fi blip while polling)', () => {
+  /** A tracker on a fake clock: `fail(atMs)` records a failure at that time.
+   *  `online` / `hidden` are read on every failure, so a test can flip them. */
+  function setup() {
     const report = vi.fn()
-    const tracker = new NetworkFailureTracker(report, () => true, 3)
-    tracker.recordFailure(fetchFailed(), info)
-    tracker.recordFailure(fetchFailed(), info)
+    let clock = 0
+    const state = { online: true, hidden: false }
+    const tracker = new NetworkFailureTracker({
+      report,
+      isOnline: () => state.online,
+      isHidden: () => state.hidden,
+      now: () => clock,
+    })
+    const fail = (atMs: number, err: unknown = loadFailed()) => {
+      clock = atMs
+      tracker.recordFailure(err, info)
+    }
+    return { report, tracker, fail, state }
+  }
+
+  it('pins the window the docs describe', () => {
+    expect(NETWORK_FAILURE_MIN_STREAK_MS).toBe(60 * SEC)
+    expect(NETWORK_FAILURE_MIN_FAILURES).toBe(3)
+    expect(NETWORK_FAILURE_MAX_GAP_MS).toBe(30 * SEC)
+    expect(NETWORK_FAILURE_MAX_GAP_HIDDEN_MS).toBe(90 * SEC)
+  })
+
+  it('does not report a burst of failures right after waking up (IMPRI-WEB-3)', () => {
+    const { report, tracker, fail } = setup()
+    // First poll tick after wake fires two requests, the next one a third —
+    // all before Wi-Fi is back — then the API answers.
+    fail(0)
+    fail(0)
+    fail(5 * SEC)
+    fail(10 * SEC)
+    tracker.recordResponse()
     expect(report).not.toHaveBeenCalled()
   })
 
-  it('reports once when failures reach the threshold, not on every later poll', () => {
-    const report = vi.fn()
-    const tracker = new NetworkFailureTracker(report, () => true, 3)
-    const err = fetchFailed()
-    tracker.recordFailure(fetchFailed(), info)
-    tracker.recordFailure(fetchFailed(), info)
-    tracker.recordFailure(err, info)
-    tracker.recordFailure(fetchFailed(), info)
-    tracker.recordFailure(fetchFailed(), info)
+  it('does not report however many failures arrive within the first minute', () => {
+    const { report, fail } = setup()
+    for (let t = 0; t < 60 * SEC; t += 2 * SEC) fail(t)
+    expect(report).not.toHaveBeenCalled()
+  })
+
+  it('reports once when polls keep failing for a minute, not on every later poll', () => {
+    const { report, fail } = setup()
+    const err = loadFailed()
+    for (let t = 0; t < 60 * SEC; t += 5 * SEC) fail(t)
+    expect(report).not.toHaveBeenCalled()
+    fail(60 * SEC, err)
+    for (let t = 65 * SEC; t <= 90 * SEC; t += 5 * SEC) fail(t)
     expect(report).toHaveBeenCalledTimes(1)
     expect(report).toHaveBeenCalledWith(err, {
       status: 'network_error',
       method: 'GET',
       pathname: '/v1/actions',
-      consecutive_failures: 3,
+      consecutive_failures: 13,
+      unanswered_for_s: 60,
     })
   })
 
-  it('starts a new streak after any response, so a later outage is reported again', () => {
-    const report = vi.fn()
-    const tracker = new NetworkFailureTracker(report, () => true, 3)
-    tracker.recordFailure(fetchFailed(), info)
-    tracker.recordFailure(fetchFailed(), info)
-    tracker.recordResponse()
-    tracker.recordFailure(fetchFailed(), info)
-    tracker.recordFailure(fetchFailed(), info)
+  it('does not count time the page was not running (laptop asleep) as an outage', () => {
+    const { report, fail } = setup()
+    fail(0) // cut off as the lid closed
+    const wake = 8 * 3600 * SEC
+    fail(wake)
+    fail(wake + 5 * SEC)
     expect(report).not.toHaveBeenCalled()
-    tracker.recordFailure(fetchFailed(), info)
+    // Still failing a full minute after waking up is an outage again.
+    for (let t = wake + 10 * SEC; t <= wake + 60 * SEC; t += 5 * SEC) fail(t)
+    expect(report).toHaveBeenCalledTimes(1)
+    expect(report.mock.calls[0]?.[1]).toMatchObject({ unanswered_for_s: 60 })
+  })
+
+  it('treats failures exactly MAX_GAP apart as one streak, and further apart as two', () => {
+    const joined = setup()
+    joined.fail(0)
+    joined.fail(30 * SEC)
+    joined.fail(60 * SEC)
+    expect(joined.report).toHaveBeenCalledTimes(1)
+    expect(joined.report.mock.calls[0]?.[1]).toMatchObject({ consecutive_failures: 3 })
+
+    const split = setup()
+    split.fail(0)
+    split.fail(30 * SEC + 1)
+    split.fail(60 * SEC + 2)
+    expect(split.report).not.toHaveBeenCalled()
+  })
+
+  it('reports an outage seen only by a hidden tab whose polls are throttled to once a minute', () => {
+    const { report, fail, state } = setup()
+    state.hidden = true
+    fail(0)
+    fail(60 * SEC)
+    // Two failures already span the window, but one each side of a short
+    // laptop sleep looks exactly like this — the third one decides.
+    expect(report).not.toHaveBeenCalled()
+    fail(120 * SEC)
+    expect(report).toHaveBeenCalledTimes(1)
+    expect(report.mock.calls[0]?.[1]).toMatchObject({ consecutive_failures: 3, unanswered_for_s: 120 })
+  })
+
+  it('starts a new streak in a hidden tab when failures are more than MAX_GAP_HIDDEN apart', () => {
+    const { report, fail, state } = setup()
+    state.hidden = true
+    fail(0)
+    fail(90 * SEC + 1)
+    fail(180 * SEC + 2)
+    expect(report).not.toHaveBeenCalled()
+  })
+
+  it('starts the streak over when the browser goes offline in the middle of it', () => {
+    const { report, fail, state } = setup()
+    for (let t = 0; t <= 50 * SEC; t += 5 * SEC) fail(t)
+    state.online = false
+    fail(55 * SEC)
+    state.online = true
+    for (let t = 60 * SEC; t <= 115 * SEC; t += 5 * SEC) fail(t)
+    expect(report).not.toHaveBeenCalled()
+    fail(120 * SEC)
+    expect(report).toHaveBeenCalledTimes(1)
+    expect(report.mock.calls[0]?.[1]).toMatchObject({ unanswered_for_s: 60 })
+  })
+
+  it('starts a new streak after any response, so a later outage is reported again', () => {
+    const { report, tracker, fail } = setup()
+    for (let t = 0; t <= 55 * SEC; t += 5 * SEC) fail(t)
     tracker.recordResponse()
-    for (let i = 0; i < 3; i++) tracker.recordFailure(fetchFailed(), info)
+    for (let t = 60 * SEC; t <= 115 * SEC; t += 5 * SEC) fail(t)
+    expect(report).not.toHaveBeenCalled()
+    fail(120 * SEC)
+    tracker.recordResponse()
+    for (let t = 200 * SEC; t <= 260 * SEC; t += 5 * SEC) fail(t)
     expect(report).toHaveBeenCalledTimes(2)
   })
 
   it('ignores failures while the browser reports being offline', () => {
-    const report = vi.fn()
-    const tracker = new NetworkFailureTracker(report, () => false, 3)
-    for (let i = 0; i < 5; i++) tracker.recordFailure(fetchFailed(), info)
+    const { report, fail, state } = setup()
+    state.online = false
+    for (let t = 0; t <= 120 * SEC; t += 5 * SEC) fail(t)
     expect(report).not.toHaveBeenCalled()
   })
 
   it('ignores requests the page aborted itself', () => {
-    const report = vi.fn()
-    const tracker = new NetworkFailureTracker(report, () => true, 3)
-    const abort = new Error('The user aborted a request.')
-    abort.name = 'AbortError'
-    for (let i = 0; i < 5; i++) tracker.recordFailure(abort, info)
+    const { report, fail } = setup()
+    const abort = () => {
+      const err = new Error('The user aborted a request.')
+      err.name = 'AbortError'
+      return err
+    }
+    for (let t = 0; t <= 120 * SEC; t += 5 * SEC) fail(t, abort())
     expect(report).not.toHaveBeenCalled()
   })
 })

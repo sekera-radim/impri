@@ -233,42 +233,114 @@ export function reportUnexpectedApiFailure(
   });
 }
 
-export const NETWORK_FAILURE_REPORT_THRESHOLD = 3;
+/**
+ * How long requests must go unanswered before it counts as an outage. Waking
+ * a laptop or switching Wi-Fi leaves the browser "online" with no network for
+ * several seconds, and the inbox polls every 5 s with up to two requests per
+ * tick — so a failure count alone fills up within seconds of a Mac waking
+ * (IMPRI-WEB-3: Safari "Load failed" x3 while the API was healthy).
+ */
+export const NETWORK_FAILURE_MIN_STREAK_MS = 60_000;
+
+/**
+ * Failures further apart than this start a new streak: the page was not
+ * running in between (the laptop slept, the tab was frozen), so the gap says
+ * nothing about the API. Without it, a request cut off as the lid closed plus
+ * two more after waking hours later would look like an hours-long outage.
+ */
+export const NETWORK_FAILURE_MAX_GAP_MS = 30_000;
+
+/**
+ * The same limit for a hidden tab. Browsers slow timers there to about once a
+ * minute (Chrome's intensive throttling), so a hidden inbox polling a dead
+ * API fails ~60 s apart — with the 30 s limit every failure would start over
+ * and the outage would never be reported.
+ */
+export const NETWORK_FAILURE_MAX_GAP_HIDDEN_MS = 90_000;
+
+/**
+ * Also required before reporting. A visible tab cannot span the window with
+ * fewer anyway (0 s, 30 s, 60 s); this matters for a hidden tab, where two
+ * throttled polls a minute apart — one just before a laptop sleeps briefly,
+ * one right after it wakes — would otherwise already count.
+ */
+export const NETWORK_FAILURE_MIN_FAILURES = 3;
+
+interface NetworkFailureTrackerDeps {
+  report?: Reporter;
+  isOnline?: () => boolean;
+  isHidden?: () => boolean;
+  now?: () => number;
+}
 
 /**
  * Requests that got no response at all. The inbox polls every few seconds, so
  * a Wi-Fi drop, a laptop waking up or a reload mid-request each produced a
- * "Failed to fetch" event (IMPRI-WEB-2) while the API itself was fine. One
- * failure says nothing; a streak while the browser believes it is online is
- * an outage worth knowing about (API down, DNS, CORS), and it is reported once
- * per streak rather than on every poll that follows.
+ * "Failed to fetch" / "Load failed" event (IMPRI-WEB-2, IMPRI-WEB-3) while the
+ * API itself was fine. Only a streak that keeps failing for a minute while the
+ * browser believes it is online is an outage worth knowing about (API down,
+ * DNS, CORS), and it is reported once per streak rather than on every poll
+ * that follows.
  */
 export class NetworkFailureTracker {
-  private consecutiveFailures = 0;
+  private readonly report: Reporter;
+  private readonly isOnline: () => boolean;
+  private readonly isHidden: () => boolean;
+  private readonly now: () => number;
 
-  constructor(
-    private readonly report: Reporter = reportError,
-    private readonly isOnline: () => boolean = () => typeof navigator === 'undefined' || navigator.onLine,
-    private readonly threshold: number = NETWORK_FAILURE_REPORT_THRESHOLD,
-  ) {}
+  private streakStartedAt: number | null = null;
+  private lastFailureAt = 0;
+  private failures = 0;
+  private reported = false;
+
+  // Every dependency is injectable for tests (see tests/sentryReporting.test.ts);
+  // the defaults read the real browser state.
+  constructor({
+    report = reportError,
+    isOnline = () => typeof navigator === 'undefined' || navigator.onLine,
+    isHidden = () => typeof document !== 'undefined' && document.visibilityState === 'hidden',
+    now = () => Date.now(),
+  }: NetworkFailureTrackerDeps = {}) {
+    this.report = report;
+    this.isOnline = isOnline;
+    this.isHidden = isHidden;
+    this.now = now;
+  }
 
   recordResponse(): void {
-    this.consecutiveFailures = 0;
+    this.streakStartedAt = null;
   }
 
   recordFailure(error: unknown, info: { method: string; path: string }): void {
-    // A request the page cancelled itself, or one made while the browser
-    // knows it is offline, is not an outage of ours.
+    // A request the page cancelled itself is not an outage of ours.
     if (error instanceof Error && error.name === 'AbortError') return;
-    if (!this.isOnline()) return;
+    // Neither is anything around a moment the browser knows it is offline:
+    // that is the person's own network, so the streak starts over.
+    if (!this.isOnline()) {
+      this.streakStartedAt = null;
+      return;
+    }
 
-    this.consecutiveFailures += 1;
-    if (this.consecutiveFailures !== this.threshold) return;
+    const now = this.now();
+    const maxGap = this.isHidden() ? NETWORK_FAILURE_MAX_GAP_HIDDEN_MS : NETWORK_FAILURE_MAX_GAP_MS;
+    if (this.streakStartedAt === null || now - this.lastFailureAt > maxGap) {
+      this.streakStartedAt = now;
+      this.failures = 0;
+      this.reported = false;
+    }
+    this.lastFailureAt = now;
+    this.failures += 1;
+
+    const unansweredMs = now - this.streakStartedAt;
+    if (this.reported) return;
+    if (this.failures < NETWORK_FAILURE_MIN_FAILURES || unansweredMs < NETWORK_FAILURE_MIN_STREAK_MS) return;
+    this.reported = true;
     this.report(error, {
       status: 'network_error',
       method: info.method,
       pathname: pathnameOnly(info.path),
-      consecutive_failures: this.threshold,
+      consecutive_failures: this.failures,
+      unanswered_for_s: Math.round(unansweredMs / 1000),
     });
   }
 }
