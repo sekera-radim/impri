@@ -80,6 +80,31 @@ If your agent is a plain loop rather than a graph, the same pattern applies — 
 
 ---
 
+## When the input is information, not a decision
+
+Everything above assumes the human answers a question about something the agent already drafted. Sometimes the agent is blocked on something it cannot draft at all: a client's logo, a login, a signed contract, facts only that person knows. An approval card is the wrong shape for that. The person is often outside your team, has no inbox in your tools, may take days, and needs typed fields and file uploads rather than an Approve button.
+
+The pause itself stays the same (stop, wait for an external event, resume), but the request goes to a collection tool instead of an approval queue. [BriefGate](https://briefgate.dev/docs/async-human-input-for-coding-agents), built by the same developer as Impri, does this: the agent lists the items it needs, the person gets a portal link that works without an account, BriefGate sends the reminders, and the agent resumes once the items are in.
+
+```http
+POST https://api.briefgate.dev/v1/intakes
+Authorization: Bearer bg_live_...
+Content-Type: application/json
+
+{
+  "project_name": "Website relaunch",
+  "client": { "email": "client@example.com", "name": "Dana" },
+  "items": [
+    { "key": "logo", "type": "image", "label": "Logo (SVG or PNG)" },
+    { "key": "cms_login", "type": "secret", "label": "CMS admin login" }
+  ]
+}
+```
+
+The agent then checks `GET /v1/intakes/:id/status` (or the `get_intake_status` MCP tool) and reads the values with `GET /v1/intakes/:id/results` when they arrive. Plenty of agents need both: collect the inputs with BriefGate, then send the finished draft through Impri for approval before anything goes live.
+
+---
+
 ## Next step
 
 Start with [quickstart](quickstart.md) to get an API key, then see [the full REST/MCP walkthrough](how-to-add-human-approval-to-an-ai-agent.md) for the three-call pattern this pause node is built on. If you're integrating with Python specifically, [sdk-python](sdk-python.md) covers the client library.

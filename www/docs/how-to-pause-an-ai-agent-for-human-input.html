@@ -216,6 +216,23 @@ HEADERS = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span cla
 <h2 id="pausing-without-a-graph-framework">Pausing without a graph framework</h2>
 <p>If your agent is a plain loop rather than a graph, the same pattern applies — the &quot;pause&quot; is just the function call that doesn&#39;t return until the action is decided. For agents running inside Claude Code or another MCP client, <a href="mcp">`mcp.md`</a> wraps this exact poll loop into a single blocking tool call (<code>impri_await_decision</code>), so you don&#39;t hand-write the <code>while</code> loop at all.</p>
 <hr>
+<h2 id="when-the-input-is-information-not-a-decision">When the input is information, not a decision</h2>
+<p>Everything above assumes the human answers a question about something the agent already drafted. Sometimes the agent is blocked on something it cannot draft at all: a client&#39;s logo, a login, a signed contract, facts only that person knows. An approval card is the wrong shape for that. The person is often outside your team, has no inbox in your tools, may take days, and needs typed fields and file uploads rather than an Approve button.</p>
+<p>The pause itself stays the same (stop, wait for an external event, resume), but the request goes to a collection tool instead of an approval queue. <a href="https://briefgate.dev/docs/async-human-input-for-coding-agents" target="_blank" rel="noopener">BriefGate</a>, built by the same developer as Impri, does this: the agent lists the items it needs, the person gets a portal link that works without an account, BriefGate sends the reminders, and the agent resumes once the items are in.</p>
+<div class="code-block"><span class="code-lang">http</span><pre><code class="hljs">POST https://api.briefgate.dev/v1/intakes
+<span class="hljs-attribute">Authorization</span><span class="hljs-punctuation">: </span>Bearer bg_live_...
+<span class="hljs-attribute">Content-Type</span><span class="hljs-punctuation">: </span>application/json
+
+{
+  &quot;project_name&quot;: &quot;Website relaunch&quot;,
+  &quot;client&quot;: { &quot;email&quot;: &quot;client@example.com&quot;, &quot;name&quot;: &quot;Dana&quot; },
+  &quot;items&quot;: [
+    { &quot;key&quot;: &quot;logo&quot;, &quot;type&quot;: &quot;image&quot;, &quot;label&quot;: &quot;Logo (SVG or PNG)&quot; },
+    { &quot;key&quot;: &quot;cms_login&quot;, &quot;type&quot;: &quot;secret&quot;, &quot;label&quot;: &quot;CMS admin login&quot; }
+  ]
+}</code></pre></div>
+<p>The agent then checks <code>GET /v1/intakes/:id/status</code> (or the <code>get_intake_status</code> MCP tool) and reads the values with <code>GET /v1/intakes/:id/results</code> when they arrive. Plenty of agents need both: collect the inputs with BriefGate, then send the finished draft through Impri for approval before anything goes live.</p>
+<hr>
 <h2 id="next-step">Next step</h2>
 <p>Start with <a href="quickstart">quickstart</a> to get an API key, then see <a href="how-to-add-human-approval-to-an-ai-agent">the full REST/MCP walkthrough</a> for the three-call pattern this pause node is built on. If you&#39;re integrating with Python specifically, <a href="sdk-python">sdk-python</a> covers the client library.</p>
 
@@ -293,6 +310,7 @@ HEADERS = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span cla
 <li class="ptoc-h2"><a href="#what-the-human-sees-while-the-agent-waits">What the human sees while the agent waits</a></li>
 <li class="ptoc-h2"><a href="#handling-a-stale-pause">Handling a stale pause</a></li>
 <li class="ptoc-h2"><a href="#pausing-without-a-graph-framework">Pausing without a graph framework</a></li>
+<li class="ptoc-h2"><a href="#when-the-input-is-information-not-a-decision">When the input is information, not a decision</a></li>
 <li class="ptoc-h2"><a href="#next-step">Next step</a></li></ul>
 </nav>
   </aside>
