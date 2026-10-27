@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://impri.dev/</loc><lastmod>2026-10-09</lastmod></url>
-  <url><loc>https://impri.dev/docs</loc><lastmod>2026-10-24</lastmod></url>
+  <url><loc>https://impri.dev/docs</loc><lastmod>2026-10-27</lastmod></url>
   <url><loc>https://impri.dev/pricing</loc><lastmod>2026-10-24</lastmod></url>
   <url><loc>https://impri.dev/docs/account-recovery</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/add-a-kill-switch-to-your-ai-agent</loc><lastmod>2026-07-13</lastmod></url>
@@ -15,6 +15,7 @@
   <url><loc>https://impri.dev/docs/approval-gate-for-overnight-ai-agents</loc><lastmod>2026-07-23</lastmod></url>
   <url><loc>https://impri.dev/docs/approval-gate-for-webhook-triggered-agents</loc><lastmod>2026-07-25</lastmod></url>
   <url><loc>https://impri.dev/docs/approval-inbox-for-ai-agents</loc><lastmod>2026-10-24</lastmod></url>
+  <url><loc>https://impri.dev/docs/approval-inbox-vs-email-approval-chains</loc><lastmod>2026-10-27</lastmod></url>
   <url><loc>https://impri.dev/docs/approval-inbox-vs-slack-buttons</loc><lastmod>2026-10-24</lastmod></url>
   <url><loc>https://impri.dev/docs/approval-workflow-for-ai-marketing-automation</loc><lastmod>2026-08-02</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-ai-agent-access-permission-grants</loc><lastmod>2026-10-13</lastmod></url>
