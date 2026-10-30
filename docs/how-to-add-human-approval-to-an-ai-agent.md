@@ -1,8 +1,8 @@
 # How to Add Human Approval to an AI Agent
 
-AI agents are great at drafting but bad at knowing when to stop. This guide shows the pattern: agent proposes, human approves, only then does it act.
+Add human approval to an AI agent: the agent proposes an action, a person approves or rejects it, and only then does it execute. Three API calls, REST or MCP.
 
-Three calls, either over REST or MCP. Code first, the reasoning behind it further down.
+AI agents are great at drafting but bad at knowing when to stop. Code first, the reasoning behind it further down.
 
 ---
 
@@ -70,7 +70,7 @@ New to Impri? [Quickstart](quickstart.md) walks through getting a key first (clo
 
 ## Minimal integration — MCP
 
-For agents running inside Claude Code, Claude Desktop, or any MCP client, the Impri MCP server wraps the REST calls into tool calls. The agent handles the flow without writing any HTTP code.
+For agents running inside Claude Code, Claude Desktop, or any MCP client, the [Impri MCP approval server](mcp-approval-server-for-ai-agents.md) wraps the REST calls into tool calls. The agent handles the flow without writing any HTTP code.
 
 **Configure the MCP server** (add to your client's MCP config):
 
@@ -121,7 +121,7 @@ If the decision is `rejected` or `expired`, `impri_await_decision` returns that 
 
 An agent that can send emails, post comments, publish content, or make API calls needs a gate. Without one, a prompt injection, a misread context, or simply a bad draft goes out immediately.
 
-The naive solution — "just add a confirmation step in the prompt" — doesn't work reliably. The agent still has to be trusted to actually pause, and there is no audit record. What the three calls above give you instead is a pattern where the agent can only *propose* an action and must poll for an external decision before proceeding. The execution code is never reached without that decision:
+The naive solution — "just add a confirmation step in the prompt" — doesn't work reliably. The agent still has to be trusted to actually pause, and there is no audit record. What the three calls above give you instead is the [propose → approve → execute pattern](the-propose-approve-execute-pattern.md): the agent can only *propose* an action and must poll for an external decision before proceeding. The execution code is never reached without that decision:
 
 ```
 Agent                         Impri                          Human
@@ -146,6 +146,8 @@ The key property: what gates execution is a data dependency — the API returnin
 ## What Impri provides, what it doesn't
 
 Impri is focused on one thing: the approval gate. It stores the proposed action, notifies the human, and holds the decision. It does not generate content, does not interpret what the action does, and never executes anything itself.
+
+That's the whole approval process for an AI tool call: propose, hold, decide, execute. There's no separate "controls" layer to configure beyond the key scopes below and the [rules engine](rules.md) for auto-approving low-risk kinds — the process itself is the three calls above, not a dashboard of settings to tune first.
 
 This keeps the integration surface small and the responsibilities clear: your agent owns the logic of what to do; Impri owns the question of whether a human said yes.
 

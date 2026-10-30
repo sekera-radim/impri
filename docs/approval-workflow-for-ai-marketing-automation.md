@@ -1,6 +1,6 @@
 # An Approval Workflow for AI Marketing Automation
 
-Marketing automation agents draft campaigns, schedule sends, and touch ad spend — an approval workflow keeps a human signing off before copy goes out or budget moves.
+Marketing agents built in Zapier, n8n, Google AI Studio, or custom code can draft campaigns and touch ad spend — gate the risky ones on human approval first.
 
 ---
 
@@ -61,6 +61,14 @@ If a marketer edits a line in the subject or a CTA before approving, `edited_by_
 
 ---
 
+## No-code and low-code builders
+
+Not every marketing agent is custom code with an MCP client attached. If yours runs in [Zapier](human-approval-zapier-ai-agents.md) or [n8n](human-approval-n8n-ai-agent.md), use the platform-specific HTTP step covered on those pages.
+
+Google AI Studio apps and other Gemini-based builders don't speak MCP either, but the same three REST calls above work from a custom function or HTTP tool step — push the action, poll (or receive the webhook), then call your ESP or ad platform only once `status` is `approved`. Nothing about the pattern changes; only what's calling the API does.
+
+---
+
 ## Ad spend changes need a different kind of care
 
 A budget change isn't content a reviewer reads and approves — it's a number they need to sanity-check against context they have and the agent doesn't (this week's performance, upcoming promotions, finance limits). Two fields make that review possible instead of a leap of faith:
@@ -90,6 +98,6 @@ curl -X POST https://api.impri.dev/v1/actions \
 
 Impri stores the proposed action, notifies whoever reviews marketing sends, and holds the decision — it doesn't know your brand voice, your send-time best practices, or whether "150" is a reasonable ad budget for your account. That judgment stays with the human and with however you've prompted the agent to draft in the first place.
 
-It's also not a campaign scheduler or a workflow engine — if you need multi-step sequencing (draft → legal review → design review → send), build that in your own pipeline or a tool like n8n and call Impri for the final human sign-off step. See [MCP integration](mcp.md) for wiring this into a Claude Agent SDK or LangChain-based marketing agent, and [approve AI-generated content before publishing](approve-ai-generated-content-before-publishing.md) for the content-review side of this same pattern.
+It's also not a campaign scheduler or a workflow engine — if you need multi-step sequencing (draft → legal review → design review → send), build that in your own pipeline or a tool like n8n and call Impri for the final human sign-off step. See [MCP integration](mcp.md) for wiring this into a Claude Agent SDK or LangChain-based marketing agent, [approve AI-generated content before publishing](approve-ai-generated-content-before-publishing.md) for the content-review side of this same pattern, and [human approval for AI social media management](human-approval-for-ai-social-media-management.md) if the channel is social rather than email or ads.
 
 Next step: [quickstart](quickstart.md) to get an API key and wire this into your first campaign.
