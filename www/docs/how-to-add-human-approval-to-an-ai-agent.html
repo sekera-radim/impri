@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>How to Add Human Approval to an AI Agent — Impri Docs</title>
-<meta name="description" content="AI agents are great at drafting but bad at knowing when to stop. This guide shows the pattern: agent proposes, human approves, only then does it act.">
+<meta name="description" content="Add human approval to an AI agent: the agent proposes an action, a person approves or rejects it, and only then does it execute. Three API calls, REST or MCP.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="How to Add Human Approval to an AI Agent — Impri Docs">
-<meta property="og:description" content="AI agents are great at drafting but bad at knowing when to stop. This guide shows the pattern: agent proposes, human approves, only then does it act.">
+<meta property="og:description" content="Add human approval to an AI agent: the agent proposes an action, a person approves or rejects it, and only then does it execute. Three API calls, REST or MCP.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"How to Add Human Approval to an AI Agent","description":"AI agents are great at drafting but bad at knowing when to stop. This guide shows the pattern: agent proposes, human approves, only then does it act.","url":"https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"How to Add Human Approval to an AI Agent","description":"Add human approval to an AI agent: the agent proposes an action, a person approves or rejects it, and only then does it execute. Three API calls, REST or MCP.","url":"https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -143,8 +143,8 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>How to Add Human Approval to an AI Agent</span>
     </nav>
     <h1>How to Add Human Approval to an AI Agent</h1>
-<p>AI agents are great at drafting but bad at knowing when to stop. This guide shows the pattern: agent proposes, human approves, only then does it act.</p>
-<p>Three calls, either over REST or MCP. Code first, the reasoning behind it further down.</p>
+<p>Add human approval to an AI agent: the agent proposes an action, a person approves or rejects it, and only then does it execute. Three API calls, REST or MCP.</p>
+<p>AI agents are great at drafting but bad at knowing when to stop. Code first, the reasoning behind it further down.</p>
 <hr>
 <h2 id="minimal-integration-rest">Minimal integration — REST</h2>
 <p>Any HTTP client works. The agent needs three calls.</p>
@@ -192,7 +192,7 @@ ACTION_ID=$(<span class="hljs-built_in">echo</span> <span class="hljs-variable">
 <p>New to Impri? <a href="quickstart">Quickstart</a> walks through getting a key first (cloud or self-host). For the bigger picture — decision points, timeouts, escalation, and links by use case — see <a href="ai-agent-approval-workflow">AI agent approval workflow</a>.</p>
 <hr>
 <h2 id="minimal-integration-mcp">Minimal integration — MCP</h2>
-<p>For agents running inside Claude Code, Claude Desktop, or any MCP client, the Impri MCP server wraps the REST calls into tool calls. The agent handles the flow without writing any HTTP code.</p>
+<p>For agents running inside Claude Code, Claude Desktop, or any MCP client, the <a href="mcp-approval-server-for-ai-agents">Impri MCP approval server</a> wraps the REST calls into tool calls. The agent handles the flow without writing any HTTP code.</p>
 <p><strong>Configure the MCP server</strong> (add to your client&#39;s MCP config):</p>
 <div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
   <span class="hljs-attr">&quot;mcpServers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
@@ -229,7 +229,7 @@ ACTION_ID=$(<span class="hljs-built_in">echo</span> <span class="hljs-variable">
 <hr>
 <h2 id="how-this-actually-gates-execution">How this actually gates execution</h2>
 <p>An agent that can send emails, post comments, publish content, or make API calls needs a gate. Without one, a prompt injection, a misread context, or simply a bad draft goes out immediately.</p>
-<p>The naive solution — &quot;just add a confirmation step in the prompt&quot; — doesn&#39;t work reliably. The agent still has to be trusted to actually pause, and there is no audit record. What the three calls above give you instead is a pattern where the agent can only <em>propose</em> an action and must poll for an external decision before proceeding. The execution code is never reached without that decision:</p>
+<p>The naive solution — &quot;just add a confirmation step in the prompt&quot; — doesn&#39;t work reliably. The agent still has to be trusted to actually pause, and there is no audit record. What the three calls above give you instead is the <a href="the-propose-approve-execute-pattern">propose → approve → execute pattern</a>: the agent can only <em>propose</em> an action and must poll for an external decision before proceeding. The execution code is never reached without that decision:</p>
 <div class="code-block"><pre><code class="hljs">Agent                         Impri                          Human
   │                             │                              │
   ├── POST /v1/actions ─────────▶ stores action, notifies ────▶ inbox card
@@ -247,6 +247,7 @@ ACTION_ID=$(<span class="hljs-built_in">echo</span> <span class="hljs-variable">
 <hr>
 <h2 id="what-impri-provides-what-it-doesn39t">What Impri provides, what it doesn&#39;t</h2>
 <p>Impri is focused on one thing: the approval gate. It stores the proposed action, notifies the human, and holds the decision. It does not generate content, does not interpret what the action does, and never executes anything itself.</p>
+<p>That&#39;s the whole approval process for an AI tool call: propose, hold, decide, execute. There&#39;s no separate &quot;controls&quot; layer to configure beyond the key scopes below and the <a href="rules">rules engine</a> for auto-approving low-risk kinds — the process itself is the three calls above, not a dashboard of settings to tune first.</p>
 <p>This keeps the integration surface small and the responsibilities clear: your agent owns the logic of what to do; Impri owns the question of whether a human said yes.</p>
 <p><strong>What Impri is not:</strong></p>
 <ul>

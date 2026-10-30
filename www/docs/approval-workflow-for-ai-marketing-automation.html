@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>An Approval Workflow for AI Marketing Automation — Impri Docs</title>
-<meta name="description" content="Marketing automation agents draft campaigns, schedule sends, and touch ad spend — an approval workflow keeps a human signing off before copy goes out or…">
+<meta name="description" content="Marketing agents built in Zapier, n8n, Google AI Studio, or custom code can draft campaigns and touch ad spend — gate the risky ones on human approval first.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="An Approval Workflow for AI Marketing Automation — Impri Docs">
-<meta property="og:description" content="Marketing automation agents draft campaigns, schedule sends, and touch ad spend — an approval workflow keeps a human signing off before copy goes out or…">
+<meta property="og:description" content="Marketing agents built in Zapier, n8n, Google AI Studio, or custom code can draft campaigns and touch ad spend — gate the risky ones on human approval first.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/approval-workflow-for-ai-marketing-automation">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/approval-workflow-for-ai-marketing-automation">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"An Approval Workflow for AI Marketing Automation","description":"Marketing automation agents draft campaigns, schedule sends, and touch ad spend — an approval workflow keeps a human signing off before copy goes out or…","url":"https://impri.dev/docs/approval-workflow-for-ai-marketing-automation","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"An Approval Workflow for AI Marketing Automation","description":"Marketing agents built in Zapier, n8n, Google AI Studio, or custom code can draft campaigns and touch ad spend — gate the risky ones on human approval first.","url":"https://impri.dev/docs/approval-workflow-for-ai-marketing-automation","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -143,7 +143,7 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>An Approval Workflow for AI Marketing Automation</span>
     </nav>
     <h1>An Approval Workflow for AI Marketing Automation</h1>
-<p>Marketing automation agents draft campaigns, schedule sends, and touch ad spend — an approval workflow keeps a human signing off before copy goes out or budget moves.</p>
+<p>Marketing agents built in Zapier, n8n, Google AI Studio, or custom code can draft campaigns and touch ad spend — gate the risky ones on human approval first.</p>
 <hr>
 <h2 id="two-different-risk-profiles-one-gate">Two different risk profiles, one gate</h2>
 <p>Marketing automation covers a wide range of actions, and they don&#39;t all carry the same risk:</p>
@@ -188,6 +188,10 @@ send_campaign(list_id=&quot;newsletter&quot;, body=decision.preview.body)
 impri_report_result(action_id=&quot;act_9f2&quot;, status=&quot;executed&quot;)</code></pre></div>
 <p>If a marketer edits a line in the subject or a CTA before approving, <code>edited_by_human: true</code> and the corrected body come back in the same response — the agent never has to ask for the edit separately, it just uses what it&#39;s given.</p>
 <hr>
+<h2 id="no-code-and-low-code-builders">No-code and low-code builders</h2>
+<p>Not every marketing agent is custom code with an MCP client attached. If yours runs in <a href="human-approval-zapier-ai-agents">Zapier</a> or <a href="human-approval-n8n-ai-agent">n8n</a>, use the platform-specific HTTP step covered on those pages.</p>
+<p>Google AI Studio apps and other Gemini-based builders don&#39;t speak MCP either, but the same three REST calls above work from a custom function or HTTP tool step — push the action, poll (or receive the webhook), then call your ESP or ad platform only once <code>status</code> is <code>approved</code>. Nothing about the pattern changes; only what&#39;s calling the API does.</p>
+<hr>
 <h2 id="ad-spend-changes-need-a-different-kind-of-care">Ad spend changes need a different kind of care</h2>
 <p>A budget change isn&#39;t content a reviewer reads and approves — it&#39;s a number they need to sanity-check against context they have and the agent doesn&#39;t (this week&#39;s performance, upcoming promotions, finance limits). Two fields make that review possible instead of a leap of faith:</p>
 <div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -X POST https://api.impri.dev/v1/actions \
@@ -208,7 +212,7 @@ impri_report_result(action_id=&quot;act_9f2&quot;, status=&quot;executed&quot;)<
 <hr>
 <h2 id="what-this-workflow-does-and-doesn39t-cover">What this workflow does and doesn&#39;t cover</h2>
 <p>Impri stores the proposed action, notifies whoever reviews marketing sends, and holds the decision — it doesn&#39;t know your brand voice, your send-time best practices, or whether &quot;150&quot; is a reasonable ad budget for your account. That judgment stays with the human and with however you&#39;ve prompted the agent to draft in the first place.</p>
-<p>It&#39;s also not a campaign scheduler or a workflow engine — if you need multi-step sequencing (draft → legal review → design review → send), build that in your own pipeline or a tool like n8n and call Impri for the final human sign-off step. See <a href="mcp">MCP integration</a> for wiring this into a Claude Agent SDK or LangChain-based marketing agent, and <a href="approve-ai-generated-content-before-publishing">approve AI-generated content before publishing</a> for the content-review side of this same pattern.</p>
+<p>It&#39;s also not a campaign scheduler or a workflow engine — if you need multi-step sequencing (draft → legal review → design review → send), build that in your own pipeline or a tool like n8n and call Impri for the final human sign-off step. See <a href="mcp">MCP integration</a> for wiring this into a Claude Agent SDK or LangChain-based marketing agent, <a href="approve-ai-generated-content-before-publishing">approve AI-generated content before publishing</a> for the content-review side of this same pattern, and <a href="human-approval-for-ai-social-media-management">human approval for AI social media management</a> if the channel is social rather than email or ads.</p>
 <p>Next step: <a href="quickstart">quickstart</a> to get an API key and wire this into your first campaign.</p>
 
   </main>
@@ -282,6 +286,7 @@ impri_report_result(action_id=&quot;act_9f2&quot;, status=&quot;executed&quot;)<
 <div class="ptoc-label">On this page</div>
 <ul><li class="ptoc-h2"><a href="#two-different-risk-profiles-one-gate">Two different risk profiles, one gate</a></li>
 <li class="ptoc-h2"><a href="#wiring-it-up-over-mcp">Wiring it up over MCP</a></li>
+<li class="ptoc-h2"><a href="#no-code-and-low-code-builders">No-code and low-code builders</a></li>
 <li class="ptoc-h2"><a href="#ad-spend-changes-need-a-different-kind-of-care">Ad spend changes need a different kind of care</a></li>
 <li class="ptoc-h2"><a href="#what-this-workflow-does-and-doesn39t-cover">What this workflow does and doesn't cover</a></li></ul>
 </nav>
