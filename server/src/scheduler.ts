@@ -646,49 +646,70 @@ export async function processWatcher(db: Db, watcher: WatcherRow, log: Logger = 
     prevSizeBytes = prev?.size_bytes ?? undefined;
   }
 
-  // Store ALL new items for dedup (even those that didn't pass the keyword filter)
-  const storeNew = db.transaction((items: FetchedItem[]) => {
-    for (const item of items) {
-      insertItem.run(genId('wi_'), watcher.id, item.hash, item.url || null, item.title || null, item.sizeBytes ?? null, now);
-    }
-  });
-  storeNew(newItems);
-
-  // Create inbox actions
-  //
   // Tier limit: monthly approvals quota gates NEW actions regardless of
   // source (no-op when billing is disabled / self-host) — see routes/actions.ts
   // POST /v1/actions, which applies the identical gate to agent-pushed actions.
   // Checked once per run, not per item: the metric is decisions made this
   // month, which this loop cannot itself change, so the result can't go
-  // stale mid-loop. Matching items that lose the race are still stored above
-  // (storeNew) so they're never silently re-published after an upgrade —
-  // the same trade-off burst protection already makes for overflow items.
+  // stale mid-loop.
   const quotaReached = approvalsLimitReached(db, watcher.project_id);
+
+  // Items that *would* be published this run but can't because of the quota
+  // must NOT be recorded as seen — storing them would mean they silently
+  // never get a second chance once the quota resets or the project upgrades
+  // (found in review 2026-10-30; the initial fix stored everything, which
+  // just traded "bypasses the quota" for "loses the item"). Items that never
+  // matched the keyword filter, or that lost out to burst protection, are
+  // stored as before — they were never going to be published either way, so
+  // withholding them would only mean re-scoring the same noise every run.
+  const heldBackHashes = quotaReached ? new Set(toPublish.map(s => s.item.hash)) : null;
+  const itemsToStore = heldBackHashes
+    ? newItems.filter(item => !heldBackHashes.has(item.hash))
+    : newItems;
+
+  const storeNew = db.transaction((items: FetchedItem[]) => {
+    for (const item of items) {
+      insertItem.run(genId('wi_'), watcher.id, item.hash, item.url || null, item.title || null, item.sizeBytes ?? null, now);
+    }
+  });
+  storeNew(itemsToStore);
+
+  // Create inbox actions. publishedCount tracks what actually happened this
+  // run, for the result log below — toPublish.length is the candidate count,
+  // not the outcome, and logging it unconditionally was misleading whenever
+  // quotaReached is true (found in the same review).
+  let publishedCount = 0;
   if (quotaReached) {
     incCounter('impri_watcher_quota_skipped_total', { kind: watcher.kind });
+  } else {
+    for (let i = 0; i < toPublish.length; i++) {
+      const s = toPublish[i];
+      // Append overflow note to the last published item's title
+      const effectiveTitle =
+        isBurst && i === toPublish.length - 1
+          ? `${s.item.title} (+${overflowCount} more)`
+          : s.item.title;
+      createWatcherAction(
+        db,
+        watcher.project_id,
+        watcher.id,
+        watcher.name,
+        { ...s.item, title: effectiveTitle },
+        s.score,
+        s.matchedKeywords,
+        isUrlDiff,
+        prevSizeBytes,
+        watcher.color,
+      );
+      incCounter('impri_watcher_hits_total', { kind: watcher.kind });
+      publishedCount++;
+    }
   }
-  for (let i = 0; i < toPublish.length && !quotaReached; i++) {
-    const s = toPublish[i];
-    // Append overflow note to the last published item's title
-    const effectiveTitle =
-      isBurst && i === toPublish.length - 1
-        ? `${s.item.title} (+${overflowCount} more)`
-        : s.item.title;
-    createWatcherAction(
-      db,
-      watcher.project_id,
-      watcher.id,
-      watcher.name,
-      { ...s.item, title: effectiveTitle },
-      s.score,
-      s.matchedKeywords,
-      isUrlDiff,
-      prevSizeBytes,
-      watcher.color,
-    );
-    incCounter('impri_watcher_hits_total', { kind: watcher.kind });
-  }
+
+  // quota_paused_at is a user-visible status (GET /v1/watchers, UI), deliberately
+  // separate from fail_count/last_error/degraded_since: a full quota is not a
+  // fetch failure and must never drive backoff, auto-disable, or alerting.
+  const quotaPausedAt = quotaReached && toPublish.length > 0 ? now : null;
 
   // Cleanup: 90-day retention
   db.prepare('DELETE FROM watcher_items WHERE watcher_id = ? AND first_seen < ?').run(
@@ -712,14 +733,15 @@ export async function processWatcher(db: Db, watcher: WatcherRow, log: Logger = 
   }
 
   // Schedule next run
-  db.prepare('UPDATE watchers SET next_run_at = ?, updated_at = ? WHERE id = ?').run(
+  db.prepare('UPDATE watchers SET next_run_at = ?, updated_at = ?, quota_paused_at = ? WHERE id = ?').run(
     computeNextRunAt(schedule.every, schedule.jitter, now),
     now,
+    quotaPausedAt,
     watcher.id,
   );
 
   incCounter('impri_watcher_runs_total', { kind: watcher.kind, result: 'ok' });
-  log.info({ event: 'watcher.run', watcher_id: watcher.id, kind: watcher.kind, result: 'ok', items_fetched: fetchedItems.length, items_new: newItems.length, items_published: toPublish.length, duration_ms: Date.now() - now * 1000 });
+  log.info({ event: 'watcher.run', watcher_id: watcher.id, kind: watcher.kind, result: 'ok', items_fetched: fetchedItems.length, items_new: newItems.length, items_published: publishedCount, duration_ms: Date.now() - now * 1000 });
 }
 
 /**

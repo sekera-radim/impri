@@ -6,7 +6,13 @@ import { computeNextRunAt, processWatcher, type WatcherRow } from '../scheduler.
 import { billingActive, watcherLimitReached, getProjectBilling, TIER_LIMITS } from '../billing.js';
 import { CreateWatcherBody, UpdateWatcherBody, ListWatchersQuery, durationToSec } from '../schemas.js';
 
+// Server-generated, single source of truth for the copy — the UI renders it
+// verbatim instead of hardcoding its own version that can drift.
+const QUOTA_PAUSED_MESSAGE =
+  'Monthly approvals quota reached — publishing paused until the quota resets or you upgrade.';
+
 function serializeWatcher(row: Record<string, unknown>) {
+  const quotaPausedAt = (row.quota_paused_at as number | null) ?? null;
   return {
     id: row.id,
     name: row.name,
@@ -26,6 +32,11 @@ function serializeWatcher(row: Record<string, unknown>) {
     created_at: row.created_at,
     updated_at: row.updated_at,
     color: (row.color as string | null) ?? null,
+    // Deliberately not folded into status/last_error/degraded_since — a full
+    // quota is not a fetch failure (see scheduler.ts). Present only while
+    // the watcher is actually holding back a match for this reason.
+    quota_paused_at: quotaPausedAt ?? undefined,
+    quota_paused_message: quotaPausedAt !== null ? QUOTA_PAUSED_MESSAGE : undefined,
   };
 }
 

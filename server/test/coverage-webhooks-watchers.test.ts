@@ -483,8 +483,11 @@ describe('watcher-published actions and the monthly approvals quota', () => {
    * RSS fixture still created action #101 and let it be decided, taking
    * usage to 101/100 — see www/pricing.html's own claim that the quota
    * "gates creating something new" (no carve-out for watcher-sourced items).
-   * Fix: scheduler.ts now skips publishing (but still records items as seen,
-   * like burst-overflow items) once the quota is reached.
+   * Fix: scheduler.ts now skips publishing once the quota is reached, AND
+   * does not record the held-back item as seen (see the next describe block)
+   * — storing it would have traded "bypasses the quota" for "silently loses
+   * the item forever", which a second review round (2026-10-30) flagged
+   * before this ever merged.
    */
   it('a watcher run does not publish a new action once the monthly approvals quota is used up', async () => {
     process.env.STRIPE_SECRET_KEY = 'sk_test_x';
@@ -563,12 +566,181 @@ describe('watcher-published actions and the monthly approvals quota', () => {
     ).get(projectId) as { cnt: number };
     expect(triageActions.cnt).toBe(0);
 
-    // The item must still be recorded as seen so it is never silently
-    // published later just because the calendar month (and quota) rolled over.
+    // The held-back item must NOT be recorded as seen — see the next describe
+    // block for why (it must get a second chance once the quota resets or
+    // the project upgrades, not vanish).
     const seenItems = db.prepare(
       'SELECT COUNT(*) as cnt FROM watcher_items WHERE watcher_id = ?',
     ).get(watcherId) as { cnt: number };
-    expect(seenItems.cnt).toBe(2); // baseline item + the skipped new item
+    expect(seenItems.cnt).toBe(1); // only the baseline item
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Quota-paused items are not lost, and the pause is user-visible (QA review
+// round 2, 2026-10-30)
+// ---------------------------------------------------------------------------
+
+describe('watcher items held back by quota are not lost and are visible', () => {
+  afterEach(() => {
+    delete process.env.STRIPE_SECRET_KEY;
+  });
+
+  const feedWith = (title: string, guid: string) =>
+    new Response(
+      `<rss><channel><item><title>${title}</title><link>https://example.com/${guid}</link><guid>${guid}</guid></item></channel></rss>`,
+      { status: 200, headers: { 'Content-Type': 'application/rss+xml' } },
+    );
+
+  function seedDecidedActions(db: ReturnType<typeof createDb>, projectId: string, n: number): void {
+    const seed = db.transaction((i: number) => {
+      const actionId = genId('act_');
+      const now = nowSec();
+      db.prepare(`
+        INSERT INTO actions
+          (id, project_id, kind, title, preview, editable, status, preview_hash, created_at, updated_at)
+        VALUES (?, ?, 'test', ?, '{"format":"plain","body":"x"}', '[]', 'approved', ?, ?, ?)
+      `).run(actionId, projectId, `filler ${i}`, `qh${i}`, now, now);
+      db.prepare(`
+        INSERT INTO decisions (id, action_id, verdict, decided_at, channel, final_preview)
+        VALUES (?, ?, 'approve', ?, 'api', '{"format":"plain","body":"x"}')
+      `).run(genId('dec_'), actionId, now);
+    });
+    for (let i = 0; i < n; i++) seed(i);
+  }
+
+  it('a held-back item is published once the project upgrades past the quota, with no re-fetch needed to notice it', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_test_x';
+    const { db, app, adminKey, projectId } = await setup();
+
+    const created = await app.inject({
+      method: 'POST', url: '/v1/watchers', headers: auth(adminKey),
+      payload: {
+        name: 'Quota hold-back watcher', kind: 'rss',
+        config: { url: 'https://example.com/feed.xml' },
+        min_score: 0,
+        schedule: { every: '20m' },
+      },
+    });
+    expect(created.statusCode).toBe(201);
+    const watcherId = created.json().id;
+
+    seedDecidedActions(db, projectId, 100); // exhausts the free-tier 100/month quota
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(feedWith('baseline', 'g0'));
+    await runWatcherTick(db); // baseline run — stores g0, publishes nothing
+
+    fetchSpy.mockResolvedValue(feedWith('held back item', 'g1'));
+    db.prepare('UPDATE watchers SET next_run_at = ? WHERE id = ?').run(nowSec() - 1, watcherId);
+    await runWatcherTick(db); // quota already exhausted — g1 must be held back, not published
+
+    let actions = db.prepare(
+      "SELECT COUNT(*) as cnt FROM actions WHERE project_id = ? AND kind = 'watcher.triage'",
+    ).get(projectId) as { cnt: number };
+    expect(actions.cnt).toBe(0);
+
+    let watcherRow = db.prepare('SELECT quota_paused_at FROM watchers WHERE id = ?').get(watcherId) as
+      { quota_paused_at: number | null };
+    expect(watcherRow.quota_paused_at).not.toBeNull();
+
+    const paused = await app.inject({ method: 'GET', url: '/v1/watchers', headers: auth(adminKey) });
+    expect(paused.json().items[0].quota_paused_message).toBe(
+      'Monthly approvals quota reached — publishing paused until the quota resets or you upgrade.',
+    );
+
+    // Upgrade the project (same effect as the Stripe webhook flipping tier —
+    // see billing-webhook.test.ts for that path specifically).
+    db.prepare("UPDATE projects SET tier = 'indie' WHERE id = ?").run(projectId);
+
+    // Next run re-fetches the same feed (g1 is still served) — because g1
+    // was never stored as seen, the watcher treats it as new again and this
+    // time nothing blocks it. Fresh Response: a mocked Response body can
+    // only be read once, and the previous run already consumed this one.
+    fetchSpy.mockResolvedValue(feedWith('held back item', 'g1'));
+    db.prepare('UPDATE watchers SET next_run_at = ? WHERE id = ?').run(nowSec() - 1, watcherId);
+    await runWatcherTick(db);
+    fetchSpy.mockRestore();
+
+    actions = db.prepare(
+      "SELECT COUNT(*) as cnt FROM actions WHERE project_id = ? AND kind = 'watcher.triage'",
+    ).get(projectId) as { cnt: number };
+    expect(actions.cnt).toBe(1);
+    const published = db.prepare(
+      "SELECT title FROM actions WHERE project_id = ? AND kind = 'watcher.triage'",
+    ).get(projectId) as { title: string };
+    expect(published.title).toBe('held back item');
+
+    watcherRow = db.prepare('SELECT quota_paused_at FROM watchers WHERE id = ?').get(watcherId) as
+      { quota_paused_at: number | null };
+    expect(watcherRow.quota_paused_at).toBeNull(); // cleared now that nothing is being held back
+
+    const resumed = await app.inject({ method: 'GET', url: '/v1/watchers', headers: auth(adminKey) });
+    expect(resumed.json().items[0].quota_paused_message).toBeUndefined();
+  });
+
+  it('quota pause does NOT touch fail_count, last_error, or status — it is not a fetch failure', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_test_x';
+    const { db, app, adminKey, projectId } = await setup();
+
+    const created = await app.inject({
+      method: 'POST', url: '/v1/watchers', headers: auth(adminKey),
+      payload: {
+        name: 'No false backoff', kind: 'rss',
+        config: { url: 'https://example.com/feed.xml' },
+        min_score: 0,
+        schedule: { every: '20m' },
+      },
+    });
+    const watcherId = created.json().id;
+    seedDecidedActions(db, projectId, 100);
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(feedWith('baseline', 'g0'));
+    await runWatcherTick(db);
+    fetchSpy.mockResolvedValue(feedWith('blocked item', 'g1'));
+    db.prepare('UPDATE watchers SET next_run_at = ? WHERE id = ?').run(nowSec() - 1, watcherId);
+    await runWatcherTick(db);
+    fetchSpy.mockRestore();
+
+    const row = db.prepare(
+      'SELECT status, fail_count, last_error, degraded_since FROM watchers WHERE id = ?',
+    ).get(watcherId) as { status: string; fail_count: number; last_error: string | null; degraded_since: number | null };
+    expect(row.status).toBe('active');
+    expect(row.fail_count).toBe(0);
+    expect(row.last_error).toBeNull();
+    expect(row.degraded_since).toBeNull();
+  });
+
+  it('the run log reports the real published count (0), not the candidate count, when quota blocks publishing', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_test_x';
+    const { db, app, adminKey, projectId } = await setup();
+
+    const created = await app.inject({
+      method: 'POST', url: '/v1/watchers', headers: auth(adminKey),
+      payload: {
+        name: 'Log accuracy watcher', kind: 'rss',
+        config: { url: 'https://example.com/feed.xml' },
+        min_score: 0,
+        schedule: { every: '20m' },
+      },
+    });
+    const watcherId = created.json().id;
+    seedDecidedActions(db, projectId, 100);
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(feedWith('baseline', 'g0'));
+    await runWatcherTick(db);
+    fetchSpy.mockResolvedValue(feedWith('blocked item', 'g1'));
+    db.prepare('UPDATE watchers SET next_run_at = ? WHERE id = ?').run(nowSec() - 1, watcherId);
+
+    const infoSpy = vi.fn();
+    await runWatcherTick(db, { info: infoSpy, warn: vi.fn(), error: vi.fn() });
+    fetchSpy.mockRestore();
+
+    const runLog = infoSpy.mock.calls.map(c => c[0]).find(
+      (c: Record<string, unknown>) => c.event === 'watcher.run' && c.watcher_id === watcherId,
+    );
+    expect(runLog).toBeDefined();
+    expect(runLog.items_published).toBe(0); // NOT toPublish.length (which was 1)
+    expect(runLog.items_new).toBe(1); // candidate count is still reported separately, correctly
   });
 });
 
