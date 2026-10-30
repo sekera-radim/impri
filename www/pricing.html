@@ -112,7 +112,7 @@
         </div>
         <div>
           <h3>What happens if you hit a limit</h3>
-          <p style="color:var(--muted);margin-top:10px;font-size:16px">The monthly approval quota and watcher limit only gate creating something new — the API returns <code>402 Payment Required</code> with the limit and your current tier, but deciding on actions that are already pending is never blocked. A watcher that finds a match while your approval quota is full holds that match rather than publishing or discarding it, and surfaces it in the watcher's status; once the quota resets or you upgrade, it's published on the next run. Upgrade and Stripe's webhook updates your tier right after checkout completes.</p>
+          <p style="color:var(--muted);margin-top:10px;font-size:16px">The monthly approval quota and watcher limit only gate creating something new — the API returns <code>402 Payment Required</code> with the limit and your current tier, but deciding on actions that are already pending is never blocked. A watcher that finds a match while your approval quota is full holds that match rather than publishing or discarding it, and surfaces it in the watcher's status; it's retried on each run and published once the quota frees up, as long as the source still lists it. Upgrade and Stripe's webhook updates your tier right after checkout completes.</p>
         </div>
         <div>
           <h3>Monthly billing, cancel anytime</h3>

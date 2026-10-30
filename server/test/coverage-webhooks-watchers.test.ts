@@ -645,7 +645,7 @@ describe('watcher items held back by quota are not lost and are visible', () => 
 
     const paused = await app.inject({ method: 'GET', url: '/v1/watchers', headers: auth(adminKey) });
     expect(paused.json().items[0].quota_paused_message).toBe(
-      'Monthly approvals quota reached — publishing paused until the quota resets or you upgrade.',
+      'Monthly approvals quota reached — publishing paused. Matches are retried each run and published once the quota resets or you upgrade, if the source still lists them.',
     );
 
     // Upgrade the project (same effect as the Stripe webhook flipping tier —
@@ -676,6 +676,92 @@ describe('watcher items held back by quota are not lost and are visible', () => 
 
     const resumed = await app.inject({ method: 'GET', url: '/v1/watchers', headers: auth(adminKey) });
     expect(resumed.json().items[0].quota_paused_message).toBeUndefined();
+  });
+
+  it('quota_paused_at depends only on quotaReached, not on finding a new match each run, and keeps its original timestamp', async () => {
+    // Review round 3, 2026-10-30: the first fix computed
+    // `quotaPausedAt = quotaReached && toPublish.length > 0 ? now : null`.
+    // A run that finds nothing new while the quota is STILL exhausted has
+    // toPublish.length === 0, so this cleared the status even though the
+    // watcher is still just as blocked — the UI badge would flicker off on
+    // any run that didn't happen to see a fresh item, which is wrong: the
+    // user needs to know the quota is the reason nothing is coming through,
+    // not just on the one run that noticed a specific item. It also bumped
+    // the timestamp to `now` on every blocked run, so "since when" was lost.
+    process.env.STRIPE_SECRET_KEY = 'sk_test_x';
+    const { db, app, adminKey, projectId } = await setup();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-06-01T00:00:00Z'));
+
+    try {
+      const created = await app.inject({
+        method: 'POST', url: '/v1/watchers', headers: auth(adminKey),
+        payload: {
+          name: 'Sticky quota-pause watcher', kind: 'rss',
+          config: { url: 'https://example.com/feed.xml' },
+          min_score: 0,
+          schedule: { every: '20m' },
+        },
+      });
+      const watcherId = created.json().id;
+      seedDecidedActions(db, projectId, 100); // exhausts the free-tier 100/month quota
+
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(feedWith('baseline', 'g0'));
+      await runWatcherTick(db); // baseline
+
+      // Run 1: a new item appears, quota blocks it -> quota_paused_at set.
+      fetchSpy.mockResolvedValue(feedWith('held item', 'g1'));
+      db.prepare('UPDATE watchers SET next_run_at = ? WHERE id = ?').run(nowSec() - 1, watcherId);
+      await runWatcherTick(db);
+
+      const afterHold = db.prepare('SELECT quota_paused_at FROM watchers WHERE id = ?').get(watcherId) as
+        { quota_paused_at: number | null };
+      expect(afterHold.quota_paused_at).not.toBeNull();
+      const firstPausedAt = afterHold.quota_paused_at;
+
+      // Advance real time so a bug that bumps the timestamp to "now" would
+      // be caught by a changed value, not accidentally match by coincidence.
+      vi.setSystemTime(new Date('2026-06-01T01:00:00Z'));
+
+      // Run 2: the feed has nothing new at all (empty RSS) — quota is still
+      // exhausted, but this tick finds no candidate. Status must stay set,
+      // with the SAME timestamp as run 1 (answers "since when", not "last
+      // checked").
+      fetchSpy.mockResolvedValue(new Response(
+        '<rss><channel></channel></rss>',
+        { status: 200, headers: { 'Content-Type': 'application/rss+xml' } },
+      ));
+      db.prepare('UPDATE watchers SET next_run_at = ? WHERE id = ?').run(nowSec() - 1, watcherId);
+      await runWatcherTick(db);
+
+      const afterEmptyRun = db.prepare('SELECT quota_paused_at FROM watchers WHERE id = ?').get(watcherId) as
+        { quota_paused_at: number | null };
+      expect(afterEmptyRun.quota_paused_at).toBe(firstPausedAt); // unchanged, not bumped to the new "now"
+
+      const stillPaused = await app.inject({ method: 'GET', url: '/v1/watchers', headers: auth(adminKey) });
+      expect(stillPaused.json().items[0].quota_paused_message).toBe(
+        'Monthly approvals quota reached — publishing paused. Matches are retried each run and published once the quota resets or you upgrade, if the source still lists them.',
+      );
+
+      // Upgrade -> the next run (even with nothing new) must clear the status.
+      db.prepare("UPDATE projects SET tier = 'indie' WHERE id = ?").run(projectId);
+      fetchSpy.mockResolvedValue(new Response(
+        '<rss><channel></channel></rss>',
+        { status: 200, headers: { 'Content-Type': 'application/rss+xml' } },
+      ));
+      db.prepare('UPDATE watchers SET next_run_at = ? WHERE id = ?').run(nowSec() - 1, watcherId);
+      await runWatcherTick(db);
+      fetchSpy.mockRestore();
+
+      const afterUpgrade = db.prepare('SELECT quota_paused_at FROM watchers WHERE id = ?').get(watcherId) as
+        { quota_paused_at: number | null };
+      expect(afterUpgrade.quota_paused_at).toBeNull();
+
+      const cleared = await app.inject({ method: 'GET', url: '/v1/watchers', headers: auth(adminKey) });
+      expect(cleared.json().items[0].quota_paused_message).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('quota pause does NOT touch fail_count, last_error, or status — it is not a fetch failure', async () => {

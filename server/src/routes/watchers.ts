@@ -8,8 +8,15 @@ import { CreateWatcherBody, UpdateWatcherBody, ListWatchersQuery, durationToSec 
 
 // Server-generated, single source of truth for the copy — the UI renders it
 // verbatim instead of hardcoding its own version that can drift.
+//
+// Deliberately does NOT promise the held-back match will be published once
+// the quota frees up — it's re-evaluated from the source on the next run
+// (scheduler.ts), and a source that rotates (an RSS feed dropping old
+// items, a subreddit listing moving on) may no longer list it by then.
+// What's guaranteed is that it's retried, not silently dropped (QA review
+// round 3, 2026-10-30).
 const QUOTA_PAUSED_MESSAGE =
-  'Monthly approvals quota reached — publishing paused until the quota resets or you upgrade.';
+  'Monthly approvals quota reached — publishing paused. Matches are retried each run and published once the quota resets or you upgrade, if the source still lists them.';
 
 function serializeWatcher(row: Record<string, unknown>) {
   const quotaPausedAt = (row.quota_paused_at as number | null) ?? null;

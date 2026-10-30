@@ -227,6 +227,11 @@ class Watcher(_WatcherRequired, total=False):
     last_error: Optional[str]
     degraded_since: Optional[int]
     last_run_at: Optional[int]
+    # Present only while a matching item is held back because the project's
+    # monthly approvals quota is reached — distinct from last_error, which
+    # only ever reflects fetch failures (server/src/scheduler.ts).
+    quota_paused_at: int
+    quota_paused_message: str
     # Present only on GET /v1/watchers/:id
     item_count: int
 

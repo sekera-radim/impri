@@ -161,11 +161,17 @@ CREATE TABLE IF NOT EXISTS watchers (
   next_run_at    INTEGER NOT NULL,
   created_at     INTEGER NOT NULL,
   updated_at     INTEGER NOT NULL,
-  -- Set when a run finds matching items but the project's monthly approvals
-  -- quota blocks publishing them; cleared on any run that isn't blocked by
-  -- quota. Deliberately separate from fail_count/last_error/degraded_since —
-  -- a full quota is not a fetch failure and must never trigger backoff,
-  -- auto-disable, or alerting (QA 2026-10-30).
+  -- Timestamp since the project's monthly approvals quota has been blocking
+  -- this watcher's publishing, independent of whether any particular run
+  -- finds a new match to hold back — reflects "is the quota still reached",
+  -- not "did this tick find something". Set once when the quota is first
+  -- reached and left unchanged on every later run while it stays reached
+  -- (it answers "since when", not "last checked"); cleared the moment the
+  -- quota is no longer reached. Baseline and fetch-error runs leave it
+  -- untouched (they never re-evaluate the quota). Deliberately separate
+  -- from fail_count/last_error/degraded_since — a full quota is not a fetch
+  -- failure and must never trigger backoff, auto-disable, or alerting
+  -- (QA 2026-10-30).
   quota_paused_at INTEGER
 );
 

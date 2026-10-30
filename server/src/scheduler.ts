@@ -68,6 +68,7 @@ export interface WatcherRow {
   created_at: number;
   updated_at: number;
   color: string | null;
+  quota_paused_at: number | null;
 }
 
 // --- Pure helper functions (exported for unit testing) ---
@@ -709,7 +710,16 @@ export async function processWatcher(db: Db, watcher: WatcherRow, log: Logger = 
   // quota_paused_at is a user-visible status (GET /v1/watchers, UI), deliberately
   // separate from fail_count/last_error/degraded_since: a full quota is not a
   // fetch failure and must never drive backoff, auto-disable, or alerting.
-  const quotaPausedAt = quotaReached && toPublish.length > 0 ? now : null;
+  //
+  // Depends ONLY on quotaReached — not on whether *this* run happened to find
+  // a new match. A run with nothing new while the quota is still exhausted
+  // must keep the badge showing (the watcher is still blocked), not clear it
+  // just because nothing matched this particular tick (found in review round
+  // 3, 2026-10-30: `quotaReached && toPublish.length > 0` cleared the status
+  // on every empty run even though nothing about the quota had changed).
+  // When already set, the original timestamp is preserved — it answers
+  // "since when has this been paused", not "when did we last check".
+  const quotaPausedAt = quotaReached ? (watcher.quota_paused_at ?? now) : null;
 
   // Cleanup: 90-day retention
   db.prepare('DELETE FROM watcher_items WHERE watcher_id = ? AND first_seen < ?').run(
