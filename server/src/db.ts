@@ -160,7 +160,19 @@ CREATE TABLE IF NOT EXISTS watchers (
   last_run_at    INTEGER,
   next_run_at    INTEGER NOT NULL,
   created_at     INTEGER NOT NULL,
-  updated_at     INTEGER NOT NULL
+  updated_at     INTEGER NOT NULL,
+  -- Timestamp since the project's monthly approvals quota has been blocking
+  -- this watcher's publishing, independent of whether any particular run
+  -- finds a new match to hold back — reflects "is the quota still reached",
+  -- not "did this tick find something". Set once when the quota is first
+  -- reached and left unchanged on every later run while it stays reached
+  -- (it answers "since when", not "last checked"); cleared the moment the
+  -- quota is no longer reached. Baseline and fetch-error runs leave it
+  -- untouched (they never re-evaluate the quota). Deliberately separate
+  -- from fail_count/last_error/degraded_since — a full quota is not a fetch
+  -- failure and must never trigger backoff, auto-disable, or alerting
+  -- (QA 2026-10-30).
+  quota_paused_at INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS idx_watchers_project ON watchers(project_id);
@@ -379,6 +391,9 @@ function migrate(db: Db): void {
 
   if (!columns('watchers').has('color')) {
     db.exec('ALTER TABLE watchers ADD COLUMN color TEXT');
+  }
+  if (!columns('watchers').has('quota_paused_at')) {
+    db.exec('ALTER TABLE watchers ADD COLUMN quota_paused_at INTEGER');
   }
 
   const action = columns('actions');

@@ -391,7 +391,12 @@ export class ImpriClient {
     verdict: 'approve' | 'reject',
     opts: { edited?: Record<string, unknown>; channel?: string } = {},
   ): Promise<DecisionResult> {
-    const body: Record<string, unknown> = { verdict }
+    // The wire field is `decision`, not `verdict` — POST /v1/actions/:id/decision
+    // (schemas.ts DecisionBody) is a different endpoint from bulk-decision
+    // (BulkDecisionBody), which does use `verdict`. Every call used to fail with
+    // 400 "decision: Required" (QA 2026-10-30) because this sent the bulk
+    // endpoint's field name to the single-decision endpoint.
+    const body: Record<string, unknown> = { decision: verdict }
     if (opts.edited !== undefined) body.edited = opts.edited
     if (opts.channel !== undefined) body.channel = opts.channel
     return this._request<DecisionResult>('POST', `/actions/${actionId}/decision`, body)

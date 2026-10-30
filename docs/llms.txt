@@ -71,7 +71,7 @@ Action states: pending → approved | rejected | expired → executed | execute_
 
 Decision body (`POST /v1/actions/:id/decision`):
 ```json
-{"verdict": "approve", "edited": {"preview.body": "Human-revised text."}, "channel": "bot-script"}
+{"decision": "approve", "edited": {"preview.body": "Human-revised text."}, "channel": "bot-script"}
 ```
 
 Bulk decision body (`POST /v1/actions/bulk-decision`):

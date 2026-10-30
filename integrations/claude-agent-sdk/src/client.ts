@@ -111,11 +111,21 @@ export class ImpriClient {
 
   /** POST /v1/actions/:id/decision — approve or reject (primarily for programmatic use). */
   async decide(actionId: string, params: DecideParams): Promise<DecisionResult> {
+    // The wire field is `decision`, not `verdict` — server/src/schemas.ts
+    // DecisionBody (single decision) differs from BulkDecisionBody (bulk-decision),
+    // which does use `verdict`. Sending `params` directly used to 400 with
+    // "decision: Required" (QA 2026-10-30, same root cause as @impri/sdk).
+    // DecideParams.verdict keeps its public name — it matches the response
+    // shape (DecisionResult.verdict) and @impri/sdk's own decide() signature;
+    // only this wire translation needed fixing.
+    const body: Record<string, unknown> = { decision: params.verdict };
+    if (params.edited !== undefined) body.edited = params.edited;
+    if (params.channel !== undefined) body.channel = params.channel;
     return apiRequest<DecisionResult>(
       this.cfg,
       "POST",
       `/actions/${actionId}/decision`,
-      params,
+      body,
     );
   }
 

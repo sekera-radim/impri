@@ -163,6 +163,8 @@ export function initMetrics(): void {
     'Total actions created by watcher runs');
   defineCounter('impri_watcher_burst_truncations_total',
     'Total watcher runs that triggered burst protection');
+  defineCounter('impri_watcher_quota_skipped_total',
+    'Total watcher runs where matching items were not published because the monthly approvals quota was reached');
 
   // Webhook delivery
   defineCounter('impri_webhook_deliveries_total',

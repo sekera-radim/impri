@@ -308,7 +308,14 @@ describe('listActions', () => {
 // ─── decide ───────────────────────────────────────────────────────────────────
 
 describe('decide', () => {
-  it('POSTs verdict to /v1/actions/:id/decision', async () => {
+  it('POSTs `decision` (not `verdict`) to /v1/actions/:id/decision', async () => {
+    // Regression test (QA 2026-10-30): the request body field is `decision`
+    // per server/src/schemas.ts DecisionBody — the bulk-decision endpoint uses
+    // `verdict` instead, and this test used to assert that wrong field name,
+    // which is exactly how the bug shipped: the mock accepted any field name,
+    // so nothing here ever hit the server's real zod validation. Confirmed
+    // live against a running server that the pre-fix body `{ verdict: 'approve' }`
+    // gets rejected with 400 "decision: Required".
     const decisionResult = {
       id: ACT_ID,
       status: 'approved',
@@ -325,7 +332,9 @@ describe('decide', () => {
     const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit]
     expect(url).toBe(`${TEST_BASE}/v1/actions/${ACT_ID}/decision`)
     expect(init.method).toBe('POST')
-    expect(JSON.parse(init.body as string).verdict).toBe('approve')
+    const sentBody = JSON.parse(init.body as string)
+    expect(sentBody.decision).toBe('approve')
+    expect(sentBody.verdict).toBeUndefined()
   })
 
   it('includes edited fields and channel in the request body', async () => {

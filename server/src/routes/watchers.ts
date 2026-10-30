@@ -6,7 +6,20 @@ import { computeNextRunAt, processWatcher, type WatcherRow } from '../scheduler.
 import { billingActive, watcherLimitReached, getProjectBilling, TIER_LIMITS } from '../billing.js';
 import { CreateWatcherBody, UpdateWatcherBody, ListWatchersQuery, durationToSec } from '../schemas.js';
 
+// Server-generated, single source of truth for the copy — the UI renders it
+// verbatim instead of hardcoding its own version that can drift.
+//
+// Deliberately does NOT promise the held-back match will be published once
+// the quota frees up — it's re-evaluated from the source on the next run
+// (scheduler.ts), and a source that rotates (an RSS feed dropping old
+// items, a subreddit listing moving on) may no longer list it by then.
+// What's guaranteed is that it's retried, not silently dropped (QA review
+// round 3, 2026-10-30).
+const QUOTA_PAUSED_MESSAGE =
+  'Monthly approvals quota reached — publishing paused. Matches are retried each run and published once the quota resets or you upgrade, if the source still lists them.';
+
 function serializeWatcher(row: Record<string, unknown>) {
+  const quotaPausedAt = (row.quota_paused_at as number | null) ?? null;
   return {
     id: row.id,
     name: row.name,
@@ -26,6 +39,11 @@ function serializeWatcher(row: Record<string, unknown>) {
     created_at: row.created_at,
     updated_at: row.updated_at,
     color: (row.color as string | null) ?? null,
+    // Deliberately not folded into status/last_error/degraded_since — a full
+    // quota is not a fetch failure (see scheduler.ts). Present only while
+    // the watcher is actually holding back a match for this reason.
+    quota_paused_at: quotaPausedAt ?? undefined,
+    quota_paused_message: quotaPausedAt !== null ? QUOTA_PAUSED_MESSAGE : undefined,
   };
 }
 

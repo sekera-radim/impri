@@ -183,6 +183,78 @@ describe("getAction", () => {
   });
 });
 
+// ─── decide ───────────────────────────────────────────────────────────────────
+
+describe("decide", () => {
+  // Regression test (QA 2026-10-30): decide() used to send the DecideParams
+  // object straight through as the request body, i.e. `{ verdict: ... }`.
+  // The server (schemas.ts DecisionBody) requires `decision` for this
+  // single-action endpoint — only the *different* bulk-decision endpoint
+  // uses `verdict`. No test ever called decide() at all, mocked or not, so
+  // nothing caught this. These assertions inspect the actual request body
+  // sent to fetch(), not just the method's return value.
+  it("POSTs `decision` (not `verdict`) to /v1/actions/:id/decision", async () => {
+    const decisionResult = {
+      id: "act_dec1",
+      status: "approved",
+      verdict: "approve",
+      decided_at: 1720003600,
+      final_preview: { format: "plain", body: "hello" },
+    };
+    mockFetch.mockResolvedValueOnce(mockOk(decisionResult));
+
+    const client = new ImpriClient({ apiKey: "im_test" });
+    const result = await client.decide("act_dec1", { verdict: "approve" });
+
+    expect(result.id).toBe("act_dec1");
+    const [url, init] = mockFetch.mock.calls[0]!;
+    expect(url as string).toContain("/v1/actions/act_dec1/decision");
+    const sentBody = JSON.parse((init as RequestInit).body as string);
+    expect(sentBody.decision).toBe("approve");
+    expect(sentBody.verdict).toBeUndefined();
+  });
+
+  it("includes edited fields and channel in the request body", async () => {
+    mockFetch.mockResolvedValueOnce(mockOk({
+      id: "act_dec2",
+      status: "approved",
+      verdict: "approve",
+      decided_at: 1720003600,
+      final_preview: { format: "plain", body: "edited" },
+    }));
+
+    const client = new ImpriClient({ apiKey: "im_test" });
+    await client.decide("act_dec2", {
+      verdict: "approve",
+      edited: { "preview.body": "edited" },
+      channel: "web",
+    });
+
+    const [, init] = mockFetch.mock.calls[0]!;
+    const sentBody = JSON.parse((init as RequestInit).body as string);
+    expect(sentBody.decision).toBe("approve");
+    expect(sentBody.edited).toEqual({ "preview.body": "edited" });
+    expect(sentBody.channel).toBe("web");
+  });
+
+  it("sends reject verdict as decision:'reject'", async () => {
+    mockFetch.mockResolvedValueOnce(mockOk({
+      id: "act_dec3",
+      status: "rejected",
+      verdict: "reject",
+      decided_at: 1720003600,
+      final_preview: { format: "plain", body: "x" },
+    }));
+
+    const client = new ImpriClient({ apiKey: "im_test" });
+    await client.decide("act_dec3", { verdict: "reject" });
+
+    const [, init] = mockFetch.mock.calls[0]!;
+    const sentBody = JSON.parse((init as RequestInit).body as string);
+    expect(sentBody.decision).toBe("reject");
+  });
+});
+
 // ─── awaitDecision ────────────────────────────────────────────────────────────
 
 describe("awaitDecision", () => {

@@ -294,7 +294,15 @@ class ImpriClient:
         ``edited`` is a dict of dot-path overrides restricted to the action's
         editable whitelist.
         """
-        body: dict[str, Any] = {"verdict": verdict}
+        # The wire field is `decision`, not `verdict` — server/src/schemas.ts
+        # DecisionBody (this endpoint) differs from BulkDecisionBody
+        # (/v1/actions/bulk-decision), which does use `verdict`. Sending
+        # {"verdict": ...} used to 400 with "decision: Required"
+        # (QA 2026-10-30, same root cause as @impri/sdk and the Claude Agent
+        # SDK integration). The `verdict` parameter name is kept here — it
+        # matches the response shape and impri.client.ImpriClient.decide()'s
+        # own signature; only this wire translation needed fixing.
+        body: dict[str, Any] = {"decision": verdict}
         if edited is not None:
             body["edited"] = edited
         if channel is not None:

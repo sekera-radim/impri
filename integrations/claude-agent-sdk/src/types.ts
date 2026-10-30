@@ -179,6 +179,11 @@ export interface Watcher {
   next_run_at: number;
   created_at: number;
   updated_at: number;
+  /** Present only while the project's monthly approvals quota is reached and
+   * the watcher's publishing is paused — distinct from last_error, which
+   * only ever reflects fetch failures (server/src/scheduler.ts). */
+  quota_paused_at?: number;
+  quota_paused_message?: string;
   /** Included only on GET /v1/watchers/:id. */
   item_count?: number;
 }

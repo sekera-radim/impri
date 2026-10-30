@@ -108,6 +108,13 @@
                 <v-icon size="12">mdi-alert-circle-outline</v-icon>
                 {{ w.last_error }}
               </span>
+              <span
+                v-if="w.quota_paused_message"
+                class="d-flex align-center gap-1 text-warning"
+              >
+                <v-icon size="12">mdi-pause-circle-outline</v-icon>
+                {{ w.quota_paused_message }}
+              </span>
             </div>
           </div>
 

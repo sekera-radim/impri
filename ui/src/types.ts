@@ -132,6 +132,11 @@ export interface Watcher {
   created_at: number
   updated_at: number
   color?: string | null
+  // Present only while a matching item is held back because the project's
+  // monthly approvals quota is reached — distinct from status/last_error,
+  // which only ever reflect fetch failures.
+  quota_paused_at?: number
+  quota_paused_message?: string
 }
 
 export interface ListWatchersResponse {
