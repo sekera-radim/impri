@@ -279,6 +279,46 @@ class TestAwaitDecision(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ImpriConflict):
             await client.decide("act_5", "approve")
 
+    async def test_decide_sends_decision_not_verdict(self):
+        """Regression test (QA 2026-10-30): decide() used to send
+        {"verdict": ...} to POST /v1/actions/:id/decision. The server
+        (schemas.ts DecisionBody) requires "decision" for this endpoint —
+        only the different bulk-decision endpoint uses "verdict". No test
+        ever inspected the actual request body, so this was never caught.
+        """
+        resp = _make_response(200, {
+            "id": "act_6", "status": "approved", "verdict": "approve",
+            "decided_at": 1720003600,
+            "final_preview": {"format": "plain", "body": "hello"},
+        })
+        client, mock_http = _client_with_mock(resp)
+
+        result = await client.decide("act_6", "approve")
+
+        self.assertEqual(result["id"], "act_6")
+        call_kwargs = mock_http.request.call_args
+        sent_json = call_kwargs.kwargs.get("json")
+        self.assertEqual(sent_json.get("decision"), "approve")
+        self.assertNotIn("verdict", sent_json)
+
+    async def test_decide_forwards_edited_and_channel(self):
+        resp = _make_response(200, {
+            "id": "act_7", "status": "approved", "verdict": "approve",
+            "decided_at": 1720003600,
+            "final_preview": {"format": "plain", "body": "edited"},
+        })
+        client, mock_http = _client_with_mock(resp)
+
+        await client.decide(
+            "act_7", "approve",
+            edited={"preview.body": "edited"}, channel="bot-script",
+        )
+
+        sent_json = mock_http.request.call_args.kwargs.get("json")
+        self.assertEqual(sent_json.get("decision"), "approve")
+        self.assertEqual(sent_json.get("edited"), {"preview.body": "edited"})
+        self.assertEqual(sent_json.get("channel"), "bot-script")
+
 
 # ---------------------------------------------------------------------------
 # requires_approval decorator
