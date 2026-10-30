@@ -4,6 +4,7 @@ import type { Db } from './db.js';
 import { genId, nowSec, hashContent } from './db.js';
 import { fetchGuarded } from './net-guard.js';
 import { isFetchAllowed } from './robots.js';
+import { approvalsLimitReached } from './billing.js';
 import { incCounter, noopLogger, type Logger } from './metrics.js';
 import { noopReporter, type ErrorReporter } from './sentry.js';
 
@@ -654,7 +655,20 @@ export async function processWatcher(db: Db, watcher: WatcherRow, log: Logger = 
   storeNew(newItems);
 
   // Create inbox actions
-  for (let i = 0; i < toPublish.length; i++) {
+  //
+  // Tier limit: monthly approvals quota gates NEW actions regardless of
+  // source (no-op when billing is disabled / self-host) — see routes/actions.ts
+  // POST /v1/actions, which applies the identical gate to agent-pushed actions.
+  // Checked once per run, not per item: the metric is decisions made this
+  // month, which this loop cannot itself change, so the result can't go
+  // stale mid-loop. Matching items that lose the race are still stored above
+  // (storeNew) so they're never silently re-published after an upgrade —
+  // the same trade-off burst protection already makes for overflow items.
+  const quotaReached = approvalsLimitReached(db, watcher.project_id);
+  if (quotaReached) {
+    incCounter('impri_watcher_quota_skipped_total', { kind: watcher.kind });
+  }
+  for (let i = 0; i < toPublish.length && !quotaReached; i++) {
     const s = toPublish[i];
     // Append overflow note to the last published item's title
     const effectiveTitle =

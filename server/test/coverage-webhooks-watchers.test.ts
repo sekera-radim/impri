@@ -4,8 +4,9 @@
  * Closes audit gaps for:
  *  - Webhook delivery integration (success, non-2xx retry, DLQ, 410, SSRF, runExpiryTick with callback_url)
  *  - Per-project webhook secret fallback to instance-level secret
- *  - minWatcherIntervalSec tier limit — never enforced (HIGH BUG, tests document desired behavior)
- *  - watcherLimitReached billing bypass via pause/create/reactivate (HIGH BUG)
+ *  - minWatcherIntervalSec tier limit on create/PATCH (fixed; tests guard against regression)
+ *  - watcherLimitReached on pause/create/reactivate (fixed; tests guard against regression)
+ *  - approvalsLimitReached bypass via watcher-published actions (QA 2026-10-30, fixed in scheduler.ts)
  *  - Scope enforcement with limited-scope keys
  *  - Key revocation effectiveness
  *  - Decision on non-pending actions (expired, rejected)
@@ -25,6 +26,7 @@ import {
   runWebhookTick,
   runExpiryTick,
 } from '../src/webhooks.js';
+import { runWatcherTick } from '../src/scheduler.js';
 
 process.env.DISABLE_WATCHER_SCHEDULER = '1';
 
@@ -335,14 +337,10 @@ describe('watcher interval tier enforcement', () => {
   });
 
   /**
-   * BUG: routes/watchers.ts POST /v1/watchers does not enforce
-   * TIER_LIMITS[tier].minWatcherIntervalSec. The Zod schema only enforces
-   * a global 60 s minimum. A free-tier user can create a watcher with
-   * schedule: { every: '1m' } and get 201, hammering external hosts 15×
-   * more often than the tier allows.
-   *
-   * These tests assert the DESIRED behavior. They will FAIL until the bug
-   * is fixed in routes/watchers.ts.
+   * routes/watchers.ts POST /v1/watchers enforces TIER_LIMITS[tier].minWatcherIntervalSec
+   * on top of the Zod schema's global 60 s floor — a free-tier schedule below
+   * 900 s is rejected with 402. Regression guard, verified against the live code
+   * 2026-10-30 (QA pass).
    */
   it('rejects a free-tier watcher whose schedule is below the tier minimum (900 s)', async () => {
     process.env.STRIPE_SECRET_KEY = 'sk_test_x';
@@ -375,15 +373,13 @@ describe('watcher interval tier enforcement', () => {
         schedule: { every: '30m' },
       },
     });
-    // Skip the rest of the test if creation was itself blocked (after a fix)
-    if (created.statusCode !== 201) return;
+    expect(created.statusCode).toBe(201);
     const { id } = created.json();
 
     const patch = await app.inject({
       method: 'PATCH', url: `/v1/watchers/${id}`, headers: auth(adminKey),
       payload: { schedule: { every: '1m' } }, // 60 s < 900 s minimum
     });
-    // BUG: currently returns 200; correct behavior: 402
     expect(patch.statusCode).toBe(402);
   });
 });
@@ -433,12 +429,10 @@ describe('watcher limit — pause/create/reactivate billing bypass', () => {
   });
 
   /**
-   * BUG: PATCH /v1/watchers/:id does not check watcherLimitReached when
-   * changing status to 'active'. A user who has 3 active watchers can insert
-   * a 4th as 'paused' (or via the exploit above) and then reactivate it via
-   * PATCH, bypassing the 402 gate.
-   *
-   * This test asserts the DESIRED behavior (will FAIL until bug is fixed).
+   * PATCH /v1/watchers/:id checks watcherLimitReached when changing status
+   * to 'active', so inserting a 4th watcher as 'paused' and reactivating it
+   * via PATCH does not bypass the 402 gate. Regression guard, verified
+   * against the live code 2026-10-30 (QA pass).
    */
   it('PATCH status=active is blocked (402) when project is already at the watcher limit', async () => {
     process.env.STRIPE_SECRET_KEY = 'sk_test_x';
@@ -465,8 +459,116 @@ describe('watcher limit — pause/create/reactivate billing bypass', () => {
       method: 'PATCH', url: `/v1/watchers/${extraId}`, headers: auth(adminKey),
       payload: { status: 'active' },
     });
-    // BUG: currently returns 200; correct behavior: 402
     expect(patch.statusCode).toBe(402);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// approvalsLimitReached bypass via watcher-published actions (QA 2026-10-30)
+// ---------------------------------------------------------------------------
+
+describe('watcher-published actions and the monthly approvals quota', () => {
+  afterEach(() => {
+    delete process.env.STRIPE_SECRET_KEY;
+  });
+
+  /**
+   * FIXED 2026-10-30: scheduler.ts createWatcherAction() inserted new
+   * 'watcher.triage' actions directly, with no approvalsLimitReached check —
+   * unlike POST /v1/actions, which returns 402 once the tier's monthly
+   * approvals quota is used up. Confirmed live (not just by reading the
+   * code): a free-tier QA project was driven to exactly 100/100 decisions
+   * via the real HTTP API, POST /v1/actions then correctly returned 402,
+   * but a manual watcher run (POST /v1/watchers/:id/run) against a local
+   * RSS fixture still created action #101 and let it be decided, taking
+   * usage to 101/100 — see www/pricing.html's own claim that the quota
+   * "gates creating something new" (no carve-out for watcher-sourced items).
+   * Fix: scheduler.ts now skips publishing (but still records items as seen,
+   * like burst-overflow items) once the quota is reached.
+   */
+  it('a watcher run does not publish a new action once the monthly approvals quota is used up', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_test_x';
+    const { db, app, adminKey, projectId } = await setup();
+
+    // Create one watcher (free tier allows 3).
+    const createdWatcher = await app.inject({
+      method: 'POST', url: '/v1/watchers', headers: auth(adminKey),
+      payload: {
+        name: 'Quota test watcher', kind: 'rss',
+        config: { url: 'https://example.com/feed.xml' },
+        min_score: 0,
+        schedule: { every: '20m' },
+      },
+    });
+    expect(createdWatcher.statusCode).toBe(201);
+    const watcherId = createdWatcher.json().id;
+
+    // Fill the free-tier 100/month approvals quota. getUsage() (billing.ts)
+    // counts rows in decisions joined to actions this calendar month, so
+    // seeding those rows directly exercises the exact same query the quota
+    // check runs — 100 live round-trips through POST+decide would hit the
+    // per-key 60/min rate limit (routes/actions.ts) well before reaching
+    // 100, which is a route concern this test isn't about. The 100/100
+    // boundary itself (POST /v1/actions → 402) is asserted below via the
+    // real API, and the sequential POST/decide boundary is already covered
+    // by the rate-limiting describe block further down this file.
+    const seedDecidedAction = db.transaction((i: number) => {
+      const actionId = genId('act_');
+      const now = nowSec();
+      db.prepare(`
+        INSERT INTO actions
+          (id, project_id, kind, title, preview, editable, status, preview_hash, created_at, updated_at)
+        VALUES (?, ?, 'test', ?, '{"format":"plain","body":"x"}', '[]', 'approved', ?, ?, ?)
+      `).run(actionId, projectId, `quota filler ${i}`, `h${i}`, now, now);
+      db.prepare(`
+        INSERT INTO decisions (id, action_id, verdict, decided_by, decided_at, channel, final_preview)
+        VALUES (?, ?, 'approve', ?, ?, 'api', '{"format":"plain","body":"x"}')
+      `).run(genId('dec_'), actionId, adminKey.slice(0, 8), now);
+    });
+    for (let i = 0; i < 100; i++) seedDecidedAction(i);
+
+    // Confirm the quota is exhausted via the normal API path.
+    const blocked = await app.inject({
+      method: 'POST', url: '/v1/actions', headers: auth(adminKey),
+      payload: {
+        kind: 'test', title: 'should be blocked',
+        preview: { format: 'plain', body: 'x' }, editable: [],
+      },
+    });
+    expect(blocked.statusCode).toBe(402);
+
+    // Baseline the watcher (first run stores items, publishes nothing).
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        '<rss><channel><item><title>baseline</title><link>https://example.com/0</link><guid>g0</guid></item></channel></rss>',
+        { status: 200, headers: { 'Content-Type': 'application/rss+xml' } },
+      ),
+    );
+    await runWatcherTick(db);
+
+    // Second run surfaces a genuinely new item — this is the no-code path an
+    // agent never touches, so it must respect the same quota as the API.
+    fetchSpy.mockResolvedValue(
+      new Response(
+        '<rss><channel><item><title>new item</title><link>https://example.com/1</link><guid>g1</guid></item></channel></rss>',
+        { status: 200, headers: { 'Content-Type': 'application/rss+xml' } },
+      ),
+    );
+    db.prepare('UPDATE watchers SET next_run_at = ? WHERE id = ?').run(nowSec() - 1, watcherId);
+    await runWatcherTick(db);
+    fetchSpy.mockRestore();
+
+    const triageActions = db.prepare(
+      "SELECT COUNT(*) as cnt FROM actions WHERE project_id = ? AND kind = 'watcher.triage'",
+    ).get(projectId) as { cnt: number };
+    expect(triageActions.cnt).toBe(0);
+
+    // The item must still be recorded as seen so it is never silently
+    // published later just because the calendar month (and quota) rolled over.
+    const seenItems = db.prepare(
+      'SELECT COUNT(*) as cnt FROM watcher_items WHERE watcher_id = ?',
+    ).get(watcherId) as { cnt: number };
+    expect(seenItems.cnt).toBe(2); // baseline item + the skipped new item
   });
 });
 
@@ -689,21 +791,15 @@ describe('decision on non-pending actions', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Edited fields beyond preview.body (MEDIUM BUG)
+// Edited fields beyond preview.body
 // ---------------------------------------------------------------------------
 
 describe('edited fields beyond "preview.body" in decision', () => {
   /**
-   * BUG (routes/actions.ts lines 304-313): the for-loop over edited fields
-   * only applies changes when field === 'preview.body'. Any other field in
-   * the editable whitelist (e.g. 'payload.amount') passes the 422 whitelist
-   * check but is silently discarded.
-   *
-   * An agent that specifies editable: ['payload.amount'] and a human edits
-   * it will receive a 200 response, but the payload in the DB is never
-   * updated — the agent proceeds with the original value.
-   *
-   * This test asserts the DESIRED behavior (will FAIL until bug is fixed).
+   * routes/actions.ts POST /v1/actions/:id/decision walks 'payload.*' dot-paths
+   * and persists the edited value atomically with the decision (routes/actions.ts
+   * handles this separately from preview.body edits). Regression guard, verified
+   * against the live code 2026-10-30 (QA pass).
    */
   it('payload.amount edit is reflected in the action payload after approval', async () => {
     const { app, adminKey } = await setup();
@@ -728,13 +824,10 @@ describe('edited fields beyond "preview.body" in decision', () => {
     // No 422 — 'payload.amount' is in the editable whitelist
     expect(decision.statusCode).toBe(200);
 
-    // BUG: after the decision, payload.amount should be 42 but is still 100.
-    // The GET endpoint returns payload from the DB (never updated).
     const get = await app.inject({
       method: 'GET', url: `/v1/actions/${id}`, headers: auth(adminKey),
     });
     expect(get.statusCode).toBe(200);
-    // This assertion FAILS currently (bug): amount is still 100, not 42
     expect(get.json().payload.amount).toBe(42);
   });
 });
