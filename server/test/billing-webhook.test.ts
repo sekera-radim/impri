@@ -145,6 +145,32 @@ describe('POST /v1/billing/webhook — subscription lifecycle flips tier', () =>
     expect(row.stripe_subscription_id).toBe('sub_1');
   });
 
+  it('customer.subscription.updated with an active team price sets tier=team', async () => {
+    // Regression guard (review round 2, 2026-10-30): the indie test above
+    // doesn't catch a priceToTier() mix-up between the two paid tiers — a
+    // mutation swapping STRIPE_PRICE_TEAM for STRIPE_PRICE_INDIE in
+    // priceToTier()'s map would still pass every other assertion in this
+    // file. This test pins price_team_m -> 'team' specifically, not just
+    // "some paid tier". Verified via mutation (see commit message) that it
+    // actually fails when that mapping is wrong.
+    const { app, db, projectId } = await setup();
+    db.prepare('UPDATE projects SET stripe_customer_id = ? WHERE id = ?').run('cus_team1', projectId);
+
+    const { body, header } = sign(stripeEvent('customer.subscription.updated', {
+      id: 'sub_team', status: 'active', customer: 'cus_team1',
+      items: { data: [{ price: { id: 'price_team_m' }, current_period_end: nowSec() + 2592000 }] },
+    }));
+    const res = await postWebhook(app, body, header);
+    expect(res.statusCode).toBe(200);
+
+    const row = db.prepare(
+      'SELECT tier, subscription_status, stripe_subscription_id FROM projects WHERE id = ?',
+    ).get(projectId) as { tier: string; subscription_status: string; stripe_subscription_id: string };
+    expect(row.tier).toBe('team');
+    expect(row.subscription_status).toBe('active');
+    expect(row.stripe_subscription_id).toBe('sub_team');
+  });
+
   it('customer.subscription.deleted resets tier to free but keeps the customer id', async () => {
     const { app, db, projectId } = await setup();
     db.prepare(
