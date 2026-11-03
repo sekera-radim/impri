@@ -715,6 +715,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human-in-the-Loop for AI Customer Support Agents: https://impri.dev/docs/human-in-the-loop-ai-customer-support
 - Human-in-the-Loop for AI HR Onboarding Agents: https://impri.dev/docs/human-in-the-loop-for-ai-hr-onboarding-agents
 - Human-in-the-Loop for AI Newsletter Automation: https://impri.dev/docs/human-in-the-loop-for-ai-newsletter-automation
+- Human-in-the-Loop for AI Research Agents: https://impri.dev/docs/human-in-the-loop-for-ai-research-agents
 - Human-in-the-Loop for AI in HR and Recruiting: https://impri.dev/docs/human-in-the-loop-for-ai-in-hr
 - Human-in-the-Loop for AI in SaaS Operations: https://impri.dev/docs/human-in-the-loop-for-ai-in-saas-operations
 - Human-in-the-Loop for AWS Strands Agents: https://impri.dev/docs/human-in-the-loop-aws-strands-agents
