@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to Test an AI Agent's Approval Flow — Impri Docs</title>
+<meta name="description" content="How to test an AI agent's approval flow: drive the approve, reject, edit and conflict paths against a local Impri instance with plain HTTP calls in pytest.">
+<meta name="theme-color" content="#06070d">
+<meta property="og:title" content="How to Test an AI Agent's Approval Flow — Impri Docs">
+<meta property="og:description" content="How to test an AI agent's approval flow: drive the approve, reject, edit and conflict paths against a local Impri instance with plain HTTP calls in pytest.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://impri.dev/docs/how-to-test-an-ai-agent-approval-flow">
+<meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Impri — human-in-the-loop approval inbox for AI agents">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
+<link rel="canonical" href="https://impri.dev/docs/how-to-test-an-ai-agent-approval-flow">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"How to Test an AI Agent's Approval Flow","description":"How to test an AI agent's approval flow: drive the approve, reject, edit and conflict paths against a local Impri instance with plain HTTP calls in pytest.","url":"https://impri.dev/docs/how-to-test-an-ai-agent-approval-flow","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="stylesheet" href="../styles.css">
+<style>
+pre code.hljs{display:block;overflow-x:auto}
+.hljs{color:#cdd3e1;background:transparent}
+.hljs-comment,.hljs-quote{color:#5a6170;font-style:italic}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta.hljs-keyword{color:#a78bfa}
+.hljs-string,.hljs-addition,.hljs-meta .hljs-string,.hljs-regexp{color:#86efac}
+.hljs-literal{color:#fbbf24}
+.hljs-number,.hljs-attr,.hljs-template-variable,.hljs-variable,.hljs-selector-class{color:#fbbf24}
+.hljs-built_in,.hljs-class .hljs-title,.hljs-title.class_{color:#22d3ee}
+.hljs-title,.hljs-section,.hljs-selector-id{color:#818cf8}
+.hljs-name,.hljs-deletion{color:#f87171}
+.hljs-attribute,.hljs-link{color:#a5b4fc}
+.hljs-meta{color:#a78bfa}
+.hljs-symbol,.hljs-bullet{color:#22d3ee}
+.hljs-strong{font-weight:700}
+.hljs-emphasis{font-style:italic}
+.hljs-link{text-decoration:underline}
+/* ── docs layout ── */
+.docs-shell{display:grid;grid-template-columns:220px 1fr 180px;gap:0;max-width:1280px;margin:0 auto;padding:84px 0 120px}
+/* The article comes first in the HTML so crawlers and AI fetchers that read top-down reach it before ~50 nav links; the grid puts the nav back on the left. */
+.doc-main{grid-column:2;grid-row:1}.docs-sidebar{grid-column:1;grid-row:1}.docs-toc{grid-column:3;grid-row:1}
+.docs-sidebar{padding:24px 20px 40px 24px;position:sticky;top:68px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+.docs-sidebar::-webkit-scrollbar{width:4px}
+.docs-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:2px}
+.sg{margin-bottom:22px}
+.sg-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);padding:0 8px;margin-bottom:6px}
+.sl{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;padding:5px 8px;border-radius:7px;transition:color .15s,background .15s;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.sl.active{color:#c7cbff;background:rgba(99,102,241,.14);font-weight:500}
+.sl.active::before{content:"";display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--indigo);margin-right:5px;vertical-align:middle}
+/* ── doc content ── */
+.doc-main{padding:24px 36px 40px;min-width:0}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--faint);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--muted);text-decoration:none}
+.breadcrumb a:hover{color:var(--text)}
+.breadcrumb .bc-sep{opacity:.4}
+.doc-main h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 10px;text-wrap:balance}
+.doc-main .doc-lede{font-size:17px;color:#aeb7c6;margin:0 0 40px;line-height:1.7;max-width:42em}
+.doc-main h2{font-size:22px;font-weight:700;margin:52px 0 12px;scroll-margin-top:84px;letter-spacing:-.02em;text-wrap:balance}
+.doc-main h3{font-size:17px;font-weight:700;margin:32px 0 8px;scroll-margin-top:84px;letter-spacing:-.01em}
+.doc-main h4{font-size:14px;font-weight:700;margin:24px 0 6px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+.doc-main p,.doc-main li{color:#c4ccd8;line-height:1.75;font-size:15px}
+.doc-main p{margin:0 0 14px}
+.doc-main a{color:#a5b4fc;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.doc-main a:hover{color:#c7cbff}
+.doc-main ul,.doc-main ol{padding-left:22px;margin:6px 0 14px}
+.doc-main li{margin:4px 0}
+.doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
+.doc-main strong{color:var(--text);font-weight:600}
+.doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* code */
+.code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
+.code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
+.code-lang{position:absolute;top:10px;right:13px;font-size:11px;font-family:var(--mono);color:var(--faint);letter-spacing:.04em;pointer-events:none;user-select:none}
+.doc-main :not(pre)>code{background:rgba(124,140,255,.14);padding:2px 6px;border-radius:5px;font-size:.875em;font-family:var(--mono);color:#c7cbff}
+/* tables */
+.table-wrap{overflow-x:auto;margin:14px 0}
+.doc-main table{width:100%;border-collapse:collapse;font-size:14px;min-width:420px}
+.doc-main th,.doc-main td{text-align:left;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.doc-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:rgba(255,255,255,.02)}
+.doc-main tr:hover td{background:rgba(255,255,255,.02)}
+/* page toc (right column) */
+.ptoc{position:sticky;top:84px;align-self:start;padding:24px 16px 24px 0}
+.ptoc-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.ptoc ul{list-style:none;padding:0;margin:0}
+.ptoc li{margin:0}
+.ptoc a{display:block;font-size:12.5px;color:var(--faint);text-decoration:none;padding:4px 0 4px 8px;border-left:1px solid rgba(255,255,255,.07);transition:color .15s,border-color .15s;line-height:1.4}
+.ptoc a:hover{color:var(--muted);border-color:rgba(99,102,241,.5)}
+.ptoc-h3 a{padding-left:18px;font-size:12px}
+/* ── hub page ── */
+.docs-hub{max-width:1080px;margin:0 auto;padding:100px 24px 120px}
+.hub-hero{margin-bottom:60px}
+.hub-hero h1{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.035em;margin:0 0 12px}
+.hub-hero p{font-size:17px;color:var(--muted);max-width:36em;line-height:1.7}
+.hub-sections{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{border:1px solid var(--border);border-radius:16px;padding:24px 26px;background:var(--surface);transition:border-color .25s,transform .25s;display:block;text-decoration:none;color:inherit}
+.hub-card:hover{border-color:rgba(129,140,248,.4);transform:translateY(-2px)}
+.hub-card-title{font-size:16px;font-weight:700;margin:0 0 14px;color:var(--text)}
+.hub-card-pages{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.hub-card-pages li a{font-size:13.5px;color:var(--muted);text-decoration:none;display:flex;align-items:center;gap:6px;padding:3px 0;transition:color .15s}
+.hub-card-pages li a:hover{color:#c7cbff}
+.hub-card-pages li a::before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(129,140,248,.5);flex-shrink:0}
+/* ── responsive ── */
+@media(max-width:1100px){.docs-shell{grid-template-columns:200px 1fr;}.ptoc,.docs-toc{display:none}}
+@media(max-width:800px){.docs-shell{grid-template-columns:1fr;padding-top:72px}.docs-sidebar{display:none}.doc-main{grid-column:1}.doc-main{padding:16px 18px 40px}}
+@media(max-width:560px){.hub-sections{grid-template-columns:1fr}}
+.nav-links .active-nav{color:var(--text)!important}
+</style>
+</head>
+<body>
+<div class="bg-aurora"></div>
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<nav class="nav scrolled" id="nav">
+<div class="wrap nav-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Impri
+  </a>
+  <div class="nav-links">
+    <a class="link" href="/#how">How it works</a>
+    <a class="link" href="/#pricing">Pricing</a>
+    <a class="link active-nav" href="../docs">Docs</a>
+    <a class="btn btn-primary btn-sm" href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+  </div>
+</div>
+</nav>
+
+<div class="docs-shell">
+  <main class="doc-main" id="main-content">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="../docs">Docs</a>
+      <span class="bc-sep">/</span>
+      <span>Reference</span>
+      <span class="bc-sep">/</span>
+      <span>How to Test an AI Agent's Approval Flow</span>
+    </nav>
+    <h1>How to Test an AI Agent&#39;s Approval Flow</h1>
+<p>How to test an AI agent&#39;s approval flow: drive the approve, reject, edit and conflict paths against a local Impri instance with plain HTTP calls in pytest.</p>
+<hr>
+<h2 id="what-you-are-actually-testing">What you are actually testing</h2>
+<p>An approval gate has one job: the side effect must not run unless a human said yes. So the tests worth writing are not &quot;does the API return 200&quot; but &quot;what does my agent do in each outcome&quot;. There are four outcomes to cover:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Outcome</th>
+<th>What the agent must do</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>approved</code></td>
+<td>Execute with <code>decision.final_preview</code>, then report <code>executed</code></td>
+</tr>
+<tr>
+<td><code>approved</code> with edits</td>
+<td>Execute the edited text, not the original draft</td>
+</tr>
+<tr>
+<td><code>rejected</code></td>
+<td>Never reach the executor</td>
+</tr>
+<tr>
+<td><code>expired</code></td>
+<td>Same as rejected</td>
+</tr>
+</tbody></table>
+</div>
+<p>Everything below tests <em>your</em> agent code. Impri only holds the decision; it does not interpret the action, so there is nothing about the content to test on its side.</p>
+<hr>
+<h2 id="test-against-a-throwaway-local-instance">Test against a throwaway local instance</h2>
+<p>Do not point tests at your production project. Start a self-hosted instance (see <a href="self-hosting">self-hosting</a>) with <code>docker compose up -d</code>; the API listens on <code>http://localhost:8484</code>. Create a separate key with the <code>actions</code> scope for the test run (<a href="api-keys">API keys</a>).</p>
+<p>The decision endpoint, <code>POST /v1/actions/:id/decision</code>, accepts a key with the <code>actions</code> scope. That is what lets a test play the human. Your test harness approves programmatically; in real use the human decides from the inbox, so keep the agent&#39;s production key separate from whatever credential can decide.</p>
+<hr>
+<h2 id="a-pytest-harness-that-plays-both-sides">A pytest harness that plays both sides</h2>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> os, time, requests
+
+BASE = os.environ.get(<span class="hljs-string">&quot;IMPRI_BASE_URL&quot;</span>, <span class="hljs-string">&quot;http://localhost:8484&quot;</span>)
+H = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{os.environ[<span class="hljs-string">&#x27;IMPRI_API_KEY&#x27;</span>]}</span>&quot;</span>}
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">propose</span>(<span class="hljs-params">body=<span class="hljs-string">&quot;Hi Sarah, draft v1&quot;</span>, **extra</span>):
+    r = requests.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{BASE}</span>/v1/actions&quot;</span>, headers=H, json={
+        <span class="hljs-string">&quot;kind&quot;</span>: <span class="hljs-string">&quot;email.send&quot;</span>,
+        <span class="hljs-string">&quot;title&quot;</span>: <span class="hljs-string">f&quot;test <span class="hljs-subst">{time.time()}</span>&quot;</span>,   <span class="hljs-comment"># unique, avoids pending-duplicate dedup</span>
+        <span class="hljs-string">&quot;preview&quot;</span>: {<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: body},
+        <span class="hljs-string">&quot;editable&quot;</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
+        <span class="hljs-string">&quot;expires_in&quot;</span>: <span class="hljs-number">300</span>,
+        **extra,
+    })
+    r.raise_for_status()
+    <span class="hljs-keyword">return</span> r.json()[<span class="hljs-string">&quot;id&quot;</span>]
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">decide</span>(<span class="hljs-params">action_id, decision, edited=<span class="hljs-literal">None</span></span>):
+    payload = {<span class="hljs-string">&quot;decision&quot;</span>: decision}
+    <span class="hljs-keyword">if</span> edited:
+        payload[<span class="hljs-string">&quot;edited&quot;</span>] = {<span class="hljs-string">&quot;preview.body&quot;</span>: edited}
+    <span class="hljs-keyword">return</span> requests.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>/decision&quot;</span>,
+                         headers=H, json=payload)
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">run_agent</span>(<span class="hljs-params">action_id, send</span>):
+    <span class="hljs-string">&quot;&quot;&quot;The code under test: wait, then execute only on approval.&quot;&quot;&quot;</span>
+    <span class="hljs-keyword">while</span> <span class="hljs-literal">True</span>:
+        a = requests.get(<span class="hljs-string">f&quot;<span class="hljs-subst">{BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>&quot;</span>, headers=H).json()
+        <span class="hljs-keyword">if</span> a[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;pending&quot;</span>:
+            <span class="hljs-keyword">break</span>
+        time.sleep(<span class="hljs-number">0.2</span>)
+    <span class="hljs-keyword">if</span> a[<span class="hljs-string">&quot;status&quot;</span>] == <span class="hljs-string">&quot;approved&quot;</span>:
+        send(a[<span class="hljs-string">&quot;decision&quot;</span>][<span class="hljs-string">&quot;final_preview&quot;</span>][<span class="hljs-string">&quot;body&quot;</span>])
+        requests.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>/result&quot;</span>,
+                      headers=H, json={<span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;executed&quot;</span>})
+    <span class="hljs-keyword">return</span> a[<span class="hljs-string">&quot;status&quot;</span>]
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">test_approved_sends_once</span>():
+    sent = []
+    aid = propose()
+    <span class="hljs-keyword">assert</span> decide(aid, <span class="hljs-string">&quot;approve&quot;</span>).ok
+    <span class="hljs-keyword">assert</span> run_agent(aid, sent.append) <span class="hljs-keyword">in</span> (<span class="hljs-string">&quot;approved&quot;</span>, <span class="hljs-string">&quot;executed&quot;</span>)
+    <span class="hljs-keyword">assert</span> sent == [<span class="hljs-string">&quot;Hi Sarah, draft v1&quot;</span>]
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">test_edit_wins_over_draft</span>():
+    sent = []
+    aid = propose()
+    decide(aid, <span class="hljs-string">&quot;approve&quot;</span>, edited=<span class="hljs-string">&quot;Hi Sarah, edited by a human&quot;</span>)
+    run_agent(aid, sent.append)
+    <span class="hljs-keyword">assert</span> sent == [<span class="hljs-string">&quot;Hi Sarah, edited by a human&quot;</span>]
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">test_rejected_never_executes</span>():
+    sent = []
+    aid = propose()
+    decide(aid, <span class="hljs-string">&quot;reject&quot;</span>)
+    <span class="hljs-keyword">assert</span> run_agent(aid, sent.append) == <span class="hljs-string">&quot;rejected&quot;</span>
+    <span class="hljs-keyword">assert</span> sent == []</code></pre></div>
+<p>In a real agent, replace the polling loop with your actual wrapper or the <a href="sdk-python">SDK</a>; the point is that the test calls the same code path production uses.</p>
+<hr>
+<h2 id="edge-cases-worth-a-test-each">Edge cases worth a test each</h2>
+<ul>
+<li><strong>Edits outside the whitelist.</strong> Approving with <code>edited</code> keys that are not in <code>editable</code> is rejected with HTTP 422. Assert that your agent never receives text it was not meant to accept.</li>
+<li><strong>Double decision.</strong> A second decision on an already-decided action returns 409. Two reviewers, or a retrying script, must not flip the outcome.</li>
+<li><strong>Result before approval.</strong> <code>POST /v1/actions/:id/result</code> returns 409 unless the action is <code>approved</code>. A test that calls it on a rejected action catches agents that report success without checking.</li>
+<li><strong>Duplicate proposals.</strong> An identical pending action (same kind, title and preview) is returned as a duplicate with HTTP 200 instead of a second card; an <code>idempotency_key</code> does the same on retries. Test that a retry loop does not flood the inbox.</li>
+<li><strong>Expiry.</strong> <code>expires_in</code> has a floor of 300 seconds, so you cannot make an action expire in a fast unit test. Test the <code>expired</code> branch by stubbing the status your code reads, and keep one slow end-to-end test for CI nightly.</li>
+<li><strong>Rate limit.</strong> <code>POST /v1/actions</code> allows 60 requests per minute per key. Keep parallel test runs on separate keys.</li>
+</ul>
+<hr>
+<h2 id="auto-approve-rules-change-what-you-test">Auto-approve rules change what you test</h2>
+<p>If your project has a rule with the <code>auto_approve</code> outcome (<a href="rules">rules</a>), a matching action comes back already <code>approved</code> and never reaches a human. Run the suite in a project with no rules for the gate tests, and add separate tests for each rule you rely on, asserting both the matching and the non-matching case.</p>
+<hr>
+<h2 id="what-this-does-not-prove">What this does not prove</h2>
+<p>A passing suite shows your agent honours the decision. It does not show the gate cannot be bypassed: if the agent also holds the raw credential for the target service, it can route around Impri. Add one test that the executor function is unreachable without an approved decision, and keep the real credential out of the agent&#39;s reach. Impri is only the approval gate; it never executes anything itself.</p>
+<p>Next: <a href="quickstart">Quickstart</a> to get a key, or the <a href="cli">CLI</a> to approve test actions by hand with <code>impri approve</code>.</p>
+
+  </main>
+
+  <aside class="docs-sidebar" aria-label="Documentation navigation">
+    <div class="sg">
+<div class="sg-label">Getting started</div>
+<a href="../docs/what-is-an-approval-inbox" class="sl">What is an approval inbox?</a>
+<a href="../docs/what-is-human-in-the-loop-for-ai-agents" class="sl">What is human-in-the-loop?</a>
+<a href="../docs/what-is-an-mcp-approval-server" class="sl">What is an MCP approval server?</a>
+<a href="../docs/quickstart" class="sl">Quickstart</a>
+<a href="../docs/ai-agent-approval-workflow" class="sl">Approval workflow overview</a>
+<a href="../docs/how-to-add-human-approval-to-an-ai-agent" class="sl">Human approval pattern</a>
+<a href="../docs/self-hosting" class="sl">Self-hosting</a>
+<a href="../docs/observability" class="sl">Observability</a>
+</div>
+<div class="sg">
+<div class="sg-label">Install</div>
+<a href="../docs/how-to-get-human-approval-into-your-coding-agent" class="sl">Overview</a>
+<a href="../docs/claude-code-human-approval" class="sl">Claude Code</a>
+<a href="../docs/codex-human-approval" class="sl">OpenAI Codex</a>
+<a href="../docs/cursor-human-approval" class="sl">Cursor</a>
+<a href="../docs/windsurf-human-approval" class="sl">Windsurf</a>
+</div>
+<div class="sg">
+<div class="sg-label">API reference</div>
+<a href="../docs/api-keys" class="sl">API keys &amp; scopes</a>
+<a href="../docs/rules" class="sl">Rules engine</a>
+<a href="../docs/watcher-presets" class="sl">Watcher presets</a>
+<a href="../docs/notifications" class="sl">Notification channels</a>
+<a href="../docs/telegram-approval" class="sl">Telegram approval</a>
+<a href="../docs/slack-approval" class="sl">Slack approval</a>
+<a href="../docs/discord-approval" class="sl">Discord approval</a>
+<a href="../docs/audit-log" class="sl">Audit log</a>
+<a href="../docs/billing" class="sl">Billing &amp; tiers</a>
+<a href="../docs/gdpr" class="sl">GDPR &amp; data export</a>
+<a href="../docs/privacy" class="sl">Privacy policy</a>
+<a href="../docs/terms" class="sl">Terms of service</a>
+<a href="../docs/operator" class="sl">Operator / admin</a>
+<a href="../docs/account-recovery" class="sl">Account recovery</a>
+</div>
+<div class="sg">
+<div class="sg-label">SDKs</div>
+<a href="../docs/sdk-python" class="sl">Python SDK</a>
+<a href="../docs/sdk-typescript" class="sl">TypeScript SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Integrations</div>
+<a href="../docs/mcp" class="sl">MCP server</a>
+<a href="../docs/integrations" class="sl">LangChain / CrewAI / n8n</a>
+<a href="../docs/claude-agent-sdk" class="sl">Claude Agent SDK</a>
+</div>
+<div class="sg">
+<div class="sg-label">Inbox &amp; webhooks</div>
+<a href="../docs/inbox" class="sl">Inbox UX &amp; bulk decisions</a>
+<a href="../docs/webhooks" class="sl">Webhooks</a>
+<a href="../docs/web-push" class="sl">Web push</a>
+</div>
+<div class="sg">
+<div class="sg-label">CLI</div>
+<a href="../docs/cli" class="sl">CLI reference</a>
+</div>
+<div class="sg">
+<div class="sg-label">Cookbook</div>
+<a href="../docs/cookbook" class="sl">Cookbook</a>
+</div>
+  </aside>
+
+  <aside class="docs-toc" aria-label="On this page">
+    <nav class="ptoc" aria-label="On this page">
+<div class="ptoc-label">On this page</div>
+<ul><li class="ptoc-h2"><a href="#what-you-are-actually-testing">What you are actually testing</a></li>
+<li class="ptoc-h2"><a href="#test-against-a-throwaway-local-instance">Test against a throwaway local instance</a></li>
+<li class="ptoc-h2"><a href="#a-pytest-harness-that-plays-both-sides">A pytest harness that plays both sides</a></li>
+<li class="ptoc-h2"><a href="#edge-cases-worth-a-test-each">Edge cases worth a test each</a></li>
+<li class="ptoc-h2"><a href="#auto-approve-rules-change-what-you-test">Auto-approve rules change what you test</a></li>
+<li class="ptoc-h2"><a href="#what-this-does-not-prove">What this does not prove</a></li></ul>
+</nav>
+  </aside>
+</div>
+
+<footer class="footer">
+<div class="wrap footer-inner">
+  <a class="brand" href="/">
+    <span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Impri
+  </a>
+  <div>
+    <a href="https://gitlab.com/sekera.radim/impri">GitLab</a>
+    <a href="/docs">Docs</a>
+    <a href="https://gitlab.com/sekera.radim/impri/-/blob/main/LICENSE">MIT License</a>
+    <a href="https://www.npmjs.com/package/@impri/mcp">@impri/mcp</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/terms">Terms</a>
+    <a href="https://sekera.dev">Contact</a>
+  </div>
+</div>
+<div class="wrap" style="margin-top:18px"><span class="muted">© 2026 Impri · The imprimatur for your AI agents · Built by <a href="https://sekera.dev" style="color:inherit">Radim Sekera</a>. Also by the same maker: <a href="https://briefgate.dev/?utm_source=impri.dev&amp;utm_medium=referral" style="color:inherit">BriefGate</a> — client intake for agencies and AI agents.</span></div>
+</footer>
+</body>
+</html>
