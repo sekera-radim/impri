@@ -1,5 +1,5 @@
 import './types.js';
-import Fastify, { type FastifyRequest } from 'fastify';
+import Fastify, { errorCodes, type FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import { createDb } from './db.js';
 import { verifyApiKey, bootstrapAdminKey, verifyInternalAuthToken, lookupApiKeyById, extractRawApiKey } from './auth.js';
@@ -124,8 +124,10 @@ export async function createApp(db: Db, reporter: ErrorReporter = errorReporter)
     if (!(body as Buffer).length) return done(null, {});
     try {
       done(null, JSON.parse((body as Buffer).toString('utf8')));
-    } catch (err) {
-      done(err as Error, undefined);
+    } catch {
+      // Same 400 as Fastify's built-in parser: a bare SyntaxError has no statusCode,
+      // so the error handler would answer 500 and report the caller's mistake to Sentry.
+      done(new errorCodes.FST_ERR_CTP_INVALID_JSON_BODY(), undefined);
     }
   });
 

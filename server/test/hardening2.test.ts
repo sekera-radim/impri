@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { createDb } from '../src/db.js';
 import { checkRateLimit } from '../src/auth.js';
 // checkRateLimit is async (may hit Redis); tests below await it.
@@ -149,5 +149,26 @@ describe('composite cursor pagination', () => {
       cursor = body.next_cursor;
     }
     expect(seen.size).toBe(3);
+  });
+});
+
+describe('malformed JSON body', () => {
+  // Regression for Sentry IMPRI-API-2. Body parsing runs before auth, so the
+  // anonymous request needs no project or key.
+  it('answers 400 and does not report the caller mistake to Sentry', async () => {
+    const captureError = vi.fn();
+    const app = await createApp(createDb(':memory:'), { captureError });
+    await app.ready();
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/mcp',
+      headers: { 'content-type': 'application/json' },
+      payload: '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{},}',
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.json().code).toBe('FST_ERR_CTP_INVALID_JSON_BODY');
+    expect(captureError).not.toHaveBeenCalled();
   });
 });
