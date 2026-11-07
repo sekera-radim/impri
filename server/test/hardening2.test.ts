@@ -153,13 +153,11 @@ describe('composite cursor pagination', () => {
 });
 
 describe('malformed JSON body', () => {
-  // Sentry IMPRI-API-2: a SyntaxError from our raw-body JSON parser had no
-  // statusCode, so it became a 500 and was reported as a bug.
+  // Regression for Sentry IMPRI-API-2. Body parsing runs before auth, so the
+  // anonymous request needs no project or key.
   it('answers 400 and does not report the caller mistake to Sentry', async () => {
-    const db = createDb(':memory:');
-    await bootstrapAdminKey(db);
     const captureError = vi.fn();
-    const app = await createApp(db, { captureError });
+    const app = await createApp(createDb(':memory:'), { captureError });
     await app.ready();
 
     const res = await app.inject({

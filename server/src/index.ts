@@ -125,9 +125,8 @@ export async function createApp(db: Db, reporter: ErrorReporter = errorReporter)
     try {
       done(null, JSON.parse((body as Buffer).toString('utf8')));
     } catch {
-      // Malformed JSON is the caller's mistake: answer 400 with the same error
-      // Fastify's built-in parser uses. A bare SyntaxError has no statusCode,
-      // so the error handler would turn it into a 500 and report it to Sentry.
+      // Same 400 as Fastify's built-in parser: a bare SyntaxError has no statusCode,
+      // so the error handler would answer 500 and report the caller's mistake to Sentry.
       done(new errorCodes.FST_ERR_CTP_INVALID_JSON_BODY(), undefined);
     }
   });
