@@ -54,7 +54,7 @@ apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
 # Clone the repo to /opt/impri
-git clone https://github.com/impri-dev/impri.git /opt/impri
+git clone https://gitlab.com/sekera.radim/impri.git /opt/impri
 cd /opt/impri
 ```
 

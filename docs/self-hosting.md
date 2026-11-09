@@ -15,7 +15,7 @@ Impri is fully self-hostable. `docker compose up` gives you the complete stack: 
 ## Quick start
 
 ```bash
-git clone https://github.com/impri-dev/impri.git
+git clone https://gitlab.com/sekera.radim/impri.git
 cd impri
 
 # Generate a strong webhook secret (required — do not leave it as "change-me-in-production")
