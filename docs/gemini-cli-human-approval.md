@@ -35,7 +35,7 @@ Gemini CLI reads MCP servers from the `mcpServers` section of its `settings.json
 
 Create the key with the `actions` scope only — see [API keys](api-keys.md). Self-hosting? Leave `IMPRI_BASE_URL` at its default of `http://localhost:8484` or point it at your own instance.
 
-The server exposes three tools: `impri_push_action`, `impri_await_decision` and `impri_report_result`.
+This workflow uses three of the server's tools: `impri_push_action`, `impri_await_decision` and `impri_report_result`. The others check inbox status and manage watchers.
 
 ---
 
