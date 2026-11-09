@@ -47,21 +47,21 @@ A separate poller — not part of the graph — watches the Impri action and res
 import { Command } from "@langchain/langgraph";
 
 async function resumeWhenDecided(threadId: string, actionId: string, graph) {
-  let decision;
+  let action;
   do {
     await new Promise((r) => setTimeout(r, 10_000));
-    decision = await fetch(`https://api.impri.dev/v1/actions/${actionId}`, {
+    action = await fetch(`https://api.impri.dev/v1/actions/${actionId}`, {
       headers: { Authorization: `Bearer ${process.env.IMPRI_API_KEY}` },
     }).then((r) => r.json());
-  } while (decision.status === "pending");
+  } while (action.status === "pending");
 
-  await graph.invoke(new Command({ resume: decision }), {
+  await graph.invoke(new Command({ resume: action }), {
     configurable: { thread_id: threadId },
   });
 }
 ```
 
-The graph's resume value is now the actual Impri decision, not a stand-in. Downstream nodes can check `decision.status` and only proceed to the real CRM write on `"approved"`.
+The graph's resume value is now the actual Impri action record, not a stand-in: `GET /v1/actions/:id` returns the action with its `status` at the top level and the human's verdict nested under `decision`. Downstream nodes can check `action.status` and only proceed to the real CRM write on `"approved"`.
 
 ---
 
@@ -73,10 +73,10 @@ While this is in flight, two independent systems are tracking the wait: LangGrap
 
 ## Editing structured fields, not just prose
 
-Because `preview.body` here is a JSON blob rather than free text, editing still works the same way: set `editable: ["preview.body"]`, and a reviewer who spots a wrong field value can fix it in the inbox before approving. Parse it back out of `decision.final_preview.body` rather than the original `input.fields` — that's the version a human actually signed off on:
+Because `preview.body` here is a JSON blob rather than free text, editing still works the same way: set `editable: ["preview.body"]`, and a reviewer who spots a wrong field value can fix it in the inbox before approving. Parse it back out of `action.decision.final_preview.body` rather than the original `input.fields` — that's the version a human actually signed off on:
 
 ```typescript
-const approvedFields = JSON.parse(decision.final_preview.body.replace(/```json\n|\n```/g, ""));
+const approvedFields = JSON.parse(action.decision.final_preview.body.replace(/```json\n|\n```/g, ""));
 ```
 
 ---
