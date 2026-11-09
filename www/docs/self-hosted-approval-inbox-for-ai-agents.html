@@ -149,21 +149,27 @@ pre code.hljs{display:block;overflow-x:auto}
 <p>The cloud at impri.dev is the fastest way to get started. But there are reasons to prefer running Impri on your own infrastructure:</p>
 <p><strong>Data stays internal.</strong> Every action pushed to Impri includes the draft content your agent produced — an email body, a database query, a file to be modified. For agents working with internal documents, customer records, or anything under compliance review, you may not want that content leaving your network at all.</p>
 <p><strong>No per-seat or per-action cost at scale.</strong> If you run a high-volume agent loop that produces hundreds of approval requests per day, self-hosting removes that ceiling.</p>
-<p><strong>Integration with internal tooling.</strong> Running on-prem means you can put Impri behind your VPN, use your own SSO, and configure notification channels that point to internal Slack or ntfy instances.</p>
+<p><strong>Integration with internal tooling.</strong> Running on-prem means you can put Impri behind your VPN or an authenticating reverse proxy, and point notifications at your own SMTP server or ntfy instance.</p>
 <p>Impri is open-core: the server that handles the approval inbox, the REST API, the MCP server, and the web UI is MIT-licensed and available at <a href="https://github.com/sekera-radim/impri" target="_blank" rel="noopener">github.com/sekera-radim/impri</a>. The hosted version at impri.dev runs the same code with managed infrastructure on top.</p>
 <hr>
 <h2 id="running-the-server">Running the server</h2>
-<p>The server is distributed as a Docker image. A single container handles the REST API and the web inbox.</p>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">docker run -d \
-  --name impri \
-  --restart unless-stopped \
-  -p 8484:8484 \
-  -v impri_data:/data \
-  -e SECRET_KEY=$(openssl rand -hex 32) \
-  ghcr.io/sekera-radim/impri:latest</code></pre></div>
-<p>The server starts on port 8484. The <code>/data</code> volume persists actions, decisions, and audit records across container restarts. <code>SECRET_KEY</code> signs sessions — generate once and store it somewhere safe (not in the command history for production use).</p>
-<p>After the container is running, open <code>http://localhost:8484</code> to create your first API key via the web UI. You&#39;ll use that key in the <code>Authorization: Bearer im_...</code> header the same way you would with the cloud.</p>
-<p>For a compose file, reverse proxy config, and production hardening notes, see <a href="self-hosting">self-hosting</a>.</p>
+<p>Self-hosting runs two containers from the repo&#39;s <code>docker-compose.yml</code>: <code>server</code> (the REST API, port 8484) and <code>ui</code> (the web inbox, port 8080). Data lives in SQLite on a Docker volume, so there is no database to provision.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">git <span class="hljs-built_in">clone</span> https://gitlab.com/sekera.radim/impri.git
+<span class="hljs-built_in">cd</span> impri
+
+<span class="hljs-comment"># Signs outgoing webhook payloads (HMAC-SHA256) — don&#x27;t keep the default</span>
+<span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;WEBHOOK_SECRET=<span class="hljs-subst">$(openssl rand -hex 32)</span>&quot;</span> &gt; .<span class="hljs-built_in">env</span>
+
+docker compose up -d</code></pre></div>
+<p>The API answers on <code>http://localhost:8484/v1</code> (health check at <code>/healthz</code>) and the inbox opens at <code>http://localhost:8080</code>. The <code>impri-data</code> volume keeps actions, decisions and audit records across restarts.</p>
+<p>On first start the server prints a bootstrap admin key to its log, once — only its hash is stored:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">docker compose logs server | grep <span class="hljs-string">&quot;Admin API Key&quot;</span></code></pre></div>
+<p>Don&#39;t hand that admin key to an agent. Create a key limited to the <code>actions</code> scope for it instead:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -X POST http://localhost:8484/v1/keys \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_ADMIN_KEY</span>&quot;</span> \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;name&quot;: &quot;agent&quot;, &quot;scopes&quot;: [&quot;actions&quot;]}&#x27;</span></code></pre></div>
+<p>The agent sends that key in the <code>Authorization: Bearer im_...</code> header, the same way it would with the cloud. For the full environment variable reference, <code>BASE_URL</code> behind a reverse proxy and production hardening, see <a href="self-hosting">self-hosting</a>.</p>
 <hr>
 <h2 id="pointing-your-agents-at-the-local-instance">Pointing your agents at the local instance</h2>
 <p>Wherever you set <code>IMPRI_BASE_URL</code>, switch it to your instance&#39;s address. The rest of the API is identical.</p>
@@ -182,9 +188,8 @@ pre code.hljs{display:block;overflow-x:auto}
 <span class="hljs-punctuation">}</span></code></pre></div>
 <p>The MCP server reads <code>IMPRI_BASE_URL</code> and routes all tool calls — <code>impri_push_action</code>, <code>impri_await_decision</code>, <code>impri_report_result</code> — to your instance instead of the cloud. No code changes needed in the agent.</p>
 <p><strong>REST directly</strong> — useful for testing that the instance is up and accepting requests:</p>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Verify connectivity</span>
-curl http://localhost:8484/v1/actions \
-  -H <span class="hljs-string">&quot;Authorization: Bearer im_your_local_key&quot;</span>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># Verify the server is up</span>
+curl http://localhost:8484/healthz
 
 <span class="hljs-comment"># Push a test action — here an internal database migration awaiting sign-off</span>
 curl -X POST http://localhost:8484/v1/actions \
@@ -237,9 +242,14 @@ curl -X POST http://localhost:8484/v1/actions \
 <td>Managed</td>
 </tr>
 <tr>
-<td>Slack / Telegram / Discord approval</td>
+<td>Slack approval</td>
+<td>Yes — create your own Slack app</td>
 <td>Yes</td>
-<td>Yes</td>
+</tr>
+<tr>
+<td>Telegram / Discord approval</td>
+<td>Yes — your own bot</td>
+<td>Yes — your own bot</td>
 </tr>
 <tr>
 <td>Infrastructure management</td>
@@ -247,9 +257,9 @@ curl -X POST http://localhost:8484/v1/actions \
 <td>Managed</td>
 </tr>
 <tr>
-<td>Uptime SLA</td>
+<td>Availability</td>
 <td>Your infra</td>
-<td>Covered</td>
+<td>Managed, early beta without an SLA</td>
 </tr>
 </tbody></table>
 </div>

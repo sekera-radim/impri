@@ -165,7 +165,7 @@ pre code.hljs{display:block;overflow-x:auto}
   <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span></code></pre></div>
 <p>Create the key with the <code>actions</code> scope only — see <a href="api-keys">API keys</a>. Self-hosting? Leave <code>IMPRI_BASE_URL</code> at its default of <code>http://localhost:8484</code> or point it at your own instance.</p>
-<p>The server exposes three tools: <code>impri_push_action</code>, <code>impri_await_decision</code> and <code>impri_report_result</code>.</p>
+<p>This workflow uses three of the server&#39;s tools: <code>impri_push_action</code>, <code>impri_await_decision</code> and <code>impri_report_result</code>. The others check inbox status and manage watchers.</p>
 <hr>
 <h2 id="step-2-tell-the-agent-when-it-must-ask">Step 2 — tell the agent when it must ask</h2>
 <p>The tools are only called if the agent knows to call them. Put the rule in the project context file Gemini CLI loads (<code>GEMINI.md</code>):</p>

@@ -200,7 +200,7 @@ pre code.hljs{display:block;overflow-x:auto}
   .<span class="hljs-title function_">addEdge</span>(<span class="hljs-string">&quot;proposeRefund&quot;</span>, <span class="hljs-string">&quot;issueRefund&quot;</span>)
   .<span class="hljs-title function_">addEdge</span>(<span class="hljs-string">&quot;issueRefund&quot;</span>, <span class="hljs-variable constant_">END</span>)
   .<span class="hljs-title function_">compile</span>({ <span class="hljs-attr">checkpointer</span>: <span class="hljs-keyword">new</span> <span class="hljs-title class_">MemorySaver</span>() });</code></pre></div>
-<p>The refund amount is deliberately not editable — <code>editable</code> only rewrites <code>preview.body</code>, which is markdown text, not a structured field. Making the dollar figure editable would mean parsing it back out of prose, which is fragile. Let reviewers edit the reason; keep the amount as a fixed value the agent already computed.</p>
+<p>The refund amount is deliberately not editable. <code>editable</code> can list <code>payload.*</code> paths as well as <code>preview.body</code> — the inbox shows each as a text field and an edited value lands in the action&#39;s <code>payload</code> — but a dollar figure typed by a reviewer is one more input you&#39;d have to re-validate before paying it out. Let reviewers edit the reason; keep the amount as a fixed value the agent already computed.</p>
 <hr>
 <h2 id="the-resume-side-a-decision-poller">The resume side: a decision poller</h2>
 <p>Something still has to notice when Impri&#39;s status changes and call back into the graph. It does not need to be the process that started the run:</p>

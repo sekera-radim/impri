@@ -177,26 +177,26 @@ pre code.hljs{display:block;overflow-x:auto}
 <div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">Command</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@langchain/langgraph&quot;</span>;
 
 <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">resumeWhenDecided</span>(<span class="hljs-params"><span class="hljs-attr">threadId</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">actionId</span>: <span class="hljs-built_in">string</span>, graph</span>) {
-  <span class="hljs-keyword">let</span> decision;
+  <span class="hljs-keyword">let</span> action;
   <span class="hljs-keyword">do</span> {
     <span class="hljs-keyword">await</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Promise</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> <span class="hljs-built_in">setTimeout</span>(r, <span class="hljs-number">10_000</span>));
-    decision = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`https://api.impri.dev/v1/actions/<span class="hljs-subst">${actionId}</span>`</span>, {
+    action = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`https://api.impri.dev/v1/actions/<span class="hljs-subst">${actionId}</span>`</span>, {
       <span class="hljs-attr">headers</span>: { <span class="hljs-title class_">Authorization</span>: <span class="hljs-string">`Bearer <span class="hljs-subst">${process.env.IMPRI_API_KEY}</span>`</span> },
     }).<span class="hljs-title function_">then</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> r.<span class="hljs-title function_">json</span>());
-  } <span class="hljs-keyword">while</span> (decision.<span class="hljs-property">status</span> === <span class="hljs-string">&quot;pending&quot;</span>);
+  } <span class="hljs-keyword">while</span> (action.<span class="hljs-property">status</span> === <span class="hljs-string">&quot;pending&quot;</span>);
 
-  <span class="hljs-keyword">await</span> graph.<span class="hljs-title function_">invoke</span>(<span class="hljs-keyword">new</span> <span class="hljs-title class_">Command</span>({ <span class="hljs-attr">resume</span>: decision }), {
+  <span class="hljs-keyword">await</span> graph.<span class="hljs-title function_">invoke</span>(<span class="hljs-keyword">new</span> <span class="hljs-title class_">Command</span>({ <span class="hljs-attr">resume</span>: action }), {
     <span class="hljs-attr">configurable</span>: { <span class="hljs-attr">thread_id</span>: threadId },
   });
 }</code></pre></div>
-<p>The graph&#39;s resume value is now the actual Impri decision, not a stand-in. Downstream nodes can check <code>decision.status</code> and only proceed to the real CRM write on <code>&quot;approved&quot;</code>.</p>
+<p>The graph&#39;s resume value is now the actual Impri action record, not a stand-in: <code>GET /v1/actions/:id</code> returns the action with its <code>status</code> at the top level and the human&#39;s verdict nested under <code>decision</code>. Downstream nodes can check <code>action.status</code> and only proceed to the real CRM write on <code>&quot;approved&quot;</code>.</p>
 <hr>
 <h2 id="two-things-are-paused-for-two-different-reasons">Two things are paused, for two different reasons</h2>
 <p>While this is in flight, two independent systems are tracking the wait: LangGraph&#39;s checkpointer holds the graph&#39;s suspended state so <code>resumeWhenDecided</code> can pick the thread back up exactly where it left off, and Impri holds the pending action so a human has something to look at and decide on. Neither replaces the other. If your checkpointer is in-memory and the process restarts, you lose the ability to resume the <em>graph</em> — the Impri action is unaffected and still resolvable, but nothing will be listening for it until the poller comes back up.</p>
 <hr>
 <h2 id="editing-structured-fields-not-just-prose">Editing structured fields, not just prose</h2>
-<p>Because <code>preview.body</code> here is a JSON blob rather than free text, editing still works the same way: set <code>editable: [&quot;preview.body&quot;]</code>, and a reviewer who spots a wrong field value can fix it in the inbox before approving. Parse it back out of <code>decision.final_preview.body</code> rather than the original <code>input.fields</code> — that&#39;s the version a human actually signed off on:</p>
-<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">const</span> approvedFields = <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">parse</span>(decision.<span class="hljs-property">final_preview</span>.<span class="hljs-property">body</span>.<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/```json\n|\n```/g</span>, <span class="hljs-string">&quot;&quot;</span>));</code></pre></div>
+<p>Because <code>preview.body</code> here is a JSON blob rather than free text, editing still works the same way: set <code>editable: [&quot;preview.body&quot;]</code>, and a reviewer who spots a wrong field value can fix it in the inbox before approving. Parse it back out of <code>action.decision.final_preview.body</code> rather than the original <code>input.fields</code> — that&#39;s the version a human actually signed off on:</p>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">const</span> approvedFields = <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">parse</span>(action.<span class="hljs-property">decision</span>.<span class="hljs-property">final_preview</span>.<span class="hljs-property">body</span>.<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/```json\n|\n```/g</span>, <span class="hljs-string">&quot;&quot;</span>));</code></pre></div>
 <hr>
 <h2 id="what-impri-isn39t-doing-here">What Impri isn&#39;t doing here</h2>
 <p>Impri doesn&#39;t understand LangGraph&#39;s state machine, doesn&#39;t call <code>resumeWhenDecided</code> for you, and doesn&#39;t replace the checkpointer. It stores one thing — the proposed CRM update and the eventual yes/no — and leaves the graph orchestration to LangGraph, same as it would with any other framework wrapped around it.</p>
