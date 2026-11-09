@@ -69,7 +69,7 @@ const graph = new StateGraph(State)
   .compile({ checkpointer: new MemorySaver() });
 ```
 
-The refund amount is deliberately not editable — `editable` only rewrites `preview.body`, which is markdown text, not a structured field. Making the dollar figure editable would mean parsing it back out of prose, which is fragile. Let reviewers edit the reason; keep the amount as a fixed value the agent already computed.
+The refund amount is deliberately not editable. `editable` can list `payload.*` paths as well as `preview.body` — the inbox shows each as a text field and an edited value lands in the action's `payload` — but a dollar figure typed by a reviewer is one more input you'd have to re-validate before paying it out. Let reviewers edit the reason; keep the amount as a fixed value the agent already computed.
 
 ---
 
