@@ -12,7 +12,7 @@ The cloud at impri.dev is the fastest way to get started. But there are reasons 
 
 **No per-seat or per-action cost at scale.** If you run a high-volume agent loop that produces hundreds of approval requests per day, self-hosting removes that ceiling.
 
-**Integration with internal tooling.** Running on-prem means you can put Impri behind your VPN, use your own SSO, and configure notification channels that point to internal Slack or ntfy instances.
+**Integration with internal tooling.** Running on-prem means you can put Impri behind your VPN or an authenticating reverse proxy, and point notifications at your own SMTP server or ntfy instance.
 
 Impri is open-core: the server that handles the approval inbox, the REST API, the MCP server, and the web UI is MIT-licensed and available at [github.com/sekera-radim/impri](https://github.com/sekera-radim/impri). The hosted version at impri.dev runs the same code with managed infrastructure on top.
 
@@ -20,23 +20,36 @@ Impri is open-core: the server that handles the approval inbox, the REST API, th
 
 ## Running the server
 
-The server is distributed as a Docker image. A single container handles the REST API and the web inbox.
+Self-hosting runs two containers from the repo's `docker-compose.yml`: `server` (the REST API, port 8484) and `ui` (the web inbox, port 8080). Data lives in SQLite on a Docker volume, so there is no database to provision.
 
 ```bash
-docker run -d \
-  --name impri \
-  --restart unless-stopped \
-  -p 8484:8484 \
-  -v impri_data:/data \
-  -e SECRET_KEY=$(openssl rand -hex 32) \
-  ghcr.io/sekera-radim/impri:latest
+git clone https://gitlab.com/sekera.radim/impri.git
+cd impri
+
+# Signs outgoing webhook payloads (HMAC-SHA256) — don't keep the default
+echo "WEBHOOK_SECRET=$(openssl rand -hex 32)" > .env
+
+docker compose up -d
 ```
 
-The server starts on port 8484. The `/data` volume persists actions, decisions, and audit records across container restarts. `SECRET_KEY` signs sessions — generate once and store it somewhere safe (not in the command history for production use).
+The API answers on `http://localhost:8484/v1` (health check at `/healthz`) and the inbox opens at `http://localhost:8080`. The `impri-data` volume keeps actions, decisions and audit records across restarts.
 
-After the container is running, open `http://localhost:8484` to create your first API key via the web UI. You'll use that key in the `Authorization: Bearer im_...` header the same way you would with the cloud.
+On first start the server prints a bootstrap admin key to its log, once — only its hash is stored:
 
-For a compose file, reverse proxy config, and production hardening notes, see [self-hosting](self-hosting.md).
+```bash
+docker compose logs server | grep "Admin API Key"
+```
+
+Don't hand that admin key to an agent. Create a key limited to the `actions` scope for it instead:
+
+```bash
+curl -X POST http://localhost:8484/v1/keys \
+  -H "Authorization: Bearer $IMPRI_ADMIN_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "agent", "scopes": ["actions"]}'
+```
+
+The agent sends that key in the `Authorization: Bearer im_...` header, the same way it would with the cloud. For the full environment variable reference, `BASE_URL` behind a reverse proxy and production hardening, see [self-hosting](self-hosting.md).
 
 ---
 
@@ -66,9 +79,8 @@ The MCP server reads `IMPRI_BASE_URL` and routes all tool calls — `impri_push_
 **REST directly** — useful for testing that the instance is up and accepting requests:
 
 ```bash
-# Verify connectivity
-curl http://localhost:8484/v1/actions \
-  -H "Authorization: Bearer im_your_local_key"
+# Verify the server is up
+curl http://localhost:8484/healthz
 
 # Push a test action — here an internal database migration awaiting sign-off
 curl -X POST http://localhost:8484/v1/actions \
@@ -99,9 +111,10 @@ The response is `{ id, status: "pending", inbox_url }` — the same shape as the
 | Web inbox | Yes | Yes |
 | Audit log | Yes | Yes |
 | Notifications (email, ntfy, web push) | Yes — configure your own SMTP/ntfy | Managed |
-| Slack / Telegram / Discord approval | Yes | Yes |
+| Slack approval | Yes — create your own Slack app | Yes |
+| Telegram / Discord approval | Yes — your own bot | Yes — your own bot |
 | Infrastructure management | You | Managed |
-| Uptime SLA | Your infra | Covered |
+| Availability | Your infra | Managed, early beta without an SLA |
 
 The split is operational, not functional. A self-hosted instance accepts the same requests, stores decisions in the same schema, and exposes the same inbox UI. You configure your own notification channels — see [notifications](notifications.md) for the available options.
 
