@@ -267,6 +267,6 @@ npx @impri/mcp
 ## What's next
 
 - **Webhook delivery** instead of polling: see [webhooks.md](webhooks.md)
-- **Watchers** (monitor RSS, Reddit, URL changes): REST API via `POST /v1/watchers`; see [SPEC.md](https://github.com/sekera-radim/impri/blob/main/SPEC.md) for the schema
+- **Watchers** (monitor RSS, Reddit, URL changes): REST API via `POST /v1/watchers`; start from a ready-made configuration in [watcher-presets.md](watcher-presets.md), or see the request schema (`CreateWatcherBody`) in [server/src/schemas.ts](https://gitlab.com/sekera.radim/impri/-/blob/main/server/src/schemas.ts)
 - **Self-hosting configuration** (SMTP, ntfy, backups): see [self-hosting.md](self-hosting.md)
 - **The full pattern and its guarantees** (why this actually gates execution, and what it doesn't cover): see [How to add human approval to an AI agent](how-to-add-human-approval-to-an-ai-agent.md)
