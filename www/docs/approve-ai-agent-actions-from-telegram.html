@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Approve AI Agent Actions From Telegram — Impri Docs</title>
-<meta name="description" content="Get your AI agent's pending actions as Telegram push notifications with inline Approve/Reject buttons, so you can gate its actions from your phone wherever…">
+<meta name="description" content="Approve AI agent actions from Telegram: each pending action arrives as a message with inline Approve and Reject buttons, so you can decide from your phone.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="Approve AI Agent Actions From Telegram — Impri Docs">
-<meta property="og:description" content="Get your AI agent's pending actions as Telegram push notifications with inline Approve/Reject buttons, so you can gate its actions from your phone wherever…">
+<meta property="og:description" content="Approve AI agent actions from Telegram: each pending action arrives as a message with inline Approve and Reject buttons, so you can decide from your phone.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/approve-ai-agent-actions-from-telegram">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/approve-ai-agent-actions-from-telegram">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Approve AI Agent Actions From Telegram","description":"Get your AI agent's pending actions as Telegram push notifications with inline Approve/Reject buttons, so you can gate its actions from your phone wherever…","url":"https://impri.dev/docs/approve-ai-agent-actions-from-telegram","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Approve AI Agent Actions From Telegram","description":"Approve AI agent actions from Telegram: each pending action arrives as a message with inline Approve and Reject buttons, so you can decide from your phone.","url":"https://impri.dev/docs/approve-ai-agent-actions-from-telegram","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -143,7 +143,7 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>Approve AI Agent Actions From Telegram</span>
     </nav>
     <h1>Approve AI Agent Actions From Telegram</h1>
-<p>Get your AI agent&#39;s pending actions as Telegram push notifications with inline Approve/Reject buttons, so you can gate its actions from your phone wherever you are.</p>
+<p>Approve AI agent actions from Telegram: each pending action arrives as a message with inline Approve and Reject buttons, so you can decide from your phone.</p>
 <hr>
 <h2 id="who-this-is-for">Who this is for</h2>
 <p>If you&#39;re running an agent solo — handling customer refunds, drafting support replies, posting to your company&#39;s social accounts — you&#39;re probably not sitting at a desk with an inbox tab open all day. Telegram&#39;s push notifications land on your phone the moment an action needs a decision, and the inline keyboard lets you approve or reject without opening a browser or unlocking a separate app. This page covers wiring a Python agent to push actions that show up as Telegram approval prompts.</p>
@@ -232,7 +232,7 @@ HEADERS = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span cla
         headers=HEADERS,
         json={<span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;executed&quot;</span>},
     )</code></pre></div>
-<p>Because <code>idempotent</code> is set to <code>false</code>, the Telegram card also carries a &quot;retrying may duplicate this action&quot; warning — worth knowing before you tap approve twice because the button felt slow.</p>
+<p>Because <code>idempotent</code> is set to <code>false</code>, the card in the <a href="inbox">web inbox</a> shows a &quot;Not idempotent — retrying may duplicate this action&quot; badge. The Telegram message itself shows only the action&#39;s title and kind next to the buttons, which is why the <code>title</code> above carries the amount, the customer and the ticket: that line is everything you see on your phone before you tap. Tapping Approve twice because the button felt slow is harmless, since Impri keeps the first decision and ignores the rest. What <code>idempotent: false</code> warns about is your own code calling <code>issue_refund()</code> twice for one action.</p>
 <h2 id="what-you39re-actually-gating">What you&#39;re actually gating</h2>
 <p>Tapping Approve in Telegram does not touch your payment processor. It only flips the action&#39;s status to <code>approved</code> inside Impri. <code>issue_refund()</code> above still has to run — the gate only works if that function is unreachable except through this exact path. If some other part of your codebase can call your payment processor directly with the same credentials, an agent (or a bug) can bypass the approval entirely. See <a href="how-to-add-human-approval-to-an-ai-agent">the integration guide</a> for the chokepoint pattern in more depth.</p>
 <h2 id="next-step">Next step</h2>

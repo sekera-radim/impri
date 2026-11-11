@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>How to Pause an AI Agent for Human Input — Impri Docs</title>
-<meta name="description" content="Learn how to pause an AI agent mid-run and wait for a human decision before it continues — without polling hacks or losing state.">
+<meta name="description" content="Pause an AI agent for human input with one step that sends the proposed action to an approval inbox and blocks until a person approves, edits or rejects it.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="How to Pause an AI Agent for Human Input — Impri Docs">
-<meta property="og:description" content="Learn how to pause an AI agent mid-run and wait for a human decision before it continues — without polling hacks or losing state.">
+<meta property="og:description" content="Pause an AI agent for human input with one step that sends the proposed action to an approval inbox and blocks until a person approves, edits or rejects it.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/how-to-pause-an-ai-agent-for-human-input">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/how-to-pause-an-ai-agent-for-human-input">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"How to Pause an AI Agent for Human Input","description":"Learn how to pause an AI agent mid-run and wait for a human decision before it continues — without polling hacks or losing state.","url":"https://impri.dev/docs/how-to-pause-an-ai-agent-for-human-input","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"How to Pause an AI Agent for Human Input","description":"Pause an AI agent for human input with one step that sends the proposed action to an approval inbox and blocks until a person approves, edits or rejects it.","url":"https://impri.dev/docs/how-to-pause-an-ai-agent-for-human-input","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -143,7 +143,7 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>How to Pause an AI Agent for Human Input</span>
     </nav>
     <h1>How to Pause an AI Agent for Human Input</h1>
-<p>Learn how to pause an AI agent mid-run and wait for a human decision before it continues — without polling hacks or losing state.</p>
+<p>Pause an AI agent for human input with one step that sends the proposed action to an approval inbox and blocks until a person approves, edits or rejects it.</p>
 <hr>
 <h2 id="the-problem-agents-don39t-stop-on-their-own">The problem: agents don&#39;t stop on their own</h2>
 <p>A tool-calling agent that runs in a loop — plan, call a tool, observe, repeat — has no natural place to stop and ask &quot;should I actually do this?&quot; Once a tool call is dispatched, the side effect happens. Bolting a <code>confirm=True</code> flag onto the tool doesn&#39;t help either: nothing forces the agent to check it before firing, and there&#39;s no record of who said yes.</p>

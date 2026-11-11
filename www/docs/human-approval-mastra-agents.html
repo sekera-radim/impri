@@ -208,7 +208,7 @@ pre code.hljs{display:block;overflow-x:auto}
   .<span class="hljs-title function_">commit</span>();</code></pre></div>
 <hr>
 <h2 id="resuming-from-impri39s-side">Resuming from Impri&#39;s side</h2>
-<p>Impri doesn&#39;t push webhooks into your workflow engine directly — you poll <code>GET /v1/actions/:id</code> or run your own poller, then call Mastra&#39;s resume API once the status leaves <code>pending</code>. A small poller (cron, queue consumer, whatever you already run) closes the loop:</p>
+<p>Impri never calls Mastra&#39;s resume endpoint itself. Either set <code>callback_url</code> on the action so Impri POSTs the decision to a small handler of yours (<a href="webhooks">webhooks</a>), or poll <code>GET /v1/actions/:id</code>; either way, your code calls Mastra&#39;s resume API once the status leaves <code>pending</code>. The polling version fits in a cron job or a queue consumer you already run:</p>
 <div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># runs every minute against actions your workflows are waiting on</span>
 ACTION=$(curl -s https://api.impri.dev/v1/actions/<span class="hljs-variable">$ACTION_ID</span> \
   -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span>)
@@ -216,9 +216,9 @@ STATUS=$(<span class="hljs-built_in">echo</span> <span class="hljs-string">&quot
 
 <span class="hljs-keyword">if</span> [ <span class="hljs-string">&quot;<span class="hljs-variable">$STATUS</span>&quot;</span> != <span class="hljs-string">&quot;pending&quot;</span> ]; <span class="hljs-keyword">then</span>
   BODY=$(<span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;<span class="hljs-variable">$ACTION</span>&quot;</span> | jq -r <span class="hljs-string">&#x27;.decision.final_preview.body // empty&#x27;</span>)
-  curl -s -X POST <span class="hljs-string">&quot;http://localhost:4111/api/workflows/outreach-with-approval/resume&quot;</span> \
+  curl -s -X POST <span class="hljs-string">&quot;http://localhost:4111/api/workflows/outreach-with-approval/resume?runId=<span class="hljs-variable">$RUN_ID</span>&quot;</span> \
     -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
-    -d <span class="hljs-string">&quot;{\&quot;runId\&quot;: \&quot;<span class="hljs-variable">$RUN_ID</span>\&quot;, \&quot;stepId\&quot;: \&quot;request-approval\&quot;, \&quot;resumeData\&quot;: {\&quot;status\&quot;: \&quot;<span class="hljs-variable">$STATUS</span>\&quot;, \&quot;finalBody\&quot;: <span class="hljs-subst">$(echo <span class="hljs-string">&quot;<span class="hljs-variable">$BODY</span>&quot;</span> | jq -Rs .)</span>}}&quot;</span>
+    -d <span class="hljs-string">&quot;{\&quot;step\&quot;: \&quot;request-approval\&quot;, \&quot;resumeData\&quot;: {\&quot;status\&quot;: \&quot;<span class="hljs-variable">$STATUS</span>\&quot;, \&quot;finalBody\&quot;: <span class="hljs-subst">$(echo <span class="hljs-string">&quot;<span class="hljs-variable">$BODY</span>&quot;</span> | jq -Rs .)</span>}}&quot;</span>
 <span class="hljs-keyword">fi</span></code></pre></div>
 <p>You need a small mapping table (<code>action_id → run_id, step_id</code>) somewhere durable — a KV row or a database column — since Mastra&#39;s resume call needs to know which suspended run an incoming decision belongs to. That mapping is on you; Impri only tracks the action&#39;s own lifecycle.</p>
 <hr>
