@@ -1,6 +1,6 @@
 # Approval Inbox vs Email Approval Chains
 
-Approval inbox vs email approval chains for AI agents: compare forwarded reply threads with one decision record, expiry, editable drafts and an audit trail.
+Email is fine for telling a human, but an approval inbox gives an AI agent one decision record per action, with expiry, editable drafts and an audit log.
 
 ---
 
