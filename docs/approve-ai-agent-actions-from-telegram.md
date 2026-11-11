@@ -1,6 +1,6 @@
 # Approve AI Agent Actions From Telegram
 
-Get your AI agent's pending actions as Telegram push notifications with inline Approve/Reject buttons, so you can gate its actions from your phone wherever you are.
+Approve AI agent actions from Telegram: each pending action arrives as a message with inline Approve and Reject buttons, so you can decide from your phone.
 
 ---
 
@@ -85,7 +85,7 @@ def handle_ticket(ticket_id, customer, amount_usd, reason):
     )
 ```
 
-Because `idempotent` is set to `false`, the Telegram card also carries a "retrying may duplicate this action" warning — worth knowing before you tap approve twice because the button felt slow.
+Because `idempotent` is set to `false`, the card in the [web inbox](inbox.md) shows a "Not idempotent — retrying may duplicate this action" badge. The Telegram message itself shows only the action's title and kind next to the buttons, which is why the `title` above carries the amount, the customer and the ticket: that line is everything you see on your phone before you tap. Tapping Approve twice because the button felt slow is harmless, since Impri keeps the first decision and ignores the rest. What `idempotent: false` warns about is your own code calling `issue_refund()` twice for one action.
 
 ## What you're actually gating
 
