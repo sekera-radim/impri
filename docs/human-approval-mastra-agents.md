@@ -77,7 +77,7 @@ export const outreachWorkflow = createWorkflow({
 
 ## Resuming from Impri's side
 
-Impri doesn't push webhooks into your workflow engine directly — you poll `GET /v1/actions/:id` or run your own poller, then call Mastra's resume API once the status leaves `pending`. A small poller (cron, queue consumer, whatever you already run) closes the loop:
+Impri never calls Mastra's resume endpoint itself. Either set `callback_url` on the action so Impri POSTs the decision to a small handler of yours ([webhooks](webhooks.md)), or poll `GET /v1/actions/:id`; either way, your code calls Mastra's resume API once the status leaves `pending`. The polling version fits in a cron job or a queue consumer you already run:
 
 ```bash
 # runs every minute against actions your workflows are waiting on
@@ -87,9 +87,9 @@ STATUS=$(echo "$ACTION" | jq -r .status)
 
 if [ "$STATUS" != "pending" ]; then
   BODY=$(echo "$ACTION" | jq -r '.decision.final_preview.body // empty')
-  curl -s -X POST "http://localhost:4111/api/workflows/outreach-with-approval/resume" \
+  curl -s -X POST "http://localhost:4111/api/workflows/outreach-with-approval/resume?runId=$RUN_ID" \
     -H "Content-Type: application/json" \
-    -d "{\"runId\": \"$RUN_ID\", \"stepId\": \"request-approval\", \"resumeData\": {\"status\": \"$STATUS\", \"finalBody\": $(echo "$BODY" | jq -Rs .)}}"
+    -d "{\"step\": \"request-approval\", \"resumeData\": {\"status\": \"$STATUS\", \"finalBody\": $(echo "$BODY" | jq -Rs .)}}"
 fi
 ```
 
