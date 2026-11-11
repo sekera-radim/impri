@@ -1,6 +1,6 @@
 # How to Pause an AI Agent for Human Input
 
-Learn how to pause an AI agent mid-run and wait for a human decision before it continues — without polling hacks or losing state.
+Pause an AI agent for human input with one step that sends the proposed action to an approval inbox and blocks until a person approves, edits or rejects it.
 
 ---
 
