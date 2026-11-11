@@ -74,6 +74,13 @@ pre code.hljs{display:block;overflow-x:auto}
 .doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
 .doc-main strong{color:var(--text);font-weight:600}
 .doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* next step into the product, under unlisted articles */
+.doc-cta{margin:48px 0 0;padding:22px 24px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
+.doc-main .doc-cta-title{font-size:16px;font-weight:700;color:var(--text);margin:0 0 6px}
+.doc-cta-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.doc-main .doc-cta a.btn{text-decoration:none}
+.doc-main .doc-cta a.btn-primary{color:#0a0715}
+.doc-main .doc-cta a.btn-ghost{color:var(--text)}
 /* code */
 .code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
 .code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
@@ -238,6 +245,15 @@ pre code.hljs{display:block;overflow-x:auto}
 <p>Impri holds the decision and notifies a human — it doesn&#39;t plan the agent&#39;s steps, decide which tools are privileged, or interpret whether a given draft is good. That classification work above is yours to do once, per tool, when you build the agent. Impri also isn&#39;t a multi-agent coordination layer: if your &quot;autonomous agent&quot; is actually several agents handing off work to each other, the approval gate still only covers the specific tool call it wraps, not the handoff logic between agents.</p>
 <p>For the full three-call pattern this wrapper is built on, see <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a>. For a broader look at building the loop itself with review checkpoints baked in from the start, see <a href="how-to-build-a-human-in-the-loop-ai-agent">how to build a human-in-the-loop AI agent</a>. If your agent is built on LangGraph specifically, <a href="human-in-the-loop-langgraph">human-in-the-loop for LangGraph</a> covers the framework-specific checkpoint API.</p>
 
+    <aside class="doc-cta" aria-label="Try Impri">
+  <p class="doc-cta-title">Add an approval step to your own agent</p>
+  <p>Start on Impri Cloud: the Free tier includes 100 approvals a month. Or self-host the MIT-licensed core with Docker Compose, with no tier limits.</p>
+  <div class="doc-cta-actions">
+    <a class="btn btn-primary btn-sm" href="https://app.impri.dev/?signup=1">Start free on Impri Cloud</a>
+    <a class="btn btn-ghost btn-sm" href="../docs/quickstart">Quick start</a>
+    <a class="btn btn-ghost btn-sm" href="../docs/self-hosting">Self-host guide</a>
+  </div>
+</aside>
   </main>
 
   <aside class="docs-sidebar" aria-label="Documentation navigation">

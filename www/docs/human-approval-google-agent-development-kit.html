@@ -74,6 +74,13 @@ pre code.hljs{display:block;overflow-x:auto}
 .doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
 .doc-main strong{color:var(--text);font-weight:600}
 .doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* next step into the product, under unlisted articles */
+.doc-cta{margin:48px 0 0;padding:22px 24px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
+.doc-main .doc-cta-title{font-size:16px;font-weight:700;color:var(--text);margin:0 0 6px}
+.doc-cta-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.doc-main .doc-cta a.btn{text-decoration:none}
+.doc-main .doc-cta a.btn-primary{color:#0a0715}
+.doc-main .doc-cta a.btn-ghost{color:var(--text)}
 /* code */
 .code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
 .code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
@@ -221,6 +228,15 @@ cleanup_agent = Agent(
 <p>Impri doesn&#39;t inspect the GCP resource, doesn&#39;t know if the dataset is actually safe to delete, and doesn&#39;t talk to the GCP API at all — that&#39;s entirely <code>delete_gcp_resource</code>&#39;s job. It also isn&#39;t IAM: it doesn&#39;t restrict <em>who</em> can technically call the delete function, only whether a human signed off before that specific call ran with that specific resource ID. Keep IAM scoped tightly regardless of whether Impri is in the loop.</p>
 <p>For the underlying MCP tool contract, see <a href="mcp">mcp</a>. For the same wrapper pattern applied to other SDKs, see <a href="integrations">integrations</a>, and for getting an API key first, the <a href="quickstart">quickstart</a>.</p>
 
+    <aside class="doc-cta" aria-label="Try Impri">
+  <p class="doc-cta-title">Add an approval step to your own agent</p>
+  <p>Start on Impri Cloud: the Free tier includes 100 approvals a month. Or self-host the MIT-licensed core with Docker Compose, with no tier limits.</p>
+  <div class="doc-cta-actions">
+    <a class="btn btn-primary btn-sm" href="https://app.impri.dev/?signup=1">Start free on Impri Cloud</a>
+    <a class="btn btn-ghost btn-sm" href="../docs/quickstart">Quick start</a>
+    <a class="btn btn-ghost btn-sm" href="../docs/self-hosting">Self-host guide</a>
+  </div>
+</aside>
   </main>
 
   <aside class="docs-sidebar" aria-label="Documentation navigation">

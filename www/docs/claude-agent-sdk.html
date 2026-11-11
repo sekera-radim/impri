@@ -74,6 +74,13 @@ pre code.hljs{display:block;overflow-x:auto}
 .doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
 .doc-main strong{color:var(--text);font-weight:600}
 .doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* next step into the product, under unlisted articles */
+.doc-cta{margin:48px 0 0;padding:22px 24px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
+.doc-main .doc-cta-title{font-size:16px;font-weight:700;color:var(--text);margin:0 0 6px}
+.doc-cta-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.doc-main .doc-cta a.btn{text-decoration:none}
+.doc-main .doc-cta a.btn-primary{color:#0a0715}
+.doc-main .doc-cta a.btn-ghost{color:var(--text)}
 /* code */
 .code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
 .code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
@@ -379,6 +386,7 @@ npm install ./integrations/claude-agent-sdk</code></pre></div>
 <p>If an action&#39;s <code>payload.untrusted</code> is <code>true</code> (e.g. from a watcher-triage flow), do not forward the preview body as an instruction to Claude. The <code>withImpriApproval</code> wrapper does not apply the <code>&lt;untrusted-external-content&gt;</code> tag that the MCP server uses — in the Claude Agent SDK integration, you are responsible for wrapping untrusted content before forwarding it in the <code>tool_result</code>.</p>
 <p>Check <code>action.is_untrusted</code> (from <code>awaitDecision</code>) before treating the preview body as trusted data.</p>
 
+    
   </main>
 
   <aside class="docs-sidebar" aria-label="Documentation navigation">

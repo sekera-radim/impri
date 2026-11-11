@@ -74,6 +74,13 @@ pre code.hljs{display:block;overflow-x:auto}
 .doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
 .doc-main strong{color:var(--text);font-weight:600}
 .doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* next step into the product, under unlisted articles */
+.doc-cta{margin:48px 0 0;padding:22px 24px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
+.doc-main .doc-cta-title{font-size:16px;font-weight:700;color:var(--text);margin:0 0 6px}
+.doc-cta-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.doc-main .doc-cta a.btn{text-decoration:none}
+.doc-main .doc-cta a.btn-primary{color:#0a0715}
+.doc-main .doc-cta a.btn-ghost{color:var(--text)}
 /* code */
 .code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
 .code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
@@ -269,6 +276,15 @@ AUTO_APPROVE = {<span class="hljs-string">&quot;ticket.tag&quot;</span>, <span c
 <p>Deciding <em>which</em> actions need a human is a policy problem you have to own — Impri does not classify risk for you, and it doesn&#39;t know your business&#39;s tolerance for a wrong refund versus a wrong ticket tag. What it provides is the mechanical part: once you&#39;ve decided an action needs a human, it stores the proposal, notifies someone, and blocks execution until they decide. The judgment call stays yours; the plumbing doesn&#39;t have to be.</p>
 <p>Ready to wire this into your agent? Start with the <a href="quickstart">quickstart</a> to get an API key, then see <a href="how-to-add-human-approval-to-an-ai-agent">the full integration guide</a> for the request/response details.</p>
 
+    <aside class="doc-cta" aria-label="Try Impri">
+  <p class="doc-cta-title">Add an approval step to your own agent</p>
+  <p>Start on Impri Cloud: the Free tier includes 100 approvals a month. Or self-host the MIT-licensed core with Docker Compose, with no tier limits.</p>
+  <div class="doc-cta-actions">
+    <a class="btn btn-primary btn-sm" href="https://app.impri.dev/?signup=1">Start free on Impri Cloud</a>
+    <a class="btn btn-ghost btn-sm" href="../docs/quickstart">Quick start</a>
+    <a class="btn btn-ghost btn-sm" href="../docs/self-hosting">Self-host guide</a>
+  </div>
+</aside>
   </main>
 
   <aside class="docs-sidebar" aria-label="Documentation navigation">

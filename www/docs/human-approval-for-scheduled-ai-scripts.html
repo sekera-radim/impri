@@ -74,6 +74,13 @@ pre code.hljs{display:block;overflow-x:auto}
 .doc-main hr{border:none;border-top:1px solid var(--border);margin:40px 0}
 .doc-main strong{color:var(--text);font-weight:600}
 .doc-main blockquote{border-left:3px solid rgba(99,102,241,.5);padding:2px 16px;margin:0 0 14px;color:var(--muted)}
+/* next step into the product, under unlisted articles */
+.doc-cta{margin:48px 0 0;padding:22px 24px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
+.doc-main .doc-cta-title{font-size:16px;font-weight:700;color:var(--text);margin:0 0 6px}
+.doc-cta-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.doc-main .doc-cta a.btn{text-decoration:none}
+.doc-main .doc-cta a.btn-primary{color:#0a0715}
+.doc-main .doc-cta a.btn-ghost{color:var(--text)}
 /* code */
 .code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
 .code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
@@ -243,6 +250,15 @@ pre code.hljs{display:block;overflow-x:auto}
 <p>This pattern is not a substitute for GitHub&#39;s own Environments protection rules if you&#39;re already using them for deploy gating inside a single workflow run — use those when the approval and the job are the same CI run. Reach for the propose/execute split specifically when the script runs unattended on a schedule and you don&#39;t want a runner burning minutes (or a self-hosted runner sitting blocked) waiting on a human. And as always, Impri only holds the decision — it doesn&#39;t generate the release notes, doesn&#39;t know what &quot;good&quot; output looks like, and the execute script is what actually has to enforce that nothing runs without <code>status: &quot;approved&quot;</code>.</p>
 <p>For the single-workflow blocking version of this pattern, see <a href="gate-a-cron-job-with-human-approval">gating a cron job</a>. For everything else on wiring up the three calls, start with the <a href="quickstart">quickstart</a> or browse <a href="integrations">integrations</a>.</p>
 
+    <aside class="doc-cta" aria-label="Try Impri">
+  <p class="doc-cta-title">Add an approval step to your own agent</p>
+  <p>Start on Impri Cloud: the Free tier includes 100 approvals a month. Or self-host the MIT-licensed core with Docker Compose, with no tier limits.</p>
+  <div class="doc-cta-actions">
+    <a class="btn btn-primary btn-sm" href="https://app.impri.dev/?signup=1">Start free on Impri Cloud</a>
+    <a class="btn btn-ghost btn-sm" href="../docs/quickstart">Quick start</a>
+    <a class="btn btn-ghost btn-sm" href="../docs/self-hosting">Self-host guide</a>
+  </div>
+</aside>
   </main>
 
   <aside class="docs-sidebar" aria-label="Documentation navigation">
