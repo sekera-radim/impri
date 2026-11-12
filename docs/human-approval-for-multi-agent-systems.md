@@ -1,6 +1,6 @@
 # Human Approval in Multi-Agent Systems
 
-When a pipeline of agents hands work from a researcher to a writer to a publisher, human approval belongs at the one step that produces a real-world side effect — not scattered across every hop.
+Gate human approval at the one pipeline step with a real-world side effect — not every handoff between a researcher, writer, and publisher agent.
 
 ---
 
@@ -36,13 +36,13 @@ async function runPipeline(topic: string) {
     title: `Draft: ${draft.title}`,
     preview: { format: "markdown", body: draft.body },
     editable: ["preview.body"],
-    expiresIn: 21600, // 6h — pipeline runs are usually reviewed same-day
+    expires_in: 21600, // 6h — pipeline runs are usually reviewed same-day
   });
 
   try {
     const action = await impri.awaitDecision(created.id, { timeoutS: 3600 });
-    const url = await publisherAgent.publish(action.decision!.finalPreview!.body);
-    await impri.reportResult(created.id, "executed", { url });
+    const url = await publisherAgent.publish(action.decision!.final_preview!.body);
+    await impri.reportResult(created.id, "executed", { detail: `Published at ${url}` });
   } catch (e) {
     if (e instanceof ImpriRejected || e instanceof ImpriExpired) {
       console.log("Pipeline stopped: human did not approve the publish step.");
