@@ -30,7 +30,7 @@ async function topUpAdBudget(vendor: string, amountUsd: number, cardLast4: strin
       body: `**Vendor:** ${vendor}\n**Amount:** $${amountUsd.toFixed(2)}\n**Card:** •••• ${cardLast4}\n\nDaily budget dropped below the $50 floor; campaigns pause otherwise.`,
     },
     payload: { amount: amountUsd, currency: 'USD', vendor },
-    expiresIn: 3600, // 1 hour — a paused campaign can wait that long
+    expires_in: 3600, // 1 hour — a paused campaign can wait that long
     editable: [],    // binary approval only, see below
   })
 
