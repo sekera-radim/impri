@@ -162,7 +162,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <span class="hljs-keyword">const</span> impri = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ImpriClient</span>({ <span class="hljs-attr">apiKey</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_API_KEY</span>! });
 
 <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">proposePost</span>(<span class="hljs-params"><span class="hljs-attr">changelogEntry</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">draft</span>: <span class="hljs-built_in">string</span></span>) {
-  <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">create</span>({
+  <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">createAction</span>({
     <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;social.post&quot;</span>,
     <span class="hljs-attr">title</span>: <span class="hljs-string">`LinkedIn post: <span class="hljs-subst">${changelogEntry}</span>`</span>,
     <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: draft },
@@ -175,15 +175,15 @@ pre code.hljs{display:block;overflow-x:auto}
 <hr>
 <h2 id="what-comes-back-after-a-decision">What comes back after a decision</h2>
 <p>Poll or <code>await</code> the decision the same way as any other action. The difference shows up in the payload: when the reviewer edited something, <code>decision.final_preview</code> holds their version and <code>decision.diff</code> shows what changed.</p>
-<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">const</span> decision = <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">awaitDecision</span>(actionId, { <span class="hljs-attr">timeoutS</span>: <span class="hljs-number">172800</span> });
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">awaitDecision</span>(actionId, { <span class="hljs-attr">timeoutS</span>: <span class="hljs-number">172800</span> });
 
-<span class="hljs-keyword">if</span> (decision.<span class="hljs-property">status</span> === <span class="hljs-string">&quot;approved&quot;</span>) {
-  <span class="hljs-keyword">const</span> finalBody = decision.<span class="hljs-property">final_preview</span>.<span class="hljs-property">body</span>; <span class="hljs-comment">// always use this, never the original draft</span>
-  <span class="hljs-keyword">if</span> (decision.<span class="hljs-property">diff</span>) {
-    <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">&quot;Reviewer edited the draft:\n&quot;</span>, decision.<span class="hljs-property">diff</span>);
+<span class="hljs-keyword">if</span> (action.<span class="hljs-property">status</span> === <span class="hljs-string">&quot;approved&quot;</span>) {
+  <span class="hljs-keyword">const</span> finalBody = action.<span class="hljs-property">decision</span>!.<span class="hljs-property">final_preview</span>!.<span class="hljs-property">body</span>; <span class="hljs-comment">// always use this, never the original draft</span>
+  <span class="hljs-keyword">if</span> (action.<span class="hljs-property">decision</span>?.<span class="hljs-property">diff</span>) {
+    <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">&quot;Reviewer edited the draft:\n&quot;</span>, action.<span class="hljs-property">decision</span>.<span class="hljs-property">diff</span>);
   }
   <span class="hljs-keyword">await</span> <span class="hljs-title function_">postToLinkedIn</span>(finalBody);
-  <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">reportResult</span>(actionId, { <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span> });
+  <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">reportResult</span>(actionId, <span class="hljs-string">&quot;executed&quot;</span>);
 }</code></pre></div>
 <p><code>final_preview</code> is populated whether or not anything was actually edited — if the reviewer approved untouched, it&#39;s identical to the original <code>preview</code>. <code>diff</code> only appears when something changed, so checking for its presence is a cheap way to log or audit edits without diffing yourself.</p>
 <hr>

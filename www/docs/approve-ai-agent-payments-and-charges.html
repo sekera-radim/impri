@@ -171,7 +171,7 @@ pre code.hljs{display:block;overflow-x:auto}
       <span class="hljs-attr">body</span>: <span class="hljs-string">`**Vendor:** <span class="hljs-subst">${vendor}</span>\n**Amount:** $<span class="hljs-subst">${amountUsd.toFixed(<span class="hljs-number">2</span>)}</span>\n**Card:** •••• <span class="hljs-subst">${cardLast4}</span>\n\nDaily budget dropped below the $50 floor; campaigns pause otherwise.`</span>,
     },
     <span class="hljs-attr">payload</span>: { <span class="hljs-attr">amount</span>: amountUsd, <span class="hljs-attr">currency</span>: <span class="hljs-string">&#x27;USD&#x27;</span>, vendor },
-    <span class="hljs-attr">expiresIn</span>: <span class="hljs-number">3600</span>, <span class="hljs-comment">// 1 hour — a paused campaign can wait that long</span>
+    <span class="hljs-attr">expires_in</span>: <span class="hljs-number">3600</span>, <span class="hljs-comment">// 1 hour — a paused campaign can wait that long</span>
     <span class="hljs-attr">editable</span>: [],    <span class="hljs-comment">// binary approval only, see below</span>
   })
 

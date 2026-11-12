@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Human Approval in Multi-Agent Systems — Impri Docs</title>
-<meta name="description" content="When a pipeline of agents hands work from a researcher to a writer to a publisher, human approval belongs at the one step that produces a real-world side…">
+<meta name="description" content="Gate human approval at the one pipeline step with a real-world side effect — not every handoff between a researcher, writer, and publisher agent.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="Human Approval in Multi-Agent Systems — Impri Docs">
-<meta property="og:description" content="When a pipeline of agents hands work from a researcher to a writer to a publisher, human approval belongs at the one step that produces a real-world side…">
+<meta property="og:description" content="Gate human approval at the one pipeline step with a real-world side effect — not every handoff between a researcher, writer, and publisher agent.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/human-approval-for-multi-agent-systems">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/human-approval-for-multi-agent-systems">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human Approval in Multi-Agent Systems","description":"When a pipeline of agents hands work from a researcher to a writer to a publisher, human approval belongs at the one step that produces a real-world side…","url":"https://impri.dev/docs/human-approval-for-multi-agent-systems","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human Approval in Multi-Agent Systems","description":"Gate human approval at the one pipeline step with a real-world side effect — not every handoff between a researcher, writer, and publisher agent.","url":"https://impri.dev/docs/human-approval-for-multi-agent-systems","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -150,7 +150,7 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>Human Approval in Multi-Agent Systems</span>
     </nav>
     <h1>Human Approval in Multi-Agent Systems</h1>
-<p>When a pipeline of agents hands work from a researcher to a writer to a publisher, human approval belongs at the one step that produces a real-world side effect — not scattered across every hop.</p>
+<p>Gate human approval at the one pipeline step with a real-world side effect — not every handoff between a researcher, writer, and publisher agent.</p>
 <hr>
 <h2 id="where-approval-actually-belongs-in-a-pipeline">Where approval actually belongs in a pipeline</h2>
 <p>A common multi-agent shape: one agent researches a topic, hands its findings to a second agent that drafts content, which hands off to a third agent that publishes. It&#39;s tempting to add a &quot;check with a human&quot; step between every handoff. In practice that just slows the pipeline down without adding safety — the research-to-draft handoff and the draft-to-final handoff are internal state transitions. Nothing external happens until the publish step. That&#39;s the one that needs a gate.</p>
@@ -174,13 +174,13 @@ pre code.hljs{display:block;overflow-x:auto}
     <span class="hljs-attr">title</span>: <span class="hljs-string">`Draft: <span class="hljs-subst">${draft.title}</span>`</span>,
     <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: draft.<span class="hljs-property">body</span> },
     <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
-    <span class="hljs-attr">expiresIn</span>: <span class="hljs-number">21600</span>, <span class="hljs-comment">// 6h — pipeline runs are usually reviewed same-day</span>
+    <span class="hljs-attr">expires_in</span>: <span class="hljs-number">21600</span>, <span class="hljs-comment">// 6h — pipeline runs are usually reviewed same-day</span>
   });
 
   <span class="hljs-keyword">try</span> {
     <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">awaitDecision</span>(created.<span class="hljs-property">id</span>, { <span class="hljs-attr">timeoutS</span>: <span class="hljs-number">3600</span> });
-    <span class="hljs-keyword">const</span> url = <span class="hljs-keyword">await</span> publisherAgent.<span class="hljs-title function_">publish</span>(action.<span class="hljs-property">decision</span>!.<span class="hljs-property">finalPreview</span>!.<span class="hljs-property">body</span>);
-    <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">reportResult</span>(created.<span class="hljs-property">id</span>, <span class="hljs-string">&quot;executed&quot;</span>, { url });
+    <span class="hljs-keyword">const</span> url = <span class="hljs-keyword">await</span> publisherAgent.<span class="hljs-title function_">publish</span>(action.<span class="hljs-property">decision</span>!.<span class="hljs-property">final_preview</span>!.<span class="hljs-property">body</span>);
+    <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">reportResult</span>(created.<span class="hljs-property">id</span>, <span class="hljs-string">&quot;executed&quot;</span>, { <span class="hljs-attr">detail</span>: <span class="hljs-string">`Published at <span class="hljs-subst">${url}</span>`</span> });
   } <span class="hljs-keyword">catch</span> (e) {
     <span class="hljs-keyword">if</span> (e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriRejected</span> || e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriExpired</span>) {
       <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">&quot;Pipeline stopped: human did not approve the publish step.&quot;</span>);

@@ -172,12 +172,12 @@ pre code.hljs{display:block;overflow-x:auto}
   <span class="hljs-keyword">const</span> <span class="hljs-attr">actionIds</span>: <span class="hljs-built_in">string</span>[] = [];
 
   <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> draft <span class="hljs-keyword">of</span> drafts) {
-    <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">create</span>({
+    <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">createAction</span>({
       <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;blog.publish&quot;</span>,
       <span class="hljs-attr">title</span>: <span class="hljs-string">`Draft: <span class="hljs-subst">${draft.title}</span>`</span>,
       <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: draft.<span class="hljs-property">body</span> },
-      <span class="hljs-attr">targetUrl</span>: draft.<span class="hljs-property">publishUrl</span>,
-      <span class="hljs-attr">expiresIn</span>: <span class="hljs-number">259200</span>, <span class="hljs-comment">// 72h default — plenty for a weekly editorial pass</span>
+      <span class="hljs-attr">target_url</span>: draft.<span class="hljs-property">publishUrl</span>,
+      <span class="hljs-attr">expires_in</span>: <span class="hljs-number">259200</span>, <span class="hljs-comment">// 72h default — plenty for a weekly editorial pass</span>
       <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
     });
     actionIds.<span class="hljs-title function_">push</span>(action.<span class="hljs-property">id</span>);
@@ -193,8 +193,8 @@ pre code.hljs{display:block;overflow-x:auto}
   -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> \
   -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
   -d <span class="hljs-string">&#x27;{
-    &quot;action_ids&quot;: [&quot;act_101&quot;, &quot;act_102&quot;, &quot;act_103&quot;, &quot;act_104&quot;],
-    &quot;decision&quot;: &quot;approved&quot;
+    &quot;ids&quot;: [&quot;act_101&quot;, &quot;act_102&quot;, &quot;act_103&quot;, &quot;act_104&quot;],
+    &quot;verdict&quot;: &quot;approve&quot;
   }&#x27;</span></code></pre></div>
 <p>The agent-side polling loop for each of those four drafts sees <code>status: &quot;approved&quot;</code> on its next check, exactly as if each had been approved individually — bulk decision is a reviewer-side shortcut, not a different execution path.</p>
 <div class="table-wrap"><table>

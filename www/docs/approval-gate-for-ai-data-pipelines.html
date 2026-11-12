@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>An Approval Gate for AI Data Pipelines — Impri Docs</title>
-<meta name="description" content="When an AI ops agent proposes rerunning a DAG, backfilling a table, or dropping a corrupted partition, this shows how to hold that action for a human decision…">
+<meta name="description" content="An approval gate holds an AI ops agent's proposed DAG rerun, backfill, or partition drop for a human decision before it touches production data.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="An Approval Gate for AI Data Pipelines — Impri Docs">
-<meta property="og:description" content="When an AI ops agent proposes rerunning a DAG, backfilling a table, or dropping a corrupted partition, this shows how to hold that action for a human decision…">
+<meta property="og:description" content="An approval gate holds an AI ops agent's proposed DAG rerun, backfill, or partition drop for a human decision before it touches production data.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/approval-gate-for-ai-data-pipelines">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/approval-gate-for-ai-data-pipelines">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"An Approval Gate for AI Data Pipelines","description":"When an AI ops agent proposes rerunning a DAG, backfilling a table, or dropping a corrupted partition, this shows how to hold that action for a human decision…","url":"https://impri.dev/docs/approval-gate-for-ai-data-pipelines","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"An Approval Gate for AI Data Pipelines","description":"An approval gate holds an AI ops agent's proposed DAG rerun, backfill, or partition drop for a human decision before it touches production data.","url":"https://impri.dev/docs/approval-gate-for-ai-data-pipelines","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -150,7 +150,7 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>An Approval Gate for AI Data Pipelines</span>
     </nav>
     <h1>An Approval Gate for AI Data Pipelines</h1>
-<p>When an AI ops agent proposes rerunning a DAG, backfilling a table, or dropping a corrupted partition, this shows how to hold that action for a human decision before it touches production data.</p>
+<p>An approval gate holds an AI ops agent&#39;s proposed DAG rerun, backfill, or partition drop for a human decision before it touches production data.</p>
 <hr>
 <h2 id="the-scenario">The scenario</h2>
 <p>An agent watches your orchestrator (Airflow, Dagster, whatever runs the DAGs) for failures and data-quality alerts. When it finds one, it doesn&#39;t just page someone — it proposes a fix: rerun task X with a given date range, delete the partition that has duplicate rows, or roll back a migration that broke a downstream join. That&#39;s useful. It&#39;s also exactly the kind of action that&#39;s cheap to propose and expensive to get wrong: a backfill over the wrong date range reprocesses a week of billing events; a deleted partition that turns out not to be corrupted is a restore-from-backup afternoon.</p>

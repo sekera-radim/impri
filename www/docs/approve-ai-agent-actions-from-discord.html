@@ -190,14 +190,16 @@ pre code.hljs{display:block;overflow-x:auto}
     },
   });
 
-  <span class="hljs-keyword">const</span> actionId = (pushed <span class="hljs-keyword">as</span> { <span class="hljs-attr">action_id</span>: <span class="hljs-built_in">string</span> }).<span class="hljs-property">action_id</span>;
+  <span class="hljs-comment">// Impri&#x27;s MCP tools set `structuredContent` alongside the text content</span>
+  <span class="hljs-comment">// block — read the typed fields from there, not off the result directly.</span>
+  <span class="hljs-keyword">const</span> { <span class="hljs-attr">action_id</span>: actionId } = pushed.<span class="hljs-property">structuredContent</span> <span class="hljs-keyword">as</span> { <span class="hljs-attr">action_id</span>: <span class="hljs-built_in">string</span> };
 
   <span class="hljs-keyword">const</span> decision = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">callTool</span>({
     <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;impri_await_decision&quot;</span>,
     <span class="hljs-attr">arguments</span>: { <span class="hljs-attr">action_id</span>: actionId, <span class="hljs-attr">timeout_s</span>: <span class="hljs-number">39600</span> },
   });
 
-  <span class="hljs-keyword">const</span> { status } = decision <span class="hljs-keyword">as</span> { <span class="hljs-attr">status</span>: <span class="hljs-built_in">string</span> };
+  <span class="hljs-keyword">const</span> { status } = decision.<span class="hljs-property">structuredContent</span> <span class="hljs-keyword">as</span> { <span class="hljs-attr">status</span>: <span class="hljs-built_in">string</span> };
   <span class="hljs-keyword">if</span> (status !== <span class="hljs-string">&quot;approved&quot;</span>) {
     <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`PR #<span class="hljs-subst">${pr.<span class="hljs-built_in">number</span>}</span>: <span class="hljs-subst">${status}</span>, skipping merge`</span>);
     <span class="hljs-keyword">return</span>;

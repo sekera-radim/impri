@@ -163,26 +163,35 @@ pre code.hljs{display:block;overflow-x:auto}
 <h2 id="blocking-fine-when-your-process-can-sit-idle">Blocking: fine when your process can sit idle</h2>
 <p>If your agent runs as a long-lived worker — a Node process, a container, a Claude Code session — blocking is simpler and reads better. Over MCP, this is a single call:</p>
 <div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-comment">// Long-running worker: the process can afford to wait.</span>
-<span class="hljs-keyword">import</span> { callTool } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@impri/mcp-client&quot;</span>; <span class="hljs-comment">// illustrative — use your MCP client</span>
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">Client</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@modelcontextprotocol/sdk/client/index.js&quot;</span>;
 
-<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">proposeAndWait</span>(<span class="hljs-params"><span class="hljs-attr">prUrl</span>: <span class="hljs-built_in">string</span></span>) {
-  <span class="hljs-keyword">const</span> pushed = <span class="hljs-keyword">await</span> <span class="hljs-title function_">callTool</span>(<span class="hljs-string">&quot;impri_push_action&quot;</span>, {
-    <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;pr.merge&quot;</span>,
-    <span class="hljs-attr">title</span>: <span class="hljs-string">`Merge PR: <span class="hljs-subst">${prUrl}</span>`</span>,
-    <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: <span class="hljs-string">`Merging \`<span class="hljs-subst">${prUrl}</span>\` — all checks green.`</span> },
-    <span class="hljs-attr">expires_in</span>: <span class="hljs-number">3600</span>,
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">proposeAndWait</span>(<span class="hljs-params"><span class="hljs-attr">client</span>: <span class="hljs-title class_">Client</span>, <span class="hljs-attr">prUrl</span>: <span class="hljs-built_in">string</span></span>) {
+  <span class="hljs-keyword">const</span> pushed = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">callTool</span>({
+    <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;impri_push_action&quot;</span>,
+    <span class="hljs-attr">arguments</span>: {
+      <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;pr.merge&quot;</span>,
+      <span class="hljs-attr">title</span>: <span class="hljs-string">`Merge PR: <span class="hljs-subst">${prUrl}</span>`</span>,
+      <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: <span class="hljs-string">`Merging \`<span class="hljs-subst">${prUrl}</span>\` — all checks green.`</span> },
+      <span class="hljs-attr">expires_in</span>: <span class="hljs-number">3600</span>,
+    },
   });
+  <span class="hljs-comment">// The tool&#x27;s JSON payload is under `.structuredContent`, not on the result directly.</span>
+  <span class="hljs-keyword">const</span> { <span class="hljs-attr">action_id</span>: actionId } = pushed.<span class="hljs-property">structuredContent</span> <span class="hljs-keyword">as</span> { <span class="hljs-attr">action_id</span>: <span class="hljs-built_in">string</span> };
 
   <span class="hljs-comment">// Blocks this call for up to an hour. Nothing else runs on this worker meanwhile.</span>
-  <span class="hljs-keyword">const</span> decision = <span class="hljs-keyword">await</span> <span class="hljs-title function_">callTool</span>(<span class="hljs-string">&quot;impri_await_decision&quot;</span>, {
-    <span class="hljs-attr">action_id</span>: pushed.<span class="hljs-property">action_id</span>,
-    <span class="hljs-attr">timeout_s</span>: <span class="hljs-number">3600</span>,
+  <span class="hljs-keyword">const</span> decision = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">callTool</span>({
+    <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;impri_await_decision&quot;</span>,
+    <span class="hljs-attr">arguments</span>: { <span class="hljs-attr">action_id</span>: actionId, <span class="hljs-attr">timeout_s</span>: <span class="hljs-number">3600</span> },
   });
+  <span class="hljs-keyword">const</span> { status } = decision.<span class="hljs-property">structuredContent</span> <span class="hljs-keyword">as</span> { <span class="hljs-attr">status</span>: <span class="hljs-built_in">string</span> };
 
-  <span class="hljs-keyword">if</span> (decision.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;approved&quot;</span>) <span class="hljs-keyword">return</span> { <span class="hljs-attr">merged</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">reason</span>: decision.<span class="hljs-property">status</span> };
+  <span class="hljs-keyword">if</span> (status !== <span class="hljs-string">&quot;approved&quot;</span>) <span class="hljs-keyword">return</span> { <span class="hljs-attr">merged</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">reason</span>: status };
 
   <span class="hljs-keyword">await</span> <span class="hljs-title function_">mergePullRequest</span>(prUrl); <span class="hljs-comment">// your actual merge call</span>
-  <span class="hljs-keyword">await</span> <span class="hljs-title function_">callTool</span>(<span class="hljs-string">&quot;impri_report_result&quot;</span>, { <span class="hljs-attr">action_id</span>: pushed.<span class="hljs-property">action_id</span>, <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span> });
+  <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">callTool</span>({
+    <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;impri_report_result&quot;</span>,
+    <span class="hljs-attr">arguments</span>: { <span class="hljs-attr">action_id</span>: actionId, <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span> },
+  });
   <span class="hljs-keyword">return</span> { <span class="hljs-attr">merged</span>: <span class="hljs-literal">true</span> };
 }</code></pre></div>
 <p><code>impri_await_decision</code> polls the REST API every 5 seconds internally — you don&#39;t write that loop yourself. The tradeoff is that the worker&#39;s memory footprint is held for the entire wait, which is a non-issue for a background worker and a real problem for anything billed per invocation.</p>

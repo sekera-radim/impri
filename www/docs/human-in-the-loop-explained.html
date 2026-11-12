@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Human-in-the-Loop, Explained for AI Builders — Impri Docs</title>
-<meta name="description" content="Human-in-the-loop for AI builders means deciding, up front, which of your agent's actions are allowed to run on their own and which must wait for a person to…">
+<meta name="description" content="Human-in-the-loop means deciding, up front, which of your AI agent's actions are allowed to run on their own and which must wait for a person to say yes.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="Human-in-the-Loop, Explained for AI Builders — Impri Docs">
-<meta property="og:description" content="Human-in-the-loop for AI builders means deciding, up front, which of your agent's actions are allowed to run on their own and which must wait for a person to…">
+<meta property="og:description" content="Human-in-the-loop means deciding, up front, which of your AI agent's actions are allowed to run on their own and which must wait for a person to say yes.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/human-in-the-loop-explained">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/human-in-the-loop-explained">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human-in-the-Loop, Explained for AI Builders","description":"Human-in-the-loop for AI builders means deciding, up front, which of your agent's actions are allowed to run on their own and which must wait for a person to…","url":"https://impri.dev/docs/human-in-the-loop-explained","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human-in-the-Loop, Explained for AI Builders","description":"Human-in-the-loop means deciding, up front, which of your AI agent's actions are allowed to run on their own and which must wait for a person to say yes.","url":"https://impri.dev/docs/human-in-the-loop-explained","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -150,7 +150,7 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>Human-in-the-Loop, Explained for AI Builders</span>
     </nav>
     <h1>Human-in-the-Loop, Explained for AI Builders</h1>
-<p>Human-in-the-loop for AI builders means deciding, up front, which of your agent&#39;s actions are allowed to run on their own and which must wait for a person to say yes.</p>
+<p>Human-in-the-loop means deciding, up front, which of your AI agent&#39;s actions are allowed to run on their own and which must wait for a person to say yes.</p>
 <hr>
 <h2 id="why-quotjust-ask-the-model-to-checkquot-doesn39t-count">Why &quot;just ask the model to check&quot; doesn&#39;t count</h2>
 <p>The fastest thing to try is a system prompt line: &quot;before doing anything destructive, ask the user for confirmation.&quot; It&#39;s also the thing that fails silently. The model has no mechanism forcing it to comply — it&#39;s a suggestion in a context window, not a control. A long enough conversation, a cleverly worded tool result, or a model that just misjudges the situation, and the &quot;confirmation&quot; step gets skipped. There&#39;s also nothing to audit afterward: no record of what was proposed, what was approved, or who approved it.</p>
@@ -204,18 +204,22 @@ pre code.hljs{display:block;overflow-x:auto}
 }
 
 <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">requestDeployApproval</span>(<span class="hljs-params"><span class="hljs-attr">req</span>: <span class="hljs-title class_">Omit</span>&lt;<span class="hljs-title class_">DeployRequest</span>, <span class="hljs-string">&quot;actionId&quot;</span>&gt;</span>) {
-  <span class="hljs-comment">// impri_push_action is exposed by the @impri/mcp server the agent has configured</span>
-  <span class="hljs-keyword">const</span> pushed = <span class="hljs-keyword">await</span> mcp.<span class="hljs-title function_">call</span>(<span class="hljs-string">&quot;impri_push_action&quot;</span>, {
+  <span class="hljs-comment">// impri_push_action is exposed by the @impri/mcp server the agent has configured.</span>
+  <span class="hljs-comment">// `mcp.call` is pseudocode for your MCP client&#x27;s tool call; a real client</span>
+  <span class="hljs-comment">// (@modelcontextprotocol/sdk) returns the tool&#x27;s JSON under `.structuredContent`.</span>
+  <span class="hljs-keyword">const</span> pushedResult = <span class="hljs-keyword">await</span> mcp.<span class="hljs-title function_">call</span>(<span class="hljs-string">&quot;impri_push_action&quot;</span>, {
     <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;infra.deploy&quot;</span>,
     <span class="hljs-attr">title</span>: <span class="hljs-string">`Deploy to <span class="hljs-subst">${req.targetEnv}</span>: <span class="hljs-subst">${req.planSummary}</span>`</span>,
     <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: req.<span class="hljs-property">planSummary</span> },
     <span class="hljs-attr">expires_in</span>: <span class="hljs-number">3600</span>,
   });
+  <span class="hljs-keyword">const</span> pushed = pushedResult.<span class="hljs-property">structuredContent</span>;
 
-  <span class="hljs-keyword">const</span> decision = <span class="hljs-keyword">await</span> mcp.<span class="hljs-title function_">call</span>(<span class="hljs-string">&quot;impri_await_decision&quot;</span>, {
+  <span class="hljs-keyword">const</span> decisionResult = <span class="hljs-keyword">await</span> mcp.<span class="hljs-title function_">call</span>(<span class="hljs-string">&quot;impri_await_decision&quot;</span>, {
     <span class="hljs-attr">action_id</span>: pushed.<span class="hljs-property">action_id</span>,
     <span class="hljs-attr">timeout_s</span>: <span class="hljs-number">1800</span>,
   });
+  <span class="hljs-keyword">const</span> decision = decisionResult.<span class="hljs-property">structuredContent</span>;
 
   <span class="hljs-keyword">if</span> (decision.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;approved&quot;</span>) {
     <span class="hljs-keyword">return</span> { <span class="hljs-attr">ran</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">reason</span>: decision.<span class="hljs-property">status</span> };
