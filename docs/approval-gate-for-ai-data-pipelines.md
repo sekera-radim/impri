@@ -1,6 +1,6 @@
 # An Approval Gate for AI Data Pipelines
 
-When an AI ops agent proposes rerunning a DAG, backfilling a table, or dropping a corrupted partition, this shows how to hold that action for a human decision before it touches production data.
+An approval gate holds an AI ops agent's proposed DAG rerun, backfill, or partition drop for a human decision before it touches production data.
 
 ---
 
