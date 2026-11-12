@@ -190,7 +190,7 @@ npm install ./sdk/typescript
   <span class="hljs-title class_">ApiKeyCreated</span>,
   <span class="hljs-title class_">Project</span>,
   <span class="hljs-title class_">CreateActionParams</span>,
-  <span class="hljs-title class_">ApprovalGateResult</span>,
+  <span class="hljs-title class_">ApprovedAction</span>,
 } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@impri/sdk&#x27;</span></code></pre></div>
 <p>Key types:</p>
 <div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">type</span> <span class="hljs-title class_">Preview</span> = { <span class="hljs-attr">format</span>: <span class="hljs-string">&#x27;markdown&#x27;</span> | <span class="hljs-string">&#x27;plain&#x27;</span> | <span class="hljs-string">&#x27;diff&#x27;</span>; <span class="hljs-attr">body</span>: <span class="hljs-built_in">string</span> }
@@ -234,21 +234,21 @@ npm install ./sdk/typescript
   <span class="hljs-attr">title</span>: <span class="hljs-string">&#x27;Outreach: partnership proposal to acme.com&#x27;</span>,
   <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&#x27;markdown&#x27;</span>, <span class="hljs-attr">body</span>: <span class="hljs-string">&#x27;Hi Alice, ...&#x27;</span> },
   <span class="hljs-attr">payload</span>: { <span class="hljs-attr">to</span>: <span class="hljs-string">&#x27;alice@acme.com&#x27;</span>, <span class="hljs-attr">threadId</span>: <span class="hljs-string">&#x27;t_123&#x27;</span> },
-  <span class="hljs-attr">targetUrl</span>: <span class="hljs-string">&#x27;https://mail.acme.com/thread/123&#x27;</span>,
-  <span class="hljs-attr">callbackUrl</span>: <span class="hljs-string">&#x27;https://your-agent.example.com/webhook&#x27;</span>,
-  <span class="hljs-attr">expiresIn</span>: <span class="hljs-number">86400</span>,              <span class="hljs-comment">// seconds; min 300, max 2_592_000 (30 days), default 259_200 (72 h)</span>
-  <span class="hljs-attr">idempotencyKey</span>: <span class="hljs-string">&#x27;batch-2026-07-11-acme&#x27;</span>,
+  <span class="hljs-attr">target_url</span>: <span class="hljs-string">&#x27;https://mail.acme.com/thread/123&#x27;</span>,
+  <span class="hljs-attr">callback_url</span>: <span class="hljs-string">&#x27;https://your-agent.example.com/webhook&#x27;</span>,
+  <span class="hljs-attr">expires_in</span>: <span class="hljs-number">86400</span>,             <span class="hljs-comment">// seconds; min 300, max 2_592_000 (30 days), default 259_200 (72 h)</span>
+  <span class="hljs-attr">idempotency_key</span>: <span class="hljs-string">&#x27;batch-2026-07-11-acme&#x27;</span>,
   <span class="hljs-attr">editable</span>: [<span class="hljs-string">&#x27;preview.body&#x27;</span>],
 })
-<span class="hljs-comment">// action.id, action.status === &#x27;pending&#x27;, action.inboxUrl, action.expiresAt</span></code></pre></div>
+<span class="hljs-comment">// action.id, action.status === &#x27;pending&#x27;, action.inbox_url, action.expires_at</span></code></pre></div>
 <p>Requires <code>actions</code> scope. Rate-limited to <strong>60 POST/min per key</strong>.</p>
-<p>Returns <code>201</code> on a new action and <code>200</code> when an existing one is found via <code>idempotencyKey</code> or a soft-duplicate (same <code>kind</code> + <code>title</code> + preview hash, already pending). Check <code>action.duplicateOf</code> to distinguish — if set, it holds the original action&#39;s id.</p>
+<p>Returns <code>201</code> on a new action and <code>200</code> when an existing one is found via <code>idempotency_key</code> or a soft-duplicate (same <code>kind</code> + <code>title</code> + preview hash, already pending). Check <code>action.duplicate_of</code> to distinguish — if set, it holds the original action&#39;s id.</p>
 <h3 id="getaction"><code>getAction</code></h3>
 <div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">getAction</span>(<span class="hljs-string">&#x27;act_abc123&#x27;</span>)
 
 <span class="hljs-keyword">if</span> (action.<span class="hljs-property">decision</span>) {
   <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(action.<span class="hljs-property">decision</span>.<span class="hljs-property">verdict</span>)         <span class="hljs-comment">// &#x27;approve&#x27; | &#x27;reject&#x27;</span>
-  <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(action.<span class="hljs-property">decision</span>.<span class="hljs-property">finalPreview</span>)    <span class="hljs-comment">// use this for execution</span>
+  <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(action.<span class="hljs-property">decision</span>.<span class="hljs-property">final_preview</span>)   <span class="hljs-comment">// use this for execution</span>
   <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(action.<span class="hljs-property">decision</span>.<span class="hljs-property">diff</span>)            <span class="hljs-comment">// present if reviewer edited</span>
 }</code></pre></div>
 <p>Throws <code>ImpriNotFound</code> (404) if unknown or belonging to a different project.</p>
@@ -258,18 +258,18 @@ npm install ./sdk/typescript
   <span class="hljs-attr">kind</span>: <span class="hljs-string">&#x27;email.send&#x27;</span>,
   <span class="hljs-attr">since</span>: <span class="hljs-number">1720000000</span>,           <span class="hljs-comment">// Unix timestamp</span>
   <span class="hljs-attr">limit</span>: <span class="hljs-number">50</span>,                   <span class="hljs-comment">// max 100</span>
-  <span class="hljs-attr">cursor</span>: page.<span class="hljs-property">nextCursor</span>,
 })
 
 <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> action <span class="hljs-keyword">of</span> page.<span class="hljs-property">items</span>) {
   <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(action.<span class="hljs-property">id</span>, action.<span class="hljs-property">status</span>)
 }
 
-<span class="hljs-keyword">if</span> (page.<span class="hljs-property">hasMore</span>) {
-  <span class="hljs-keyword">const</span> next = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">listActions</span>({ <span class="hljs-attr">cursor</span>: page.<span class="hljs-property">nextCursor</span> })
+<span class="hljs-keyword">if</span> (page.<span class="hljs-property">has_more</span>) {
+  <span class="hljs-keyword">const</span> next = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">listActions</span>({ <span class="hljs-attr">cursor</span>: page.<span class="hljs-property">next_cursor</span> })
 }</code></pre></div>
-<p>Pass <code>autoPaginate: true</code> to receive an async generator:</p>
-<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">for</span> <span class="hljs-title function_">await</span> (<span class="hljs-keyword">const</span> action <span class="hljs-keyword">of</span> client.<span class="hljs-title function_">listActions</span>({ <span class="hljs-attr">status</span>: <span class="hljs-string">&#x27;approved&#x27;</span>, <span class="hljs-attr">autoPaginate</span>: <span class="hljs-literal">true</span> })) {
+<p>Pass <code>autoPaginate: true</code> to fetch every page and get all items in one result:</p>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">const</span> all = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">listActions</span>({ <span class="hljs-attr">status</span>: <span class="hljs-string">&#x27;approved&#x27;</span>, <span class="hljs-attr">autoPaginate</span>: <span class="hljs-literal">true</span> })
+<span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> action <span class="hljs-keyword">of</span> all.<span class="hljs-property">items</span>) {
   <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(action.<span class="hljs-property">id</span>)
 }</code></pre></div>
 <p>Rate-limited to <strong>300 GET/min per key</strong>.</p>
@@ -290,7 +290,7 @@ npm install ./sdk/typescript
     <span class="hljs-attr">pollIntervalS</span>: <span class="hljs-number">5</span>,       <span class="hljs-comment">// minimum recommended is 5 s</span>
   })
   <span class="hljs-comment">// action.status === &#x27;approved&#x27;</span>
-  <span class="hljs-keyword">const</span> sqlToRun = action.<span class="hljs-property">decision</span>!.<span class="hljs-property">finalPreview</span>!.<span class="hljs-property">body</span>
+  <span class="hljs-keyword">const</span> sqlToRun = action.<span class="hljs-property">decision</span>!.<span class="hljs-property">final_preview</span>!.<span class="hljs-property">body</span>
 
 } <span class="hljs-keyword">catch</span> (e) {
   <span class="hljs-keyword">if</span> (e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriRejected</span>) {
@@ -306,7 +306,7 @@ npm install ./sdk/typescript
     <span class="hljs-keyword">throw</span> e
   }
 }</code></pre></div>
-<p><code>awaitDecision</code> polls <code>GET /v1/actions/:id</code> internally. Do not set <code>pollIntervalS</code> below 5 s; the rate limit is 300 req/min.</p>
+<p><code>awaitDecision</code> polls <code>GET /v1/actions/:id</code> internally, one request every <code>pollIntervalS</code> seconds (default 5). Keep it at 5 s or more.</p>
 <h3 id="decide"><code>decide</code></h3>
 <p>Used primarily by the web inbox. Expose it in scripts that programmatically approve or reject:</p>
 <div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">const</span> result = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">decide</span>(<span class="hljs-string">&#x27;act_abc123&#x27;</span>, <span class="hljs-string">&#x27;approve&#x27;</span>, {
@@ -324,7 +324,7 @@ npm install ./sdk/typescript
 <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Succeeded: <span class="hljs-subst">${succeeded}</span>, Failed: <span class="hljs-subst">${failed}</span>`</span>)
 <span class="hljs-keyword">const</span> errors = results.<span class="hljs-title function_">filter</span>(<span class="hljs-function"><span class="hljs-params">r</span> =&gt;</span> !r.<span class="hljs-property">ok</span>)</code></pre></div>
 <p>Rate-limited to <strong>10 requests/min per key</strong> (net: 500 decisions/min). Each item is processed independently — a failure on one ID does not roll back successes on others. HTTP 200 is always returned; inspect each <code>result.ok</code>.</p>
-<p>Per-item <code>error</code> values: <code>&quot;not_found&quot;</code>, <code>&quot;already_decided&quot;</code> (with <code>currentStatus</code>), or <code>&quot;internal&quot;</code>.</p>
+<p>Per-item <code>error</code> values: <code>&quot;not_found&quot;</code>, <code>&quot;already_decided&quot;</code> (with <code>current_status</code>), or <code>&quot;internal&quot;</code>.</p>
 <p>Actions with <code>editable.length &gt; 0</code> must be decided via <code>decide()</code> so per-item field edits can be validated. The bulk endpoint intentionally omits the <code>edited</code> field.</p>
 <h3 id="reportresult"><code>reportResult</code></h3>
 <p>Call after executing an approved action:</p>
@@ -353,7 +353,7 @@ npm install ./sdk/typescript
 })
 
 <span class="hljs-keyword">await</span> <span class="hljs-title function_">safeSend</span>(<span class="hljs-string">&#x27;alice@example.com&#x27;</span>, <span class="hljs-string">&#x27;Hello!&#x27;</span>)</code></pre></div>
-<p>When <code>preview.body</code> was edited by the reviewer, the wrapper injects the edited body into the function&#39;s arguments before calling it. Extra keys (<code>expiresIn</code>, <code>idempotencyKey</code>, <code>payload</code>, etc.) are forwarded to <code>createAction</code>.</p>
+<p>Once the action is approved, the wrapper calls your function with its original arguments: a reviewer&#39;s edit to <code>preview.body</code> does not reach it. When the edited content matters, use <code>approvalGate</code> (below), which returns <code>finalPreview</code>. The options <code>payload</code>, <code>target_url</code>, <code>callback_url</code>, <code>expires_in</code> and <code>idempotency_key</code> are forwarded to <code>createAction</code>.</p>
 <p><code>title</code> and <code>preview</code> accept either a plain value or a function that receives the wrapped function&#39;s arguments at call time — use functions to build the title from runtime data.</p>
 <h3 id="clientapprovalgate-inline-helper"><code>client.approvalGate</code> inline helper</h3>
 <p>For cases where no single function wrapper exists or you need the decision object directly:</p>
@@ -388,8 +388,8 @@ npm install ./sdk/typescript
     { <span class="hljs-attr">pattern</span>: <span class="hljs-string">&#x27;impri&#x27;</span>, <span class="hljs-attr">points</span>: <span class="hljs-number">10</span> },
     { <span class="hljs-attr">pattern</span>: <span class="hljs-string">&#x27;human-in-the-loop&#x27;</span>, <span class="hljs-attr">points</span>: <span class="hljs-number">5</span> },
   ],
-  <span class="hljs-attr">keywordsNone</span>: [<span class="hljs-string">&#x27;spam&#x27;</span>, <span class="hljs-string">&#x27;advertisement&#x27;</span>],
-  <span class="hljs-attr">minScore</span>: <span class="hljs-number">5</span>,
+  <span class="hljs-attr">keywords_none</span>: [<span class="hljs-string">&#x27;spam&#x27;</span>, <span class="hljs-string">&#x27;advertisement&#x27;</span>],
+  <span class="hljs-attr">min_score</span>: <span class="hljs-number">5</span>,
 })</code></pre></div>
 <p><code>kind</code> options:</p>
 <ul>
@@ -405,7 +405,7 @@ npm install ./sdk/typescript
 })</code></pre></div>
 <h3 id="getwatcher"><code>getWatcher</code></h3>
 <div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">const</span> watcher = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">getWatcher</span>(<span class="hljs-string">&#x27;wat_abc123&#x27;</span>)
-<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(watcher.<span class="hljs-property">itemCount</span>)  <span class="hljs-comment">// total deduplicated items seen</span></code></pre></div>
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(watcher.<span class="hljs-property">item_count</span>)  <span class="hljs-comment">// total deduplicated items seen</span></code></pre></div>
 <h3 id="updatewatcher"><code>updateWatcher</code></h3>
 <div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-comment">// Reactivate a degraded watcher</span>
 <span class="hljs-keyword">const</span> watcher = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">updateWatcher</span>(<span class="hljs-string">&#x27;wat_abc123&#x27;</span>, {
@@ -463,14 +463,14 @@ npm install ./sdk/typescript
 <hr>
 <h2 id="project-admin-scope">Project (admin scope)</h2>
 <div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">const</span> project = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">getProject</span>()
-<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(project.<span class="hljs-property">webhookSecret</span>)  <span class="hljs-comment">// use for webhook signature verification</span>
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(project.<span class="hljs-property">webhook_secret</span>)  <span class="hljs-comment">// use for webhook signature verification</span>
 
 <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">updateProject</span>({
   <span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;My Agent Project&#x27;</span>,
   <span class="hljs-attr">timezone</span>: <span class="hljs-string">&#x27;America/New_York&#x27;</span>,  <span class="hljs-comment">// IANA timezone</span>
 })
 
-<span class="hljs-keyword">const</span> { webhookSecret } = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">rotateWebhookSecret</span>()
+<span class="hljs-keyword">const</span> { webhook_secret } = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">rotateWebhookSecret</span>()
 <span class="hljs-comment">// Update your webhook verifier with the new value immediately.</span>
 
 <span class="hljs-keyword">const</span> exportData = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">exportProject</span>()
@@ -544,7 +544,7 @@ app.<span class="hljs-title function_">post</span>(<span class="hljs-string">&#x
   <span class="hljs-keyword">try</span> {
     <span class="hljs-title function_">verifyWebhook</span>(
       req.<span class="hljs-property">rawBody</span>,                          <span class="hljs-comment">// Buffer | string</span>
-      project.<span class="hljs-property">webhookSecret</span>,
+      project.<span class="hljs-property">webhook_secret</span>!,
       req.<span class="hljs-property">headers</span>[<span class="hljs-string">&#x27;x-impri-timestamp&#x27;</span>] <span class="hljs-keyword">as</span> <span class="hljs-built_in">string</span>,
       req.<span class="hljs-property">headers</span>[<span class="hljs-string">&#x27;x-impri-nonce&#x27;</span>] <span class="hljs-keyword">as</span> <span class="hljs-built_in">string</span>,
       req.<span class="hljs-property">headers</span>[<span class="hljs-string">&#x27;x-impri-signature&#x27;</span>] <span class="hljs-keyword">as</span> <span class="hljs-built_in">string</span>,
@@ -564,7 +564,7 @@ app.<span class="hljs-title function_">post</span>(<span class="hljs-string">&#x
 <p><code>verifyWebhook</code> is a standalone export — it does not require a client instance and has no side effects. Algorithm: <code>sha256=HMAC-SHA256(secret, &quot;${timestamp}.${nonce}.${rawBody}&quot;)</code>. Requests older than 5 minutes are rejected.</p>
 <hr>
 <h2 id="error-handling">Error handling</h2>
-<p>All typed exceptions extend <code>ImpriError extends Error</code>. Every exception carries <code>statusCode: number | undefined</code> and <code>responseBody: unknown</code>.</p>
+<p>All typed exceptions extend <code>ImpriError extends Error</code>. Errors from an API response carry <code>statusCode: number | undefined</code> and <code>responseBody: unknown</code>; <code>ImpriConfigError</code> and <code>ImpriWebhookSignatureError</code> are raised locally and carry neither.</p>
 <div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> {
   <span class="hljs-title class_">ImpriError</span>,
   <span class="hljs-title class_">ImpriConfigError</span>,       <span class="hljs-comment">// missing apiKey at construction</span>
@@ -596,7 +596,7 @@ app.<span class="hljs-title function_">post</span>(<span class="hljs-string">&#x
 <p><code>ImpriRejected</code> is not an error to log — it is a valid human outcome and the core value of Impri.</p>
 <hr>
 <h2 id="untrusted-payload-flag">Untrusted payload flag</h2>
-<p>Actions delivered by a Watcher have <code>action.isUntrusted === true</code>. The ergonomic helpers (<code>requiresApproval</code>, <code>approvalGate</code>) emit a visible warning at runtime when this flag is set and do not inline the preview body into any field an LLM might interpret as an instruction.</p>
+<p>Actions delivered by a Watcher have <code>action.is_untrusted === true</code>. The ergonomic helpers (<code>requiresApproval</code>, <code>approvalGate</code>) emit a visible warning at runtime when this flag is set and do not inline the preview body into any field an LLM might interpret as an instruction.</p>
 <hr>
 <h2 id="reference">Reference</h2>
 <p>Full type declarations are in <code>sdk/typescript/src/index.ts</code>. The REST API contract is in <code>docs/llms.txt</code> and <code>server/src/openapi.ts</code>. The MCP client at <code>mcp/src/client.ts</code> is the reference implementation of the HTTP layer (native <code>fetch</code>, same error-handling switch) that both SDKs mirror.</p>
