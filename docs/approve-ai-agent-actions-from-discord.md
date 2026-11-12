@@ -55,14 +55,16 @@ async function proposeMerge(client: Client, pr: { number: number; title: string;
     },
   });
 
-  const actionId = (pushed as { action_id: string }).action_id;
+  // Impri's MCP tools set `structuredContent` alongside the text content
+  // block — read the typed fields from there, not off the result directly.
+  const { action_id: actionId } = pushed.structuredContent as { action_id: string };
 
   const decision = await client.callTool({
     name: "impri_await_decision",
     arguments: { action_id: actionId, timeout_s: 39600 },
   });
 
-  const { status } = decision as { status: string };
+  const { status } = decision.structuredContent as { status: string };
   if (status !== "approved") {
     console.log(`PR #${pr.number}: ${status}, skipping merge`);
     return;
