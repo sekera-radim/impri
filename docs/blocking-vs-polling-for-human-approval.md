@@ -21,26 +21,35 @@ If your agent runs as a long-lived worker — a Node process, a container, a Cla
 
 ```typescript
 // Long-running worker: the process can afford to wait.
-import { callTool } from "@impri/mcp-client"; // illustrative — use your MCP client
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 
-async function proposeAndWait(prUrl: string) {
-  const pushed = await callTool("impri_push_action", {
-    kind: "pr.merge",
-    title: `Merge PR: ${prUrl}`,
-    preview: { format: "markdown", body: `Merging \`${prUrl}\` — all checks green.` },
-    expires_in: 3600,
+async function proposeAndWait(client: Client, prUrl: string) {
+  const pushed = await client.callTool({
+    name: "impri_push_action",
+    arguments: {
+      kind: "pr.merge",
+      title: `Merge PR: ${prUrl}`,
+      preview: { format: "markdown", body: `Merging \`${prUrl}\` — all checks green.` },
+      expires_in: 3600,
+    },
   });
+  // The tool's JSON payload is under `.structuredContent`, not on the result directly.
+  const { action_id: actionId } = pushed.structuredContent as { action_id: string };
 
   // Blocks this call for up to an hour. Nothing else runs on this worker meanwhile.
-  const decision = await callTool("impri_await_decision", {
-    action_id: pushed.action_id,
-    timeout_s: 3600,
+  const decision = await client.callTool({
+    name: "impri_await_decision",
+    arguments: { action_id: actionId, timeout_s: 3600 },
   });
+  const { status } = decision.structuredContent as { status: string };
 
-  if (decision.status !== "approved") return { merged: false, reason: decision.status };
+  if (status !== "approved") return { merged: false, reason: status };
 
   await mergePullRequest(prUrl); // your actual merge call
-  await callTool("impri_report_result", { action_id: pushed.action_id, status: "executed" });
+  await client.callTool({
+    name: "impri_report_result",
+    arguments: { action_id: actionId, status: "executed" },
+  });
   return { merged: true };
 }
 ```
