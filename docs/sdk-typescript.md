@@ -53,7 +53,7 @@ import type {
   ApiKeyCreated,
   Project,
   CreateActionParams,
-  ApprovalGateResult,
+  ApprovedAction,
 } from '@impri/sdk'
 ```
 
@@ -107,18 +107,18 @@ const action = await client.createAction({
   title: 'Outreach: partnership proposal to acme.com',
   preview: { format: 'markdown', body: 'Hi Alice, ...' },
   payload: { to: 'alice@acme.com', threadId: 't_123' },
-  targetUrl: 'https://mail.acme.com/thread/123',
-  callbackUrl: 'https://your-agent.example.com/webhook',
-  expiresIn: 86400,              // seconds; min 300, max 2_592_000 (30 days), default 259_200 (72 h)
-  idempotencyKey: 'batch-2026-07-11-acme',
+  target_url: 'https://mail.acme.com/thread/123',
+  callback_url: 'https://your-agent.example.com/webhook',
+  expires_in: 86400,             // seconds; min 300, max 2_592_000 (30 days), default 259_200 (72 h)
+  idempotency_key: 'batch-2026-07-11-acme',
   editable: ['preview.body'],
 })
-// action.id, action.status === 'pending', action.inboxUrl, action.expiresAt
+// action.id, action.status === 'pending', action.inbox_url, action.expires_at
 ```
 
 Requires `actions` scope. Rate-limited to **60 POST/min per key**.
 
-Returns `201` on a new action and `200` when an existing one is found via `idempotencyKey` or a soft-duplicate (same `kind` + `title` + preview hash, already pending). Check `action.duplicateOf` to distinguish — if set, it holds the original action's id.
+Returns `201` on a new action and `200` when an existing one is found via `idempotency_key` or a soft-duplicate (same `kind` + `title` + preview hash, already pending). Check `action.duplicate_of` to distinguish — if set, it holds the original action's id.
 
 ### `getAction`
 
@@ -127,7 +127,7 @@ const action = await client.getAction('act_abc123')
 
 if (action.decision) {
   console.log(action.decision.verdict)         // 'approve' | 'reject'
-  console.log(action.decision.finalPreview)    // use this for execution
+  console.log(action.decision.final_preview)   // use this for execution
   console.log(action.decision.diff)            // present if reviewer edited
 }
 ```
@@ -142,22 +142,22 @@ const page = await client.listActions({
   kind: 'email.send',
   since: 1720000000,           // Unix timestamp
   limit: 50,                   // max 100
-  cursor: page.nextCursor,
 })
 
 for (const action of page.items) {
   console.log(action.id, action.status)
 }
 
-if (page.hasMore) {
-  const next = await client.listActions({ cursor: page.nextCursor })
+if (page.has_more) {
+  const next = await client.listActions({ cursor: page.next_cursor })
 }
 ```
 
-Pass `autoPaginate: true` to receive an async generator:
+Pass `autoPaginate: true` to fetch every page and get all items in one result:
 
 ```typescript
-for await (const action of client.listActions({ status: 'approved', autoPaginate: true })) {
+const all = await client.listActions({ status: 'approved', autoPaginate: true })
+for (const action of all.items) {
   console.log(action.id)
 }
 ```
@@ -184,7 +184,7 @@ try {
     pollIntervalS: 5,       // minimum recommended is 5 s
   })
   // action.status === 'approved'
-  const sqlToRun = action.decision!.finalPreview!.body
+  const sqlToRun = action.decision!.final_preview!.body
 
 } catch (e) {
   if (e instanceof ImpriRejected) {
@@ -202,7 +202,7 @@ try {
 }
 ```
 
-`awaitDecision` polls `GET /v1/actions/:id` internally. Do not set `pollIntervalS` below 5 s; the rate limit is 300 req/min.
+`awaitDecision` polls `GET /v1/actions/:id` internally, one request every `pollIntervalS` seconds (default 5). Keep it at 5 s or more.
 
 ### `decide`
 
@@ -233,7 +233,7 @@ const errors = results.filter(r => !r.ok)
 
 Rate-limited to **10 requests/min per key** (net: 500 decisions/min). Each item is processed independently — a failure on one ID does not roll back successes on others. HTTP 200 is always returned; inspect each `result.ok`.
 
-Per-item `error` values: `"not_found"`, `"already_decided"` (with `currentStatus`), or `"internal"`.
+Per-item `error` values: `"not_found"`, `"already_decided"` (with `current_status`), or `"internal"`.
 
 Actions with `editable.length > 0` must be decided via `decide()` so per-item field edits can be validated. The bulk endpoint intentionally omits the `edited` field.
 
@@ -277,7 +277,7 @@ const safeSend = client.requiresApproval(sendEmail, {
 await safeSend('alice@example.com', 'Hello!')
 ```
 
-When `preview.body` was edited by the reviewer, the wrapper injects the edited body into the function's arguments before calling it. Extra keys (`expiresIn`, `idempotencyKey`, `payload`, etc.) are forwarded to `createAction`.
+Once the action is approved, the wrapper calls your function with its original arguments: a reviewer's edit to `preview.body` does not reach it. When the edited content matters, use `approvalGate` (below), which returns `finalPreview`. The options `payload`, `target_url`, `callback_url`, `expires_in` and `idempotency_key` are forwarded to `createAction`.
 
 `title` and `preview` accept either a plain value or a function that receives the wrapped function's arguments at call time — use functions to build the title from runtime data.
 
@@ -325,8 +325,8 @@ const watcher = await client.createWatcher({
     { pattern: 'impri', points: 10 },
     { pattern: 'human-in-the-loop', points: 5 },
   ],
-  keywordsNone: ['spam', 'advertisement'],
-  minScore: 5,
+  keywords_none: ['spam', 'advertisement'],
+  min_score: 5,
 })
 ```
 
@@ -350,7 +350,7 @@ const page = await client.listWatchers({
 
 ```typescript
 const watcher = await client.getWatcher('wat_abc123')
-console.log(watcher.itemCount)  // total deduplicated items seen
+console.log(watcher.item_count)  // total deduplicated items seen
 ```
 
 ### `updateWatcher`
@@ -437,14 +437,14 @@ await client.revokeKey('key_abc123')  // void; 204 No Content
 
 ```typescript
 const project = await client.getProject()
-console.log(project.webhookSecret)  // use for webhook signature verification
+console.log(project.webhook_secret)  // use for webhook signature verification
 
 await client.updateProject({
   name: 'My Agent Project',
   timezone: 'America/New_York',  // IANA timezone
 })
 
-const { webhookSecret } = await client.rotateWebhookSecret()
+const { webhook_secret } = await client.rotateWebhookSecret()
 // Update your webhook verifier with the new value immediately.
 
 const exportData = await client.exportProject()
@@ -535,7 +535,7 @@ app.post('/webhook', async (req, res) => {
   try {
     verifyWebhook(
       req.rawBody,                          // Buffer | string
-      project.webhookSecret,
+      project.webhook_secret!,
       req.headers['x-impri-timestamp'] as string,
       req.headers['x-impri-nonce'] as string,
       req.headers['x-impri-signature'] as string,
@@ -560,7 +560,7 @@ app.post('/webhook', async (req, res) => {
 
 ## Error handling
 
-All typed exceptions extend `ImpriError extends Error`. Every exception carries `statusCode: number | undefined` and `responseBody: unknown`.
+All typed exceptions extend `ImpriError extends Error`. Errors from an API response carry `statusCode: number | undefined` and `responseBody: unknown`; `ImpriConfigError` and `ImpriWebhookSignatureError` are raised locally and carry neither.
 
 ```typescript
 import {
@@ -599,7 +599,7 @@ try {
 
 ## Untrusted payload flag
 
-Actions delivered by a Watcher have `action.isUntrusted === true`. The ergonomic helpers (`requiresApproval`, `approvalGate`) emit a visible warning at runtime when this flag is set and do not inline the preview body into any field an LLM might interpret as an instruction.
+Actions delivered by a Watcher have `action.is_untrusted === true`. The ergonomic helpers (`requiresApproval`, `approvalGate`) emit a visible warning at runtime when this flag is set and do not inline the preview body into any field an LLM might interpret as an instruction.
 
 ---
 
