@@ -39,7 +39,7 @@ const gatedCreateSsoAccount = client.requiresApproval(createSsoAccount, {
     format: 'markdown' as const,
     body: `**Name:** ${employee.name}\n**Email:** ${employee.email}\n**Role:** ${employee.role}\n\nStart date confirmed in HRIS. Approving creates the SSO account and assigns the ${employee.role} access template.`,
   }),
-  expiresIn: 172800, // 48h — most onboarding runs a day or two ahead of start date
+  expires_in: 172800, // 48h — most onboarding runs a day or two ahead of start date
 })
 
 try {
