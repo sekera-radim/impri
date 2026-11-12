@@ -1,6 +1,6 @@
 # Human-in-the-Loop, Explained for AI Builders
 
-Human-in-the-loop for AI builders means deciding, up front, which of your agent's actions are allowed to run on their own and which must wait for a person to say yes.
+Human-in-the-loop means deciding, up front, which of your AI agent's actions are allowed to run on their own and which must wait for a person to say yes.
 
 ---
 
@@ -46,18 +46,22 @@ interface DeployRequest {
 }
 
 async function requestDeployApproval(req: Omit<DeployRequest, "actionId">) {
-  // impri_push_action is exposed by the @impri/mcp server the agent has configured
-  const pushed = await mcp.call("impri_push_action", {
+  // impri_push_action is exposed by the @impri/mcp server the agent has configured.
+  // `mcp.call` is pseudocode for your MCP client's tool call; a real client
+  // (@modelcontextprotocol/sdk) returns the tool's JSON under `.structuredContent`.
+  const pushedResult = await mcp.call("impri_push_action", {
     kind: "infra.deploy",
     title: `Deploy to ${req.targetEnv}: ${req.planSummary}`,
     preview: { format: "markdown", body: req.planSummary },
     expires_in: 3600,
   });
+  const pushed = pushedResult.structuredContent;
 
-  const decision = await mcp.call("impri_await_decision", {
+  const decisionResult = await mcp.call("impri_await_decision", {
     action_id: pushed.action_id,
     timeout_s: 1800,
   });
+  const decision = decisionResult.structuredContent;
 
   if (decision.status !== "approved") {
     return { ran: false, reason: decision.status };
