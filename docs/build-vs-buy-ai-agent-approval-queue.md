@@ -57,7 +57,7 @@ import { ImpriClient } from "@impri/sdk";
 
 const impri = new ImpriClient({ apiKey: process.env.IMPRI_API_KEY });
 
-const action = await impri.actions.create({
+const created = await impri.createAction({
   kind: "email.send",
   title: "Weekly digest to enterprise-tier customers",
   preview: { format: "markdown", body: draftBody },
@@ -65,10 +65,10 @@ const action = await impri.actions.create({
   expires_in: 86_400,
 });
 
-const decision = await impri.actions.awaitDecision(action.id, { timeoutS: 3600 });
-if (decision.status === "approved") {
-  await sendEmail(decision.final_preview.body); // human-edited version, not the original
-  await impri.actions.reportResult(action.id, { status: "executed" });
+const action = await impri.awaitDecision(created.id, { timeoutS: 3600 });
+if (action.status === "approved") {
+  await sendEmail(action.decision!.final_preview!.body); // human-edited version, not the original
+  await impri.reportResult(created.id, "executed");
 }
 ```
 
