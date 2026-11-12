@@ -20,7 +20,7 @@ import { ImpriClient } from "@impri/sdk";
 const impri = new ImpriClient({ apiKey: process.env.IMPRI_API_KEY! });
 
 async function proposePost(changelogEntry: string, draft: string) {
-  const action = await impri.actions.create({
+  const action = await impri.createAction({
     kind: "social.post",
     title: `LinkedIn post: ${changelogEntry}`,
     preview: { format: "markdown", body: draft },
@@ -40,15 +40,15 @@ async function proposePost(changelogEntry: string, draft: string) {
 Poll or `await` the decision the same way as any other action. The difference shows up in the payload: when the reviewer edited something, `decision.final_preview` holds their version and `decision.diff` shows what changed.
 
 ```typescript
-const decision = await impri.actions.awaitDecision(actionId, { timeoutS: 172800 });
+const action = await impri.awaitDecision(actionId, { timeoutS: 172800 });
 
-if (decision.status === "approved") {
-  const finalBody = decision.final_preview.body; // always use this, never the original draft
-  if (decision.diff) {
-    console.log("Reviewer edited the draft:\n", decision.diff);
+if (action.status === "approved") {
+  const finalBody = action.decision!.final_preview!.body; // always use this, never the original draft
+  if (action.decision?.diff) {
+    console.log("Reviewer edited the draft:\n", action.decision.diff);
   }
   await postToLinkedIn(finalBody);
-  await impri.actions.reportResult(actionId, { status: "executed" });
+  await impri.reportResult(actionId, "executed");
 }
 ```
 
