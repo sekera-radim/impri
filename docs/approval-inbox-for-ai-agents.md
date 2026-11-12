@@ -31,12 +31,12 @@ async function queueDrafts(drafts: Draft[]): Promise<string[]> {
   const actionIds: string[] = [];
 
   for (const draft of drafts) {
-    const action = await impri.actions.create({
+    const action = await impri.createAction({
       kind: "blog.publish",
       title: `Draft: ${draft.title}`,
       preview: { format: "markdown", body: draft.body },
-      targetUrl: draft.publishUrl,
-      expiresIn: 259200, // 72h default — plenty for a weekly editorial pass
+      target_url: draft.publishUrl,
+      expires_in: 259200, // 72h default — plenty for a weekly editorial pass
       editable: ["preview.body"],
     });
     actionIds.push(action.id);
@@ -59,8 +59,8 @@ curl -X POST https://api.impri.dev/v1/actions/bulk-decision \
   -H "Authorization: Bearer $IMPRI_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "action_ids": ["act_101", "act_102", "act_103", "act_104"],
-    "decision": "approved"
+    "ids": ["act_101", "act_102", "act_103", "act_104"],
+    "verdict": "approve"
   }'
 ```
 
