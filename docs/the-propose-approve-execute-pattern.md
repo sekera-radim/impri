@@ -27,13 +27,13 @@ The pattern only works if these three phases are enforced structurally, not just
 Impri implements exactly these three phases as three API calls. Here's the pattern applied to a marketing agent that wants to post to a company's social account, written in TypeScript against the Impri SDK:
 
 ```typescript
-import { ImpriClient } from "@impri/sdk";
+import { ImpriClient, ImpriRejected, ImpriExpired } from "@impri/sdk";
 
 const impri = new ImpriClient({ apiKey: process.env.IMPRI_API_KEY! });
 
 async function postWithApproval(draft: string, channel: string) {
   // 1. Propose — store the intent, no post happens yet
-  const action = await impri.actions.create({
+  const created = await impri.createAction({
     kind: "social.post",
     title: `Post to ${channel}`,
     preview: { format: "markdown", body: draft },
@@ -42,27 +42,31 @@ async function postWithApproval(draft: string, channel: string) {
   });
 
   // 2. Approve — block until a human decides (polling happens under the hood)
-  const decision = await impri.actions.awaitDecision(action.id, { timeoutS: 21600 });
-
-  if (decision.status !== "approved") {
-    console.log(`Not posting — status: ${decision.status}`);
-    return { posted: false, status: decision.status };
+  let action;
+  try {
+    action = await impri.awaitDecision(created.id, { timeoutS: 21600 });
+  } catch (e) {
+    if (e instanceof ImpriRejected || e instanceof ImpriExpired) {
+      const status = e instanceof ImpriRejected ? "rejected" : "expired";
+      console.log(`Not posting — status: ${status}`);
+      return { posted: false, status };
+    }
+    throw e;
   }
 
   // 3. Execute — only reachable here, using the human-approved (possibly edited) text
-  const finalBody = decision.final_preview.body;
+  const finalBody = action.decision!.final_preview!.body;
   const postResult = await socialApi.post(channel, finalBody);
 
-  await impri.actions.reportResult(action.id, {
-    status: "executed",
-    payload: { post_url: postResult.url },
+  await impri.reportResult(action.id, "executed", {
+    detail: `Posted: ${postResult.url}`,
   });
 
   return { posted: true, url: postResult.url };
 }
 ```
 
-Three method calls, one per phase. Nothing about `socialApi.post` is reachable from inside the propose step — it lives strictly after the `decision.status !== "approved"` guard returns.
+Three method calls, one per phase. Nothing about `socialApi.post` is reachable from inside the propose step — it lives strictly after `awaitDecision` returns instead of throwing `ImpriRejected` or `ImpriExpired`.
 
 ---
 
@@ -71,7 +75,7 @@ Three method calls, one per phase. Nothing about `socialApi.post` is reachable f
 A team that skips straight to "just ask for confirmation" usually ends up with one of two failure modes: the confirmation step gets silently dropped under refactoring because it's just a string in a prompt, or there's no record afterward of what was actually approved versus what the agent claims it asked about. Splitting propose/approve/execute into separate calls against an external store fixes both:
 
 - The pending action is a real row somewhere, not a transient prompt turn — so there's an [audit log](audit-log.md) of every decision by construction, not as an add-on.
-- The execute phase has a genuine dependency on the approve phase's return value. You cannot accidentally call `socialApi.post` without first having a `decision` object in scope with `status === "approved"`, because the code is structured that way.
+- The execute phase has a genuine dependency on the approve phase's return value. You cannot accidentally call `socialApi.post` without first getting an approved `action` back from `awaitDecision`, because the code is structured that way.
 
 ## Where the pattern breaks down
 
