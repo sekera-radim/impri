@@ -1,6 +1,6 @@
 # Human Approval for Google Agent Development Kit (ADK) Agents
 
-Give a Google ADK agent cloud cleanup powers and it will eventually target the wrong bucket — add human approval before deletion using ADK's native MCP support.
+Add a human approval step to a Google ADK agent before it deletes cloud resources, using ADK's native MCP support and Impri's approval tools.
 
 ---
 
@@ -20,7 +20,10 @@ impri_toolset = MCPToolset(
     connection_params=StdioServerParameters(
         command="npx",
         args=["@impri/mcp"],
-        env={"IMPRI_API_KEY": "im_your_key_here"},
+        env={
+            "IMPRI_API_KEY": "im_your_key_here",
+            "IMPRI_BASE_URL": "https://api.impri.dev",
+        },
     )
 )
 
