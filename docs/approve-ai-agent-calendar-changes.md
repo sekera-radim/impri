@@ -1,6 +1,6 @@
 # Approve AI Agent Calendar Changes Before They're Sent
 
-Give a scheduling agent write access to your calendar and it will eventually double-book, reschedule the wrong meeting, or send an invite to the wrong list — this pattern puts a human between the proposed change and the send.
+Route AI agent calendar changes through human approval before they reach the calendar API, so a bad reschedule or invite never reaches attendees.
 
 ---
 
@@ -13,10 +13,10 @@ A calendar agent looks low-stakes compared to one that sends money or deletes da
 The agent never calls the calendar provider's API directly. It builds the change it wants to make — reschedule, new invite, cancellation — as an Impri action, and a small executor function is the only code path allowed to call the real calendar API, and only after seeing `status: "approved"`.
 
 ```typescript
-import { Impri } from "@impri/sdk";
+import { ImpriClient, ImpriRejected, ImpriExpired } from "@impri/sdk";
 import { google } from "googleapis"; // or your calendar client of choice
 
-const impri = new Impri({ apiKey: process.env.IMPRI_API_KEY! });
+const impri = new ImpriClient({ apiKey: process.env.IMPRI_API_KEY! });
 
 interface ProposedReschedule {
   eventId: string;
@@ -28,7 +28,7 @@ interface ProposedReschedule {
 }
 
 async function proposeReschedule(change: ProposedReschedule) {
-  const action = await impri.actions.create({
+  const action = await impri.createAction({
     kind: "calendar.reschedule",
     title: `Reschedule: ${change.title}`,
     preview: {
@@ -48,11 +48,14 @@ async function proposeReschedule(change: ProposedReschedule) {
 }
 
 async function applyIfApproved(actionId: string, change: ProposedReschedule) {
-  const decision = await impri.actions.awaitDecision(actionId, { timeoutS: 3600 });
-
-  if (decision.status !== "approved") {
-    console.log(`Reschedule not applied: ${decision.status}`);
-    return;
+  try {
+    await impri.awaitDecision(actionId, { timeoutS: 3600 });
+  } catch (e) {
+    if (e instanceof ImpriRejected || e instanceof ImpriExpired) {
+      console.log(`Reschedule not applied: ${e instanceof ImpriRejected ? "rejected" : "expired"}`);
+      return;
+    }
+    throw e;
   }
 
   // The proposed time itself isn't editable in this action (only the note is),
@@ -64,7 +67,7 @@ async function applyIfApproved(actionId: string, change: ProposedReschedule) {
     requestBody: { start: { dateTime: change.proposedStart } },
   });
 
-  await impri.actions.reportResult(actionId, { status: "executed" });
+  await impri.reportResult(actionId, "executed");
 }
 ```
 
