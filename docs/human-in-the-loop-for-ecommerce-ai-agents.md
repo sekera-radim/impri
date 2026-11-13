@@ -1,6 +1,6 @@
 # Human-in-the-Loop for E-commerce AI Agents
 
-An AI agent that reprices SKUs or files reorder POs unsupervised can bleed margin or blow a budget in one bad run — this shows how to gate those actions behind a human tap before they touch your store.
+Gate AI agent price changes and reorder POs behind a human approval tap in Impri before they touch your store, catching bad scrapes and bad forecasts.
 
 ---
 
@@ -41,12 +41,12 @@ async function proposePriceChange(change: PriceChange) {
     },
     payload: { sku: change.sku, proposedPrice: change.proposedPrice },
     editable: ["preview.body"],
-    expiresIn: 21600, // 6 hours — a stale price move isn't worth applying
+    expires_in: 21600, // 6 hours — a stale price move isn't worth applying
   });
 
   try {
     const action = await client.awaitDecision(created.id, { timeoutS: 21600 });
-    const finalBody = action.decision!.finalPreview!.body; // carries any human edit
+    const finalBody = action.decision!.final_preview!.body; // carries any human edit
 
     await shopifyAdmin.productVariant.update(change.sku, {
       price: finalBody.includes(String(change.proposedPrice))
@@ -62,15 +62,15 @@ async function proposePriceChange(change: PriceChange) {
 }
 ```
 
-Reorder POs use the same three-call shape — `kind: "shopify.reorder_po"`, a preview that lists SKU, quantity, and unit cost, and `undo` set to the supplier cancellation window so whoever approves it knows how much time they have to change their mind.
+Reorder POs use the same three-call shape — `kind: "shopify.reorder_po"` and a preview that lists SKU, quantity, and unit cost. The REST API also accepts an `undo` hint on the action body (e.g. the supplier cancellation window), shown on the inbox card — the TypeScript SDK's `createAction` doesn't expose that param yet, so send it via a direct `POST /v1/actions` call if you need it today.
 
 ## What the merchant sees
 
-The inbox card is a diff, not a wall of JSON: current price, proposed price, and the reason the agent computed it. On mobile that's a five-second decision — reject the $4.99 hoodie, approve the three legitimate seasonal markdowns sitting next to it. If `editable: ["preview.body"]` is set, the merchant can fix a typo'd price in the card itself before approving, and `decision.finalPreview` carries that correction back to the agent.
+The inbox card is a diff, not a wall of JSON: current price, proposed price, and the reason the agent computed it. On mobile that's a five-second decision — reject the $4.99 hoodie, approve the three legitimate seasonal markdowns sitting next to it. If `editable: ["preview.body"]` is set, the merchant can fix a typo'd price in the card itself before approving, and `decision.final_preview` carries that correction back to the agent.
 
 ## Refunds are a separate, higher-stakes gate
 
-If the same agent also handles customer-facing refunds, treat those as a distinct `kind` (e.g. `shopify.refund`) with its own review — refund amounts and reasons need different scrutiny than a catalog price update, and mixing the two in one inbox makes the queue harder to triage. Set `idempotent: false` on refunds explicitly; approving the same refund action twice should never double-charge a reversal.
+If the same agent also handles customer-facing refunds, treat those as a distinct `kind` (e.g. `shopify.refund`) with its own review — refund amounts and reasons need different scrutiny than a catalog price update, and mixing the two in one inbox makes the queue harder to triage. The REST API also accepts an `idempotent` hint on the action body (set `idempotent: false` for refunds, which the inbox shows as a warning badge) — again, send it via a direct `POST /v1/actions` call since the SDK's `createAction` doesn't take that param yet. Either way, approving the same refund action twice should never double-charge a reversal.
 
 ## What Impri is and isn't for e-commerce
 
