@@ -26,7 +26,8 @@ If your marketing agent runs inside Claude Code, Claude Desktop, or another MCP 
       "command": "npx",
       "args": ["@impri/mcp"],
       "env": {
-        "IMPRI_API_KEY": "im_your_key_here"
+        "IMPRI_API_KEY": "im_your_key_here",
+        "IMPRI_BASE_URL": "https://api.impri.dev"
       }
     }
   }
