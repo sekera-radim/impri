@@ -15,40 +15,61 @@ The fix is the same pattern used for drafts, applied to a decision instead of a 
 For an agent already running as a Claude Agent SDK or Claude Code subagent, the MCP server handles the polling loop for you.
 
 ```typescript
-import { experimental_createMCPClient as createMCPClient } from "ai";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
-const impri = await createMCPClient({
-  transport: { type: "stdio", command: "npx", args: ["@impri/mcp"] },
-});
+const impri = new Client({ name: "support-escalations", version: "1.0.0" });
+await impri.connect(
+  new StdioClientTransport({
+    command: "npx",
+    args: ["@impri/mcp"],
+    env: {
+      PATH: process.env.PATH!,
+      IMPRI_API_KEY: process.env.IMPRI_API_KEY!,
+      IMPRI_BASE_URL: "https://api.impri.dev", // or your self-hosted API
+    },
+  }),
+);
 
 async function escalateTicket(ticket: {
   id: string; customer: string; amount: number; reason: string;
 }) {
-  const pushed = await impri.callTool("impri_push_action", {
-    kind: "ticket.escalate",
-    title: `Refund $${ticket.amount} — ticket #${ticket.id} (${ticket.customer})`,
-    preview: {
-      format: "markdown",
-      body: `**Reason:** ${ticket.reason}\n**Requested refund:** $${ticket.amount}\n**Customer tier:** standard`,
+  const pushed = await impri.callTool({
+    name: "impri_push_action",
+    arguments: {
+      kind: "ticket.escalate",
+      title: `Refund $${ticket.amount} — ticket #${ticket.id} (${ticket.customer})`,
+      preview: {
+        format: "markdown",
+        body: `**Reason:** ${ticket.reason}\n**Requested refund:** $${ticket.amount}\n**Customer tier:** standard`,
+      },
+      editable: ["preview.body"],
+      expires_in: 14400, // 4h — an unresolved escalation goes stale fast
     },
-    editable: ["preview.body"],
-    expires_in: 14400, // 4h — an unresolved escalation goes stale fast
   });
+  // Impri's MCP tools return their JSON under structuredContent.
+  const { action_id: actionId } = pushed.structuredContent as { action_id: string };
 
-  const decision = await impri.callTool("impri_await_decision", {
-    action_id: pushed.id,
-    timeout_s: 14400,
-  });
+  const decided = await impri.callTool(
+    { name: "impri_await_decision", arguments: { action_id: actionId, timeout_s: 14400 } },
+    undefined,
+    { timeout: 14_460_000 }, // the MCP client gives up after 60 s by default
+  );
 
-  if (decision.status !== "approved") {
-    return { escalated: false, status: decision.status };
+  // Expired, or still pending when timeout_s ran out: isError, no structuredContent.
+  const decision = decided.structuredContent as
+    | { status: string; preview: { body: string } }
+    | undefined;
+  if (decided.isError || decision?.status !== "approved") {
+    return { escalated: false, status: decision?.status ?? "expired_or_timed_out" };
   }
 
+  // preview.body carries the on-call lead's edit when they changed the text.
   const result = await issueRefund(ticket.id, decision.preview.body);
 
-  await impri.callTool("impri_report_result", {
-    action_id: pushed.id,
-    status: result.ok ? "executed" : "execute_failed",
+  await impri.callTool({
+    name: "impri_report_result",
+    arguments: { action_id: actionId, status: result.ok ? "executed" : "execute_failed" },
   });
 
   return { escalated: true, refunded: ticket.amount };
