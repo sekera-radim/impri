@@ -29,7 +29,7 @@ The point of a framework is that it's checkable in code, not just written in a d
 
 ```python
 import os
-from impri import ImpriClient
+from impri import ImpriClient, ImpriExpired, ImpriRejected, ImpriTimeout
 
 impri = ImpriClient(api_key=os.environ["IMPRI_API_KEY"])
 
@@ -47,19 +47,22 @@ def run_action(kind: str, title: str, preview_body: str, execute_fn):
     if not GATE_REQUIRED.get(kind, True):  # unknown kinds default to gated
         return execute_fn(preview_body)
 
-    action = impri.actions.create(
+    created = impri.create_action(
         kind=kind,
         title=title,
         preview={"format": "markdown", "body": preview_body},
         editable=["preview.body"],
         expires_in=3600,
     )
-    decision = impri.actions.await_decision(action.id, timeout_s=1800)
-    if decision.status != "approved":
-        return None  # rejected or expired — never executed
+    try:
+        action = impri.await_decision(created["id"], timeout_s=1800)
+    except (ImpriRejected, ImpriExpired, ImpriTimeout):
+        return None  # rejected, expired, or timed out — never executed
 
-    result = execute_fn(decision.final_preview["body"])
-    impri.actions.report_result(action.id, status="executed")
+    decision = action.get("decision") or {}
+    final_body = (decision.get("final_preview") or action["preview"])["body"]
+    result = execute_fn(final_body)
+    impri.report_result(action["id"], "executed")
     return result
 ```
 
