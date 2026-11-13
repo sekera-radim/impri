@@ -38,7 +38,7 @@ server.tool(
   "send_invoice",
   { customerId: z.string(), amountCents: z.number() },
   async ({ customerId, amountCents }) => {
-    const action = await impri.pushAction({
+    const action = await impri.createAction({
       kind: "invoice.send",
       title: `Send invoice: customer ${customerId}, $${amountCents / 100}`,
       preview: {
@@ -46,7 +46,6 @@ server.tool(
         body: `Customer: ${customerId}\nAmount: $${amountCents / 100}`,
       },
       expires_in: 3600,
-      idempotent: false,
     });
 
     const decision = await impri.awaitDecision(action.id, { timeoutS: 1800 });
@@ -56,13 +55,13 @@ server.tool(
     }
 
     await billingApi.sendInvoice(customerId, amountCents);
-    await impri.reportResult(action.id, { status: "executed" });
+    await impri.reportResult(action.id, "executed");
     return { content: [{ type: "text", text: "Invoice sent after approval." }] };
   }
 );
 ```
 
-The `billingApi.sendInvoice` call only appears once, inside the `approved` branch. There is no code path where the tool executes without first getting back `status: "approved"` from Impri.
+The `billingApi.sendInvoice` call only appears once, inside the `approved` branch. There is no code path where the tool executes without first getting back `status: "approved"` from Impri. (The REST API also accepts optional `idempotent` and `undo` hints on `POST /v1/actions`; the TypeScript SDK's `createAction` params don't expose them yet — use a raw `fetch` call if you need them today.)
 
 ---
 
@@ -91,7 +90,7 @@ Not every tool in an MCP server needs a gate. A reasonable rule: wrap tools that
 
 `awaitDecision` blocks the tool call until a human responds or the timeout hits. If your MCP client has its own request timeout shorter than the approval wait, the client will see a stalled tool call before the human even sees the inbox notification. Two ways to avoid that:
 
-- Set `timeout_s` in `awaitDecision` well under any client-side request timeout, and treat a timeout as "not yet decided" rather than "rejected" — check `GET /v1/actions/:id` later instead of re-pushing.
+- Set `timeoutS` in `awaitDecision` well under any client-side request timeout, and treat a timeout as "not yet decided" rather than "rejected" — check `GET /v1/actions/:id` later instead of re-pushing.
 - For tools where the human might take hours, don't block synchronously at all: push the action, return an "awaiting approval, action id `act_xyz`" message to the agent, and let a follow-up tool call (or a webhook — see [webhooks](webhooks.md)) resolve it later.
 
 For the full server setup — configuring `@impri/mcp` as a standalone process versus building the gate directly into your own server as shown above — see the [MCP integration guide](mcp.md). If your agent runs on the Claude Agent SDK rather than a raw MCP client, [the Claude Agent SDK guide](claude-agent-sdk.md) covers wrapping tool definitions the same way.
