@@ -1,6 +1,6 @@
 # REST API vs MCP for Human-in-the-Loop Approval
 
-Choosing between Impri's REST API and its MCP server comes down to where your agent runs — a Python worker calls REST directly, a Claude Code or Claude Desktop agent gets the same three-call flow for free through MCP tools.
+Use Impri's REST API when the agent is your own code, like a Python worker or a cron job; use its MCP server when the agent runs in an MCP client.
 
 ---
 
@@ -68,7 +68,10 @@ If the same merge-deciding agent is a Claude Code session or subagent, wire up t
     "impri": {
       "command": "npx",
       "args": ["@impri/mcp"],
-      "env": { "IMPRI_API_KEY": "im_your_key_here" }
+      "env": {
+        "IMPRI_API_KEY": "im_your_key_here",
+        "IMPRI_BASE_URL": "https://api.impri.dev"
+      }
     }
   }
 }
