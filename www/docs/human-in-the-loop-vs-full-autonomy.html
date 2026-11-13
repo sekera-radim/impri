@@ -196,7 +196,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <h2 id="encoding-the-framework-not-just-describing-it">Encoding the framework, not just describing it</h2>
 <p>The point of a framework is that it&#39;s checkable in code, not just written in a doc nobody rereads. A minimal router looks like this:</p>
 <div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> os
-<span class="hljs-keyword">from</span> impri <span class="hljs-keyword">import</span> ImpriClient
+<span class="hljs-keyword">from</span> impri <span class="hljs-keyword">import</span> ImpriClient, ImpriExpired, ImpriRejected, ImpriTimeout
 
 impri = ImpriClient(api_key=os.environ[<span class="hljs-string">&quot;IMPRI_API_KEY&quot;</span>])
 
@@ -214,19 +214,22 @@ GATE_REQUIRED = {
     <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> GATE_REQUIRED.get(kind, <span class="hljs-literal">True</span>):  <span class="hljs-comment"># unknown kinds default to gated</span>
         <span class="hljs-keyword">return</span> execute_fn(preview_body)
 
-    action = impri.actions.create(
+    created = impri.create_action(
         kind=kind,
         title=title,
         preview={<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: preview_body},
         editable=[<span class="hljs-string">&quot;preview.body&quot;</span>],
         expires_in=<span class="hljs-number">3600</span>,
     )
-    decision = impri.actions.await_decision(action.<span class="hljs-built_in">id</span>, timeout_s=<span class="hljs-number">1800</span>)
-    <span class="hljs-keyword">if</span> decision.status != <span class="hljs-string">&quot;approved&quot;</span>:
-        <span class="hljs-keyword">return</span> <span class="hljs-literal">None</span>  <span class="hljs-comment"># rejected or expired — never executed</span>
+    <span class="hljs-keyword">try</span>:
+        action = impri.await_decision(created[<span class="hljs-string">&quot;id&quot;</span>], timeout_s=<span class="hljs-number">1800</span>)
+    <span class="hljs-keyword">except</span> (ImpriRejected, ImpriExpired, ImpriTimeout):
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">None</span>  <span class="hljs-comment"># rejected, expired, or timed out — never executed</span>
 
-    result = execute_fn(decision.final_preview[<span class="hljs-string">&quot;body&quot;</span>])
-    impri.actions.report_result(action.<span class="hljs-built_in">id</span>, status=<span class="hljs-string">&quot;executed&quot;</span>)
+    decision = action.get(<span class="hljs-string">&quot;decision&quot;</span>) <span class="hljs-keyword">or</span> {}
+    final_body = (decision.get(<span class="hljs-string">&quot;final_preview&quot;</span>) <span class="hljs-keyword">or</span> action[<span class="hljs-string">&quot;preview&quot;</span>])[<span class="hljs-string">&quot;body&quot;</span>]
+    result = execute_fn(final_body)
+    impri.report_result(action[<span class="hljs-string">&quot;id&quot;</span>], <span class="hljs-string">&quot;executed&quot;</span>)
     <span class="hljs-keyword">return</span> result</code></pre></div>
 <p>The default (<code>True</code> for unknown kinds) matters more than the table: a new action kind nobody classified yet should fail toward asking, not toward running.</p>
 <h2 id="where-full-autonomy-still-needs-a-leash">Where full autonomy still needs a leash</h2>

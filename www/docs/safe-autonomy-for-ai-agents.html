@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Safe Autonomy: Let Agents Act, but Not Blindly — Impri Docs</title>
-<meta name="description" content="Full autonomy and full manual review are both wrong defaults for an ops agent — safe autonomy means letting it act freely on the low-risk 90% and gating the…">
+<meta name="description" content="Safe autonomy lets an ops agent act on its own for low-risk, reversible actions and stop for a human yes only on the few that can break something.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="Safe Autonomy: Let Agents Act, but Not Blindly — Impri Docs">
-<meta property="og:description" content="Full autonomy and full manual review are both wrong defaults for an ops agent — safe autonomy means letting it act freely on the low-risk 90% and gating the…">
+<meta property="og:description" content="Safe autonomy lets an ops agent act on its own for low-risk, reversible actions and stop for a human yes only on the few that can break something.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/safe-autonomy-for-ai-agents">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/safe-autonomy-for-ai-agents">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Safe Autonomy: Let Agents Act, but Not Blindly","description":"Full autonomy and full manual review are both wrong defaults for an ops agent — safe autonomy means letting it act freely on the low-risk 90% and gating the…","url":"https://impri.dev/docs/safe-autonomy-for-ai-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Safe Autonomy: Let Agents Act, but Not Blindly","description":"Safe autonomy lets an ops agent act on its own for low-risk, reversible actions and stop for a human yes only on the few that can break something.","url":"https://impri.dev/docs/safe-autonomy-for-ai-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -150,7 +150,7 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>Safe Autonomy: Let Agents Act, but Not Blindly</span>
     </nav>
     <h1>Safe Autonomy: Let Agents Act, but Not Blindly</h1>
-<p>Full autonomy and full manual review are both wrong defaults for an ops agent — safe autonomy means letting it act freely on the low-risk 90% and gating the 10% that can actually break something.</p>
+<p>Safe autonomy lets an ops agent act on its own for low-risk, reversible actions and stop for a human yes only on the few that can break something.</p>
 <hr>
 <h2 id="autonomy-is-not-binary">Autonomy is not binary</h2>
 <p>&quot;Should this agent be autonomous?&quot; is the wrong question, because it&#39;s asking about the agent instead of the action. An agent that restarts a crashed worker, clears a stale cache entry, and pushes to production are three different risk profiles wearing the same &quot;the agent did it&quot; label. Splitting by risk tier instead of by agent identity is what makes autonomy safe rather than reckless:</p>
@@ -222,7 +222,11 @@ pre code.hljs{display:block;overflow-x:auto}
   <span class="hljs-attr">prompt</span>: <span class="hljs-string">`Deploy checkout-service 2.4.1 after tests passed. Changelog: <span class="hljs-subst">${changelog}</span>`</span>,
   <span class="hljs-attr">options</span>: {
     <span class="hljs-attr">mcpServers</span>: {
-      <span class="hljs-attr">impri</span>: { <span class="hljs-attr">command</span>: <span class="hljs-string">&quot;npx&quot;</span>, <span class="hljs-attr">args</span>: [<span class="hljs-string">&quot;@impri/mcp&quot;</span>], <span class="hljs-attr">env</span>: { <span class="hljs-attr">IMPRI_API_KEY</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_API_KEY</span>! } },
+      <span class="hljs-attr">impri</span>: {
+        <span class="hljs-attr">command</span>: <span class="hljs-string">&quot;npx&quot;</span>,
+        <span class="hljs-attr">args</span>: [<span class="hljs-string">&quot;@impri/mcp&quot;</span>],
+        <span class="hljs-attr">env</span>: { <span class="hljs-attr">IMPRI_API_KEY</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_API_KEY</span>!, <span class="hljs-attr">IMPRI_BASE_URL</span>: <span class="hljs-string">&quot;https://api.impri.dev&quot;</span> },
+      },
     },
     <span class="hljs-attr">allowedTools</span>: [<span class="hljs-string">&quot;deploy_to_production&quot;</span>, <span class="hljs-string">&quot;mcp__impri__impri_push_action&quot;</span>,
                     <span class="hljs-string">&quot;mcp__impri__impri_await_decision&quot;</span>, <span class="hljs-string">&quot;mcp__impri__impri_report_result&quot;</span>],

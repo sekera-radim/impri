@@ -157,40 +157,61 @@ pre code.hljs{display:block;overflow-x:auto}
 <p>The fix is the same pattern used for drafts, applied to a decision instead of a document: the agent proposes the specific action — kind, amount, reason — and a human with escalation authority approves, rejects, or edits it before anything happens to the customer&#39;s account.</p>
 <h2 id="the-three-call-pattern-via-mcp-typescript">The three-call pattern, via MCP (TypeScript)</h2>
 <p>For an agent already running as a Claude Agent SDK or Claude Code subagent, the MCP server handles the polling loop for you.</p>
-<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { experimental_createMCPClient <span class="hljs-keyword">as</span> createMCPClient } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;ai&quot;</span>;
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">Client</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@modelcontextprotocol/sdk/client/index.js&quot;</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">StdioClientTransport</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@modelcontextprotocol/sdk/client/stdio.js&quot;</span>;
 
-<span class="hljs-keyword">const</span> impri = <span class="hljs-keyword">await</span> <span class="hljs-title function_">createMCPClient</span>({
-  <span class="hljs-attr">transport</span>: { <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;stdio&quot;</span>, <span class="hljs-attr">command</span>: <span class="hljs-string">&quot;npx&quot;</span>, <span class="hljs-attr">args</span>: [<span class="hljs-string">&quot;@impri/mcp&quot;</span>] },
-});
+<span class="hljs-keyword">const</span> impri = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Client</span>({ <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;support-escalations&quot;</span>, <span class="hljs-attr">version</span>: <span class="hljs-string">&quot;1.0.0&quot;</span> });
+<span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">connect</span>(
+  <span class="hljs-keyword">new</span> <span class="hljs-title class_">StdioClientTransport</span>({
+    <span class="hljs-attr">command</span>: <span class="hljs-string">&quot;npx&quot;</span>,
+    <span class="hljs-attr">args</span>: [<span class="hljs-string">&quot;@impri/mcp&quot;</span>],
+    <span class="hljs-attr">env</span>: {
+      <span class="hljs-attr">PATH</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">PATH</span>!,
+      <span class="hljs-attr">IMPRI_API_KEY</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_API_KEY</span>!,
+      <span class="hljs-attr">IMPRI_BASE_URL</span>: <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>, <span class="hljs-comment">// or your self-hosted API</span>
+    },
+  }),
+);
 
 <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">escalateTicket</span>(<span class="hljs-params"><span class="hljs-attr">ticket</span>: {
   id: <span class="hljs-built_in">string</span>; customer: <span class="hljs-built_in">string</span>; amount: <span class="hljs-built_in">number</span>; reason: <span class="hljs-built_in">string</span>;
 }</span>) {
-  <span class="hljs-keyword">const</span> pushed = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">callTool</span>(<span class="hljs-string">&quot;impri_push_action&quot;</span>, {
-    <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;ticket.escalate&quot;</span>,
-    <span class="hljs-attr">title</span>: <span class="hljs-string">`Refund $<span class="hljs-subst">${ticket.amount}</span> — ticket #<span class="hljs-subst">${ticket.id}</span> (<span class="hljs-subst">${ticket.customer}</span>)`</span>,
-    <span class="hljs-attr">preview</span>: {
-      <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>,
-      <span class="hljs-attr">body</span>: <span class="hljs-string">`**Reason:** <span class="hljs-subst">${ticket.reason}</span>\n**Requested refund:** $<span class="hljs-subst">${ticket.amount}</span>\n**Customer tier:** standard`</span>,
+  <span class="hljs-keyword">const</span> pushed = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">callTool</span>({
+    <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;impri_push_action&quot;</span>,
+    <span class="hljs-attr">arguments</span>: {
+      <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;ticket.escalate&quot;</span>,
+      <span class="hljs-attr">title</span>: <span class="hljs-string">`Refund $<span class="hljs-subst">${ticket.amount}</span> — ticket #<span class="hljs-subst">${ticket.id}</span> (<span class="hljs-subst">${ticket.customer}</span>)`</span>,
+      <span class="hljs-attr">preview</span>: {
+        <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>,
+        <span class="hljs-attr">body</span>: <span class="hljs-string">`**Reason:** <span class="hljs-subst">${ticket.reason}</span>\n**Requested refund:** $<span class="hljs-subst">${ticket.amount}</span>\n**Customer tier:** standard`</span>,
+      },
+      <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
+      <span class="hljs-attr">expires_in</span>: <span class="hljs-number">14400</span>, <span class="hljs-comment">// 4h — an unresolved escalation goes stale fast</span>
     },
-    <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
-    <span class="hljs-attr">expires_in</span>: <span class="hljs-number">14400</span>, <span class="hljs-comment">// 4h — an unresolved escalation goes stale fast</span>
   });
+  <span class="hljs-comment">// Impri&#x27;s MCP tools return their JSON under structuredContent.</span>
+  <span class="hljs-keyword">const</span> { <span class="hljs-attr">action_id</span>: actionId } = pushed.<span class="hljs-property">structuredContent</span> <span class="hljs-keyword">as</span> { <span class="hljs-attr">action_id</span>: <span class="hljs-built_in">string</span> };
 
-  <span class="hljs-keyword">const</span> decision = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">callTool</span>(<span class="hljs-string">&quot;impri_await_decision&quot;</span>, {
-    <span class="hljs-attr">action_id</span>: pushed.<span class="hljs-property">id</span>,
-    <span class="hljs-attr">timeout_s</span>: <span class="hljs-number">14400</span>,
-  });
+  <span class="hljs-keyword">const</span> decided = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">callTool</span>(
+    { <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;impri_await_decision&quot;</span>, <span class="hljs-attr">arguments</span>: { <span class="hljs-attr">action_id</span>: actionId, <span class="hljs-attr">timeout_s</span>: <span class="hljs-number">14400</span> } },
+    <span class="hljs-literal">undefined</span>,
+    { <span class="hljs-attr">timeout</span>: <span class="hljs-number">14_460_000</span> }, <span class="hljs-comment">// the MCP client gives up after 60 s by default</span>
+  );
 
-  <span class="hljs-keyword">if</span> (decision.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;approved&quot;</span>) {
-    <span class="hljs-keyword">return</span> { <span class="hljs-attr">escalated</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">status</span>: decision.<span class="hljs-property">status</span> };
+  <span class="hljs-comment">// Expired, or still pending when timeout_s ran out: isError, no structuredContent.</span>
+  <span class="hljs-keyword">const</span> decision = decided.<span class="hljs-property">structuredContent</span> <span class="hljs-keyword">as</span>
+    | { <span class="hljs-attr">status</span>: <span class="hljs-built_in">string</span>; <span class="hljs-attr">preview</span>: { <span class="hljs-attr">body</span>: <span class="hljs-built_in">string</span> } }
+    | <span class="hljs-literal">undefined</span>;
+  <span class="hljs-keyword">if</span> (decided.<span class="hljs-property">isError</span> || decision?.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;approved&quot;</span>) {
+    <span class="hljs-keyword">return</span> { <span class="hljs-attr">escalated</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">status</span>: decision?.<span class="hljs-property">status</span> ?? <span class="hljs-string">&quot;expired_or_timed_out&quot;</span> };
   }
 
+  <span class="hljs-comment">// preview.body carries the on-call lead&#x27;s edit when they changed the text.</span>
   <span class="hljs-keyword">const</span> result = <span class="hljs-keyword">await</span> <span class="hljs-title function_">issueRefund</span>(ticket.<span class="hljs-property">id</span>, decision.<span class="hljs-property">preview</span>.<span class="hljs-property">body</span>);
 
-  <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">callTool</span>(<span class="hljs-string">&quot;impri_report_result&quot;</span>, {
-    <span class="hljs-attr">action_id</span>: pushed.<span class="hljs-property">id</span>,
-    <span class="hljs-attr">status</span>: result.<span class="hljs-property">ok</span> ? <span class="hljs-string">&quot;executed&quot;</span> : <span class="hljs-string">&quot;execute_failed&quot;</span>,
+  <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">callTool</span>({
+    <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;impri_report_result&quot;</span>,
+    <span class="hljs-attr">arguments</span>: { <span class="hljs-attr">action_id</span>: actionId, <span class="hljs-attr">status</span>: result.<span class="hljs-property">ok</span> ? <span class="hljs-string">&quot;executed&quot;</span> : <span class="hljs-string">&quot;execute_failed&quot;</span> },
   });
 
   <span class="hljs-keyword">return</span> { <span class="hljs-attr">escalated</span>: <span class="hljs-literal">true</span>, <span class="hljs-attr">refunded</span>: ticket.<span class="hljs-property">amount</span> };

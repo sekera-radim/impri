@@ -175,7 +175,7 @@ server.<span class="hljs-title function_">tool</span>(
   <span class="hljs-string">&quot;send_invoice&quot;</span>,
   { <span class="hljs-attr">customerId</span>: z.<span class="hljs-title function_">string</span>(), <span class="hljs-attr">amountCents</span>: z.<span class="hljs-title function_">number</span>() },
   <span class="hljs-title function_">async</span> ({ customerId, amountCents }) =&gt; {
-    <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">pushAction</span>({
+    <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">createAction</span>({
       <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;invoice.send&quot;</span>,
       <span class="hljs-attr">title</span>: <span class="hljs-string">`Send invoice: customer <span class="hljs-subst">${customerId}</span>, $<span class="hljs-subst">${amountCents / <span class="hljs-number">100</span>}</span>`</span>,
       <span class="hljs-attr">preview</span>: {
@@ -183,7 +183,6 @@ server.<span class="hljs-title function_">tool</span>(
         <span class="hljs-attr">body</span>: <span class="hljs-string">`Customer: <span class="hljs-subst">${customerId}</span>\nAmount: $<span class="hljs-subst">${amountCents / <span class="hljs-number">100</span>}</span>`</span>,
       },
       <span class="hljs-attr">expires_in</span>: <span class="hljs-number">3600</span>,
-      <span class="hljs-attr">idempotent</span>: <span class="hljs-literal">false</span>,
     });
 
     <span class="hljs-keyword">const</span> decision = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">awaitDecision</span>(action.<span class="hljs-property">id</span>, { <span class="hljs-attr">timeoutS</span>: <span class="hljs-number">1800</span> });
@@ -193,11 +192,11 @@ server.<span class="hljs-title function_">tool</span>(
     }
 
     <span class="hljs-keyword">await</span> billingApi.<span class="hljs-title function_">sendInvoice</span>(customerId, amountCents);
-    <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">reportResult</span>(action.<span class="hljs-property">id</span>, { <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span> });
+    <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">reportResult</span>(action.<span class="hljs-property">id</span>, <span class="hljs-string">&quot;executed&quot;</span>);
     <span class="hljs-keyword">return</span> { <span class="hljs-attr">content</span>: [{ <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;text&quot;</span>, <span class="hljs-attr">text</span>: <span class="hljs-string">&quot;Invoice sent after approval.&quot;</span> }] };
   }
 );</code></pre></div>
-<p>The <code>billingApi.sendInvoice</code> call only appears once, inside the <code>approved</code> branch. There is no code path where the tool executes without first getting back <code>status: &quot;approved&quot;</code> from Impri.</p>
+<p>The <code>billingApi.sendInvoice</code> call only appears once, inside the <code>approved</code> branch. There is no code path where the tool executes without first getting back <code>status: &quot;approved&quot;</code> from Impri. (The REST API also accepts optional <code>idempotent</code> and <code>undo</code> hints on <code>POST /v1/actions</code>; the TypeScript SDK&#39;s <code>createAction</code> params don&#39;t expose them yet — use a raw <code>fetch</code> call if you need them today.)</p>
 <hr>
 <h2 id="why-wrap-the-handler-instead-of-the-agent39s-prompt">Why wrap the handler instead of the agent&#39;s prompt</h2>
 <p>You could instead tell the agent in its system prompt &quot;always ask before calling send_invoice.&quot; That relies on the model choosing to comply every time, and gives you no record of what was actually approved. Wrapping the handler moves the check into code the agent can&#39;t skip: the MCP client can only get a result back from <code>send_invoice</code> by going through the wrapped function, and that function&#39;s only path to <code>billingApi.sendInvoice</code> runs after the approval check.</p>
@@ -234,7 +233,7 @@ server.<span class="hljs-title function_">tool</span>(
 <h2 id="handling-timeouts-inside-a-long-running-mcp-session">Handling timeouts inside a long-running MCP session</h2>
 <p><code>awaitDecision</code> blocks the tool call until a human responds or the timeout hits. If your MCP client has its own request timeout shorter than the approval wait, the client will see a stalled tool call before the human even sees the inbox notification. Two ways to avoid that:</p>
 <ul>
-<li>Set <code>timeout_s</code> in <code>awaitDecision</code> well under any client-side request timeout, and treat a timeout as &quot;not yet decided&quot; rather than &quot;rejected&quot; — check <code>GET /v1/actions/:id</code> later instead of re-pushing.</li>
+<li>Set <code>timeoutS</code> in <code>awaitDecision</code> well under any client-side request timeout, and treat a timeout as &quot;not yet decided&quot; rather than &quot;rejected&quot; — check <code>GET /v1/actions/:id</code> later instead of re-pushing.</li>
 <li>For tools where the human might take hours, don&#39;t block synchronously at all: push the action, return an &quot;awaiting approval, action id <code>act_xyz</code>&quot; message to the agent, and let a follow-up tool call (or a webhook — see <a href="webhooks">webhooks</a>) resolve it later.</li>
 </ul>
 <p>For the full server setup — configuring <code>@impri/mcp</code> as a standalone process versus building the gate directly into your own server as shown above — see the <a href="mcp">MCP integration guide</a>. If your agent runs on the Claude Agent SDK rather than a raw MCP client, <a href="claude-agent-sdk">the Claude Agent SDK guide</a> covers wrapping tool definitions the same way.</p>

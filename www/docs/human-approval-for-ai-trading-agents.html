@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Human Approval for AI Trading Agents — Impri Docs</title>
-<meta name="description" content="An AI trading agent that can size and place orders on its own is one bad signal away from a real loss — this shows how to gate order execution behind a human…">
+<meta name="description" content="An AI trading agent that sizes and places orders on its own is one bad signal away from a real loss — gate order execution behind a human yes.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="Human Approval for AI Trading Agents — Impri Docs">
-<meta property="og:description" content="An AI trading agent that can size and place orders on its own is one bad signal away from a real loss — this shows how to gate order execution behind a human…">
+<meta property="og:description" content="An AI trading agent that sizes and places orders on its own is one bad signal away from a real loss — gate order execution behind a human yes.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/human-approval-for-ai-trading-agents">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/human-approval-for-ai-trading-agents">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human Approval for AI Trading Agents","description":"An AI trading agent that can size and place orders on its own is one bad signal away from a real loss — this shows how to gate order execution behind a human…","url":"https://impri.dev/docs/human-approval-for-ai-trading-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human Approval for AI Trading Agents","description":"An AI trading agent that sizes and places orders on its own is one bad signal away from a real loss — gate order execution behind a human yes.","url":"https://impri.dev/docs/human-approval-for-ai-trading-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -150,7 +150,7 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>Human Approval for AI Trading Agents</span>
     </nav>
     <h1>Human Approval for AI Trading Agents</h1>
-<p>An AI trading agent that can size and place orders on its own is one bad signal away from a real loss — this shows how to gate order execution behind a human yes.</p>
+<p>An AI trading agent that sizes and places orders on its own is one bad signal away from a real loss — gate order execution behind a human yes.</p>
 <hr>
 <h2 id="the-problem-is-the-order-not-the-analysis">The problem is the order, not the analysis</h2>
 <p>Letting an agent scan news, compute indicators, or backtest a strategy is low-risk — nothing happens until an order goes to a broker. The risk shows up exactly at that boundary: a mispriced signal, a stale data feed, or a hallucinated position size turns into a real fill in seconds, and unlike a bad blog post, a bad trade cannot be quietly deleted afterward.</p>
@@ -186,15 +186,15 @@ HEADERS = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span cla
     r = requests.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{BASE}</span>/v1/actions&quot;</span>, headers=HEADERS, json=body)
     <span class="hljs-keyword">return</span> r.json()[<span class="hljs-string">&quot;id&quot;</span>]
 
-<span class="hljs-keyword">def</span> <span class="hljs-title function_">await_decision</span>(<span class="hljs-params">action_id, poll_every=<span class="hljs-number">5</span>, timeout=<span class="hljs-number">300</span></span>):
-    deadline = time.time() + timeout
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">await_decision</span>(<span class="hljs-params">action_id, poll_interval_s=<span class="hljs-number">5</span>, timeout_s=<span class="hljs-number">300</span></span>):
+    deadline = time.time() + timeout_s
     <span class="hljs-keyword">while</span> time.time() &lt; deadline:
         r = requests.get(<span class="hljs-string">f&quot;<span class="hljs-subst">{BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>&quot;</span>, headers=HEADERS)
         data = r.json()
         <span class="hljs-keyword">if</span> data[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;pending&quot;</span>:
             <span class="hljs-keyword">return</span> data
-        time.sleep(poll_every)
-    <span class="hljs-keyword">return</span> {<span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;expired&quot;</span>}
+        time.sleep(poll_interval_s)
+    <span class="hljs-keyword">return</span> {<span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;timeout&quot;</span>}  <span class="hljs-comment"># still pending server-side, not expired</span>
 
 <span class="hljs-keyword">def</span> <span class="hljs-title function_">place_order_if_approved</span>(<span class="hljs-params">symbol, side, qty, est_price, broker_client</span>):
     action_id = propose_order(symbol, side, qty, est_price)
@@ -212,7 +212,7 @@ HEADERS = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span cla
         headers=HEADERS,
         json={<span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;executed&quot;</span>, <span class="hljs-string">&quot;payload&quot;</span>: {<span class="hljs-string">&quot;broker_order_id&quot;</span>: order.<span class="hljs-built_in">id</span>}},
     )</code></pre></div>
-<p>Note the short <code>expires_in</code>: 300 seconds, the API minimum. A trade signal that&#39;s five minutes stale is a different trade — treat <code>expired</code> the same as <code>rejected</code> and require the strategy to re-propose with fresh prices rather than resurrecting an old approval.</p>
+<p>Note the short <code>expires_in</code>: 300 seconds, the API minimum. A trade signal that&#39;s five minutes stale is a different trade — treat <code>expired</code> (and a client-side poll <code>timeout</code>, since the signal window has passed by then anyway) the same as <code>rejected</code>, and require the strategy to re-propose with fresh prices rather than resurrecting an old approval.</p>
 <hr>
 <h2 id="what-the-approval-card-should-show">What the approval card should show</h2>
 <div class="table-wrap"><table>

@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Approve AI Agent Calendar Changes Before They're Sent — Impri Docs</title>
-<meta name="description" content="Give a scheduling agent write access to your calendar and it will eventually double-book, reschedule the wrong meeting, or send an invite to the wrong list …">
+<meta name="description" content="Route AI agent calendar changes through human approval before they reach the calendar API, so a bad reschedule or invite never reaches attendees.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="Approve AI Agent Calendar Changes Before They're Sent — Impri Docs">
-<meta property="og:description" content="Give a scheduling agent write access to your calendar and it will eventually double-book, reschedule the wrong meeting, or send an invite to the wrong list …">
+<meta property="og:description" content="Route AI agent calendar changes through human approval before they reach the calendar API, so a bad reschedule or invite never reaches attendees.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/approve-ai-agent-calendar-changes">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/approve-ai-agent-calendar-changes">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Approve AI Agent Calendar Changes Before They're Sent","description":"Give a scheduling agent write access to your calendar and it will eventually double-book, reschedule the wrong meeting, or send an invite to the wrong list …","url":"https://impri.dev/docs/approve-ai-agent-calendar-changes","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Approve AI Agent Calendar Changes Before They're Sent","description":"Route AI agent calendar changes through human approval before they reach the calendar API, so a bad reschedule or invite never reaches attendees.","url":"https://impri.dev/docs/approve-ai-agent-calendar-changes","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -150,16 +150,16 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>Approve AI Agent Calendar Changes Before They're Sent</span>
     </nav>
     <h1>Approve AI Agent Calendar Changes Before They&#39;re Sent</h1>
-<p>Give a scheduling agent write access to your calendar and it will eventually double-book, reschedule the wrong meeting, or send an invite to the wrong list — this pattern puts a human between the proposed change and the send.</p>
+<p>Route AI agent calendar changes through human approval before they reach the calendar API, so a bad reschedule or invite never reaches attendees.</p>
 <hr>
 <h2 id="why-calendar-writes-are-riskier-than-they-look">Why calendar writes are riskier than they look</h2>
 <p>A calendar agent looks low-stakes compared to one that sends money or deletes data, but a calendar write has a side effect other people see immediately: an invite lands in a colleague&#39;s or a client&#39;s inbox, a meeting moves without the attendees agreeing to it, or a &quot;helpful&quot; cleanup cancels something that was intentional. There&#39;s also no undo that doesn&#39;t itself require an apology email. The fix is the same one used for any agent action with an external side effect: the agent proposes, a human decides, and only an approved decision reaches the calendar API.</p>
 <h2 id="what-gets-proposed-vs-what-gets-executed">What gets proposed vs. what gets executed</h2>
 <p>The agent never calls the calendar provider&#39;s API directly. It builds the change it wants to make — reschedule, new invite, cancellation — as an Impri action, and a small executor function is the only code path allowed to call the real calendar API, and only after seeing <code>status: &quot;approved&quot;</code>.</p>
-<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">Impri</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@impri/sdk&quot;</span>;
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">ImpriClient</span>, <span class="hljs-title class_">ImpriRejected</span>, <span class="hljs-title class_">ImpriExpired</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@impri/sdk&quot;</span>;
 <span class="hljs-keyword">import</span> { google } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;googleapis&quot;</span>; <span class="hljs-comment">// or your calendar client of choice</span>
 
-<span class="hljs-keyword">const</span> impri = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Impri</span>({ <span class="hljs-attr">apiKey</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_API_KEY</span>! });
+<span class="hljs-keyword">const</span> impri = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ImpriClient</span>({ <span class="hljs-attr">apiKey</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_API_KEY</span>! });
 
 <span class="hljs-keyword">interface</span> <span class="hljs-title class_">ProposedReschedule</span> {
   <span class="hljs-attr">eventId</span>: <span class="hljs-built_in">string</span>;
@@ -171,7 +171,7 @@ pre code.hljs{display:block;overflow-x:auto}
 }
 
 <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">proposeReschedule</span>(<span class="hljs-params"><span class="hljs-attr">change</span>: <span class="hljs-title class_">ProposedReschedule</span></span>) {
-  <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">create</span>({
+  <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">createAction</span>({
     <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;calendar.reschedule&quot;</span>,
     <span class="hljs-attr">title</span>: <span class="hljs-string">`Reschedule: <span class="hljs-subst">${change.title}</span>`</span>,
     <span class="hljs-attr">preview</span>: {
@@ -191,11 +191,14 @@ pre code.hljs{display:block;overflow-x:auto}
 }
 
 <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">applyIfApproved</span>(<span class="hljs-params"><span class="hljs-attr">actionId</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">change</span>: <span class="hljs-title class_">ProposedReschedule</span></span>) {
-  <span class="hljs-keyword">const</span> decision = <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">awaitDecision</span>(actionId, { <span class="hljs-attr">timeoutS</span>: <span class="hljs-number">3600</span> });
-
-  <span class="hljs-keyword">if</span> (decision.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;approved&quot;</span>) {
-    <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Reschedule not applied: <span class="hljs-subst">${decision.status}</span>`</span>);
-    <span class="hljs-keyword">return</span>;
+  <span class="hljs-keyword">try</span> {
+    <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">awaitDecision</span>(actionId, { <span class="hljs-attr">timeoutS</span>: <span class="hljs-number">3600</span> });
+  } <span class="hljs-keyword">catch</span> (e) {
+    <span class="hljs-keyword">if</span> (e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriRejected</span> || e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriExpired</span>) {
+      <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Reschedule not applied: <span class="hljs-subst">${e <span class="hljs-keyword">instanceof</span> ImpriRejected ? <span class="hljs-string">&quot;rejected&quot;</span> : <span class="hljs-string">&quot;expired&quot;</span>}</span>`</span>);
+      <span class="hljs-keyword">return</span>;
+    }
+    <span class="hljs-keyword">throw</span> e;
   }
 
   <span class="hljs-comment">// The proposed time itself isn&#x27;t editable in this action (only the note is),</span>
@@ -207,7 +210,7 @@ pre code.hljs{display:block;overflow-x:auto}
     <span class="hljs-attr">requestBody</span>: { <span class="hljs-attr">start</span>: { <span class="hljs-attr">dateTime</span>: change.<span class="hljs-property">proposedStart</span> } },
   });
 
-  <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">reportResult</span>(actionId, { <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span> });
+  <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">reportResult</span>(actionId, <span class="hljs-string">&quot;executed&quot;</span>);
 }</code></pre></div>
 <p>The <code>target_url</code> field is doing real work here: it points the reviewer straight at the existing event in their own calendar, so they can check the current state before approving a change to it instead of trusting the agent&#39;s summary alone.</p>
 <hr>

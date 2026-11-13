@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Human-in-the-Loop for AI Customer Support Agents — Impri Docs</title>
-<meta name="description" content="A support agent that drafts replies is safe. One that also sends them, issues refunds, or cancels accounts needs a human in the loop before any of that…">
+<meta name="description" content="A support agent that drafts replies is safe. One that sends them, issues refunds, or cancels accounts needs a human in the loop before it acts.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="Human-in-the-Loop for AI Customer Support Agents — Impri Docs">
-<meta property="og:description" content="A support agent that drafts replies is safe. One that also sends them, issues refunds, or cancels accounts needs a human in the loop before any of that…">
+<meta property="og:description" content="A support agent that drafts replies is safe. One that sends them, issues refunds, or cancels accounts needs a human in the loop before it acts.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/human-in-the-loop-ai-customer-support">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/human-in-the-loop-ai-customer-support">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human-in-the-Loop for AI Customer Support Agents","description":"A support agent that drafts replies is safe. One that also sends them, issues refunds, or cancels accounts needs a human in the loop before any of that…","url":"https://impri.dev/docs/human-in-the-loop-ai-customer-support","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human-in-the-Loop for AI Customer Support Agents","description":"A support agent that drafts replies is safe. One that sends them, issues refunds, or cancels accounts needs a human in the loop before it acts.","url":"https://impri.dev/docs/human-in-the-loop-ai-customer-support","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -150,7 +150,7 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>Human-in-the-Loop for AI Customer Support Agents</span>
     </nav>
     <h1>Human-in-the-Loop for AI Customer Support Agents</h1>
-<p>A support agent that drafts replies is safe. One that also sends them, issues refunds, or cancels accounts needs a human in the loop before any of that reaches a customer.</p>
+<p>A support agent that drafts replies is safe. One that sends them, issues refunds, or cancels accounts needs a human in the loop before it acts.</p>
 <hr>
 <h2 id="where-support-agents-actually-go-wrong">Where support agents actually go wrong</h2>
 <p>Most AI support setups fail the same way: the model is good at drafting a plausible-sounding reply, but &quot;plausible-sounding&quot; and &quot;correct&quot; are different things. A customer says their order never arrived, and the agent — trusting the customer&#39;s framing without checking the shipment record — offers a full refund plus a discount code. A customer asks to close their account, and the agent, trying to be helpful, does it immediately instead of confirming they understand it&#39;s irreversible.</p>
@@ -195,7 +195,8 @@ pre code.hljs{display:block;overflow-x:auto}
 <hr>
 <h2 id="wiring-the-gate-with-the-python-sdk">Wiring the gate with the Python SDK</h2>
 <p>Here&#39;s a support agent that drafts a reply to a billing complaint and won&#39;t send it until approved:</p>
-<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> time
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> os
+<span class="hljs-keyword">import</span> time
 <span class="hljs-keyword">from</span> impri <span class="hljs-keyword">import</span> ImpriClient
 
 client = ImpriClient(api_key=os.environ[<span class="hljs-string">&quot;IMPRI_API_KEY&quot;</span>])
@@ -203,7 +204,7 @@ client = ImpriClient(api_key=os.environ[<span class="hljs-string">&quot;IMPRI_AP
 <span class="hljs-keyword">def</span> <span class="hljs-title function_">handle_billing_ticket</span>(<span class="hljs-params">ticket</span>):
     draft = generate_reply(ticket)  <span class="hljs-comment"># your LLM call, not shown</span>
 
-    action = client.actions.create(
+    action = client.create_action(
         kind=<span class="hljs-string">&quot;support.reply&quot;</span>,
         title=<span class="hljs-string">f&quot;Reply to ticket #<span class="hljs-subst">{ticket.<span class="hljs-built_in">id</span>}</span>: <span class="hljs-subst">{ticket.subject}</span>&quot;</span>,
         preview={<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: draft},
@@ -213,15 +214,16 @@ client = ImpriClient(api_key=os.environ[<span class="hljs-string">&quot;IMPRI_AP
     )
 
     <span class="hljs-keyword">while</span> <span class="hljs-literal">True</span>:
-        result = client.actions.get(action.<span class="hljs-built_in">id</span>)
-        <span class="hljs-keyword">if</span> result.status != <span class="hljs-string">&quot;pending&quot;</span>:
+        result = client.get_action(action[<span class="hljs-string">&quot;id&quot;</span>])
+        <span class="hljs-keyword">if</span> result[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;pending&quot;</span>:
             <span class="hljs-keyword">break</span>
         time.sleep(<span class="hljs-number">5</span>)
 
-    <span class="hljs-keyword">if</span> result.status == <span class="hljs-string">&quot;approved&quot;</span>:
-        final_body = result.decision.final_preview[<span class="hljs-string">&quot;body&quot;</span>]
+    <span class="hljs-keyword">if</span> result[<span class="hljs-string">&quot;status&quot;</span>] == <span class="hljs-string">&quot;approved&quot;</span>:
+        decision = result.get(<span class="hljs-string">&quot;decision&quot;</span>) <span class="hljs-keyword">or</span> {}
+        final_body = (decision.get(<span class="hljs-string">&quot;final_preview&quot;</span>) <span class="hljs-keyword">or</span> result[<span class="hljs-string">&quot;preview&quot;</span>])[<span class="hljs-string">&quot;body&quot;</span>]
         helpdesk.post_reply(ticket.<span class="hljs-built_in">id</span>, final_body)
-        client.actions.report_result(action.<span class="hljs-built_in">id</span>, status=<span class="hljs-string">&quot;executed&quot;</span>)
+        client.report_result(action[<span class="hljs-string">&quot;id&quot;</span>], <span class="hljs-string">&quot;executed&quot;</span>)
     <span class="hljs-keyword">else</span>:
         <span class="hljs-comment"># rejected or expired — escalate to a human agent instead</span>
         helpdesk.assign_to_queue(ticket.<span class="hljs-built_in">id</span>, queue=<span class="hljs-string">&quot;human-review&quot;</span>)</code></pre></div>
@@ -229,7 +231,7 @@ client = ImpriClient(api_key=os.environ[<span class="hljs-string">&quot;IMPRI_AP
 <hr>
 <h2 id="give-reviewers-enough-to-decide-fast">Give reviewers enough to decide fast</h2>
 <p>A support lead approving from their phone between other tickets doesn&#39;t have time to re-read the whole thread. Put the decision-relevant facts in the title and keep the preview body to what&#39;s actually being sent — not a dump of internal context. If the action depends on something the reviewer can&#39;t see in the preview (e.g., &quot;this customer has churned twice before&quot;), that belongs in your ticket system, not stuffed into the approval card.</p>
-<p>For refunds and other actions with financial impact, set <code>idempotent: false</code> in the action payload so the approval card shows a warning against approving it twice — see the optional fields in <a href="how-to-add-human-approval-to-an-ai-agent">the main integration guide</a>.</p>
+<p>For refunds and other actions with financial impact, add <code>idempotent: false</code> to the raw <code>POST /v1/actions</code> body — the Python SDK&#39;s <code>create_action</code> doesn&#39;t expose that field yet — so the approval card shows a warning against approving it twice; see the optional fields in <a href="how-to-add-human-approval-to-an-ai-agent">the main integration guide</a>.</p>
 <hr>
 <h2 id="boundaries-worth-being-explicit-about">Boundaries worth being explicit about</h2>
 <p>Impri is the approval gate — it stores the draft reply, notifies the reviewer, and holds the decision. It does not read the support ticket, judge whether the refund amount is reasonable, or understand your helpdesk&#39;s data model. That judgment stays with the human reviewer and with your agent&#39;s own logic for what to draft in the first place.</p>

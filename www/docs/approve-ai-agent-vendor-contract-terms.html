@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Approve AI Agent Vendor Contract Terms Before They're… — Impri Docs</title>
-<meta name="description" content="When an AI agent redlines a vendor contract, legal needs to see the exact final wording and approve it — not just trust a summary — before anything gets sent…">
+<meta name="description" content="Have legal approve the exact redlined wording an AI contract agent proposes, not just a summary, before any counter-proposal reaches the vendor.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="Approve AI Agent Vendor Contract Terms Before They're… — Impri Docs">
-<meta property="og:description" content="When an AI agent redlines a vendor contract, legal needs to see the exact final wording and approve it — not just trust a summary — before anything gets sent…">
+<meta property="og:description" content="Have legal approve the exact redlined wording an AI contract agent proposes, not just a summary, before any counter-proposal reaches the vendor.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/approve-ai-agent-vendor-contract-terms">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/approve-ai-agent-vendor-contract-terms">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Approve AI Agent Vendor Contract Terms Before They're Signed","description":"When an AI agent redlines a vendor contract, legal needs to see the exact final wording and approve it — not just trust a summary — before anything gets sent…","url":"https://impri.dev/docs/approve-ai-agent-vendor-contract-terms","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Approve AI Agent Vendor Contract Terms Before They're Signed","description":"Have legal approve the exact redlined wording an AI contract agent proposes, not just a summary, before any counter-proposal reaches the vendor.","url":"https://impri.dev/docs/approve-ai-agent-vendor-contract-terms","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -150,7 +150,7 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>Approve AI Agent Vendor Contract Terms Before They're Signed</span>
     </nav>
     <h1>Approve AI Agent Vendor Contract Terms Before They&#39;re Signed</h1>
-<p>When an AI agent redlines a vendor contract, legal needs to see the exact final wording and approve it — not just trust a summary — before anything gets sent back to the vendor for signature.</p>
+<p>Have legal approve the exact redlined wording an AI contract agent proposes, not just a summary, before any counter-proposal reaches the vendor.</p>
 <hr>
 <h2 id="the-redline-problem">The redline problem</h2>
 <p>A contract-review agent is useful precisely because it can read a 40-page vendor agreement and propose specific changes: a liability cap, a termination clause, a data-retention term. But &quot;propose changes&quot; and &quot;send changes to the vendor&quot; have to be two different steps with a human between them. Legal doesn&#39;t want a summary of what the agent thinks it changed — they want to read the literal text that&#39;s about to go out, and they want the ability to fix a clause themselves without kicking the whole draft back to the agent.</p>
@@ -164,12 +164,15 @@ pre code.hljs{display:block;overflow-x:auto}
     <span class="hljs-attr">&quot;impri&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
       <span class="hljs-attr">&quot;command&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;npx&quot;</span><span class="hljs-punctuation">,</span>
       <span class="hljs-attr">&quot;args&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;@impri/mcp&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
-      <span class="hljs-attr">&quot;env&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;IMPRI_API_KEY&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_your_key_here&quot;</span> <span class="hljs-punctuation">}</span>
+      <span class="hljs-attr">&quot;env&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">&quot;IMPRI_API_KEY&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;im_your_key_here&quot;</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">&quot;IMPRI_BASE_URL&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
+      <span class="hljs-punctuation">}</span>
     <span class="hljs-punctuation">}</span>
   <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span></code></pre></div>
 <p><strong>Agent-side logic (TypeScript, using the Impri TypeScript SDK for the send-back step):</strong></p>
-<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">ImpriClient</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@impri/sdk&quot;</span>;
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">ImpriClient</span>, <span class="hljs-title class_">ImpriRejected</span>, <span class="hljs-title class_">ImpriExpired</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@impri/sdk&quot;</span>;
 
 <span class="hljs-keyword">const</span> impri = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ImpriClient</span>({ <span class="hljs-attr">apiKey</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_API_KEY</span>! });
 
@@ -185,36 +188,37 @@ pre code.hljs{display:block;overflow-x:auto}
     .<span class="hljs-title function_">map</span>(<span class="hljs-function">(<span class="hljs-params">d</span>) =&gt;</span> <span class="hljs-string">`### <span class="hljs-subst">${d.clause}</span>\n\n**Original:** <span class="hljs-subst">${d.originalText}</span>\n\n**Proposed:** <span class="hljs-subst">${d.proposedText}</span>\n\n_Why: <span class="hljs-subst">${d.rationale}</span>_`</span>)
     .<span class="hljs-title function_">join</span>(<span class="hljs-string">&quot;\n\n---\n\n&quot;</span>);
 
-  <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">create</span>({
+  <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">createAction</span>({
     <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;contract.terms.propose&quot;</span>,
     <span class="hljs-attr">title</span>: <span class="hljs-string">`Redline for <span class="hljs-subst">${vendor}</span> MSA — <span class="hljs-subst">${drafts.length}</span> clause(s)`</span>,
     <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, body },
-    <span class="hljs-attr">expiresIn</span>: <span class="hljs-number">172800</span>, <span class="hljs-comment">// 48h — legal review window</span>
+    <span class="hljs-attr">expires_in</span>: <span class="hljs-number">172800</span>, <span class="hljs-comment">// 48h — legal review window</span>
     <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
-    <span class="hljs-attr">idempotent</span>: <span class="hljs-literal">false</span>,
-    <span class="hljs-attr">undo</span>: <span class="hljs-string">&quot;No automated undo — a countersigned amendment must be reversed by a follow-up amendment&quot;</span>,
   });
 
   <span class="hljs-keyword">return</span> action.<span class="hljs-property">id</span>;
 }
 
 <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">sendApprovedTermsToVendor</span>(<span class="hljs-params"><span class="hljs-attr">actionId</span>: <span class="hljs-built_in">string</span></span>) {
-  <span class="hljs-keyword">const</span> decision = <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">awaitDecision</span>(actionId, { <span class="hljs-attr">timeoutS</span>: <span class="hljs-number">172800</span> });
-
-  <span class="hljs-keyword">if</span> (decision.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;approved&quot;</span>) {
-    <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Terms not sent — legal marked this <span class="hljs-subst">${decision.status}</span>`</span>);
-    <span class="hljs-keyword">return</span>;
+  <span class="hljs-keyword">let</span> action;
+  <span class="hljs-keyword">try</span> {
+    action = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">awaitDecision</span>(actionId, { <span class="hljs-attr">timeoutS</span>: <span class="hljs-number">172800</span> });
+  } <span class="hljs-keyword">catch</span> (e) {
+    <span class="hljs-keyword">if</span> (e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriRejected</span> || e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriExpired</span>) {
+      <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Terms not sent — legal did not approve this redline`</span>);
+      <span class="hljs-keyword">return</span>;
+    }
+    <span class="hljs-keyword">throw</span> e;
   }
 
-  <span class="hljs-keyword">const</span> finalTerms = decision.<span class="hljs-property">finalPreview</span>.<span class="hljs-property">body</span>; <span class="hljs-comment">// carries legal&#x27;s edits, if any</span>
+  <span class="hljs-keyword">const</span> finalTerms = action.<span class="hljs-property">decision</span>!.<span class="hljs-property">final_preview</span>!.<span class="hljs-property">body</span>; <span class="hljs-comment">// carries legal&#x27;s edits, if any</span>
   <span class="hljs-comment">// await vendorPortal.sendCounterProposal(finalTerms); — your actual send call</span>
 
-  <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">reportResult</span>(actionId, {
-    <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span>,
-    <span class="hljs-attr">payload</span>: { <span class="hljs-attr">sentAt</span>: <span class="hljs-keyword">new</span> <span class="hljs-title class_">Date</span>().<span class="hljs-title function_">toISOString</span>() },
+  <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">reportResult</span>(actionId, <span class="hljs-string">&quot;executed&quot;</span>, {
+    <span class="hljs-attr">detail</span>: <span class="hljs-string">`Sent at <span class="hljs-subst">${<span class="hljs-keyword">new</span> <span class="hljs-built_in">Date</span>().toISOString()}</span>`</span>,
   });
 }</code></pre></div>
-<p>If legal only tweaks one clause&#39;s wording, <code>decision.diff</code> isolates that change instead of legal having to re-read the entire redline to figure out what moved.</p>
+<p>If legal only tweaks one clause&#39;s wording, <code>decision.diff</code> isolates that change instead of legal having to re-read the entire redline to figure out what moved. (The REST API also accepts <code>idempotent</code> and <code>undo</code> hints on the action body — e.g. <code>idempotent: false</code> and a plain-English undo note for a signed amendment — but the TypeScript SDK&#39;s <code>createAction</code> doesn&#39;t expose those params yet; send them via a direct <code>POST /v1/actions</code> call if you need them today.)</p>
 <hr>
 <h2 id="reading-the-diff-as-a-paper-trail">Reading the diff as a paper trail</h2>
 <p><code>decision.diff</code> is present whenever the approved content differs from what the agent proposed. For contract terms specifically, this is worth keeping as its own artifact — a compliance reviewer six months later asking &quot;did we actually agree to this exact liability cap, or did the AI draft something slightly different&quot; is answered by the diff, not by re-reading the whole contract history. Combined with the underlying record Impri keeps of who approved what and when (see <a href="audit-log">audit log</a>), this closes the loop: proposal, human edit, human approval, all timestamped.</p>

@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Human Approval for OpenAI AgentKit Workflows — Impri Docs</title>
-<meta name="description" content="AgentKit's visual workflow builder makes it easy to chain tool calls into a working agent fast — which also makes it easy to ship one that emails, posts, or…">
+<title>Human Approval for OpenAI AgentKit After Agent Builder — Impri Docs</title>
+<meta name="description" content="Agent Builder shuts down on November 30, 2026. Export your AgentKit workflow to the Agents SDK and send its tool approvals to a reviewer's Impri inbox.">
 <meta name="theme-color" content="#06070d">
-<meta property="og:title" content="Human Approval for OpenAI AgentKit Workflows — Impri Docs">
-<meta property="og:description" content="AgentKit's visual workflow builder makes it easy to chain tool calls into a working agent fast — which also makes it easy to ship one that emails, posts, or…">
+<meta property="og:title" content="Human Approval for OpenAI AgentKit After Agent Builder — Impri Docs">
+<meta property="og:description" content="Agent Builder shuts down on November 30, 2026. Export your AgentKit workflow to the Agents SDK and send its tool approvals to a reviewer's Impri inbox.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/human-approval-for-openai-agentkit">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/human-approval-for-openai-agentkit">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human Approval for OpenAI AgentKit Workflows","description":"AgentKit's visual workflow builder makes it easy to chain tool calls into a working agent fast — which also makes it easy to ship one that emails, posts, or…","url":"https://impri.dev/docs/human-approval-for-openai-agentkit","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human Approval for OpenAI AgentKit After Agent Builder","description":"Agent Builder shuts down on November 30, 2026. Export your AgentKit workflow to the Agents SDK and send its tool approvals to a reviewer's Impri inbox.","url":"https://impri.dev/docs/human-approval-for-openai-agentkit","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -147,87 +147,111 @@ pre code.hljs{display:block;overflow-x:auto}
       <span class="bc-sep">/</span>
       <span>Reference</span>
       <span class="bc-sep">/</span>
-      <span>Human Approval for OpenAI AgentKit Workflows</span>
+      <span>Human Approval for OpenAI AgentKit After Agent Builder</span>
     </nav>
-    <h1>Human Approval for OpenAI AgentKit Workflows</h1>
-<p>AgentKit&#39;s visual workflow builder makes it easy to chain tool calls into a working agent fast — which also makes it easy to ship one that emails, posts, or files something nobody reviewed.</p>
+    <h1>Human Approval for OpenAI AgentKit After Agent Builder</h1>
+<p>Agent Builder shuts down on November 30, 2026. Export your AgentKit workflow to the Agents SDK and send its tool approvals to a reviewer&#39;s Impri inbox.</p>
 <hr>
-<h2 id="where-the-gap-is-in-a-workflow-graph">Where the gap is in a workflow graph</h2>
-<p>An AgentKit workflow is a graph of nodes: an agent node reasons over the input, tool-call nodes hit your connectors (Slack, a CRM, a ticketing system, an email API), and the output flows to the next node. That graph has no concept of &quot;pause and ask a human&quot; — a tool-call node either runs or it doesn&#39;t. If your workflow includes a node that sends a support reply, creates a refund, or posts to a public channel, the only way to add a checkpoint today is a <strong>custom code node</strong> sitting between &quot;agent decided what to do&quot; and &quot;connector executes it.&quot;</p>
-<p>That&#39;s a normal shape for a gate: an HTTP call out, a wait, an HTTP call back. Impri fills that role without you building a queue, a notification path, and a review UI yourself.</p>
-<h2 id="wiring-the-gate-into-a-code-node">Wiring the gate into a code node</h2>
-<p>Say the workflow drafts a reply to an inbound support ticket and the last node calls your helpdesk connector to send it. Replace that direct connector call with a code node that pushes the draft to Impri first, waits for a decision, then calls the connector only on approval:</p>
-<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-built_in">setTimeout</span> <span class="hljs-keyword">as</span> sleep } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;node:timers/promises&quot;</span>;
+<h2 id="what-changes-on-november-30-2026">What changes on November 30, 2026</h2>
+<p>OpenAI&#39;s <a href="https://developers.openai.com/api/docs/deprecations" target="_blank" rel="noopener">deprecations page</a> lists Agent Builder, the visual workflow editor in AgentKit, as deprecated since June 3, 2026, with a shutdown date of November 30, 2026. The named replacements are the Agents SDK (agents in code) or ChatGPT Workspace Agents (no-code agents inside a ChatGPT Business, Enterprise or Edu workspace). ChatKit remains available.</p>
+<p>OpenAI&#39;s <a href="https://developers.openai.com/api/docs/guides/agent-builder/migrate-from-agent-builder" target="_blank" rel="noopener">migration guide</a> exports a workflow as Agents SDK code:</p>
+<ol>
+<li>Open the workflow in Agent Builder.</li>
+<li>Select <strong>Code</strong> in the top navigation.</li>
+<li>Select <strong>Agents SDK</strong>, then <strong>TypeScript</strong> or <strong>Python</strong>, and copy the complete export.</li>
+</ol>
+<p>The guide warns that the export &quot;does not convert your workflow graph or guarantee that every behavior transfers unchanged,&quot; so re-check every step that changes something outside the chat.</p>
+<h2 id="the-human-approval-node-doesn39t-come-along-as-is">The Human approval node doesn&#39;t come along as-is</h2>
+<p>In Agent Builder, the <a href="https://developers.openai.com/api/docs/guides/node-reference" target="_blank" rel="noopener">Human approval node</a> is described as &quot;Defer to end-users for approval&quot;: the person chatting with the workflow answers the yes/no question.</p>
+<p>In the Agents SDK, approval belongs to a tool: <code>needsApproval: true</code> (TypeScript) or <code>needs_approval=True</code> (Python). When the model calls it, the run pauses and returns the pending calls in <code>result.interruptions</code>; your code approves or rejects each on <code>result.state</code> and runs the agent again with that state.</p>
+<p>Who answers is now your code&#39;s choice. That matters when:</p>
+<ul>
+<li>The person in the chat shouldn&#39;t approve the action: a customer asking for their own refund, an employee asking for their own access.</li>
+<li>Nobody is in a chat at all: the agent runs from a queue, a cron job or a webhook.</li>
+</ul>
+<p>Then the approval has to reach someone else. Impri puts the pending call in a reviewer&#39;s web inbox, notifies them (Slack, Discord, Telegram, ntfy or email, as the project is set up) and returns the decision to your code.</p>
+<h2 id="route-each-interruption-to-a-reviewer">Route each interruption to a reviewer</h2>
+<p>Each <code>send_ticket_reply</code> call becomes an Impri action; the reviewer&#39;s decision becomes <code>approve()</code> or <code>reject()</code> on the run state:</p>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">Agent</span>, run, tool } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@openai/agents&quot;</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">ImpriClient</span>, <span class="hljs-title class_">ImpriRejected</span>, <span class="hljs-title class_">ImpriExpired</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@impri/sdk&quot;</span>;
+<span class="hljs-keyword">import</span> { z } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;zod&quot;</span>;
 
-<span class="hljs-keyword">interface</span> <span class="hljs-title class_">AgentKitInput</span> {
-  <span class="hljs-attr">ticketId</span>: <span class="hljs-built_in">string</span>;
-  <span class="hljs-attr">customerEmail</span>: <span class="hljs-built_in">string</span>;
-  <span class="hljs-attr">draftReply</span>: <span class="hljs-built_in">string</span>;
+<span class="hljs-keyword">const</span> impri = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ImpriClient</span>({ <span class="hljs-attr">apiKey</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_API_KEY</span>! });
+
+<span class="hljs-keyword">const</span> sendReply = <span class="hljs-title function_">tool</span>({
+  <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;send_ticket_reply&quot;</span>,
+  <span class="hljs-attr">description</span>: <span class="hljs-string">&quot;Send a reply to a customer&#x27;s support ticket.&quot;</span>,
+  <span class="hljs-attr">parameters</span>: z.<span class="hljs-title function_">object</span>({ <span class="hljs-attr">ticketId</span>: z.<span class="hljs-title function_">string</span>(), <span class="hljs-attr">body</span>: z.<span class="hljs-title function_">string</span>() }),
+  <span class="hljs-attr">needsApproval</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// the run pauses here instead of calling execute</span>
+  <span class="hljs-attr">execute</span>: <span class="hljs-title function_">async</span> ({ ticketId, body }) =&gt; helpdesk.<span class="hljs-title function_">sendReply</span>(ticketId, body),
+});
+
+<span class="hljs-keyword">const</span> agent = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Agent</span>({
+  <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;Support agent&quot;</span>,
+  <span class="hljs-attr">instructions</span>: <span class="hljs-string">&quot;Draft a reply to the ticket and send it with send_ticket_reply.&quot;</span>,
+  <span class="hljs-attr">tools</span>: [sendReply],
+});
+
+<span class="hljs-keyword">let</span> result = <span class="hljs-keyword">await</span> <span class="hljs-title function_">run</span>(agent, <span class="hljs-string">&quot;Ticket 4812: the customer was charged twice for March.&quot;</span>);
+
+<span class="hljs-keyword">while</span> (result.<span class="hljs-property">interruptions</span>.<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>) {
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> interruption <span class="hljs-keyword">of</span> result.<span class="hljs-property">interruptions</span>) {
+    <span class="hljs-comment">// One Impri action per pending tool call, shown to the reviewer as-is.</span>
+    <span class="hljs-keyword">const</span> created = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">createAction</span>({
+      <span class="hljs-attr">kind</span>: <span class="hljs-string">`agents_sdk.<span class="hljs-subst">${interruption.name}</span>`</span>,
+      <span class="hljs-attr">title</span>: <span class="hljs-string">`<span class="hljs-subst">${interruption.agent.name}</span> wants to call <span class="hljs-subst">${interruption.name}</span>`</span>,
+      <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: <span class="hljs-string">&quot;```json\n&quot;</span> + (interruption.<span class="hljs-property">arguments</span> ?? <span class="hljs-string">&quot;{}&quot;</span>) + <span class="hljs-string">&quot;\n```&quot;</span> },
+      <span class="hljs-attr">expires_in</span>: <span class="hljs-number">3600</span>,
+    });
+
+    <span class="hljs-keyword">try</span> {
+      <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">awaitDecision</span>(created.<span class="hljs-property">id</span>, { <span class="hljs-attr">timeoutS</span>: <span class="hljs-number">3600</span> });
+      result.<span class="hljs-property">state</span>.<span class="hljs-title function_">approve</span>(interruption);
+    } <span class="hljs-keyword">catch</span> (e) {
+      <span class="hljs-keyword">if</span> (e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriRejected</span> || e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriExpired</span>) {
+        result.<span class="hljs-property">state</span>.<span class="hljs-title function_">reject</span>(interruption, { <span class="hljs-attr">message</span>: <span class="hljs-string">&quot;A reviewer did not approve this call.&quot;</span> });
+      } <span class="hljs-keyword">else</span> {
+        <span class="hljs-keyword">throw</span> e; <span class="hljs-comment">// ImpriTimeout: still pending in the inbox, decide what to do</span>
+      }
+    }
+  }
+  result = <span class="hljs-keyword">await</span> <span class="hljs-title function_">run</span>(agent, result.<span class="hljs-property">state</span>); <span class="hljs-comment">// resume where the run paused</span>
 }
 
-<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">gateReply</span>(<span class="hljs-params"><span class="hljs-attr">input</span>: <span class="hljs-title class_">AgentKitInput</span></span>) {
-  <span class="hljs-keyword">const</span> push = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">&quot;https://api.impri.dev/v1/actions&quot;</span>, {
-    <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>,
-    <span class="hljs-attr">headers</span>: {
-      <span class="hljs-title class_">Authorization</span>: <span class="hljs-string">`Bearer <span class="hljs-subst">${process.env.IMPRI_API_KEY}</span>`</span>,
-      <span class="hljs-string">&quot;Content-Type&quot;</span>: <span class="hljs-string">&quot;application/json&quot;</span>,
-    },
-    <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({
-      <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;ticket.reply&quot;</span>,
-      <span class="hljs-attr">title</span>: <span class="hljs-string">`Reply to ticket <span class="hljs-subst">${input.ticketId}</span> (<span class="hljs-subst">${input.customerEmail}</span>)`</span>,
-      <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: input.<span class="hljs-property">draftReply</span> },
-      <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
-      <span class="hljs-attr">expires_in</span>: <span class="hljs-number">3600</span>,
-    }),
-  });
-  <span class="hljs-keyword">const</span> { id } = <span class="hljs-keyword">await</span> push.<span class="hljs-title function_">json</span>();
-
-  <span class="hljs-keyword">let</span> decision;
-  <span class="hljs-keyword">while</span> (<span class="hljs-literal">true</span>) {
-    <span class="hljs-keyword">const</span> poll = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`https://api.impri.dev/v1/actions/<span class="hljs-subst">${id}</span>`</span>, {
-      <span class="hljs-attr">headers</span>: { <span class="hljs-title class_">Authorization</span>: <span class="hljs-string">`Bearer <span class="hljs-subst">${process.env.IMPRI_API_KEY}</span>`</span> },
-    });
-    decision = <span class="hljs-keyword">await</span> poll.<span class="hljs-title function_">json</span>();
-    <span class="hljs-keyword">if</span> (decision.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;pending&quot;</span>) <span class="hljs-keyword">break</span>;
-    <span class="hljs-keyword">await</span> <span class="hljs-title function_">sleep</span>(<span class="hljs-number">5000</span>);
-  }
-
-  <span class="hljs-keyword">if</span> (decision.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;approved&quot;</span>) {
-    <span class="hljs-keyword">return</span> { <span class="hljs-attr">sent</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">status</span>: decision.<span class="hljs-property">status</span> };
-  }
-
-  <span class="hljs-comment">// Hand control back to the workflow&#x27;s helpdesk connector node with</span>
-  <span class="hljs-comment">// the human-edited body — never the original draft.</span>
-  <span class="hljs-keyword">return</span> { <span class="hljs-attr">sent</span>: <span class="hljs-literal">true</span>, <span class="hljs-attr">body</span>: decision.<span class="hljs-property">decision</span>.<span class="hljs-property">final_preview</span>.<span class="hljs-property">body</span> };
-}</code></pre></div>
-<p>The downstream connector node in AgentKit only fires when this code node returns <code>sent: true</code>. If the workflow&#39;s helpdesk credential lives exclusively inside that connector node — not also handed to the agent as a raw API key it could call directly — this is a genuine chokepoint, not a suggestion the model can talk itself past.</p>
-<h2 id="what-this-buys-you-that-a-guardrail-node-doesn39t">What this buys you that a guardrail node doesn&#39;t</h2>
-<p>AgentKit&#39;s built-in guardrails are good at pattern-matching — blocking PII leakage, profanity, off-topic responses. They run inline, automatically, no human involved. That&#39;s a different job from approval: guardrails answer &quot;is this content acceptable,&quot; Impri answers &quot;did a specific person say yes to <em>this</em> action, right now.&quot; Use both. A guardrail can reject an obviously bad draft before it ever reaches the approval node, so your reviewer only sees drafts worth their time.</p>
+<span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(result.<span class="hljs-property">finalOutput</span>);</code></pre></div>
+<ul>
+<li><strong><code>needsApproval</code> is the gate, not the prompt.</strong> The SDK doesn&#39;t call <code>execute</code> until the state holds an approval.</li>
+<li><strong><code>reject()</code> with a message</strong> tells the model why the call didn&#39;t happen.</li>
+<li><strong>Leave <code>editable</code> off for this pattern.</strong> <code>state.approve()</code> runs the tool with the model&#39;s original arguments, so an edit made in the inbox would never reach the tool. When the reviewer should be able to change the text, use the gate-inside-the-tool pattern from <a href="human-in-the-loop-openai-agents-sdk">human-in-the-loop for the OpenAI Agents SDK</a>, which reads <code>decision.final_preview</code>.</li>
+</ul>
+<p><code>awaitDecision</code> keeps the process waiting for up to an hour here. For longer reviews, the SDK can save the paused run with <code>result.state.toString()</code> and restore it later with <code>RunState.fromString(agent, saved)</code>; pass a <code>callback_url</code> when you create the action and resume when Impri&#39;s <a href="webhooks">webhook</a> arrives.</p>
+<h2 id="guardrails-are-not-approvals">Guardrails are not approvals</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
 <th>Need</th>
-<th>Tool</th>
+<th>Where it lives</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>Block disallowed content automatically</td>
-<td>AgentKit guardrails</td>
+<td>Check every input or output automatically</td>
+<td>Agents SDK guardrails</td>
 </tr>
 <tr>
-<td>Get a specific human&#39;s yes/no before an external side effect</td>
-<td>Impri</td>
+<td>A named person says yes to one specific tool call</td>
+<td><code>needsApproval</code> + Impri</td>
 </tr>
 <tr>
-<td>Full audit trail of who approved what, when</td>
+<td>A record of who approved what, and when</td>
 <td>Impri&#39;s <a href="audit-log">audit log</a></td>
 </tr>
 </tbody></table>
 </div>
-<h2 id="being-honest-about-the-boundary">Being honest about the boundary</h2>
-<p>Impri does not know anything about your AgentKit graph, your connectors, or what &quot;ticket.reply&quot; means beyond the string you send it. It stores the proposed action, notifies whoever you&#39;ve configured, and returns a decision. The workflow author is still responsible for making sure the code node is the <em>only</em> path to the connector — if the agent node also has direct access to the helpdesk API as a separate tool, it can route around the gate entirely.</p>
-<p>For the underlying three-call pattern this code node implements, see <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a>. If your workflow already talks to other services over the <a href="mcp">MCP</a> protocol, the <a href="sdk-typescript">TypeScript SDK</a> wraps the same calls with retries and typed responses instead of raw <code>fetch</code>.</p>
-<p>Next: <a href="quickstart">quickstart</a> to get an API key and test a single action end to end before wiring it into a full graph.</p>
+<p>Use both: a guardrail stops an obviously bad draft before a reviewer sees it.</p>
+<h2 id="where-impri-stops">Where Impri stops</h2>
+<p>Impri doesn&#39;t run your tools and doesn&#39;t know your agent. It stores the proposed call, notifies the reviewer and returns the decision; the Agents SDK runs the tool after <code>approve()</code>. The gate only holds if every tool that reaches the helpdesk is marked <code>needsApproval</code>: an unmarked tool with the same API key is a way around it.</p>
+<h2 id="next-step">Next step</h2>
+<p><a href="https://app.impri.dev/?signup=1" target="_blank" rel="noopener">Start free on Impri cloud</a> or <a href="self-hosting">self-host</a> the MIT-licensed core, then follow the <a href="quickstart">quickstart</a> to approve one test action from the inbox before you wire it into the exported workflow. The general three-call pattern is in <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a>.</p>
 
     <aside class="doc-cta" aria-label="Try Impri">
   <p class="doc-cta-title">Add an approval step to your own agent</p>
@@ -307,10 +331,12 @@ pre code.hljs{display:block;overflow-x:auto}
   <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#where-the-gap-is-in-a-workflow-graph">Where the gap is in a workflow graph</a></li>
-<li class="ptoc-h2"><a href="#wiring-the-gate-into-a-code-node">Wiring the gate into a code node</a></li>
-<li class="ptoc-h2"><a href="#what-this-buys-you-that-a-guardrail-node-doesn39t">What this buys you that a guardrail node doesn't</a></li>
-<li class="ptoc-h2"><a href="#being-honest-about-the-boundary">Being honest about the boundary</a></li></ul>
+<ul><li class="ptoc-h2"><a href="#what-changes-on-november-30-2026">What changes on November 30, 2026</a></li>
+<li class="ptoc-h2"><a href="#the-human-approval-node-doesn39t-come-along-as-is">The Human approval node doesn't come along as-is</a></li>
+<li class="ptoc-h2"><a href="#route-each-interruption-to-a-reviewer">Route each interruption to a reviewer</a></li>
+<li class="ptoc-h2"><a href="#guardrails-are-not-approvals">Guardrails are not approvals</a></li>
+<li class="ptoc-h2"><a href="#where-impri-stops">Where Impri stops</a></li>
+<li class="ptoc-h2"><a href="#next-step">Next step</a></li></ul>
 </nav>
   </aside>
 </div>

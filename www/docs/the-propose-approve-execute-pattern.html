@@ -166,13 +166,13 @@ pre code.hljs{display:block;overflow-x:auto}
  └──────────┘</code></pre></div>
 <h2 id="implementing-it-with-impri">Implementing it with Impri</h2>
 <p>Impri implements exactly these three phases as three API calls. Here&#39;s the pattern applied to a marketing agent that wants to post to a company&#39;s social account, written in TypeScript against the Impri SDK:</p>
-<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">ImpriClient</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@impri/sdk&quot;</span>;
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">ImpriClient</span>, <span class="hljs-title class_">ImpriRejected</span>, <span class="hljs-title class_">ImpriExpired</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@impri/sdk&quot;</span>;
 
 <span class="hljs-keyword">const</span> impri = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ImpriClient</span>({ <span class="hljs-attr">apiKey</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_API_KEY</span>! });
 
 <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">postWithApproval</span>(<span class="hljs-params"><span class="hljs-attr">draft</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">channel</span>: <span class="hljs-built_in">string</span></span>) {
   <span class="hljs-comment">// 1. Propose — store the intent, no post happens yet</span>
-  <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">create</span>({
+  <span class="hljs-keyword">const</span> created = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">createAction</span>({
     <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;social.post&quot;</span>,
     <span class="hljs-attr">title</span>: <span class="hljs-string">`Post to <span class="hljs-subst">${channel}</span>`</span>,
     <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: draft },
@@ -181,31 +181,35 @@ pre code.hljs{display:block;overflow-x:auto}
   });
 
   <span class="hljs-comment">// 2. Approve — block until a human decides (polling happens under the hood)</span>
-  <span class="hljs-keyword">const</span> decision = <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">awaitDecision</span>(action.<span class="hljs-property">id</span>, { <span class="hljs-attr">timeoutS</span>: <span class="hljs-number">21600</span> });
-
-  <span class="hljs-keyword">if</span> (decision.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;approved&quot;</span>) {
-    <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Not posting — status: <span class="hljs-subst">${decision.status}</span>`</span>);
-    <span class="hljs-keyword">return</span> { <span class="hljs-attr">posted</span>: <span class="hljs-literal">false</span>, <span class="hljs-attr">status</span>: decision.<span class="hljs-property">status</span> };
+  <span class="hljs-keyword">let</span> action;
+  <span class="hljs-keyword">try</span> {
+    action = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">awaitDecision</span>(created.<span class="hljs-property">id</span>, { <span class="hljs-attr">timeoutS</span>: <span class="hljs-number">21600</span> });
+  } <span class="hljs-keyword">catch</span> (e) {
+    <span class="hljs-keyword">if</span> (e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriRejected</span> || e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriExpired</span>) {
+      <span class="hljs-keyword">const</span> status = e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriRejected</span> ? <span class="hljs-string">&quot;rejected&quot;</span> : <span class="hljs-string">&quot;expired&quot;</span>;
+      <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">`Not posting — status: <span class="hljs-subst">${status}</span>`</span>);
+      <span class="hljs-keyword">return</span> { <span class="hljs-attr">posted</span>: <span class="hljs-literal">false</span>, status };
+    }
+    <span class="hljs-keyword">throw</span> e;
   }
 
   <span class="hljs-comment">// 3. Execute — only reachable here, using the human-approved (possibly edited) text</span>
-  <span class="hljs-keyword">const</span> finalBody = decision.<span class="hljs-property">final_preview</span>.<span class="hljs-property">body</span>;
+  <span class="hljs-keyword">const</span> finalBody = action.<span class="hljs-property">decision</span>!.<span class="hljs-property">final_preview</span>!.<span class="hljs-property">body</span>;
   <span class="hljs-keyword">const</span> postResult = <span class="hljs-keyword">await</span> socialApi.<span class="hljs-title function_">post</span>(channel, finalBody);
 
-  <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">reportResult</span>(action.<span class="hljs-property">id</span>, {
-    <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span>,
-    <span class="hljs-attr">payload</span>: { <span class="hljs-attr">post_url</span>: postResult.<span class="hljs-property">url</span> },
+  <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">reportResult</span>(action.<span class="hljs-property">id</span>, <span class="hljs-string">&quot;executed&quot;</span>, {
+    <span class="hljs-attr">detail</span>: <span class="hljs-string">`Posted: <span class="hljs-subst">${postResult.url}</span>`</span>,
   });
 
   <span class="hljs-keyword">return</span> { <span class="hljs-attr">posted</span>: <span class="hljs-literal">true</span>, <span class="hljs-attr">url</span>: postResult.<span class="hljs-property">url</span> };
 }</code></pre></div>
-<p>Three method calls, one per phase. Nothing about <code>socialApi.post</code> is reachable from inside the propose step — it lives strictly after the <code>decision.status !== &quot;approved&quot;</code> guard returns.</p>
+<p>Three method calls, one per phase. Nothing about <code>socialApi.post</code> is reachable from inside the propose step — it lives strictly after <code>awaitDecision</code> returns instead of throwing <code>ImpriRejected</code> or <code>ImpriExpired</code>.</p>
 <hr>
 <h2 id="why-the-split-matters-more-than-the-approval-itself">Why the split matters more than the approval itself</h2>
 <p>A team that skips straight to &quot;just ask for confirmation&quot; usually ends up with one of two failure modes: the confirmation step gets silently dropped under refactoring because it&#39;s just a string in a prompt, or there&#39;s no record afterward of what was actually approved versus what the agent claims it asked about. Splitting propose/approve/execute into separate calls against an external store fixes both:</p>
 <ul>
 <li>The pending action is a real row somewhere, not a transient prompt turn — so there&#39;s an <a href="audit-log">audit log</a> of every decision by construction, not as an add-on.</li>
-<li>The execute phase has a genuine dependency on the approve phase&#39;s return value. You cannot accidentally call <code>socialApi.post</code> without first having a <code>decision</code> object in scope with <code>status === &quot;approved&quot;</code>, because the code is structured that way.</li>
+<li>The execute phase has a genuine dependency on the approve phase&#39;s return value. You cannot accidentally call <code>socialApi.post</code> without first getting an approved <code>action</code> back from <code>awaitDecision</code>, because the code is structured that way.</li>
 </ul>
 <h2 id="where-the-pattern-breaks-down">Where the pattern breaks down</h2>
 <p>The three-phase split gates the <em>call site</em> you wrap. It does not gate the underlying credential. If the agent (or a tool it has access to) can still call <code>socialApi.post</code> directly — because it holds the raw API token somewhere else in its toolset — the pattern is cosmetic. Apply propose/approve/execute at the layer where the credential itself lives, typically inside an SDK wrapper or MCP tool the agent has no way to bypass. See <a href="ai-agent-guardrails-for-real-world-actions">AI agent guardrails for real-world actions</a> for the broader argument about chokepoints versus advisory checks.</p>

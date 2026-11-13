@@ -163,7 +163,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <span class="hljs-keyword">const</span> impri = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ImpriClient</span>({ <span class="hljs-attr">apiKey</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_API_KEY</span>! });
 
 <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">requestPromotion</span>(<span class="hljs-params"><span class="hljs-attr">sandboxUrl</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">diffSummary</span>: <span class="hljs-built_in">string</span></span>) {
-  <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">create</span>({
+  <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">createAction</span>({
     <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;deploy.promote&quot;</span>,
     <span class="hljs-attr">title</span>: <span class="hljs-string">`Promote sandbox build to production: <span class="hljs-subst">${process.env.GIT_SHA}</span>`</span>,
     <span class="hljs-attr">preview</span>: {
@@ -172,18 +172,17 @@ pre code.hljs{display:block;overflow-x:auto}
     },
     <span class="hljs-attr">target_url</span>: sandboxUrl,
     <span class="hljs-attr">expires_in</span>: <span class="hljs-number">3600</span>, <span class="hljs-comment">// 1 hour — a stale sandbox build shouldn&#x27;t ship later unreviewed</span>
-    <span class="hljs-attr">idempotent</span>: <span class="hljs-literal">false</span>,
-    <span class="hljs-attr">undo</span>: <span class="hljs-string">&quot;Re-deploy the previous production tag via the deploy pipeline&quot;</span>,
   });
 
   <span class="hljs-keyword">return</span> action.<span class="hljs-property">id</span>;
 }</code></pre></div>
+<p>The REST API also accepts <code>idempotent</code> and <code>undo</code> hints on the action body (e.g. <code>idempotent: false</code> and &quot;re-deploy the previous production tag via the deploy pipeline&quot;) — the TypeScript SDK&#39;s <code>createAction</code> doesn&#39;t expose those params yet, so send them via a direct <code>POST /v1/actions</code> call if you want them on this action.</p>
 <p>The agent then polls (or blocks, if it&#39;s running inside an MCP client — see the <a href="mcp">MCP integration</a>) and only calls the actual deploy step, whatever that is in your stack, after <code>status</code> comes back <code>approved</code>:</p>
 <div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">awaitAndPromote</span>(<span class="hljs-params"><span class="hljs-attr">actionId</span>: <span class="hljs-built_in">string</span></span>) {
   <span class="hljs-keyword">let</span> result;
   <span class="hljs-keyword">do</span> {
     <span class="hljs-keyword">await</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Promise</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> <span class="hljs-built_in">setTimeout</span>(r, <span class="hljs-number">10_000</span>));
-    result = <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">get</span>(actionId);
+    result = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">getAction</span>(actionId);
   } <span class="hljs-keyword">while</span> (result.<span class="hljs-property">status</span> === <span class="hljs-string">&quot;pending&quot;</span>);
 
   <span class="hljs-keyword">if</span> (result.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;approved&quot;</span>) {
@@ -192,7 +191,7 @@ pre code.hljs{display:block;overflow-x:auto}
   }
 
   <span class="hljs-keyword">await</span> <span class="hljs-title function_">runDeployPipeline</span>({ <span class="hljs-attr">target</span>: <span class="hljs-string">&quot;production&quot;</span> }); <span class="hljs-comment">// your real promote step</span>
-  <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">reportResult</span>(actionId, { <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span> });
+  <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">reportResult</span>(actionId, <span class="hljs-string">&quot;executed&quot;</span>);
 }</code></pre></div>
 <hr>
 <h2 id="why-quotsandboxquot-has-to-mean-something-narrow">Why &quot;sandbox&quot; has to mean something narrow</h2>
