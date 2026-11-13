@@ -1,6 +1,6 @@
 # Approve AI Agent Vendor Contract Terms Before They're Signed
 
-When an AI agent redlines a vendor contract, legal needs to see the exact final wording and approve it — not just trust a summary — before anything gets sent back to the vendor for signature.
+Have legal approve the exact redlined wording an AI contract agent proposes, not just a summary, before any counter-proposal reaches the vendor.
 
 ---
 
@@ -24,7 +24,10 @@ The example below uses the Impri MCP server, so the agent (running in Claude Cod
     "impri": {
       "command": "npx",
       "args": ["@impri/mcp"],
-      "env": { "IMPRI_API_KEY": "im_your_key_here" }
+      "env": {
+        "IMPRI_API_KEY": "im_your_key_here",
+        "IMPRI_BASE_URL": "https://api.impri.dev"
+      }
     }
   }
 }
@@ -33,7 +36,7 @@ The example below uses the Impri MCP server, so the agent (running in Claude Cod
 **Agent-side logic (TypeScript, using the Impri TypeScript SDK for the send-back step):**
 
 ```typescript
-import { ImpriClient } from "@impri/sdk";
+import { ImpriClient, ImpriRejected, ImpriExpired } from "@impri/sdk";
 
 const impri = new ImpriClient({ apiKey: process.env.IMPRI_API_KEY! });
 
@@ -49,38 +52,39 @@ async function proposeContractTerms(vendor: string, drafts: RedlineDraft[]) {
     .map((d) => `### ${d.clause}\n\n**Original:** ${d.originalText}\n\n**Proposed:** ${d.proposedText}\n\n_Why: ${d.rationale}_`)
     .join("\n\n---\n\n");
 
-  const action = await impri.actions.create({
+  const action = await impri.createAction({
     kind: "contract.terms.propose",
     title: `Redline for ${vendor} MSA — ${drafts.length} clause(s)`,
     preview: { format: "markdown", body },
-    expiresIn: 172800, // 48h — legal review window
+    expires_in: 172800, // 48h — legal review window
     editable: ["preview.body"],
-    idempotent: false,
-    undo: "No automated undo — a countersigned amendment must be reversed by a follow-up amendment",
   });
 
   return action.id;
 }
 
 async function sendApprovedTermsToVendor(actionId: string) {
-  const decision = await impri.actions.awaitDecision(actionId, { timeoutS: 172800 });
-
-  if (decision.status !== "approved") {
-    console.log(`Terms not sent — legal marked this ${decision.status}`);
-    return;
+  let action;
+  try {
+    action = await impri.awaitDecision(actionId, { timeoutS: 172800 });
+  } catch (e) {
+    if (e instanceof ImpriRejected || e instanceof ImpriExpired) {
+      console.log(`Terms not sent — legal did not approve this redline`);
+      return;
+    }
+    throw e;
   }
 
-  const finalTerms = decision.finalPreview.body; // carries legal's edits, if any
+  const finalTerms = action.decision!.final_preview!.body; // carries legal's edits, if any
   // await vendorPortal.sendCounterProposal(finalTerms); — your actual send call
 
-  await impri.actions.reportResult(actionId, {
-    status: "executed",
-    payload: { sentAt: new Date().toISOString() },
+  await impri.reportResult(actionId, "executed", {
+    detail: `Sent at ${new Date().toISOString()}`,
   });
 }
 ```
 
-If legal only tweaks one clause's wording, `decision.diff` isolates that change instead of legal having to re-read the entire redline to figure out what moved.
+If legal only tweaks one clause's wording, `decision.diff` isolates that change instead of legal having to re-read the entire redline to figure out what moved. (The REST API also accepts `idempotent` and `undo` hints on the action body — e.g. `idempotent: false` and a plain-English undo note for a signed amendment — but the TypeScript SDK's `createAction` doesn't expose those params yet; send them via a direct `POST /v1/actions` call if you need them today.)
 
 ---
 
