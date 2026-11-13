@@ -1,81 +1,108 @@
-# Human Approval for OpenAI AgentKit Workflows
+# Human Approval for OpenAI AgentKit After Agent Builder
 
-AgentKit's visual workflow builder makes it easy to chain tool calls into a working agent fast — which also makes it easy to ship one that emails, posts, or files something nobody reviewed.
+Agent Builder shuts down on November 30, 2026. Export your AgentKit workflow to the Agents SDK and send its tool approvals to a reviewer's Impri inbox.
 
 ---
 
-## Where the gap is in a workflow graph
+## What changes on November 30, 2026
 
-An AgentKit workflow is a graph of nodes: an agent node reasons over the input, tool-call nodes hit your connectors (Slack, a CRM, a ticketing system, an email API), and the output flows to the next node. That graph has no concept of "pause and ask a human" — a tool-call node either runs or it doesn't. If your workflow includes a node that sends a support reply, creates a refund, or posts to a public channel, the only way to add a checkpoint today is a **custom code node** sitting between "agent decided what to do" and "connector executes it."
+OpenAI's [deprecations page](https://developers.openai.com/api/docs/deprecations) lists Agent Builder, the visual workflow editor in AgentKit, as deprecated since June 3, 2026, with a shutdown date of November 30, 2026. The named replacements are the Agents SDK (agents in code) or ChatGPT Workspace Agents (no-code agents inside a ChatGPT Business, Enterprise or Edu workspace). ChatKit remains available.
 
-That's a normal shape for a gate: an HTTP call out, a wait, an HTTP call back. Impri fills that role without you building a queue, a notification path, and a review UI yourself.
+OpenAI's [migration guide](https://developers.openai.com/api/docs/guides/agent-builder/migrate-from-agent-builder) exports a workflow as Agents SDK code:
 
-## Wiring the gate into a code node
+1. Open the workflow in Agent Builder.
+2. Select **Code** in the top navigation.
+3. Select **Agents SDK**, then **TypeScript** or **Python**, and copy the complete export.
 
-Say the workflow drafts a reply to an inbound support ticket and the last node calls your helpdesk connector to send it. Replace that direct connector call with a code node that pushes the draft to Impri first, waits for a decision, then calls the connector only on approval:
+The guide warns that the export "does not convert your workflow graph or guarantee that every behavior transfers unchanged," so re-check every step that changes something outside the chat.
+
+## The Human approval node doesn't come along as-is
+
+In Agent Builder, the [Human approval node](https://developers.openai.com/api/docs/guides/node-reference) is described as "Defer to end-users for approval": the person chatting with the workflow answers the yes/no question.
+
+In the Agents SDK, approval belongs to a tool: `needsApproval: true` (TypeScript) or `needs_approval=True` (Python). When the model calls it, the run pauses and returns the pending calls in `result.interruptions`; your code approves or rejects each on `result.state` and runs the agent again with that state.
+
+Who answers is now your code's choice. That matters when:
+
+- The person in the chat shouldn't approve the action: a customer asking for their own refund, an employee asking for their own access.
+- Nobody is in a chat at all: the agent runs from a queue, a cron job or a webhook.
+
+Then the approval has to reach someone else. Impri puts the pending call in a reviewer's web inbox, notifies them (Slack, Discord, Telegram, ntfy or email, as the project is set up) and returns the decision to your code.
+
+## Route each interruption to a reviewer
+
+Each `send_ticket_reply` call becomes an Impri action; the reviewer's decision becomes `approve()` or `reject()` on the run state:
 
 ```typescript
-import { setTimeout as sleep } from "node:timers/promises";
+import { Agent, run, tool } from "@openai/agents";
+import { ImpriClient, ImpriRejected, ImpriExpired } from "@impri/sdk";
+import { z } from "zod";
 
-interface AgentKitInput {
-  ticketId: string;
-  customerEmail: string;
-  draftReply: string;
-}
+const impri = new ImpriClient({ apiKey: process.env.IMPRI_API_KEY! });
 
-export default async function gateReply(input: AgentKitInput) {
-  const push = await fetch("https://api.impri.dev/v1/actions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.IMPRI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      kind: "ticket.reply",
-      title: `Reply to ticket ${input.ticketId} (${input.customerEmail})`,
-      preview: { format: "markdown", body: input.draftReply },
-      editable: ["preview.body"],
+const sendReply = tool({
+  name: "send_ticket_reply",
+  description: "Send a reply to a customer's support ticket.",
+  parameters: z.object({ ticketId: z.string(), body: z.string() }),
+  needsApproval: true, // the run pauses here instead of calling execute
+  execute: async ({ ticketId, body }) => helpdesk.sendReply(ticketId, body),
+});
+
+const agent = new Agent({
+  name: "Support agent",
+  instructions: "Draft a reply to the ticket and send it with send_ticket_reply.",
+  tools: [sendReply],
+});
+
+let result = await run(agent, "Ticket 4812: the customer was charged twice for March.");
+
+while (result.interruptions.length > 0) {
+  for (const interruption of result.interruptions) {
+    // One Impri action per pending tool call, shown to the reviewer as-is.
+    const created = await impri.createAction({
+      kind: `agents_sdk.${interruption.name}`,
+      title: `${interruption.agent.name} wants to call ${interruption.name}`,
+      preview: { format: "markdown", body: "```json\n" + (interruption.arguments ?? "{}") + "\n```" },
       expires_in: 3600,
-    }),
-  });
-  const { id } = await push.json();
-
-  let decision;
-  while (true) {
-    const poll = await fetch(`https://api.impri.dev/v1/actions/${id}`, {
-      headers: { Authorization: `Bearer ${process.env.IMPRI_API_KEY}` },
     });
-    decision = await poll.json();
-    if (decision.status !== "pending") break;
-    await sleep(5000);
-  }
 
-  if (decision.status !== "approved") {
-    return { sent: false, status: decision.status };
+    try {
+      await impri.awaitDecision(created.id, { timeoutS: 3600 });
+      result.state.approve(interruption);
+    } catch (e) {
+      if (e instanceof ImpriRejected || e instanceof ImpriExpired) {
+        result.state.reject(interruption, { message: "A reviewer did not approve this call." });
+      } else {
+        throw e; // ImpriTimeout: still pending in the inbox, decide what to do
+      }
+    }
   }
-
-  // Hand control back to the workflow's helpdesk connector node with
-  // the human-edited body — never the original draft.
-  return { sent: true, body: decision.decision.final_preview.body };
+  result = await run(agent, result.state); // resume where the run paused
 }
+
+console.log(result.finalOutput);
 ```
 
-The downstream connector node in AgentKit only fires when this code node returns `sent: true`. If the workflow's helpdesk credential lives exclusively inside that connector node — not also handed to the agent as a raw API key it could call directly — this is a genuine chokepoint, not a suggestion the model can talk itself past.
+- **`needsApproval` is the gate, not the prompt.** The SDK doesn't call `execute` until the state holds an approval.
+- **`reject()` with a message** tells the model why the call didn't happen.
+- **Leave `editable` off for this pattern.** `state.approve()` runs the tool with the model's original arguments, so an edit made in the inbox would never reach the tool. When the reviewer should be able to change the text, use the gate-inside-the-tool pattern from [human-in-the-loop for the OpenAI Agents SDK](human-in-the-loop-openai-agents-sdk.md), which reads `decision.final_preview`.
 
-## What this buys you that a guardrail node doesn't
+`awaitDecision` keeps the process waiting for up to an hour here. For longer reviews, the SDK can save the paused run with `result.state.toString()` and restore it later with `RunState.fromString(agent, saved)`; pass a `callback_url` when you create the action and resume when Impri's [webhook](webhooks.md) arrives.
 
-AgentKit's built-in guardrails are good at pattern-matching — blocking PII leakage, profanity, off-topic responses. They run inline, automatically, no human involved. That's a different job from approval: guardrails answer "is this content acceptable," Impri answers "did a specific person say yes to *this* action, right now." Use both. A guardrail can reject an obviously bad draft before it ever reaches the approval node, so your reviewer only sees drafts worth their time.
+## Guardrails are not approvals
 
-| Need | Tool |
+| Need | Where it lives |
 |---|---|
-| Block disallowed content automatically | AgentKit guardrails |
-| Get a specific human's yes/no before an external side effect | Impri |
-| Full audit trail of who approved what, when | Impri's [audit log](audit-log.md) |
+| Check every input or output automatically | Agents SDK guardrails |
+| A named person says yes to one specific tool call | `needsApproval` + Impri |
+| A record of who approved what, and when | Impri's [audit log](audit-log.md) |
 
-## Being honest about the boundary
+Use both: a guardrail stops an obviously bad draft before a reviewer sees it.
 
-Impri does not know anything about your AgentKit graph, your connectors, or what "ticket.reply" means beyond the string you send it. It stores the proposed action, notifies whoever you've configured, and returns a decision. The workflow author is still responsible for making sure the code node is the *only* path to the connector — if the agent node also has direct access to the helpdesk API as a separate tool, it can route around the gate entirely.
+## Where Impri stops
 
-For the underlying three-call pattern this code node implements, see [how to add human approval to an AI agent](how-to-add-human-approval-to-an-ai-agent.md). If your workflow already talks to other services over the [MCP](mcp.md) protocol, the [TypeScript SDK](sdk-typescript.md) wraps the same calls with retries and typed responses instead of raw `fetch`.
+Impri doesn't run your tools and doesn't know your agent. It stores the proposed call, notifies the reviewer and returns the decision; the Agents SDK runs the tool after `approve()`. The gate only holds if every tool that reaches the helpdesk is marked `needsApproval`: an unmarked tool with the same API key is a way around it.
 
-Next: [quickstart](quickstart.md) to get an API key and test a single action end to end before wiring it into a full graph.
+## Next step
+
+[Start free on Impri cloud](https://app.impri.dev/?signup=1) or [self-host](self-hosting.md) the MIT-licensed core, then follow the [quickstart](quickstart.md) to approve one test action from the inbox before you wire it into the exported workflow. The general three-call pattern is in [how to add human approval to an AI agent](how-to-add-human-approval-to-an-ai-agent.md).
