@@ -1,6 +1,6 @@
 # Human Approval for AI Trading Agents
 
-An AI trading agent that can size and place orders on its own is one bad signal away from a real loss — this shows how to gate order execution behind a human yes.
+An AI trading agent that sizes and places orders on its own is one bad signal away from a real loss — gate order execution behind a human yes.
 
 ---
 
@@ -45,15 +45,15 @@ def propose_order(symbol, side, qty, est_price):
     r = requests.post(f"{BASE}/v1/actions", headers=HEADERS, json=body)
     return r.json()["id"]
 
-def await_decision(action_id, poll_every=5, timeout=300):
-    deadline = time.time() + timeout
+def await_decision(action_id, poll_interval_s=5, timeout_s=300):
+    deadline = time.time() + timeout_s
     while time.time() < deadline:
         r = requests.get(f"{BASE}/v1/actions/{action_id}", headers=HEADERS)
         data = r.json()
         if data["status"] != "pending":
             return data
-        time.sleep(poll_every)
-    return {"status": "expired"}
+        time.sleep(poll_interval_s)
+    return {"status": "timeout"}  # still pending server-side, not expired
 
 def place_order_if_approved(symbol, side, qty, est_price, broker_client):
     action_id = propose_order(symbol, side, qty, est_price)
@@ -73,7 +73,7 @@ def place_order_if_approved(symbol, side, qty, est_price, broker_client):
     )
 ```
 
-Note the short `expires_in`: 300 seconds, the API minimum. A trade signal that's five minutes stale is a different trade — treat `expired` the same as `rejected` and require the strategy to re-propose with fresh prices rather than resurrecting an old approval.
+Note the short `expires_in`: 300 seconds, the API minimum. A trade signal that's five minutes stale is a different trade — treat `expired` (and a client-side poll `timeout`, since the signal window has passed by then anyway) the same as `rejected`, and require the strategy to re-propose with fresh prices rather than resurrecting an old approval.
 
 ---
 
