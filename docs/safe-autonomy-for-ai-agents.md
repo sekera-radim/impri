@@ -1,6 +1,6 @@
 # Safe Autonomy: Let Agents Act, but Not Blindly
 
-Full autonomy and full manual review are both wrong defaults for an ops agent — safe autonomy means letting it act freely on the low-risk 90% and gating the 10% that can actually break something.
+Safe autonomy lets an ops agent act on its own for low-risk, reversible actions and stop for a human yes only on the few that can break something.
 
 ---
 
@@ -49,7 +49,11 @@ const result = query({
   prompt: `Deploy checkout-service 2.4.1 after tests passed. Changelog: ${changelog}`,
   options: {
     mcpServers: {
-      impri: { command: "npx", args: ["@impri/mcp"], env: { IMPRI_API_KEY: process.env.IMPRI_API_KEY! } },
+      impri: {
+        command: "npx",
+        args: ["@impri/mcp"],
+        env: { IMPRI_API_KEY: process.env.IMPRI_API_KEY!, IMPRI_BASE_URL: "https://api.impri.dev" },
+      },
     },
     allowedTools: ["deploy_to_production", "mcp__impri__impri_push_action",
                     "mcp__impri__impri_await_decision", "mcp__impri__impri_report_result"],
