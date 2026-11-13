@@ -1,6 +1,6 @@
 # Human-in-the-Loop for AI Customer Support Agents
 
-A support agent that drafts replies is safe. One that also sends them, issues refunds, or cancels accounts needs a human in the loop before any of that reaches a customer.
+A support agent that drafts replies is safe. One that sends them, issues refunds, or cancels accounts needs a human in the loop before it acts.
 
 ---
 
@@ -34,6 +34,7 @@ The pattern below applies to any of the "yes" rows; refunds specifically are cov
 Here's a support agent that drafts a reply to a billing complaint and won't send it until approved:
 
 ```python
+import os
 import time
 from impri import ImpriClient
 
@@ -42,7 +43,7 @@ client = ImpriClient(api_key=os.environ["IMPRI_API_KEY"])
 def handle_billing_ticket(ticket):
     draft = generate_reply(ticket)  # your LLM call, not shown
 
-    action = client.actions.create(
+    action = client.create_action(
         kind="support.reply",
         title=f"Reply to ticket #{ticket.id}: {ticket.subject}",
         preview={"format": "markdown", "body": draft},
@@ -52,15 +53,16 @@ def handle_billing_ticket(ticket):
     )
 
     while True:
-        result = client.actions.get(action.id)
-        if result.status != "pending":
+        result = client.get_action(action["id"])
+        if result["status"] != "pending":
             break
         time.sleep(5)
 
-    if result.status == "approved":
-        final_body = result.decision.final_preview["body"]
+    if result["status"] == "approved":
+        decision = result.get("decision") or {}
+        final_body = (decision.get("final_preview") or result["preview"])["body"]
         helpdesk.post_reply(ticket.id, final_body)
-        client.actions.report_result(action.id, status="executed")
+        client.report_result(action["id"], "executed")
     else:
         # rejected or expired — escalate to a human agent instead
         helpdesk.assign_to_queue(ticket.id, queue="human-review")
@@ -74,7 +76,7 @@ The important detail is `editable=["preview.body"]` — a support lead can fix t
 
 A support lead approving from their phone between other tickets doesn't have time to re-read the whole thread. Put the decision-relevant facts in the title and keep the preview body to what's actually being sent — not a dump of internal context. If the action depends on something the reviewer can't see in the preview (e.g., "this customer has churned twice before"), that belongs in your ticket system, not stuffed into the approval card.
 
-For refunds and other actions with financial impact, set `idempotent: false` in the action payload so the approval card shows a warning against approving it twice — see the optional fields in [the main integration guide](how-to-add-human-approval-to-an-ai-agent.md).
+For refunds and other actions with financial impact, add `idempotent: false` to the raw `POST /v1/actions` body — the Python SDK's `create_action` doesn't expose that field yet — so the approval card shows a warning against approving it twice; see the optional fields in [the main integration guide](how-to-add-human-approval-to-an-ai-agent.md).
 
 ---
 
