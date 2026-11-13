@@ -22,7 +22,7 @@ import { ImpriClient } from "@impri/sdk";
 const impri = new ImpriClient({ apiKey: process.env.IMPRI_API_KEY! });
 
 async function requestPromotion(sandboxUrl: string, diffSummary: string) {
-  const action = await impri.actions.create({
+  const action = await impri.createAction({
     kind: "deploy.promote",
     title: `Promote sandbox build to production: ${process.env.GIT_SHA}`,
     preview: {
@@ -31,13 +31,13 @@ async function requestPromotion(sandboxUrl: string, diffSummary: string) {
     },
     target_url: sandboxUrl,
     expires_in: 3600, // 1 hour — a stale sandbox build shouldn't ship later unreviewed
-    idempotent: false,
-    undo: "Re-deploy the previous production tag via the deploy pipeline",
   });
 
   return action.id;
 }
 ```
+
+The REST API also accepts `idempotent` and `undo` hints on the action body (e.g. `idempotent: false` and "re-deploy the previous production tag via the deploy pipeline") — the TypeScript SDK's `createAction` doesn't expose those params yet, so send them via a direct `POST /v1/actions` call if you want them on this action.
 
 The agent then polls (or blocks, if it's running inside an MCP client — see the [MCP integration](mcp.md)) and only calls the actual deploy step, whatever that is in your stack, after `status` comes back `approved`:
 
@@ -46,7 +46,7 @@ async function awaitAndPromote(actionId: string) {
   let result;
   do {
     await new Promise((r) => setTimeout(r, 10_000));
-    result = await impri.actions.get(actionId);
+    result = await impri.getAction(actionId);
   } while (result.status === "pending");
 
   if (result.status !== "approved") {
@@ -55,7 +55,7 @@ async function awaitAndPromote(actionId: string) {
   }
 
   await runDeployPipeline({ target: "production" }); // your real promote step
-  await impri.actions.reportResult(actionId, { status: "executed" });
+  await impri.reportResult(actionId, "executed");
 }
 ```
 
