@@ -96,7 +96,7 @@ Not every charge needs a person to look at it. [Impri's rules engine](rules.md) 
   "rule_action": "auto_approve"
 }
 ```
-Set a second rule with `rule_action: "escalate"` on larger amounts if you want those routed to a specific Slack or Telegram channel instead of the default notification.
+For larger amounts, a second rule with `rule_action: "escalate"` marks the action as escalated: a [webhook channel](notifications.md) receives `"escalate": true` and can page whoever is on call. It doesn't move the action to a different Slack or Telegram channel; every channel of the project gets every pending action.
 
 ---
 
