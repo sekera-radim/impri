@@ -219,7 +219,7 @@ pre code.hljs{display:block;overflow-x:auto}
   <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
   <span class="hljs-attr">&quot;rule_action&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;auto_approve&quot;</span>
 <span class="hljs-punctuation">}</span></code></pre></div>
-<p>Set a second rule with <code>rule_action: &quot;escalate&quot;</code> on larger amounts if you want those routed to a specific Slack or Telegram channel instead of the default notification.</p>
+<p>For larger amounts, a second rule with <code>rule_action: &quot;escalate&quot;</code> marks the action as escalated: a <a href="notifications">webhook channel</a> receives <code>&quot;escalate&quot;: true</code> and can page whoever is on call. It doesn&#39;t move the action to a different Slack or Telegram channel; every channel of the project gets every pending action.</p>
 <hr>
 <h2 id="what-happens-on-rejection-timeout-or-expiry">What happens on rejection, timeout, or expiry</h2>
 <p><code>ImpriRejected</code> and <code>ImpriTimeout</code> are normal outcomes, not errors — a rejected top-up just means the campaign stays paused until a human tops it up manually or approves the next attempt. Impri never decides whether a charge is a good idea; it stores the proposed charge, notifies someone, and holds the decision. The judgment about whether $1,200 for an annual renewal is reasonable stays entirely with the person who taps approve, and <a href="audit-log">the audit log</a> keeps a record of exactly who approved which charge and when.</p>

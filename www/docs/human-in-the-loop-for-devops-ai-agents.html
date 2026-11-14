@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Human-in-the-Loop for DevOps AI Agents — Impri Docs</title>
-<meta name="description" content="Give an AI agent kubectl or terraform access and one hallucinated flag can take down a namespace — this is the pattern for gating infra changes behind a human…">
+<meta name="description" content="Let a DevOps AI agent read freely, and send every infra write (terraform apply, restart, scale, rollback) through an approval gate it has no way around.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="Human-in-the-Loop for DevOps AI Agents — Impri Docs">
-<meta property="og:description" content="Give an AI agent kubectl or terraform access and one hallucinated flag can take down a namespace — this is the pattern for gating infra changes behind a human…">
+<meta property="og:description" content="Let a DevOps AI agent read freely, and send every infra write (terraform apply, restart, scale, rollback) through an approval gate it has no way around.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/human-in-the-loop-for-devops-ai-agents">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/human-in-the-loop-for-devops-ai-agents">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human-in-the-Loop for DevOps AI Agents","description":"Give an AI agent kubectl or terraform access and one hallucinated flag can take down a namespace — this is the pattern for gating infra changes behind a human…","url":"https://impri.dev/docs/human-in-the-loop-for-devops-ai-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human-in-the-Loop for DevOps AI Agents","description":"Let a DevOps AI agent read freely, and send every infra write (terraform apply, restart, scale, rollback) through an approval gate it has no way around.","url":"https://impri.dev/docs/human-in-the-loop-for-devops-ai-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -150,85 +150,90 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>Human-in-the-Loop for DevOps AI Agents</span>
     </nav>
     <h1>Human-in-the-Loop for DevOps AI Agents</h1>
-<p>Give an AI agent kubectl or terraform access and one hallucinated flag can take down a namespace — this is the pattern for gating infra changes behind a human decision without slowing down routine ops.</p>
+<p>Let a DevOps AI agent read freely, and send every infra write (terraform apply, restart, scale, rollback) through an approval gate it has no way around.</p>
 <hr>
-<h2 id="why-devops-agents-need-a-different-gate-than-chat-agents">Why DevOps agents need a different gate than chat agents</h2>
-<p>A support agent that sends a bad email is embarrassing. A DevOps agent that runs <code>kubectl scale deployment api --replicas=0</code> or applies a Terraform plan with a dropped resource is an outage. The blast radius is bigger and the actions are frequently <strong>not reversible</strong> in the way a draft email is — you can&#39;t un-delete a database with a retry.</p>
-<p>That changes what the approval gate needs to carry. It&#39;s not enough to show a human the command; they need to know whether re-running it is safe if something goes wrong mid-execution, and how to undo it if it turns out to be the wrong call. That&#39;s what Impri&#39;s <code>idempotent</code> and <code>undo</code> fields are for — they&#39;re optional, but for infra actions they&#39;re the difference between a reviewer approving blind and approving informed.</p>
-<h2 id="gating-a-terraform-apply-typescript">Gating a Terraform apply (TypeScript)</h2>
-<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">ImpriClient</span>, <span class="hljs-title class_">ImpriRejected</span>, <span class="hljs-title class_">ImpriExpired</span>, <span class="hljs-title class_">ImpriTimeout</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@impri/sdk&quot;</span>;
+<h2 id="why-infra-agents-need-a-stricter-gate">Why infra agents need a stricter gate</h2>
+<p>A support agent that sends a bad email is embarrassing. A DevOps agent that runs <code>kubectl scale deployment/api --replicas=0</code> or applies a plan with a destroy step is an outage, and a retry after a half-finished run can make it worse. So the reviewer needs two facts besides the command: is it safe to run twice, and how do you undo it.</p>
+<p>Impri&#39;s REST API takes both on the action: <code>idempotent</code> (the inbox card then warns &quot;Not idempotent — retrying may duplicate this action&quot;) and <code>undo</code> (plain text shown on the card). The TypeScript and Python SDKs and the MCP tool don&#39;t pass these two fields yet, so a CI job sends them with a direct <code>POST /v1/actions</code>:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -X POST https://api.impri.dev/v1/actions \
+  -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_API_KEY</span>&quot;</span> -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{
+    &quot;kind&quot;: &quot;terraform.apply&quot;,
+    &quot;title&quot;: &quot;Apply: drop legacy queue, resize db-main&quot;,
+    &quot;preview&quot;: { &quot;format&quot;: &quot;markdown&quot;, &quot;body&quot;: &quot;- aws_sqs_queue.legacy (destroy)\n~ aws_db_instance.main (large -&gt; xlarge)&quot; },
+    &quot;target_url&quot;: &quot;https://ci.example.com/runs/4812&quot;,
+    &quot;expires_in&quot;: 3600,
+    &quot;idempotent&quot;: false,
+    &quot;undo&quot;: &quot;Re-apply the previous state from the tfstate backup. Messages in the deleted queue are lost.&quot;
+  }&#x27;</span></code></pre></div>
+<p>The job then waits for the decision (<code>GET /v1/actions/:id</code>, or <code>awaitDecision</code> in the SDK), runs <code>terraform apply</code> only on <code>approved</code>, and closes the loop with <code>POST /v1/actions/:id/result</code>. Its optional <code>payload</code> stores a receipt with the action (changed resources, run URL), which is what someone reading the trail later wants.</p>
+<h2 id="a-kubernetes-agent-over-mcp-restarts-scaling-rollbacks">A Kubernetes agent over MCP: restarts, scaling, rollbacks</h2>
+<p>The common setup: an on-call agent (Claude Code, an Agents SDK worker) diagnoses through a Kubernetes MCP server and proposes the fix. Three parts keep the fix behind a person.</p>
+<p><strong>1. The agent can read, not write.</strong> In <a href="https://github.com/containers/kubernetes-mcp-server" target="_blank" rel="noopener">containers/kubernetes-mcp-server</a>, set this in its TOML config:</p>
+<div class="code-block"><span class="code-lang">toml</span><pre><code class="hljs"><span class="hljs-attr">read_only</span> = <span class="hljs-literal">true</span>   <span class="hljs-comment"># only tools annotated readOnlyHint=true are registered</span></code></pre></div>
+<p>Its configuration reference calls this a best-effort guardrail: it hides tools but doesn&#39;t change the cluster permissions of the identity the server runs as, and read tools can still read Secrets. Give that identity a read-only RBAC role as well. The same server has <code>confirmation_rules</code>, but they ask the person at the MCP client, and when the client can&#39;t ask, the default <code>confirmation_fallback</code> is <code>&quot;allow&quot;</code>. A headless on-call agent has nobody to ask, so the approval has to happen somewhere else.</p>
+<p><strong>2. The agent proposes through Impri.</strong> Add Impri&#39;s MCP server next to it:
+<code>claude mcp add --transport http impri https://api.impri.dev/mcp --header &quot;Authorization: Bearer $IMPRI_API_KEY&quot;</code>
+(self-hosted: <code>npx @impri/mcp</code> with <code>IMPRI_BASE_URL</code>, see <a href="mcp">MCP</a>). The agent calls <code>impri_push_action</code> with a <code>kind</code> of <code>k8s.rollout_restart</code>, <code>k8s.scale</code> or <code>k8s.rollout_undo</code>, the exact command as <code>preview.body</code> (<code>kubectl scale deployment/api -n shop --replicas=4</code>) and the target as <code>payload</code> (<code>{&quot;namespace&quot;: &quot;shop&quot;, &quot;deployment&quot;: &quot;api&quot;, &quot;replicas&quot;: 4}</code>).</p>
+<p><strong>3. An executor with its own credentials runs only what a human approved.</strong></p>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { execFile } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;node:child_process&quot;</span>;
+<span class="hljs-keyword">import</span> { promisify } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;node:util&quot;</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">ImpriClient</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@impri/sdk&quot;</span>;
 
-<span class="hljs-keyword">const</span> client = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ImpriClient</span>({ <span class="hljs-attr">apiKey</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_API_KEY</span>! });
+<span class="hljs-keyword">const</span> run = <span class="hljs-title function_">promisify</span>(execFile);
+<span class="hljs-comment">// Reads IMPRI_BASE_URL: https://api.impri.dev for the cloud, your server when self-hosted.</span>
+<span class="hljs-keyword">const</span> impri = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ImpriClient</span>({ <span class="hljs-attr">apiKey</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_API_KEY</span>! });
 
-<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">proposeApply</span>(<span class="hljs-params"><span class="hljs-attr">plan</span>: <span class="hljs-title class_">TerraformPlan</span></span>) {
-  <span class="hljs-keyword">const</span> created = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">createAction</span>({
-    <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;terraform.apply&quot;</span>,
-    <span class="hljs-attr">title</span>: <span class="hljs-string">`Apply: <span class="hljs-subst">${plan.summary}</span>`</span>,
-    <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: plan.<span class="hljs-property">humanReadableDiff</span> },
-    <span class="hljs-attr">targetUrl</span>: plan.<span class="hljs-property">ciRunUrl</span>,
-    <span class="hljs-attr">expiresIn</span>: <span class="hljs-number">3600</span>,           <span class="hljs-comment">// infra plans go stale fast — 1 hour</span>
-    <span class="hljs-attr">idempotent</span>: <span class="hljs-literal">false</span>,         <span class="hljs-comment">// re-applying a plan with a destroy step is not safe to blindly retry</span>
-    <span class="hljs-attr">undo</span>: <span class="hljs-string">&quot;terraform apply -target=&lt;resource&gt; using the previous state file in s3://tfstate-backups/&quot;</span>,
-  });
+<span class="hljs-keyword">type</span> <span class="hljs-title class_">Target</span> = { <span class="hljs-attr">namespace</span>: <span class="hljs-built_in">string</span>; <span class="hljs-attr">deployment</span>: <span class="hljs-built_in">string</span>; <span class="hljs-attr">replicas</span>?: <span class="hljs-built_in">number</span>; <span class="hljs-attr">revision</span>?: <span class="hljs-built_in">number</span> };
+<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">NAME</span> = <span class="hljs-regexp">/^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$/</span>; <span class="hljs-comment">// Kubernetes object name</span>
 
-  <span class="hljs-keyword">try</span> {
-    <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">awaitDecision</span>(created.<span class="hljs-property">id</span>, { <span class="hljs-attr">timeoutS</span>: <span class="hljs-number">1800</span> });
-    <span class="hljs-comment">// action.status === &#x27;approved&#x27; here — awaitDecision throws otherwise</span>
+<span class="hljs-keyword">function</span> <span class="hljs-title function_">kubectlArgs</span>(<span class="hljs-params"><span class="hljs-attr">kind</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">t</span>: <span class="hljs-title class_">Target</span></span>): <span class="hljs-built_in">string</span>[] {
+  <span class="hljs-keyword">if</span> (!<span class="hljs-variable constant_">NAME</span>.<span class="hljs-title function_">test</span>(t.<span class="hljs-property">namespace</span>) || !<span class="hljs-variable constant_">NAME</span>.<span class="hljs-title function_">test</span>(t.<span class="hljs-property">deployment</span>)) <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Error</span>(<span class="hljs-string">&quot;invalid name&quot;</span>);
+  <span class="hljs-keyword">const</span> base = [<span class="hljs-string">`deployment/<span class="hljs-subst">${t.deployment}</span>`</span>, <span class="hljs-string">&quot;-n&quot;</span>, t.<span class="hljs-property">namespace</span>];
+  <span class="hljs-keyword">if</span> (kind === <span class="hljs-string">&quot;k8s.rollout_restart&quot;</span>) <span class="hljs-keyword">return</span> [<span class="hljs-string">&quot;rollout&quot;</span>, <span class="hljs-string">&quot;restart&quot;</span>, ...base];
+  <span class="hljs-keyword">if</span> (kind === <span class="hljs-string">&quot;k8s.scale&quot;</span> &amp;&amp; <span class="hljs-title class_">Number</span>.<span class="hljs-title function_">isInteger</span>(t.<span class="hljs-property">replicas</span>) &amp;&amp; t.<span class="hljs-property">replicas</span>! &gt;= <span class="hljs-number">0</span> &amp;&amp; t.<span class="hljs-property">replicas</span>! &lt;= <span class="hljs-number">50</span>)
+    <span class="hljs-keyword">return</span> [<span class="hljs-string">&quot;scale&quot;</span>, ...base, <span class="hljs-string">`--replicas=<span class="hljs-subst">${t.replicas}</span>`</span>];
+  <span class="hljs-keyword">if</span> (kind === <span class="hljs-string">&quot;k8s.rollout_undo&quot;</span> &amp;&amp; <span class="hljs-title class_">Number</span>.<span class="hljs-title function_">isInteger</span>(t.<span class="hljs-property">revision</span>) &amp;&amp; t.<span class="hljs-property">revision</span>! &gt; <span class="hljs-number">0</span>)
+    <span class="hljs-keyword">return</span> [<span class="hljs-string">&quot;rollout&quot;</span>, <span class="hljs-string">&quot;undo&quot;</span>, ...base, <span class="hljs-string">`--to-revision=<span class="hljs-subst">${t.revision}</span>`</span>];
+  <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Error</span>(<span class="hljs-string">`unsupported action: <span class="hljs-subst">${kind}</span>`</span>);
+}
 
-    <span class="hljs-keyword">const</span> result = <span class="hljs-keyword">await</span> <span class="hljs-title function_">runTerraformApply</span>(plan);  <span class="hljs-comment">// the only place the apply actually runs</span>
-
-    <span class="hljs-keyword">await</span> client.<span class="hljs-title function_">reportResult</span>(created.<span class="hljs-property">id</span>, result.<span class="hljs-property">ok</span> ? <span class="hljs-string">&quot;executed&quot;</span> : <span class="hljs-string">&quot;execute_failed&quot;</span>, {
-      <span class="hljs-attr">changed_resources</span>: result.<span class="hljs-property">changedResources</span>,
-      <span class="hljs-attr">run_url</span>: result.<span class="hljs-property">runUrl</span>,
-    });
-  } <span class="hljs-keyword">catch</span> (e) {
-    <span class="hljs-keyword">if</span> (e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriRejected</span>) {
-      <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">&quot;Apply rejected — not running.&quot;</span>);
-    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriExpired</span>) {
-      <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">&quot;Approval window closed before a decision was made.&quot;</span>);
-    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriTimeout</span>) {
-      <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(<span class="hljs-string">&quot;Still pending server-side — check the inbox later.&quot;</span>);
-    } <span class="hljs-keyword">else</span> {
-      <span class="hljs-keyword">throw</span> e;
+<span class="hljs-comment">// Run every 30 s (cron, a loop, a CronJob): execute what a human approved, nothing else.</span>
+<span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> kind <span class="hljs-keyword">of</span> [<span class="hljs-string">&quot;k8s.rollout_restart&quot;</span>, <span class="hljs-string">&quot;k8s.scale&quot;</span>, <span class="hljs-string">&quot;k8s.rollout_undo&quot;</span>]) {
+  <span class="hljs-keyword">const</span> { items } = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">listActions</span>({ <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;approved&quot;</span>, kind, <span class="hljs-attr">autoPaginate</span>: <span class="hljs-literal">true</span> });
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> action <span class="hljs-keyword">of</span> items) {
+    <span class="hljs-keyword">let</span> <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span> | <span class="hljs-string">&quot;execute_failed&quot;</span> = <span class="hljs-string">&quot;execute_failed&quot;</span>;
+    <span class="hljs-keyword">let</span> detail = <span class="hljs-string">&quot;&quot;</span>;
+    <span class="hljs-keyword">try</span> {
+      <span class="hljs-keyword">const</span> args = <span class="hljs-title function_">kubectlArgs</span>(kind, action.<span class="hljs-property">payload</span> <span class="hljs-keyword">as</span> <span class="hljs-title class_">Target</span>);
+      <span class="hljs-comment">// The reviewer saw the preview, not the payload: they must say the same thing.</span>
+      <span class="hljs-keyword">if</span> (action.<span class="hljs-property">preview</span>.<span class="hljs-property">body</span>.<span class="hljs-title function_">trim</span>() !== <span class="hljs-string">`kubectl <span class="hljs-subst">${args.join(<span class="hljs-string">&quot; &quot;</span>)}</span>`</span>) <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Error</span>(<span class="hljs-string">&quot;payload does not match the approved preview&quot;</span>);
+      detail = (<span class="hljs-keyword">await</span> <span class="hljs-title function_">run</span>(<span class="hljs-string">&quot;kubectl&quot;</span>, args)).<span class="hljs-property">stdout</span>.<span class="hljs-title function_">trim</span>();
+      status = <span class="hljs-string">&quot;executed&quot;</span>;
+    } <span class="hljs-keyword">catch</span> (e) {
+      detail = <span class="hljs-title class_">String</span>(e);
     }
+    <span class="hljs-comment">// A failed report leaves the action approved, so the next pass repeats it.</span>
+    <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">reportResult</span>(action.<span class="hljs-property">id</span>, status, { detail }).<span class="hljs-title function_">catch</span>(<span class="hljs-function">(<span class="hljs-params">e</span>) =&gt;</span> <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">error</span>(action.<span class="hljs-property">id</span>, e));
   }
 }</code></pre></div>
-<p><code>result.payload</code> is worth using here specifically — a DevOps reviewer checking the inbox later wants to see which resources actually changed, not just &quot;executed.&quot;</p>
-<h2 id="scoping-the-blast-radius-before-the-gate">Scoping the blast radius before the gate</h2>
-<p>The gate is only as strong as what the agent can do without it. An agent that holds a kubeconfig with cluster-admin and calls <code>kubectl</code> directly can route around any wrapper you build. The pattern that holds up:</p>
-<ol>
-<li>The agent never gets direct cluster/cloud credentials.</li>
-<li>It calls an internal executor function — the one shown as <code>runTerraformApply</code> above — that itself owns the credentials.</li>
-<li>That executor refuses to run unless it received an <code>approved</code> decision object from Impri, not just a boolean flag the agent could fabricate in its own output.</li>
-</ol>
-<p>That third point matters more for DevOps agents than most other use cases, because the cost of a bypassed gate is higher. See <a href="integrations">the integrations doc</a> for the wrapper pattern in more depth.</p>
-<h2 id="routing-by-severity">Routing by severity</h2>
-<p>Not every infra action deserves the same friction. A useful split:</p>
-<div class="table-wrap"><table>
-<thead>
-<tr>
-<th>Action</th>
-<th>Review path</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>Scale replicas up/down within a bounded range</td>
-<td>Auto-approve via a <a href="rules">rule</a>, skip human review</td>
-</tr>
-<tr>
-<td>Terraform apply touching prod, <code>kubectl delete</code>, IAM changes</td>
-<td>Route to <a href="slack-approval">Slack</a> with <code>idempotent: false</code> and a filled <code>undo</code> field</td>
-</tr>
-<tr>
-<td>Anything touching a datastore&#39;s data (not just infra)</td>
-<td>Route to a second reviewer via <a href="audit-log">audit log</a> — keep the trail, since this is the case someone will ask about later</td>
-</tr>
-</tbody></table>
-</div>
-<p>Rules let low-stakes scaling actions skip the inbox entirely so the human queue stays for decisions that actually need a human.</p>
+<p>Two details carry the safety. The reviewer approves the preview and never sees the payload, so the executor rebuilds the command from the payload and refuses when it differs from what was approved. And a repeat after a crash stays harmless: a replica count is absolute, a repeated restart only rolls the pods again, and <code>--to-revision</code> pins the rollback, where a plain <code>rollout undo</code> goes to whatever the previous revision is when it runs. Reporting the result moves the action out of <code>approved</code>, so the next pass skips it.</p>
+<h2 id="let-small-changes-through-stop-the-rest">Let small changes through, stop the rest</h2>
+<p>A <a href="rules">rule</a> (created with an admin-scope key, <code>POST /v1/rules</code>) approves small scaling outside production on its own; everything else waits in the inbox and goes to your notification channels (Slack, Telegram, Discord, email, webhook):</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Small scale changes outside prod&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;kind_pattern&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;k8s.scale&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;payload_conditions&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+    <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;path&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;replicas&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;op&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;gte&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;value&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">2</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;path&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;replicas&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;op&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;lte&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;value&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">6</span> <span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;path&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;namespace&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;op&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;not_in&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;value&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;prod&quot;</span><span class="hljs-punctuation">]</span> <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;rule_action&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;auto_approve&quot;</span>
+<span class="hljs-punctuation">}</span></code></pre></div>
+<p>An auto-approved action sends no notification; the <a href="audit-log">audit log</a> records which rule approved it, and the executor still checks the preview.</p>
 <h2 id="what-impri-does-not-do-here">What Impri does not do here</h2>
-<p>It does not validate the Terraform plan or the kubectl command for correctness — it shows the diff to a human and trusts their judgment, the same as it does for any other action kind. It is not a policy engine; if you need &quot;block any apply that touches IAM regardless of who approves,&quot; that&#39;s an OPA/Sentinel policy gate upstream of Impri, not something Impri enforces itself. And it doesn&#39;t watch your infrastructure for drift — for that you&#39;d run a <a href="watcher-presets">watcher</a> that polls state and opens an action when something changes outside the pipeline.</p>
-<p>Next: <a href="mcp">the MCP doc</a> if your agent runs inside Claude Code or another MCP client and you&#39;d rather not write the SDK calls directly.</p>
+<p>It doesn&#39;t check that a plan or command is correct: it shows it to a person. It isn&#39;t a policy engine: &quot;never touch IAM, whoever approves&quot; belongs in OPA or Sentinel before Impri. It never runs kubectl or terraform: your executor does, with credentials the agent never sees. Related: <a href="agentic-ai-safety-patterns">agentic AI safety patterns</a> and <a href="human-in-the-loop-for-ai-agent-incident-response">incident response agents</a>.</p>
+<p>Next: run the inbox next to your cluster with <a href="self-hosting">self-hosting</a> (<code>docker compose</code>, MIT core), or <a href="https://app.impri.dev/?signup=1" target="_blank" rel="noopener">start free on the cloud</a> and point the executor at <code>https://api.impri.dev</code>.</p>
 
     <aside class="doc-cta" aria-label="Try Impri">
   <p class="doc-cta-title">Add an approval step to your own agent</p>
@@ -308,10 +313,9 @@ pre code.hljs{display:block;overflow-x:auto}
   <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#why-devops-agents-need-a-different-gate-than-chat-agents">Why DevOps agents need a different gate than chat agents</a></li>
-<li class="ptoc-h2"><a href="#gating-a-terraform-apply-typescript">Gating a Terraform apply (TypeScript)</a></li>
-<li class="ptoc-h2"><a href="#scoping-the-blast-radius-before-the-gate">Scoping the blast radius before the gate</a></li>
-<li class="ptoc-h2"><a href="#routing-by-severity">Routing by severity</a></li>
+<ul><li class="ptoc-h2"><a href="#why-infra-agents-need-a-stricter-gate">Why infra agents need a stricter gate</a></li>
+<li class="ptoc-h2"><a href="#a-kubernetes-agent-over-mcp-restarts-scaling-rollbacks">A Kubernetes agent over MCP: restarts, scaling, rollbacks</a></li>
+<li class="ptoc-h2"><a href="#let-small-changes-through-stop-the-rest">Let small changes through, stop the rest</a></li>
 <li class="ptoc-h2"><a href="#what-impri-does-not-do-here">What Impri does not do here</a></li></ul>
 </nav>
   </aside>

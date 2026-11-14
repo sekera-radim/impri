@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agentic AI Safety Patterns — Impri Docs</title>
-<meta name="description" content="Five patterns — sandboxing, least privilege, rate limits, audit trails, and human approval gates — that keep an autonomous agent's mistakes small instead of…">
+<meta name="description" content="Five patterns (sandboxing, least privilege, rate limits, human approval gates and audit trails) keep an autonomous AI agent's mistakes small, not catastrophic.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="Agentic AI Safety Patterns — Impri Docs">
-<meta property="og:description" content="Five patterns — sandboxing, least privilege, rate limits, audit trails, and human approval gates — that keep an autonomous agent's mistakes small instead of…">
+<meta property="og:description" content="Five patterns (sandboxing, least privilege, rate limits, human approval gates and audit trails) keep an autonomous AI agent's mistakes small, not catastrophic.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/agentic-ai-safety-patterns">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/agentic-ai-safety-patterns">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Agentic AI Safety Patterns","description":"Five patterns — sandboxing, least privilege, rate limits, audit trails, and human approval gates — that keep an autonomous agent's mistakes small instead of…","url":"https://impri.dev/docs/agentic-ai-safety-patterns","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Agentic AI Safety Patterns","description":"Five patterns (sandboxing, least privilege, rate limits, human approval gates and audit trails) keep an autonomous AI agent's mistakes small, not catastrophic.","url":"https://impri.dev/docs/agentic-ai-safety-patterns","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -150,7 +150,7 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>Agentic AI Safety Patterns</span>
     </nav>
     <h1>Agentic AI Safety Patterns</h1>
-<p>Five patterns — sandboxing, least privilege, rate limits, audit trails, and human approval gates — that keep an autonomous agent&#39;s mistakes small instead of catastrophic.</p>
+<p>Five patterns (sandboxing, least privilege, rate limits, human approval gates and audit trails) keep an autonomous AI agent&#39;s mistakes small, not catastrophic.</p>
 <hr>
 <p>Most teams building an agent that can touch production systems reach for one safety measure: a stricter prompt. That helps less than it seems like it should, because a prompt is advice the model can misread or be talked out of. The patterns below are structural instead — they hold even when the model&#39;s reasoning that day is wrong.</p>
 <p>Running example throughout: a DevOps agent that watches a queue of infrastructure change requests and can run <code>terraform apply</code> against a real environment.</p>
@@ -162,35 +162,43 @@ pre code.hljs{display:block;overflow-x:auto}
 }</code></pre></div>
 <p>This doesn&#39;t replace approval — it bounds the damage a misconfigured or compromised agent can do while an approval flow is being wired up.</p>
 <h2 id="pattern-2-least-privilege-credentials-not-one-shared-key">Pattern 2 — Least-privilege credentials, not one shared key</h2>
-<p>An agent that reads Terraform plans doesn&#39;t need a key that can also apply them. An agent that drafts an action doesn&#39;t need the scope that executes it. Split credentials by what the agent actually does, and prefer short-lived, narrowly scoped tokens over one admin key reused everywhere. If you&#39;re using Impri for the approval step itself, give the agent an <code>actions</code> scope key, not <code>admin</code> — a compromised agent process shouldn&#39;t be able to also manage your team&#39;s API keys.</p>
+<p>An agent that reads Terraform plans doesn&#39;t need a key that can also apply them. An agent that drafts an action doesn&#39;t need the scope that executes it. Split credentials by what the agent actually does, and prefer short-lived, narrowly scoped tokens over one admin key reused everywhere. If you&#39;re using Impri for the approval step itself, give the agent an <code>actions</code> scope key, not <code>admin</code>: a compromised agent process shouldn&#39;t be able to mint API keys or rewrite the rules that auto-approve actions.</p>
 <h2 id="pattern-3-rate-limit-the-loop-not-just-the-endpoint">Pattern 3 — Rate limit the loop, not just the endpoint</h2>
-<p>Agents get stuck in loops in ways scripts rarely do — a misread error message can cause the same &quot;fix&quot; to be retried a hundred times. Rate limiting the outbound action (not just relying on the target API&#39;s own limits) turns a runaway loop into a throttled nuisance instead of a hundred applied changes. Impri&#39;s action endpoint is capped at 60 requests/minute per key for exactly this reason — an agent caught in a retry loop hits that ceiling before it hits anything expensive.</p>
+<p>Agents get stuck in loops in ways scripts rarely do — a misread error message can cause the same &quot;fix&quot; to be retried a hundred times. Rate limiting the outbound action (not just relying on the target API&#39;s own limits) turns a runaway loop into a throttled nuisance instead of a hundred applied changes. Impri caps action creation at 60 requests per minute per API key, so an agent caught in a retry loop gets <code>429</code> responses instead of flooding the reviewer&#39;s inbox.</p>
 <h2 id="pattern-4-a-human-approval-gate-on-irreversible-actions">Pattern 4 — A human approval gate on irreversible actions</h2>
 <p>This is the pattern that catches what the first three don&#39;t: a well-scoped, rate-limited agent that is still about to do the <em>wrong</em> thing. The gate has to be structural — the executor function must be unreachable except from the approved branch — not a prompt instruction asking the model to pause.</p>
-<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">ImpriClient</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@impri/sdk&quot;</span>;
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">ImpriClient</span>, <span class="hljs-title class_">ImpriRejected</span>, <span class="hljs-title class_">ImpriExpired</span>, <span class="hljs-title class_">ImpriTimeout</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@impri/sdk&quot;</span>;
 
 <span class="hljs-keyword">const</span> impri = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ImpriClient</span>({ <span class="hljs-attr">apiKey</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_API_KEY</span>! });
 
 <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">proposeApply</span>(<span class="hljs-params"><span class="hljs-attr">plan</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">changeSummary</span>: <span class="hljs-built_in">string</span></span>) {
-  <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">create</span>({
+  <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">createAction</span>({
     <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;infra.terraform_apply&quot;</span>,
     <span class="hljs-attr">title</span>: <span class="hljs-string">`Apply: <span class="hljs-subst">${changeSummary}</span>`</span>,
     <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: <span class="hljs-string">&quot;```\n&quot;</span> + plan + <span class="hljs-string">&quot;\n```&quot;</span> },
-    <span class="hljs-attr">undo</span>: <span class="hljs-string">&quot;Re-apply the previous known-good state file&quot;</span>,
-    <span class="hljs-attr">idempotent</span>: <span class="hljs-literal">false</span>,
     <span class="hljs-attr">expires_in</span>: <span class="hljs-number">1800</span>,
   });
 
-  <span class="hljs-keyword">const</span> decision = <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">awaitDecision</span>(action.<span class="hljs-property">id</span>, { <span class="hljs-attr">timeoutS</span>: <span class="hljs-number">1800</span> });
-
-  <span class="hljs-keyword">if</span> (decision.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;approved&quot;</span>) {
-    <span class="hljs-keyword">return</span>; <span class="hljs-comment">// rejected or expired — runTerraformApply is never called</span>
+  <span class="hljs-keyword">try</span> {
+    <span class="hljs-comment">// Returns only once a human approved; throws on rejection, expiry or timeout.</span>
+    <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">awaitDecision</span>(action.<span class="hljs-property">id</span>, { <span class="hljs-attr">timeoutS</span>: <span class="hljs-number">1800</span> });
+  } <span class="hljs-keyword">catch</span> (e) {
+    <span class="hljs-keyword">if</span> (e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriRejected</span> || e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriExpired</span> || e <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">ImpriTimeout</span>) {
+      <span class="hljs-keyword">return</span>; <span class="hljs-comment">// runTerraformApply is never called</span>
+    }
+    <span class="hljs-keyword">throw</span> e;
   }
 
-  <span class="hljs-keyword">await</span> <span class="hljs-title function_">runTerraformApply</span>(plan); <span class="hljs-comment">// the only call site for the real side effect</span>
-  <span class="hljs-keyword">await</span> impri.<span class="hljs-property">actions</span>.<span class="hljs-title function_">reportResult</span>(action.<span class="hljs-property">id</span>, { <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span> });
+  <span class="hljs-keyword">try</span> {
+    <span class="hljs-keyword">await</span> <span class="hljs-title function_">runTerraformApply</span>(plan); <span class="hljs-comment">// the only call site for the real side effect</span>
+    <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">reportResult</span>(action.<span class="hljs-property">id</span>, <span class="hljs-string">&quot;executed&quot;</span>);
+  } <span class="hljs-keyword">catch</span> (e) {
+    <span class="hljs-keyword">await</span> impri.<span class="hljs-title function_">reportResult</span>(action.<span class="hljs-property">id</span>, <span class="hljs-string">&quot;execute_failed&quot;</span>, { <span class="hljs-attr">detail</span>: <span class="hljs-title class_">String</span>(e) });
+    <span class="hljs-keyword">throw</span> e;
+  }
 }</code></pre></div>
-<p>Only the code path after <code>decision.status === &quot;approved&quot;</code> can reach <code>runTerraformApply</code>. That&#39;s the difference between this and a Slack message that says &quot;reply APPROVE to continue&quot; — there, the agent is still the one deciding whether it heard a yes.</p>
+<p><code>awaitDecision</code> returns only after a human approved and throws on a rejection, an expiry or a timeout, so only the approved path can reach <code>runTerraformApply</code>. That&#39;s the difference between this and a Slack message that says &quot;reply APPROVE to continue&quot; — there, the agent is still the one deciding whether it heard a yes.</p>
+<p>For an apply, also tell the reviewer that a retry isn&#39;t safe and how to undo it: the REST API takes <code>idempotent: false</code> and an <code>undo</code> note on the action and the inbox shows both (the SDK call above doesn&#39;t pass them yet). <a href="human-in-the-loop-for-devops-ai-agents">Human-in-the-loop for DevOps AI agents</a> shows that request and a Kubernetes version of this gate.</p>
 <h2 id="pattern-5-audit-everything-especially-near-misses">Pattern 5 — Audit everything, especially near-misses</h2>
 <p>Every proposal, decision, and execution result should be logged somewhere a human can review later — not just the ones that got approved. A rejected action tells you the agent&#39;s judgment was off in a specific, reviewable way, which is exactly the signal you need to tighten Pattern 1 or 2 before it happens again with higher stakes.</p>
 <h2 id="putting-the-patterns-together">Putting the patterns together</h2>
