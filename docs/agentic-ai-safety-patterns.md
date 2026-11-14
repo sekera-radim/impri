@@ -1,6 +1,6 @@
 # Agentic AI Safety Patterns
 
-Five patterns — sandboxing, least privilege, rate limits, audit trails, and human approval gates — that keep an autonomous agent's mistakes small instead of catastrophic.
+Five patterns (sandboxing, least privilege, rate limits, human approval gates and audit trails) keep an autonomous AI agent's mistakes small, not catastrophic.
 
 ---
 
@@ -23,43 +23,52 @@ This doesn't replace approval — it bounds the damage a misconfigured or compro
 
 ## Pattern 2 — Least-privilege credentials, not one shared key
 
-An agent that reads Terraform plans doesn't need a key that can also apply them. An agent that drafts an action doesn't need the scope that executes it. Split credentials by what the agent actually does, and prefer short-lived, narrowly scoped tokens over one admin key reused everywhere. If you're using Impri for the approval step itself, give the agent an `actions` scope key, not `admin` — a compromised agent process shouldn't be able to also manage your team's API keys.
+An agent that reads Terraform plans doesn't need a key that can also apply them. An agent that drafts an action doesn't need the scope that executes it. Split credentials by what the agent actually does, and prefer short-lived, narrowly scoped tokens over one admin key reused everywhere. If you're using Impri for the approval step itself, give the agent an `actions` scope key, not `admin`: a compromised agent process shouldn't be able to mint API keys or rewrite the rules that auto-approve actions.
 
 ## Pattern 3 — Rate limit the loop, not just the endpoint
 
-Agents get stuck in loops in ways scripts rarely do — a misread error message can cause the same "fix" to be retried a hundred times. Rate limiting the outbound action (not just relying on the target API's own limits) turns a runaway loop into a throttled nuisance instead of a hundred applied changes. Impri's action endpoint is capped at 60 requests/minute per key for exactly this reason — an agent caught in a retry loop hits that ceiling before it hits anything expensive.
+Agents get stuck in loops in ways scripts rarely do — a misread error message can cause the same "fix" to be retried a hundred times. Rate limiting the outbound action (not just relying on the target API's own limits) turns a runaway loop into a throttled nuisance instead of a hundred applied changes. Impri caps action creation at 60 requests per minute per API key, so an agent caught in a retry loop gets `429` responses instead of flooding the reviewer's inbox.
 
 ## Pattern 4 — A human approval gate on irreversible actions
 
 This is the pattern that catches what the first three don't: a well-scoped, rate-limited agent that is still about to do the *wrong* thing. The gate has to be structural — the executor function must be unreachable except from the approved branch — not a prompt instruction asking the model to pause.
 
 ```typescript
-import { ImpriClient } from "@impri/sdk";
+import { ImpriClient, ImpriRejected, ImpriExpired, ImpriTimeout } from "@impri/sdk";
 
 const impri = new ImpriClient({ apiKey: process.env.IMPRI_API_KEY! });
 
 async function proposeApply(plan: string, changeSummary: string) {
-  const action = await impri.actions.create({
+  const action = await impri.createAction({
     kind: "infra.terraform_apply",
     title: `Apply: ${changeSummary}`,
     preview: { format: "markdown", body: "```\n" + plan + "\n```" },
-    undo: "Re-apply the previous known-good state file",
-    idempotent: false,
     expires_in: 1800,
   });
 
-  const decision = await impri.actions.awaitDecision(action.id, { timeoutS: 1800 });
-
-  if (decision.status !== "approved") {
-    return; // rejected or expired — runTerraformApply is never called
+  try {
+    // Returns only once a human approved; throws on rejection, expiry or timeout.
+    await impri.awaitDecision(action.id, { timeoutS: 1800 });
+  } catch (e) {
+    if (e instanceof ImpriRejected || e instanceof ImpriExpired || e instanceof ImpriTimeout) {
+      return; // runTerraformApply is never called
+    }
+    throw e;
   }
 
-  await runTerraformApply(plan); // the only call site for the real side effect
-  await impri.actions.reportResult(action.id, { status: "executed" });
+  try {
+    await runTerraformApply(plan); // the only call site for the real side effect
+    await impri.reportResult(action.id, "executed");
+  } catch (e) {
+    await impri.reportResult(action.id, "execute_failed", { detail: String(e) });
+    throw e;
+  }
 }
 ```
 
-Only the code path after `decision.status === "approved"` can reach `runTerraformApply`. That's the difference between this and a Slack message that says "reply APPROVE to continue" — there, the agent is still the one deciding whether it heard a yes.
+`awaitDecision` returns only after a human approved and throws on a rejection, an expiry or a timeout, so only the approved path can reach `runTerraformApply`. That's the difference between this and a Slack message that says "reply APPROVE to continue" — there, the agent is still the one deciding whether it heard a yes.
+
+For an apply, also tell the reviewer that a retry isn't safe and how to undo it: the REST API takes `idempotent: false` and an `undo` note on the action and the inbox shows both (the SDK call above doesn't pass them yet). [Human-in-the-loop for DevOps AI agents](human-in-the-loop-for-devops-ai-agents.md) shows that request and a Kubernetes version of this gate.
 
 ## Pattern 5 — Audit everything, especially near-misses
 
