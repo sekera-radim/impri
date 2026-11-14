@@ -60,7 +60,7 @@ Not every call in an agentic pipeline deserves the same scrutiny, and treating t
 | Vendor search, price comparison | None — read-only, no side effect | Not wrapped at all |
 | PO under $500, known vendor | Auto-approve, logged | `payload_conditions` rule: `amount lt 500` + `vendor in [allowlist]` |
 | PO $500–$5,000 | Human gate, normal expiry | Default — no matching rule, falls through to `pending` |
-| PO over $5,000, or new vendor | Human gate, escalated to on-call channel | Rule with `rule_action: "escalate"` to a Slack/Telegram channel |
+| PO over $5,000, or new vendor | Human gate, flagged as escalated | Rule with `rule_action: "escalate"`: a webhook channel receives `"escalate": true` and can page on-call |
 
 The auto-approved tier still writes an `action.rule_applied` audit event — low-risk doesn't mean unlogged, it means no one has to act on it in real time.
 
