@@ -21,7 +21,7 @@ Instead of one generic "approve this" gate, agencies get more value from splitti
 ## Routing each client's approvals to the right reviewer
 
 ```typescript
-import { ImpriClient } from "@impri/sdk";
+import { ImpriClient, ImpriRejected, ImpriExpired, ImpriTimeout } from "@impri/sdk";
 
 const client = new ImpriClient({ apiKey: process.env.IMPRI_API_KEY! });
 
@@ -39,38 +39,44 @@ async function proposeForClient(a: ClientAction) {
     title: `[${a.clientName}] ${a.summary}`,
     preview: { format: "markdown", body: a.body },
     editable: ["preview.body"],
-    expiresIn: 172800, // 48h — account managers aren't always online
-    undo: a.kind === "agency.social_post"
-      ? "Delete the post from the client's account within 5 minutes of publishing"
-      : "Contact client to void/reissue if already sent",
+    expires_in: 172800, // 48 h: account managers aren't always online
   });
 
-  const decision = await client.awaitDecision(created.id, { timeoutS: 172800 });
-
-  if (decision.status !== "approved") {
-    console.log(`[${a.clientName}] ${a.kind} not sent: ${decision.status}`);
-    return;
+  let finalBody: string;
+  try {
+    const action = await client.awaitDecision(created.id, { timeoutS: 172800 });
+    // The reviewer may have edited the copy before approving.
+    finalBody = action.decision?.final_preview?.body ?? a.body;
+  } catch (e) {
+    if (e instanceof ImpriRejected || e instanceof ImpriExpired || e instanceof ImpriTimeout) {
+      console.log(`[${a.clientName}] ${a.kind} not sent: ${e.name}`);
+      return;
+    }
+    throw e;
   }
 
-  const finalBody = decision.decision!.finalPreview!.body;
-  await executeForClient(a.clientId, a.kind, finalBody); // your integration per surface
-
-  await client.reportResult(created.id, "executed");
+  try {
+    await executeForClient(a.clientId, a.kind, finalBody); // your integration per surface
+    await client.reportResult(created.id, "executed");
+  } catch (e) {
+    await client.reportResult(created.id, "execute_failed", { detail: String(e) });
+    throw e;
+  }
 }
 ```
 
-The `[${a.clientName}]` prefix in the title matters more here than in a single-tenant setup — an account manager scanning a shared inbox needs to know which client a card belongs to before they even open it.
+The `[${a.clientName}]` prefix in the title matters more here than in a single-tenant setup — an account manager scanning a shared inbox needs to know which client a card belongs to before they even open it. For posts and invoices, the REST API also takes an `undo` note on the action ("delete the post within 5 minutes", "void and reissue the invoice"), which the inbox shows on the card; the TypeScript SDK's `createAction` doesn't pass it yet.
 
 ## Keeping client work out of one shared inbox
 
-Prefixing titles works for a small team checking one inbox, but it doesn't scope who's *allowed* to approve what. Two ways agencies handle that as they grow past a couple of clients:
+Prefixing titles works for a small team checking one inbox, but it doesn't scope who's *allowed* to approve what. Inside one Impri project, every notification channel gets every pending action: Impri doesn't route by client. Two ways agencies handle that as they grow past a couple of clients:
 
 | Approach | When it fits |
 |---|---|
-| One Impri API key per client, routed to that account manager's [Slack](slack-approval.md) or [Telegram](telegram-approval.md) | Each client has a dedicated account manager |
-| Shared key, `kind` prefixed by surface, reviewers filter their own queue | Small team, everyone reviews everything |
+| A separate Impri project per client: its own API keys, inbox, audit log and notification channels, e.g. that account manager's [Slack](slack-approval.md) or [Telegram](telegram-approval.md) | Each client has a dedicated account manager, or wants its own record of approvals |
+| One project, client name in the title, one `kind` per surface; reviewers filter the inbox by kind | Small team, everyone reviews everything |
 
-Neither requires Impri to know anything about your client roster — it's just how you choose to issue keys and where you point notifications.
+Neither needs Impri to know your client roster: it's how you split projects and where each project's notifications go.
 
 ## What this doesn't solve
 
