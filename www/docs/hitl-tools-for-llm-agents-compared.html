@@ -165,7 +165,7 @@ pre code.hljs{display:block;overflow-x:auto}
 </thead>
 <tbody><tr>
 <td>Framework-native interrupt</td>
-<td>LangGraph <code>interrupt()</code>, OpenAI Agents SDK approval hooks</td>
+<td>LangGraph <code>interrupt()</code>, OpenAI Agents SDK <code>needs_approval</code></td>
 <td>Inside your agent process</td>
 <td>Pausing a graph/run mid-execution</td>
 </tr>
@@ -191,7 +191,7 @@ pre code.hljs{display:block;overflow-x:auto}
 </div>
 <hr>
 <h2 id="framework-native-interrupts">Framework-native interrupts</h2>
-<p>If you&#39;re building on LangGraph, CrewAI, the OpenAI Agents SDK, or a similar framework, there&#39;s often a built-in way to pause a run and wait for external input. LangGraph&#39;s <code>interrupt()</code> is the clearest example: it suspends graph execution at a node and resumes when you feed a value back in.</p>
+<p>If you&#39;re building on LangGraph, CrewAI, the OpenAI Agents SDK (<a href="human-in-the-loop-openai-agents-sdk">tools marked `needs_approval`</a>), or a similar framework, there&#39;s often a built-in way to pause a run and wait for external input. LangGraph&#39;s <code>interrupt()</code> is the clearest example: it suspends graph execution at a node and resumes when you feed a value back in.</p>
 <div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-comment">// LangGraph-style interrupt, illustrative</span>
 <span class="hljs-keyword">import</span> { interrupt } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@langchain/langgraph&quot;</span>;
 
