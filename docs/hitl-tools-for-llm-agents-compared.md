@@ -10,7 +10,7 @@ Framework interrupts, workflow-engine nodes, general approval software, and dedi
 
 | Category | Example | Lives where | Built for |
 |---|---|---|---|
-| Framework-native interrupt | LangGraph `interrupt()`, OpenAI Agents SDK approval hooks | Inside your agent process | Pausing a graph/run mid-execution |
+| Framework-native interrupt | LangGraph `interrupt()`, OpenAI Agents SDK `needs_approval` | Inside your agent process | Pausing a graph/run mid-execution |
 | Workflow-engine node | n8n Wait node, Temporal signals | Inside an orchestration platform | Pausing a broader multi-step workflow |
 | General approval/ticketing software | Jira workflow, generic BPM tools | Separate app, not agent-aware | Human approval processes in general |
 | Dedicated agent approval gate | Impri | Separate service, agent-aware | Agent proposes → human decides → agent executes |
@@ -19,7 +19,7 @@ Framework interrupts, workflow-engine nodes, general approval software, and dedi
 
 ## Framework-native interrupts
 
-If you're building on LangGraph, CrewAI, the OpenAI Agents SDK, or a similar framework, there's often a built-in way to pause a run and wait for external input. LangGraph's `interrupt()` is the clearest example: it suspends graph execution at a node and resumes when you feed a value back in.
+If you're building on LangGraph, CrewAI, the OpenAI Agents SDK ([tools marked `needs_approval`](human-in-the-loop-openai-agents-sdk.md)), or a similar framework, there's often a built-in way to pause a run and wait for external input. LangGraph's `interrupt()` is the clearest example: it suspends graph execution at a node and resumes when you feed a value back in.
 
 ```typescript
 // LangGraph-style interrupt, illustrative
