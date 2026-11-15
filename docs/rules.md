@@ -1,6 +1,6 @@
 # Rules Engine
 
-Impri's rules engine lets you automate routine approval decisions without touching code. Rules are project-scoped and evaluated on every `POST /v1/actions` call before the action is saved. A matching rule can auto-approve, auto-reject, shorten the expiry window, or escalate to a specific notification channel — instantly, with no polling lag.
+Impri's rules engine lets you automate routine approval decisions without touching code. Rules are project-scoped and evaluated on every `POST /v1/actions` call before the action is saved. A matching rule can auto-approve, auto-reject, shorten the expiry window, or mark the action as escalated — instantly, with no polling lag.
 
 Rules are evaluated **once per action at creation time** — they do not re-run when an action's status changes. Without rules, every action starts as `pending` and waits for a human.
 
@@ -102,13 +102,22 @@ The action is still created as `pending` — the rule only changes when it expir
 
 ### `escalate`
 
-Route the action to a specific notification channel in addition to (or instead of) the default notification flow. `outcome_params`:
+Flag the action as escalated. It is still created as `pending` and every enabled [notification channel](notifications.md) of the project is notified as for any pending action; escalation does not send it to one particular Slack, Discord or Telegram channel. What changes:
+
+- `webhook` channels receive `"escalate": true` in their payload, so your receiver can page whoever is on call.
+- If the server has the global ntfy push configured (`NTFY_URL`), it posts to the ntfy topic named in `channel` instead of `NTFY_TOPIC`.
+
+`outcome_params` (required):
 
 ```json
-{ "channel": "ch_abc123" }
+{ "channel": "payments-oncall" }
 ```
 
-`channel` is a notification channel ID (`ch_...`). If omitted, the action is created normally. The escalation is advisory — the channel receives the notification; the action is still created as `pending`.
+`channel`: 1–64 letters, digits, `_` or `-`.
+
+### `require_n_approvers` (not enforced yet)
+
+The API accepts `rule_action: "require_n_approvers"` with `{ "n": 2 }` (2–100) and records `action.rule_applied`, but the action is decided by the first approval or rejection, like any other pending action. Don't rely on it for a two-person rule.
 
 ---
 
@@ -260,7 +269,7 @@ Returns `204 No Content`. Immediately removes the rule and invalidates the cache
 }
 ```
 
-### Escalate to a specific Slack channel
+### Flag high-value transactions as escalated
 
 ```json
 {
@@ -273,6 +282,8 @@ Returns `204 No Content`. Immediately removes the rule and invalidates the cache
   ],
   "target_url_hosts": [],
   "rule_action": "escalate",
-  "outcome_params": { "channel": "ch_your_slack_channel_id" }
+  "outcome_params": { "channel": "payments-oncall" }
 }
 ```
+
+Webhook channels get `"escalate": true` for these actions; a server with `NTFY_URL` also pushes them to the `payments-oncall` ntfy topic.
