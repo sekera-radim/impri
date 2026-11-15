@@ -150,7 +150,7 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>Rules Engine</span>
     </nav>
     <h1>Rules Engine</h1>
-<p>Impri&#39;s rules engine lets you automate routine approval decisions without touching code. Rules are project-scoped and evaluated on every <code>POST /v1/actions</code> call before the action is saved. A matching rule can auto-approve, auto-reject, shorten the expiry window, or escalate to a specific notification channel — instantly, with no polling lag.</p>
+<p>Impri&#39;s rules engine lets you automate routine approval decisions without touching code. Rules are project-scoped and evaluated on every <code>POST /v1/actions</code> call before the action is saved. A matching rule can auto-approve, auto-reject, shorten the expiry window, or mark the action as escalated — instantly, with no polling lag.</p>
 <p>Rules are evaluated <strong>once per action at creation time</strong> — they do not re-run when an action&#39;s status changes. Without rules, every action starts as <code>pending</code> and waits for a human.</p>
 <hr>
 <h2 id="how-the-engine-works">How the engine works</h2>
@@ -273,9 +273,16 @@ pre code.hljs{display:block;overflow-x:auto}
 <div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;expires_in&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">3600</span> <span class="hljs-punctuation">}</span></code></pre></div>
 <p>The action is still created as <code>pending</code> — the rule only changes when it expires. Useful for urgent actions that should expire fast if not acted on.</p>
 <h3 id="escalate"><code>escalate</code></h3>
-<p>Route the action to a specific notification channel in addition to (or instead of) the default notification flow. <code>outcome_params</code>:</p>
-<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;channel&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;ch_abc123&quot;</span> <span class="hljs-punctuation">}</span></code></pre></div>
-<p><code>channel</code> is a notification channel ID (<code>ch_...</code>). If omitted, the action is created normally. The escalation is advisory — the channel receives the notification; the action is still created as <code>pending</code>.</p>
+<p>Flag the action as escalated. It is still created as <code>pending</code> and every enabled <a href="notifications">notification channel</a> of the project is notified as for any pending action; escalation does not send it to one particular Slack, Discord or Telegram channel. What changes:</p>
+<ul>
+<li><code>webhook</code> channels receive <code>&quot;escalate&quot;: true</code> in their payload, so your receiver can page whoever is on call.</li>
+<li>If the server has the global ntfy push configured (<code>NTFY_URL</code>), it posts to the ntfy topic named in <code>channel</code> instead of <code>NTFY_TOPIC</code>.</li>
+</ul>
+<p><code>outcome_params</code> (required):</p>
+<div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;channel&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;payments-oncall&quot;</span> <span class="hljs-punctuation">}</span></code></pre></div>
+<p><code>channel</code>: 1–64 letters, digits, <code>_</code> or <code>-</code>.</p>
+<h3 id="requirenapprovers-not-enforced-yet"><code>require_n_approvers</code> (not enforced yet)</h3>
+<p>The API accepts <code>rule_action: &quot;require_n_approvers&quot;</code> with <code>{ &quot;n&quot;: 2 }</code> (2–100) and records <code>action.rule_applied</code>, but the action is decided by the first approval or rejection, like any other pending action. Don&#39;t rely on it for a two-person rule.</p>
 <hr>
 <h2 id="api-reference">API reference</h2>
 <p>All routes require the <strong><code>admin</code></strong> scope.</p>
@@ -399,7 +406,7 @@ pre code.hljs{display:block;overflow-x:auto}
   <span class="hljs-attr">&quot;rule_action&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;set_expiry&quot;</span><span class="hljs-punctuation">,</span>
   <span class="hljs-attr">&quot;outcome_params&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;expires_in&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">900</span> <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span></code></pre></div>
-<h3 id="escalate-to-a-specific-slack-channel">Escalate to a specific Slack channel</h3>
+<h3 id="flag-high-value-transactions-as-escalated">Flag high-value transactions as escalated</h3>
 <div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
   <span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Escalate high-value transactions&quot;</span><span class="hljs-punctuation">,</span>
   <span class="hljs-attr">&quot;priority&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">15</span><span class="hljs-punctuation">,</span>
@@ -410,8 +417,9 @@ pre code.hljs{display:block;overflow-x:auto}
   <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
   <span class="hljs-attr">&quot;target_url_hosts&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
   <span class="hljs-attr">&quot;rule_action&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;escalate&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;outcome_params&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;channel&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;ch_your_slack_channel_id&quot;</span> <span class="hljs-punctuation">}</span>
+  <span class="hljs-attr">&quot;outcome_params&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span> <span class="hljs-attr">&quot;channel&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;payments-oncall&quot;</span> <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span></code></pre></div>
+<p>Webhook channels get <code>&quot;escalate&quot;: true</code> for these actions; a server with <code>NTFY_URL</code> also pushes them to the <code>payments-oncall</code> ntfy topic.</p>
 
     
   </main>
@@ -493,6 +501,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <li class="ptoc-h3"><a href="#autoreject">auto_reject</a></li>
 <li class="ptoc-h3"><a href="#setexpiry">set_expiry</a></li>
 <li class="ptoc-h3"><a href="#escalate">escalate</a></li>
+<li class="ptoc-h3"><a href="#requirenapprovers-not-enforced-yet">require_n_approvers (not enforced yet)</a></li>
 <li class="ptoc-h2"><a href="#api-reference">API reference</a></li>
 <li class="ptoc-h3"><a href="#post-v1rules-create-a-rule">POST /v1/rules — create a rule</a></li>
 <li class="ptoc-h3"><a href="#get-v1rules-list-rules">GET /v1/rules — list rules</a></li>
@@ -505,7 +514,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <li class="ptoc-h3"><a href="#allow-low-risk-actions-automatically">Allow low-risk actions automatically</a></li>
 <li class="ptoc-h3"><a href="#block-writes-to-production-database">Block writes to production database</a></li>
 <li class="ptoc-h3"><a href="#short-expiry-for-time-sensitive-alerts">Short expiry for time-sensitive alerts</a></li>
-<li class="ptoc-h3"><a href="#escalate-to-a-specific-slack-channel">Escalate to a specific Slack channel</a></li></ul>
+<li class="ptoc-h3"><a href="#flag-high-value-transactions-as-escalated">Flag high-value transactions as escalated</a></li></ul>
 </nav>
   </aside>
 </div>
