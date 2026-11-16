@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pause an AI Agent for Approval on Temporal — Impri Docs</title>
-<meta name="description" content="Add a human approval step to an AI agent running on Temporal: push the proposed action to Impri, sleep durably in the workflow, execute only on approval.">
+<title>Temporal Human-in-the-Loop with an Approval Inbox — Impri Docs</title>
+<meta name="description" content="A Temporal workflow waits for a human with a signal and a durable timer. Impri adds the approval inbox: a signed webhook wakes it when someone decides.">
 <meta name="theme-color" content="#06070d">
-<meta property="og:title" content="Pause an AI Agent for Approval on Temporal — Impri Docs">
-<meta property="og:description" content="Add a human approval step to an AI agent running on Temporal: push the proposed action to Impri, sleep durably in the workflow, execute only on approval.">
+<meta property="og:title" content="Temporal Human-in-the-Loop with an Approval Inbox — Impri Docs">
+<meta property="og:description" content="A Temporal workflow waits for a human with a signal and a durable timer. Impri adds the approval inbox: a signed webhook wakes it when someone decides.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/human-in-the-loop-temporal-workflows-for-ai-agents">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/human-in-the-loop-temporal-workflows-for-ai-agents">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Pause an AI Agent for Approval on Temporal","description":"Add a human approval step to an AI agent running on Temporal: push the proposed action to Impri, sleep durably in the workflow, execute only on approval.","url":"https://impri.dev/docs/human-in-the-loop-temporal-workflows-for-ai-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Temporal Human-in-the-Loop with an Approval Inbox","description":"A Temporal workflow waits for a human with a signal and a durable timer. Impri adds the approval inbox: a signed webhook wakes it when someone decides.","url":"https://impri.dev/docs/human-in-the-loop-temporal-workflows-for-ai-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -147,134 +147,245 @@ pre code.hljs{display:block;overflow-x:auto}
       <span class="bc-sep">/</span>
       <span>Reference</span>
       <span class="bc-sep">/</span>
-      <span>Pause an AI Agent for Approval on Temporal</span>
+      <span>Temporal Human-in-the-Loop with an Approval Inbox</span>
     </nav>
-    <h1>Pause an AI Agent for Approval on Temporal</h1>
-<p>Add a human approval step to an AI agent running on Temporal: push the proposed action to Impri, sleep durably in the workflow, execute only on approval.</p>
+    <h1>Temporal Human-in-the-Loop with an Approval Inbox</h1>
+<p>A Temporal workflow waits for a human with a signal and a durable timer. Impri adds the approval inbox: a signed webhook wakes it when someone decides.</p>
+<p><em>Updated 2026-11-16. Tested with the Temporal TypeScript SDK 1.25.0 on a local dev server, against a self-hosted Impri server.</em></p>
 <hr>
-<h2 id="why-temporal-alone-doesn39t-give-you-the-approval-ui">Why Temporal alone doesn&#39;t give you the approval UI</h2>
-<p>Temporal is very good at the hard part of waiting: a workflow can sit for days, survive worker restarts, and resume exactly where it stopped. What it does not give you is the human side — somewhere for a person to see the proposed action, edit it, and say yes or no from their phone.</p>
-<p>The usual answer is a signal plus a custom admin page. That works, but you end up building the inbox, the notifications, the expiry rules and the audit trail yourself. This page shows the other split: <strong>Temporal owns the waiting, Impri owns the decision.</strong></p>
-<p>Impri is only the approval gate. It stores the proposed action, notifies a human, and holds the decision. It does not run your workflow, call your tools or execute anything — your activities do that.</p>
-<hr>
-<h2 id="the-shape-of-the-workflow">The shape of the workflow</h2>
-<p>Three activities and one loop:</p>
+<h2 id="what-temporal-gives-you-and-what-it-leaves-to-you">What Temporal gives you, and what it leaves to you</h2>
+<p>Temporal&#39;s own <a href="https://docs.temporal.io/ai-cookbook/human-in-the-loop-python" target="_blank" rel="noopener">human-in-the-loop recipe</a> pauses the workflow with <code>wait_condition</code> until a Signal brings the decision or a timeout runs out (5 minutes by default). The wait survives worker restarts and uses no compute while it lasts.</p>
+<p>In the recipe, the &quot;UI&quot; is a script you run in a terminal to send the signal. In production a person has to see the proposed action, perhaps fix the wording, and answer from wherever they are. You also want an expiry and a record of who decided. That part is Impri&#39;s:</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-<th>Step</th>
-<th>Where it runs</th>
-<th>What it does</th>
+<th>Concern</th>
+<th>Temporal</th>
+<th>Impri</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><code>pushAction</code></td>
-<td>Activity</td>
-<td><code>POST /v1/actions</code>, returns <code>id</code></td>
+<td>Durable wait, retries, resume</td>
+<td>yes</td>
+<td>no</td>
 </tr>
 <tr>
-<td><code>getAction</code></td>
-<td>Activity</td>
-<td><code>GET /v1/actions/:id</code>, returns status</td>
+<td>Card with the proposed action, editable text</td>
+<td>no</td>
+<td>yes</td>
 </tr>
 <tr>
-<td><code>sendRefundEmail</code> (your side effect)</td>
-<td>Activity</td>
-<td>Runs only after <code>approved</code></td>
+<td>Reach the reviewer (web inbox, Slack, Discord, Telegram)</td>
+<td>no</td>
+<td>yes</td>
 </tr>
 <tr>
-<td><code>reportResult</code></td>
-<td>Activity</td>
-<td><code>POST /v1/actions/:id/result</code></td>
+<td>Nobody answers</td>
+<td>your timer</td>
+<td><code>expires_in</code>, then status <code>expired</code></td>
+</tr>
+<tr>
+<td>Who decided, when</td>
+<td>workflow history</td>
+<td><a href="audit-log">audit log</a></td>
+</tr>
+<tr>
+<td>Running the action</td>
+<td>your activity</td>
+<td>never</td>
 </tr>
 </tbody></table>
 </div>
-<p>The workflow itself stays deterministic: it never touches HTTP. Every network call lives in an activity, and the wait between checks is a durable <code>sleep</code>, not a busy loop.</p>
+<p>Impri is only the gate. It stores the proposal, notifies a human and records the answer. Your activities do the work.</p>
 <hr>
-<h2 id="example-typescript">Example (TypeScript)</h2>
-<p>Activities, using the plain REST API:</p>
+<h2 id="how-the-pieces-connect">How the pieces connect</h2>
+<ol>
+<li>An activity creates the Impri card with an <code>idempotency_key</code> and a <code>callback_url</code> that carries the workflow ID.</li>
+<li>The workflow waits on <code>condition()</code> for a signal, with a 15-minute timer as a fallback.</li>
+<li>A reviewer decides. Impri POSTs a signed webhook to your receiver; deliveries go out on a 60-second tick.</li>
+<li>The receiver checks the signature and signals the workflow with the action ID.</li>
+<li>The workflow reads the verdict from <code>GET /v1/actions/:id</code>, sends the approved text with any edits, and reports the result.</li>
+</ol>
+<p>The signal is only a wake-up call. The verdict always comes from Impri&#39;s API with your key, so a forged or replayed request to the receiver can&#39;t approve anything. That&#39;s also why the unsigned <code>workflow_id</code> in the query string is safe: a workflow only reacts to its own action ID, and only by re-reading Impri.</p>
+<hr>
+<h2 id="activities">Activities</h2>
 <div class="code-block"><span class="code-lang">ts</span><pre><code class="hljs"><span class="hljs-comment">// activities.ts</span>
-<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">BASE</span> = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>;
+<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">BASE</span> = process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_BASE_URL</span> ?? <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>;
 <span class="hljs-keyword">const</span> headers = {
   <span class="hljs-title class_">Authorization</span>: <span class="hljs-string">`Bearer <span class="hljs-subst">${process.env.IMPRI_API_KEY}</span>`</span>,
   <span class="hljs-string">&quot;Content-Type&quot;</span>: <span class="hljs-string">&quot;application/json&quot;</span>,
 };
 
-<span class="hljs-keyword">export</span> <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">pushAction</span>(<span class="hljs-params"><span class="hljs-attr">title</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">body</span>: <span class="hljs-built_in">string</span></span>): <span class="hljs-title class_">Promise</span>&lt;<span class="hljs-built_in">string</span>&gt; {
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">interface</span> <span class="hljs-title class_">ImpriAction</span> {
+  <span class="hljs-attr">id</span>: <span class="hljs-built_in">string</span>;
+  <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;pending&quot;</span> | <span class="hljs-string">&quot;approved&quot;</span> | <span class="hljs-string">&quot;rejected&quot;</span> | <span class="hljs-string">&quot;expired&quot;</span> | <span class="hljs-string">&quot;executed&quot;</span> | <span class="hljs-string">&quot;execute_failed&quot;</span>;
+  <span class="hljs-attr">decision</span>?: { <span class="hljs-attr">verdict</span>: <span class="hljs-string">&quot;approve&quot;</span> | <span class="hljs-string">&quot;reject&quot;</span>; <span class="hljs-attr">final_preview</span>?: { <span class="hljs-attr">body</span>: <span class="hljs-built_in">string</span> } };
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">requestApproval</span>(<span class="hljs-params">
+  <span class="hljs-attr">title</span>: <span class="hljs-built_in">string</span>,
+  <span class="hljs-attr">draft</span>: <span class="hljs-built_in">string</span>,
+  <span class="hljs-attr">workflowId</span>: <span class="hljs-built_in">string</span>,
+  <span class="hljs-attr">idempotencyKey</span>: <span class="hljs-built_in">string</span>,
+</span>): <span class="hljs-title class_">Promise</span>&lt;<span class="hljs-built_in">string</span>&gt; {
   <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${BASE}</span>/v1/actions`</span>, {
     <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>,
     headers,
     <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({
       <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;email.send&quot;</span>,
       title,
-      <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, body },
-      <span class="hljs-attr">expires_in</span>: <span class="hljs-number">86400</span>,
+      <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: draft },
       <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
+      <span class="hljs-attr">expires_in</span>: <span class="hljs-number">86400</span>, <span class="hljs-comment">// 24 h, then the card expires and the webhook fires</span>
+      <span class="hljs-attr">idempotency_key</span>: idempotencyKey, <span class="hljs-comment">// a retried activity gets the same card back</span>
+      <span class="hljs-attr">callback_url</span>: <span class="hljs-string">`<span class="hljs-subst">${process.env.WEBHOOK_URL}</span>?workflow_id=<span class="hljs-subst">${<span class="hljs-built_in">encodeURIComponent</span>(workflowId)}</span>`</span>,
     }),
   });
-  <span class="hljs-keyword">if</span> (!res.<span class="hljs-property">ok</span>) <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Error</span>(<span class="hljs-string">`Impri push failed: <span class="hljs-subst">${res.status}</span>`</span>);
+  <span class="hljs-keyword">if</span> (!res.<span class="hljs-property">ok</span>) <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Error</span>(<span class="hljs-string">`Impri create failed: <span class="hljs-subst">${res.status}</span>`</span>);
   <span class="hljs-keyword">return</span> (<span class="hljs-keyword">await</span> res.<span class="hljs-title function_">json</span>()).<span class="hljs-property">id</span>;
 }
 
-<span class="hljs-keyword">export</span> <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">getAction</span>(<span class="hljs-params"><span class="hljs-attr">id</span>: <span class="hljs-built_in">string</span></span>) {
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">getAction</span>(<span class="hljs-params"><span class="hljs-attr">id</span>: <span class="hljs-built_in">string</span></span>): <span class="hljs-title class_">Promise</span>&lt;<span class="hljs-title class_">ImpriAction</span>&gt; {
   <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${BASE}</span>/v1/actions/<span class="hljs-subst">${id}</span>`</span>, { headers });
   <span class="hljs-keyword">if</span> (!res.<span class="hljs-property">ok</span>) <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Error</span>(<span class="hljs-string">`Impri fetch failed: <span class="hljs-subst">${res.status}</span>`</span>);
-  <span class="hljs-keyword">return</span> res.<span class="hljs-title function_">json</span>(); <span class="hljs-comment">// { status, decision: { final_preview, diff } }</span>
+  <span class="hljs-keyword">return</span> res.<span class="hljs-title function_">json</span>();
 }
 
 <span class="hljs-keyword">export</span> <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">reportResult</span>(<span class="hljs-params"><span class="hljs-attr">id</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span> | <span class="hljs-string">&quot;execute_failed&quot;</span></span>) {
-  <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${BASE}</span>/v1/actions/<span class="hljs-subst">${id}</span>/result`</span>, {
+  <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${BASE}</span>/v1/actions/<span class="hljs-subst">${id}</span>/result`</span>, {
     <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>,
     headers,
     <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({ status }),
   });
+  <span class="hljs-comment">// 409: the result is already recorded (this is a retry after a lost response)</span>
+  <span class="hljs-keyword">if</span> (!res.<span class="hljs-property">ok</span> &amp;&amp; res.<span class="hljs-property">status</span> !== <span class="hljs-number">409</span>) <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Error</span>(<span class="hljs-string">`Impri result failed: <span class="hljs-subst">${res.status}</span>`</span>);
+}
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">sendEmail</span>(<span class="hljs-params"><span class="hljs-attr">body</span>: <span class="hljs-built_in">string</span></span>): <span class="hljs-title class_">Promise</span>&lt;<span class="hljs-built_in">void</span>&gt; {
+  <span class="hljs-comment">// your side effect: the only code path that sends</span>
 }</code></pre></div>
-<p>The workflow:</p>
+<h2 id="workflow">Workflow</h2>
 <div class="code-block"><span class="code-lang">ts</span><pre><code class="hljs"><span class="hljs-comment">// workflows.ts</span>
-<span class="hljs-keyword">import</span> { proxyActivities, sleep } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@temporalio/workflow&quot;</span>;
-<span class="hljs-keyword">import</span> <span class="hljs-keyword">type</span> * <span class="hljs-keyword">as</span> acts <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;./activities&quot;</span>;
+<span class="hljs-keyword">import</span> { condition, defineSignal, proxyActivities, setHandler, workflowInfo } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@temporalio/workflow&quot;</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-keyword">type</span> * <span class="hljs-keyword">as</span> activities <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;./activities&quot;</span>;
 
-<span class="hljs-keyword">const</span> { pushAction, getAction, reportResult, sendEmail } = proxyActivities&lt;
-  <span class="hljs-keyword">typeof</span> acts &amp; { <span class="hljs-title function_">sendEmail</span>(<span class="hljs-attr">body</span>: <span class="hljs-built_in">string</span>): <span class="hljs-title class_">Promise</span>&lt;<span class="hljs-built_in">void</span>&gt; }
-&gt;({ <span class="hljs-attr">startToCloseTimeout</span>: <span class="hljs-string">&quot;30 seconds&quot;</span> });
+<span class="hljs-keyword">const</span> { requestApproval, getAction, reportResult } = proxyActivities&lt;<span class="hljs-keyword">typeof</span> activities&gt;({
+  <span class="hljs-attr">startToCloseTimeout</span>: <span class="hljs-string">&quot;30 seconds&quot;</span>,
+});
+<span class="hljs-keyword">const</span> { sendEmail } = proxyActivities&lt;<span class="hljs-keyword">typeof</span> activities&gt;({
+  <span class="hljs-attr">startToCloseTimeout</span>: <span class="hljs-string">&quot;30 seconds&quot;</span>,
+  <span class="hljs-attr">retry</span>: { <span class="hljs-attr">maximumAttempts</span>: <span class="hljs-number">3</span> },
+});
 
-<span class="hljs-keyword">export</span> <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">refundEmailWorkflow</span>(<span class="hljs-params"><span class="hljs-attr">title</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">draft</span>: <span class="hljs-built_in">string</span></span>) {
-  <span class="hljs-keyword">const</span> id = <span class="hljs-keyword">await</span> <span class="hljs-title function_">pushAction</span>(title, draft);
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> impriDecided = defineSignal&lt;[<span class="hljs-built_in">string</span>]&gt;(<span class="hljs-string">&quot;impriDecided&quot;</span>);
 
-  <span class="hljs-keyword">let</span> action = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getAction</span>(id);
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">refundEmailWorkflow</span>(<span class="hljs-params"><span class="hljs-attr">title</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">draft</span>: <span class="hljs-built_in">string</span></span>): <span class="hljs-title class_">Promise</span>&lt;<span class="hljs-built_in">string</span>&gt; {
+  <span class="hljs-keyword">const</span> { workflowId, runId } = <span class="hljs-title function_">workflowInfo</span>();
+  <span class="hljs-keyword">const</span> actionId = <span class="hljs-keyword">await</span> <span class="hljs-title function_">requestApproval</span>(title, draft, workflowId, <span class="hljs-string">`<span class="hljs-subst">${workflowId}</span>:<span class="hljs-subst">${runId}</span>`</span>);
+
+  <span class="hljs-keyword">let</span> woken = <span class="hljs-literal">false</span>;
+  <span class="hljs-title function_">setHandler</span>(impriDecided, <span class="hljs-function">(<span class="hljs-params">id</span>) =&gt;</span> {
+    <span class="hljs-keyword">if</span> (id === actionId) woken = <span class="hljs-literal">true</span>;
+  });
+
+  <span class="hljs-keyword">let</span> action = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getAction</span>(actionId);
   <span class="hljs-keyword">while</span> (action.<span class="hljs-property">status</span> === <span class="hljs-string">&quot;pending&quot;</span>) {
-    <span class="hljs-keyword">await</span> <span class="hljs-title function_">sleep</span>(<span class="hljs-string">&quot;1 minute&quot;</span>); <span class="hljs-comment">// durable timer, survives worker restarts</span>
-    action = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getAction</span>(id);
+    <span class="hljs-comment">// The webhook wakes us within about a minute; the timer covers a lost delivery.</span>
+    <span class="hljs-keyword">await</span> <span class="hljs-title function_">condition</span>(<span class="hljs-function">() =&gt;</span> woken, <span class="hljs-string">&quot;15 minutes&quot;</span>);
+    woken = <span class="hljs-literal">false</span>;
+    action = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getAction</span>(actionId); <span class="hljs-comment">// the verdict comes from Impri, not the signal</span>
   }
 
   <span class="hljs-keyword">if</span> (action.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;approved&quot;</span>) <span class="hljs-keyword">return</span> action.<span class="hljs-property">status</span>; <span class="hljs-comment">// rejected | expired</span>
 
   <span class="hljs-keyword">try</span> {
-    <span class="hljs-comment">// final_preview carries any edits the human made</span>
-    <span class="hljs-keyword">await</span> <span class="hljs-title function_">sendEmail</span>(action.<span class="hljs-property">decision</span>.<span class="hljs-property">final_preview</span>.<span class="hljs-property">body</span>);
-    <span class="hljs-keyword">await</span> <span class="hljs-title function_">reportResult</span>(id, <span class="hljs-string">&quot;executed&quot;</span>);
+    <span class="hljs-keyword">await</span> <span class="hljs-title function_">sendEmail</span>(action.<span class="hljs-property">decision</span>!.<span class="hljs-property">final_preview</span>!.<span class="hljs-property">body</span>); <span class="hljs-comment">// includes reviewer edits</span>
   } <span class="hljs-keyword">catch</span> (err) {
-    <span class="hljs-keyword">await</span> <span class="hljs-title function_">reportResult</span>(id, <span class="hljs-string">&quot;execute_failed&quot;</span>);
+    <span class="hljs-keyword">await</span> <span class="hljs-title function_">reportResult</span>(actionId, <span class="hljs-string">&quot;execute_failed&quot;</span>);
     <span class="hljs-keyword">throw</span> err;
   }
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">reportResult</span>(actionId, <span class="hljs-string">&quot;executed&quot;</span>);
   <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;executed&quot;</span>;
 }</code></pre></div>
-<p><code>expires_in</code> is in seconds (minimum 300, maximum 30 days, default 72 hours), so the loop always terminates: a request nobody answers ends as <code>expired</code> and the email is never sent.</p>
+<h2 id="webhook-receiver">Webhook receiver</h2>
+<div class="code-block"><span class="code-lang">ts</span><pre><code class="hljs"><span class="hljs-comment">// webhook.ts: receives Impri&#x27;s decision callback and wakes the workflow</span>
+<span class="hljs-keyword">import</span> http <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;node:http&quot;</span>;
+<span class="hljs-keyword">import</span> { createHmac, timingSafeEqual } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;node:crypto&quot;</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">Client</span>, <span class="hljs-title class_">Connection</span>, <span class="hljs-title class_">WorkflowNotFoundError</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@temporalio/client&quot;</span>;
+<span class="hljs-keyword">import</span> { impriDecided } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;./workflows&quot;</span>;
+
+<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">SECRET</span> = process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_WEBHOOK_SECRET</span>!; <span class="hljs-comment">// webhook_secret from GET /v1/project</span>
+
+<span class="hljs-keyword">function</span> <span class="hljs-title function_">signedByImpri</span>(<span class="hljs-params"><span class="hljs-attr">raw</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">h</span>: http.<span class="hljs-title class_">IncomingHttpHeaders</span></span>): <span class="hljs-built_in">boolean</span> {
+  <span class="hljs-keyword">const</span> ts = <span class="hljs-title class_">String</span>(h[<span class="hljs-string">&quot;x-impri-timestamp&quot;</span>] ?? <span class="hljs-string">&quot;&quot;</span>);
+  <span class="hljs-keyword">const</span> nonce = <span class="hljs-title class_">String</span>(h[<span class="hljs-string">&quot;x-impri-nonce&quot;</span>] ?? <span class="hljs-string">&quot;&quot;</span>);
+  <span class="hljs-keyword">const</span> sig = <span class="hljs-title class_">String</span>(h[<span class="hljs-string">&quot;x-impri-signature&quot;</span>] ?? <span class="hljs-string">&quot;&quot;</span>);
+  <span class="hljs-keyword">if</span> (!(<span class="hljs-title class_">Math</span>.<span class="hljs-title function_">abs</span>(<span class="hljs-title class_">Date</span>.<span class="hljs-title function_">now</span>() / <span class="hljs-number">1000</span> - <span class="hljs-title class_">Number</span>(ts)) &lt;= <span class="hljs-number">300</span>)) <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>; <span class="hljs-comment">// stale or missing</span>
+  <span class="hljs-keyword">const</span> expected = <span class="hljs-string">&quot;sha256=&quot;</span> + <span class="hljs-title function_">createHmac</span>(<span class="hljs-string">&quot;sha256&quot;</span>, <span class="hljs-variable constant_">SECRET</span>).<span class="hljs-title function_">update</span>(<span class="hljs-string">`<span class="hljs-subst">${ts}</span>.<span class="hljs-subst">${nonce}</span>.<span class="hljs-subst">${raw}</span>`</span>).<span class="hljs-title function_">digest</span>(<span class="hljs-string">&quot;hex&quot;</span>);
+  <span class="hljs-keyword">return</span> sig.<span class="hljs-property">length</span> === expected.<span class="hljs-property">length</span> &amp;&amp; <span class="hljs-title function_">timingSafeEqual</span>(<span class="hljs-title class_">Buffer</span>.<span class="hljs-title function_">from</span>(sig), <span class="hljs-title class_">Buffer</span>.<span class="hljs-title function_">from</span>(expected));
+}
+
+<span class="hljs-keyword">const</span> client = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Client</span>({
+  <span class="hljs-attr">connection</span>: <span class="hljs-keyword">await</span> <span class="hljs-title class_">Connection</span>.<span class="hljs-title function_">connect</span>({ <span class="hljs-attr">address</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">TEMPORAL_ADDRESS</span> ?? <span class="hljs-string">&quot;localhost:7233&quot;</span> }),
+});
+
+http
+  .<span class="hljs-title function_">createServer</span>(<span class="hljs-title function_">async</span> (req, res) =&gt; {
+    <span class="hljs-keyword">const</span> url = <span class="hljs-keyword">new</span> <span class="hljs-title function_">URL</span>(req.<span class="hljs-property">url</span> ?? <span class="hljs-string">&quot;/&quot;</span>, <span class="hljs-string">&quot;http://localhost&quot;</span>);
+    <span class="hljs-keyword">const</span> workflowId = url.<span class="hljs-property">searchParams</span>.<span class="hljs-title function_">get</span>(<span class="hljs-string">&quot;workflow_id&quot;</span>);
+    <span class="hljs-keyword">if</span> (req.<span class="hljs-property">method</span> !== <span class="hljs-string">&quot;POST&quot;</span> || !workflowId) {
+      res.<span class="hljs-title function_">writeHead</span>(<span class="hljs-number">404</span>).<span class="hljs-title function_">end</span>();
+      <span class="hljs-keyword">return</span>;
+    }
+    <span class="hljs-keyword">const</span> <span class="hljs-attr">chunks</span>: <span class="hljs-title class_">Buffer</span>[] = [];
+    <span class="hljs-keyword">for</span> <span class="hljs-title function_">await</span> (<span class="hljs-keyword">const</span> chunk <span class="hljs-keyword">of</span> req) chunks.<span class="hljs-title function_">push</span>(chunk <span class="hljs-keyword">as</span> <span class="hljs-title class_">Buffer</span>);
+    <span class="hljs-keyword">const</span> raw = <span class="hljs-title class_">Buffer</span>.<span class="hljs-title function_">concat</span>(chunks).<span class="hljs-title function_">toString</span>(<span class="hljs-string">&quot;utf8&quot;</span>);
+
+    <span class="hljs-keyword">if</span> (!<span class="hljs-title function_">signedByImpri</span>(raw, req.<span class="hljs-property">headers</span>)) {
+      res.<span class="hljs-title function_">writeHead</span>(<span class="hljs-number">401</span>).<span class="hljs-title function_">end</span>();
+      <span class="hljs-keyword">return</span>;
+    }
+    <span class="hljs-keyword">try</span> {
+      <span class="hljs-keyword">await</span> client.<span class="hljs-property">workflow</span>.<span class="hljs-title function_">getHandle</span>(workflowId).<span class="hljs-title function_">signal</span>(impriDecided, <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">parse</span>(raw).<span class="hljs-property">action_id</span>);
+    } <span class="hljs-keyword">catch</span> (err) {
+      <span class="hljs-keyword">if</span> (!(err <span class="hljs-keyword">instanceof</span> <span class="hljs-title class_">WorkflowNotFoundError</span>)) {
+        res.<span class="hljs-title function_">writeHead</span>(<span class="hljs-number">503</span>).<span class="hljs-title function_">end</span>(); <span class="hljs-comment">// Impri retries: 1 min, 5 min, 25 min, 2 h, 12 h</span>
+        <span class="hljs-keyword">return</span>;
+      }
+    }
+    res.<span class="hljs-title function_">writeHead</span>(<span class="hljs-number">200</span>).<span class="hljs-title function_">end</span>();
+  })
+  .<span class="hljs-title function_">listen</span>(<span class="hljs-title class_">Number</span>(process.<span class="hljs-property">env</span>.<span class="hljs-property">PORT</span> ?? <span class="hljs-number">8080</span>));</code></pre></div>
+<p><code>IMPRI_WEBHOOK_SECRET</code> is the project&#39;s <code>webhook_secret</code> from <code>GET /v1/project</code> (admin key); <code>POST /v1/project/rotate-webhook-secret</code> replaces it. The receiver must be reachable from Impri over public http(s): Impri doesn&#39;t deliver to private addresses unless a self-hosted server sets <code>IMPRI_ALLOW_PRIVATE_TARGETS=1</code>.</p>
+<hr>
+<h2 id="what-we-ran">What we ran</h2>
+<p>On 2026-11-16, the code above, unchanged, with a test worker (<code>TestWorkflowEnvironment.createLocal()</code>) and an Impri server built from the open-source repo:</p>
+<ul>
+<li><strong>Approve with an edit:</strong> the webhook woke the workflow within a minute of the decision (15 and 51 seconds in two runs). The edited text was sent and the card ended <code>executed</code>.</li>
+<li><strong>Reject:</strong> the workflow returned <code>rejected</code>; nothing was sent.</li>
+<li><strong>The send fails three times:</strong> the card ended <code>execute_failed</code> and the workflow failed.</li>
+<li><strong>Same idempotency key twice:</strong> both calls returned the same action ID.</li>
+<li><strong>Result reported twice:</strong> Impri answered 409 to the second call and the activity treated it as done.</li>
+<li><strong>Webhook after the workflow finished:</strong> 200, so Impri stops retrying. Unsigned request: 401.</li>
+</ul>
+<p>Not exercised: the 15-minute fallback and the 24-hour expiry.</p>
 <hr>
 <h2 id="details-that-matter-in-production">Details that matter in production</h2>
 <ul>
-<li><strong>Make the push idempotent.</strong> Temporal retries failed activities. If <code>pushAction</code> succeeds on Impri but the worker dies before recording the result, a retry creates a second inbox item. Keep the retry policy on that activity tight, or store the returned <code>id</code> before doing anything else.</li>
-<li><strong>Execute with <code>decision.final_preview</code>, not your original draft.</strong> If you marked <code>preview.body</code> as editable, the approved text may differ from what your agent wrote.</li>
-<li><strong>Poll interval vs. rate limit.</strong> <code>POST /v1/actions</code> is limited to 60 requests per minute per key. Polling with <code>GET</code> once a minute per workflow is well within reason for human-speed decisions.</li>
-<li><strong>Report the result.</strong> Calling <code>/result</code> with <code>executed</code> or <code>execute_failed</code> closes the loop in the <a href="audit-log">audit log</a>.</li>
-<li><strong>Do the side effect only in the activity after approval.</strong> The gate is real only when that activity is the agent&#39;s sole path to sending. If the agent has a second tool that also sends email, it can bypass the approval.</li>
+<li><strong>One idempotency key per run.</strong> Temporal retries a failed activity. If Impri created the card but the response got lost, the retry would create a second card; with <code>idempotency_key</code> it gets the first one back. Impri matches the key against every earlier action in the project, so a reused workflow ID needs the run ID in the key.</li>
+<li><strong>Expiry ends the loop.</strong> <code>expires_in</code> takes 300 seconds to 30 days (default 72 hours). When it lapses, the card turns <code>expired</code>, the webhook fires and the workflow returns <code>expired</code>.</li>
+<li><strong>Send the edited text.</strong> Use <code>decision.final_preview.body</code> from the API, not your draft.</li>
+<li><strong>The send itself can run twice.</strong> If a worker dies mid-call, Temporal runs the activity again. Pass the Impri action ID to your email provider as its idempotency key if a duplicate matters.</li>
+<li><strong>Reporting the result is safe to retry.</strong> Impri answers 409 once a result is recorded. Without the 409 check, a retry after a lost response would fail forever under Temporal&#39;s default retry policy, which has no attempt limit.</li>
+<li><strong>Rate limit.</strong> Creating cards is limited to 60 requests per minute per API key.</li>
+<li><strong>The gate holds only if it&#39;s the only path.</strong> A second send tool outside this workflow skips the approval.</li>
 </ul>
 <hr>
-<h2 id="what-this-is-and-isn39t">What this is and isn&#39;t</h2>
-<p>Impri does not replace Temporal, and Temporal does not replace an approval inbox. Impri won&#39;t retry your activities, orchestrate steps, or judge whether the action is a good idea. It shows a human the proposal and records the answer. Reviewers can decide from the web <a href="inbox">inbox</a> or through <a href="slack-approval">Slack</a>, <a href="discord-approval">Discord</a> or <a href="telegram-approval">Telegram</a>.</p>
+<h2 id="no-public-url">No public URL?</h2>
+<p>Leave out <code>callback_url</code>, the receiver and the signal, and shorten the timer to a minute: the loop then polls <code>GET /v1/actions/:id</code>. That&#39;s fine for a few waiting workflows; with many, the webhook saves a request per workflow per minute.</p>
 <hr>
 <h2 id="next-step">Next step</h2>
-<p>Get an API key in the <a href="quickstart">quickstart</a>, then read the <a href="how-to-add-human-approval-to-an-ai-agent">general pattern</a> for the request and decision fields in detail. If you&#39;d rather keep everything on your own infrastructure, see <a href="self-hosting">self-hosting</a>.</p>
+<p>Create a free project on <a href="https://app.impri.dev/?signup=1" target="_blank" rel="noopener">Impri Cloud</a>: the key you get is the project&#39;s admin key, so it can create cards and read the <code>webhook_secret</code>. Start one workflow and the card appears in your inbox. Prefer your own infrastructure? <a href="self-hosting">Self-hosting</a> runs the same API with Docker Compose. The request and decision fields are explained in <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a>, and the webhook format in <a href="webhooks">webhooks</a>.</p>
 
     <aside class="doc-cta" aria-label="Try Impri">
   <p class="doc-cta-title">Add an approval step to your own agent</p>
@@ -354,11 +465,14 @@ pre code.hljs{display:block;overflow-x:auto}
   <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#why-temporal-alone-doesn39t-give-you-the-approval-ui">Why Temporal alone doesn't give you the approval UI</a></li>
-<li class="ptoc-h2"><a href="#the-shape-of-the-workflow">The shape of the workflow</a></li>
-<li class="ptoc-h2"><a href="#example-typescript">Example (TypeScript)</a></li>
+<ul><li class="ptoc-h2"><a href="#what-temporal-gives-you-and-what-it-leaves-to-you">What Temporal gives you, and what it leaves to you</a></li>
+<li class="ptoc-h2"><a href="#how-the-pieces-connect">How the pieces connect</a></li>
+<li class="ptoc-h2"><a href="#activities">Activities</a></li>
+<li class="ptoc-h2"><a href="#workflow">Workflow</a></li>
+<li class="ptoc-h2"><a href="#webhook-receiver">Webhook receiver</a></li>
+<li class="ptoc-h2"><a href="#what-we-ran">What we ran</a></li>
 <li class="ptoc-h2"><a href="#details-that-matter-in-production">Details that matter in production</a></li>
-<li class="ptoc-h2"><a href="#what-this-is-and-isn39t">What this is and isn't</a></li>
+<li class="ptoc-h2"><a href="#no-public-url">No public URL?</a></li>
 <li class="ptoc-h2"><a href="#next-step">Next step</a></li></ul>
 </nav>
   </aside>

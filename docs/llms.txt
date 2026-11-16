@@ -747,7 +747,6 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - One Approval Inbox for All Your AI Agents: https://impri.dev/docs/approval-inbox-for-ai-agents
 - One-Tap Approve/Reject for AI Agent Actions: https://impri.dev/docs/one-tap-approve-reject-for-ai-agents
 - Open-Source Human-in-the-Loop Tools for AI Agents: https://impri.dev/docs/open-source-human-in-the-loop-tools
-- Pause an AI Agent for Approval on Temporal: https://impri.dev/docs/human-in-the-loop-temporal-workflows-for-ai-agents
 - Prevent Prompt Injection From Executing Real Actions: https://impri.dev/docs/prevent-prompt-injection-from-executing-actions
 - REST API vs MCP for Human-in-the-Loop Approval: https://impri.dev/docs/rest-api-vs-mcp-for-human-approval
 - Require Human Approval Before an Agent Deletes Data: https://impri.dev/docs/human-approval-before-an-agent-deletes-data
@@ -755,6 +754,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Review AI Agent Decisions Before They Happen: https://impri.dev/docs/review-ai-agent-decisions-before-they-happen
 - Safe Autonomy: Let Agents Act, but Not Blindly: https://impri.dev/docs/safe-autonomy-for-ai-agents
 - Stop Your AI Agent From Sending Emails Without Approval: https://impri.dev/docs/stop-your-ai-agent-sending-emails-without-approval
+- Temporal Human-in-the-Loop with an Approval Inbox: https://impri.dev/docs/human-in-the-loop-temporal-workflows-for-ai-agents
 - The EU AI Act Human Oversight Requirement for AI Agents: https://impri.dev/docs/eu-ai-act-human-oversight-requirement-for-ai-agents
 - The Propose-Approve-Execute Pattern for AI Agents: https://impri.dev/docs/the-propose-approve-execute-pattern
 - The Risks of Autonomous AI Agents Taking Actions: https://impri.dev/docs/the-risks-of-autonomous-ai-agents-taking-actions

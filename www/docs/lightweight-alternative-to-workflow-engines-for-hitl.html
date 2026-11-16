@@ -241,7 +241,7 @@ pre code.hljs{display:block;overflow-x:auto}
 </tr>
 </tbody></table>
 </div>
-<p>The two aren&#39;t mutually exclusive, either: if you already run n8n for the rest of the pipeline, you can call Impri&#39;s REST API from an HTTP Request node and get the lightweight approval card without adopting n8n&#39;s own (heavier) human-in-the-loop pattern for this one step. See the <a href="integrations">integrations guide</a> for wiring Impri into an existing pipeline rather than replacing it.</p>
+<p>The two aren&#39;t mutually exclusive, either: if you already run n8n for the rest of the pipeline, you can call Impri&#39;s REST API from an HTTP Request node and get the lightweight approval card without adopting n8n&#39;s own (heavier) human-in-the-loop pattern for this one step. See the <a href="integrations">integrations guide</a> for wiring Impri into an existing pipeline rather than replacing it. On Temporal, <a href="human-in-the-loop-temporal-workflows-for-ai-agents">Temporal human-in-the-loop with an approval inbox</a> shows the same split: the workflow waits on a signal, Impri holds the decision.</p>
 <hr>
 <h2 id="what-you-get-for-the-tradeoff">What you get for the tradeoff</h2>
 <p>By staying out of orchestration, Impri stays out of your pipeline&#39;s control flow — it&#39;s an <code>await</code> in a script, not a graph your script lives inside. That means:</p>
