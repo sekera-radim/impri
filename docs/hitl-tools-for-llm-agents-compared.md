@@ -42,7 +42,7 @@ This is the tightest integration you can get — no network hop, no separate ser
 
 ## Workflow-engine nodes
 
-If the agent step is one node in a larger n8n or Temporal workflow, the engine's own human-input primitive is usually the right default — n8n's Wait node resumes on a webhook call; Temporal workflows can block on a signal sent by an external approval action. You avoid adding a new service, and the approval step shows up in the same execution history as the rest of the workflow.
+If the agent step is one node in a larger n8n or Temporal workflow, the engine's own human-input primitive is usually the right default — n8n's Wait node resumes on a webhook call; Temporal workflows can block on a signal sent by an external approval action. You avoid adding a new service, and the approval step shows up in the same execution history as the rest of the workflow. If that workflow still needs a place where people see and answer the request, [Temporal human-in-the-loop with an approval inbox](human-in-the-loop-temporal-workflows-for-ai-agents.md) wires a Temporal signal to an Impri card.
 
 The limitation shows up when the approval step needs to be agent-specific: a diff view of what a human edited before approving, a notion of "this draft expired, don't send it," a mobile-first card instead of a generic form. Workflow engines are general-purpose by design; they don't know that this particular wait step is "should this LLM-drafted email go out."
 
