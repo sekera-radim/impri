@@ -78,7 +78,7 @@ The moment `POST /v1/actions` returns, a card appears in the reviewer's inbox (a
 
 If your agent is a plain loop rather than a graph, the same pattern applies — the "pause" is just the function call that doesn't return until the action is decided. For agents running inside Claude Code or another MCP client, [`mcp.md`](mcp.md) wraps this exact poll loop into a single blocking tool call (`impri_await_decision`), so you don't hand-write the `while` loop at all.
 
-Frameworks with their own pause fit the same shape. The OpenAI Agents SDK stops a run before any tool marked `needs_approval` and can save it as a `RunState`, so the wait can outlast the process: see [human-in-the-loop for the OpenAI Agents SDK](human-in-the-loop-openai-agents-sdk.md) for a version that turns each pause into an Impri card and resumes the run after the decision.
+Frameworks with their own pause fit the same shape. The OpenAI Agents SDK stops a run before any tool marked `needs_approval` and can save it as a `RunState`, so the wait can outlast the process: see [human-in-the-loop for the OpenAI Agents SDK](human-in-the-loop-openai-agents-sdk.md) for a version that turns each pause into an Impri card and resumes the run after the decision. Temporal does it with a signal: [Temporal human-in-the-loop with an approval inbox](human-in-the-loop-temporal-workflows-for-ai-agents.md) wakes the workflow from Impri's webhook.
 
 ---
 
