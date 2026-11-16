@@ -86,7 +86,7 @@ Impri is deliberately narrow, and that's the tradeoff for being lightweight. It 
 | Visual pipeline building for non-engineers | n8n |
 | Multiple agents coordinating with each other | A workflow engine or agent framework — Impri gates one agent's action, it doesn't hand off between agents |
 
-The two aren't mutually exclusive, either: if you already run n8n for the rest of the pipeline, you can call Impri's REST API from an HTTP Request node and get the lightweight approval card without adopting n8n's own (heavier) human-in-the-loop pattern for this one step. See the [integrations guide](integrations.md) for wiring Impri into an existing pipeline rather than replacing it.
+The two aren't mutually exclusive, either: if you already run n8n for the rest of the pipeline, you can call Impri's REST API from an HTTP Request node and get the lightweight approval card without adopting n8n's own (heavier) human-in-the-loop pattern for this one step. See the [integrations guide](integrations.md) for wiring Impri into an existing pipeline rather than replacing it. On Temporal, [Temporal human-in-the-loop with an approval inbox](human-in-the-loop-temporal-workflows-for-ai-agents.md) shows the same split: the workflow waits on a signal, Impri holds the decision.
 
 ---
 
