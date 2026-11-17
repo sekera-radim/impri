@@ -1,90 +1,139 @@
 # Human-in-the-Loop for LangChain Deep Agents
 
-Deep Agents pause on `interrupt_on` and wait for *any* resume value. Pair that pause with Impri for a mobile inbox card, an editable draft, and an audit record.
+Deep Agents pause a tool call with `interruptOn` and resume on approve, edit or reject decisions. Impri turns each pause into an inbox card a person decides on.
 
 ---
 
-## What `interrupt_on` actually gives you
+## What `interruptOn` gives you
 
-LangChain's Deep Agents add a `HumanInTheLoopMiddleware` to the stack when you configure `interrupt_on` for a tool. When the agent calls that tool, the underlying LangGraph run suspends via `interrupt()`, checkpoints its state, and returns control to whoever is driving the graph. Nothing resumes it until your code calls `.invoke()` again with a `Command({ resume: ... })`.
+`createDeepAgent` adds LangChain's human-in-the-loop middleware when you pass `interruptOn` (`interrupt_on` in the Python package). When the model proposes a call to a listed tool, the run stops **before the tool executes**, saves its state to the checkpointer and returns `__interrupt__`. Each interrupt's `value` holds `actionRequests` (tool name and arguments, one per paused call) and `reviewConfigs` (the decisions allowed for each).
 
-That's a real pause. But `interrupt()` doesn't know who's supposed to supply the resume value, doesn't notify anyone, and doesn't keep a record of a decision — it's a suspended coroutine waiting for *your* code to hand back *something*. Whether that something came from a person who actually looked at the request is entirely on you to build. This is the same primitive LangGraph.js exposes directly, so the wiring below applies whether you're calling it from a Deep Agents `interrupt_on` tool or a hand-built LangGraph.js graph.
+The run continues only when you invoke the agent again on the same `thread_id` with `new Command({ resume: { decisions } })`: one decision per action request, in the same order.
 
----
+- `{ type: "approve" }` runs the call as proposed.
+- `{ type: "edit", editedAction: { name, args } }` runs it with different arguments.
+- `{ type: "reject", message }` skips it and gives the model your message as the tool result.
 
-## Wiring Impri behind the pause
+The resume value is not free-form: the middleware throws when `decisions` is missing or when their count differs from the number of paused calls.
 
-The tool that triggers the interrupt pushes an Impri action first, so the human sees a real inbox card instead of a raw graph state:
+What the pause doesn't do is tell anyone. Nobody is notified, nobody sees the arguments, and no record says who decided. That part is yours, and it belongs in the code that drives the agent, not in the tool.
+
+## Don't push the approval request from inside the tool
+
+A tempting shortcut is a tool that posts the request somewhere and then calls LangGraph's `interrupt()` itself. On resume, LangGraph runs the interrupted node again from the top, so everything before `interrupt()` happens twice (we counted it: two runs of the node body for one pause). That means a second approval card for every decision. With `interruptOn` the pause comes before the tool runs, and the tool body runs once, after the verdict.
+
+## The agent
 
 ```typescript
-import { interrupt } from "@langchain/langgraph";
+import { createDeepAgent } from "deepagents";
+import { tool } from "langchain";
+import { MemorySaver } from "@langchain/langgraph";
+import { z } from "zod";
 
-async function updateCrmRecord(input: { dealId: string; fields: Record<string, string> }) {
-  const res = await fetch("https://api.impri.dev/v1/actions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.IMPRI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      kind: "crm.update",
-      title: `Update deal ${input.dealId}: ${Object.keys(input.fields).join(", ")}`,
-      preview: { format: "markdown", body: "```json\n" + JSON.stringify(input.fields, null, 2) + "\n```" },
-      editable: ["preview.body"],
-      expires_in: 3600,
-    }),
-  }).then((r) => r.json());
+const updateCrmRecord = tool(
+  async ({ dealId, fields }) => crm.updateDeal(dealId, fields), // your real write
+  {
+    name: "update_crm_record",
+    description: "Update fields on a CRM deal",
+    schema: z.object({ dealId: z.string(), fields: z.record(z.string(), z.string()) }),
+  },
+);
 
-  // Suspends the graph here. Nothing after this line runs until something
-  // resumes this thread with a Command.
-  return interrupt({ impriActionId: res.id, inboxUrl: res.inbox_url });
+const agent = createDeepAgent({
+  tools: [updateCrmRecord],
+  interruptOn: { update_crm_record: { allowedDecisions: ["approve", "edit", "reject"] } },
+  checkpointer: new MemorySaver(), // use a persistent checkpointer in production
+});
+```
+
+## The bridge: one Impri card per paused call
+
+```typescript
+import type { ActionRequest, Decision } from "langchain";
+
+const IMPRI = `${process.env.IMPRI_BASE_URL ?? "https://api.impri.dev"}/v1`;
+
+async function impri(path: string, body?: unknown) {
+  const res = await fetch(`${IMPRI}${path}`, {
+    method: body ? "POST" : "GET",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.IMPRI_API_KEY}` },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) throw new Error(`Impri ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+const fence = (args: unknown) => "```json\n" + JSON.stringify(args, null, 2) + "\n```";
+
+async function askHuman(req: ActionRequest, key: string): Promise<Decision> {
+  const card = await impri("/actions", {
+    kind: `deepagent.${req.name}`,
+    title: `Agent wants to run ${req.name}`,
+    preview: { format: "markdown", body: fence(req.args) },
+    editable: ["preview.body"],
+    expires_in: 3600,
+    idempotency_key: key, // a restarted driver gets the same card back
+  });
+
+  // The verdict lives on GET /v1/actions/:id, under `decision`.
+  let action = await impri(`/actions/${card.id}`);
+  while (action.status === "pending") {
+    await new Promise((r) => setTimeout(r, 10_000));
+    action = await impri(`/actions/${card.id}`);
+  }
+  if (action.status !== "approved") {
+    return { type: "reject", message: `A reviewer did not approve this call (${action.status}). Do not retry it.` };
+  }
+
+  // The reviewer may have edited the JSON before approving.
+  const body: string = action.decision.final_preview.body;
+  let args;
+  try {
+    args = JSON.parse(body.replace(/^```json\n|\n```$/g, ""));
+  } catch {
+    return { type: "reject", message: "The approved edit was not valid JSON. Ask for the call again." };
+  }
+  return body === fence(req.args) ? { type: "approve" } : { type: "edit", editedAction: { name: req.name, args } };
 }
 ```
 
-A separate poller — not part of the graph — watches the Impri action and resumes the thread once it's decided:
+The driver invokes the agent, answers every pause, and resumes:
 
 ```typescript
 import { Command } from "@langchain/langgraph";
+import type { HITLRequest } from "langchain";
 
-async function resumeWhenDecided(threadId: string, actionId: string, graph) {
-  let action;
-  do {
-    await new Promise((r) => setTimeout(r, 10_000));
-    action = await fetch(`https://api.impri.dev/v1/actions/${actionId}`, {
-      headers: { Authorization: `Bearer ${process.env.IMPRI_API_KEY}` },
-    }).then((r) => r.json());
-  } while (action.status === "pending");
+const config = { configurable: { thread_id: "deal-42" } };
+let result = await agent.invoke({ messages: [{ role: "user", content: "Mark deal 42 as closed-won" }] }, config);
 
-  await graph.invoke(new Command({ resume: action }), {
-    configurable: { thread_id: threadId },
-  });
+while (result.__interrupt__?.length) {
+  const resume: Record<string, { decisions: Decision[] }> = {};
+  for (const pause of result.__interrupt__) {
+    const decisions = [];
+    const { actionRequests } = pause.value as HITLRequest;
+    for (const [i, req] of actionRequests.entries()) {
+      decisions.push(await askHuman(req, `${config.configurable.thread_id}:${pause.id}:${i}`));
+    }
+    resume[pause.id] = { decisions };
+  }
+  result = await agent.invoke(new Command({ resume }), config);
 }
 ```
 
-The graph's resume value is now the actual Impri action record, not a stand-in: `GET /v1/actions/:id` returns the action with its `status` at the top level and the human's verdict nested under `decision`. Downstream nodes can check `action.status` and only proceed to the real CRM write on `"approved"`.
+Three details carry the weight:
 
----
+- **The resume is keyed by interrupt id.** One invoke can come back with more than one interrupt (subagents that run in parallel, for example), and a map of interrupt id → decisions answers each of them.
+- **The idempotency key is the thread, the pause and the position.** If the driver restarts while a card is pending, Impri returns the existing action for that key instead of creating a second card.
+- **The edit is read back from what the reviewer approved.** `GET /v1/actions/:id` returns the verdict under `decision`, and `decision.final_preview.body` is the text the person approved. The tool runs with those arguments.
 
-## Two things are paused, for two different reasons
+## What we ran
 
-While this is in flight, two independent systems are tracking the wait: LangGraph's checkpointer holds the graph's suspended state so `resumeWhenDecided` can pick the thread back up exactly where it left off, and Impri holds the pending action so a human has something to look at and decide on. Neither replaces the other. If your checkpointer is in-memory and the process restarts, you lose the ability to resume the *graph* — the Impri action is unaffected and still resolvable, but nothing will be listening for it until the poller comes back up.
+With deepagents 1.17.0, langchain 1.6.6 and @langchain/langgraph 1.7.5, a scripted model and a local Impri server, we ran this code end to end. An approval with an edited amount ran the tool once, with the edited value. A rejection never ran the tool, and the model received the rejection message. Pushing the same pause twice returned the same card.
 
----
+## What Impri doesn't do here
 
-## Editing structured fields, not just prose
+Impri doesn't resume the graph or hold its state. The checkpointer holds the paused thread, and your driver resumes it. With `MemorySaver`, a restart loses the paused thread while its Impri card stays decidable, so production needs a persistent checkpointer. Polling every 10 seconds is the simple version; an Impri [webhook](webhooks.md) can wake the driver instead. After the tool runs, `POST /v1/actions/:id/result` with `executed` or `execute_failed` puts the outcome next to the decision in the audit log.
 
-Because `preview.body` here is a JSON blob rather than free text, editing still works the same way: set `editable: ["preview.body"]`, and a reviewer who spots a wrong field value can fix it in the inbox before approving. Parse it back out of `action.decision.final_preview.body` rather than the original `input.fields` — that's the version a human actually signed off on:
+## Next step
 
-```typescript
-const approvedFields = JSON.parse(action.decision.final_preview.body.replace(/```json\n|\n```/g, ""));
-```
-
----
-
-## What Impri isn't doing here
-
-Impri doesn't understand LangGraph's state machine, doesn't call `resumeWhenDecided` for you, and doesn't replace the checkpointer. It stores one thing — the proposed CRM update and the eventual yes/no — and leaves the graph orchestration to LangGraph, same as it would with any other framework wrapped around it.
-
----
-
-Next: [MCP](mcp.md) covers running this without hand-rolled HTTP calls if your agent runs inside an MCP client, and the [TypeScript SDK](sdk-typescript.md) wraps the push/poll pair used above.
+[Create a free Impri Cloud account](https://app.impri.dev/?signup=1), put its API key in `IMPRI_API_KEY` and run the driver: the first paused call shows up as a card in the inbox and on your phone. Prefer your own infrastructure? [Self-host Impri](self-hosting.md) and point `IMPRI_BASE_URL` at it. For the same pause in a hand-built graph, see [human-in-the-loop for LangGraph](human-in-the-loop-langgraph.md).
