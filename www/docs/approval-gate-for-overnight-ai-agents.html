@@ -81,6 +81,9 @@ pre code.hljs{display:block;overflow-x:auto}
 .doc-main .doc-cta a.btn{text-decoration:none}
 .doc-main .doc-cta a.btn-primary{color:#0a0715}
 .doc-main .doc-cta a.btn-ghost{color:var(--text)}
+/* related guides, under unlisted articles */
+.doc-related{margin:32px 0 0}
+.doc-main .doc-related-title{font-size:16px;font-weight:700;color:var(--text);margin:0 0 6px}
 /* code */
 .code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
 .code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
@@ -221,6 +224,15 @@ curl -s -X POST https://api.impri.dev/v1/actions/bulk-decision \
     <a class="btn btn-ghost btn-sm" href="../docs/self-hosting">Self-host guide</a>
   </div>
 </aside>
+    <nav class="doc-related" aria-label="Related guides">
+  <p class="doc-related-title">Related guides</p>
+  <ul>
+<li><a href="../docs/human-approval-for-unattended-ai-agents">Human Approval for Unattended AI Agents</a></li>
+<li><a href="../docs/approve-emails-before-your-ai-agent-sends-them">Approve Emails Before Your AI Agent Sends Them</a></li>
+<li><a href="../docs/approve-ai-agent-github-actions-workflows">Approve GitHub Actions Runs Triggered by an AI Coding Agent</a></li>
+<li><a href="../docs/approve-ai-agent-actions-by-email">Approve AI Agent Actions by Email</a></li>
+  </ul>
+</nav>
   </main>
 
   <aside class="docs-sidebar" aria-label="Documentation navigation">

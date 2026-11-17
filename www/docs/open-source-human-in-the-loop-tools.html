@@ -81,6 +81,9 @@ pre code.hljs{display:block;overflow-x:auto}
 .doc-main .doc-cta a.btn{text-decoration:none}
 .doc-main .doc-cta a.btn-primary{color:#0a0715}
 .doc-main .doc-cta a.btn-ghost{color:var(--text)}
+/* related guides, under unlisted articles */
+.doc-related{margin:32px 0 0}
+.doc-main .doc-related-title{font-size:16px;font-weight:700;color:var(--text);margin:0 0 6px}
 /* code */
 .code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
 .code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
@@ -254,6 +257,15 @@ decision = wait_for_decision(action_id)
     <a class="btn btn-ghost btn-sm" href="../docs/self-hosting">Self-host guide</a>
   </div>
 </aside>
+    <nav class="doc-related" aria-label="Related guides">
+  <p class="doc-related-title">Related guides</p>
+  <ul>
+<li><a href="../docs/hitl-tools-for-llm-agents-compared">4 Types of Human-in-the-Loop Tools, Compared</a></li>
+<li><a href="../docs/human-in-the-loop-microsoft-agent-framework">Human-in-the-Loop in Microsoft Agent Framework</a></li>
+<li><a href="../docs/wrapping-a-tool-with-a-human-approval-step">Wrapping an Agent Tool With a Human Approval Step</a></li>
+<li><a href="../docs/how-to-add-a-review-step-to-an-mcp-tool">Add a Human Approval Step to Any MCP Tool</a></li>
+  </ul>
+</nav>
   </main>
 
   <aside class="docs-sidebar" aria-label="Documentation navigation">

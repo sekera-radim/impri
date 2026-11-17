@@ -81,6 +81,9 @@ pre code.hljs{display:block;overflow-x:auto}
 .doc-main .doc-cta a.btn{text-decoration:none}
 .doc-main .doc-cta a.btn-primary{color:#0a0715}
 .doc-main .doc-cta a.btn-ghost{color:var(--text)}
+/* related guides, under unlisted articles */
+.doc-related{margin:32px 0 0}
+.doc-main .doc-related-title{font-size:16px;font-weight:700;color:var(--text);margin:0 0 6px}
 /* code */
 .code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
 .code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
@@ -325,6 +328,15 @@ expires_in: 259200    // 72 hours — the default; fine for async review flows</
     <a class="btn btn-ghost btn-sm" href="../docs/self-hosting">Self-host guide</a>
   </div>
 </aside>
+    <nav class="doc-related" aria-label="Related guides">
+  <p class="doc-related-title">Related guides</p>
+  <ul>
+<li><a href="../docs/stop-your-ai-agent-sending-emails-without-approval">Stop Your AI Agent From Sending Emails Without Approval</a></li>
+<li><a href="../docs/approve-ai-agent-actions-by-email">Approve AI Agent Actions by Email</a></li>
+<li><a href="../docs/approval-inbox-vs-email-approval-chains">Approval Inbox vs Email Approval Chains</a></li>
+<li><a href="../docs/edit-ai-agent-drafts-before-approving">Edit AI Agent Drafts Before You Approve Them</a></li>
+  </ul>
+</nav>
   </main>
 
   <aside class="docs-sidebar" aria-label="Documentation navigation">

@@ -81,6 +81,9 @@ pre code.hljs{display:block;overflow-x:auto}
 .doc-main .doc-cta a.btn{text-decoration:none}
 .doc-main .doc-cta a.btn-primary{color:#0a0715}
 .doc-main .doc-cta a.btn-ghost{color:var(--text)}
+/* related guides, under unlisted articles */
+.doc-related{margin:32px 0 0}
+.doc-main .doc-related-title{font-size:16px;font-weight:700;color:var(--text);margin:0 0 6px}
 /* code */
 .code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
 .code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
@@ -516,6 +519,7 @@ Community:
 <p>Actions delivered by watchers have <code>payload.untrusted = true</code>. The MCP server wraps their preview body in <code>&lt;untrusted-external-content&gt;</code> markers and adds a <code>_untrusted_content_note</code> field so the agent model can distinguish external data from trusted instructions.</p>
 <p><strong>Never forward watcher-delivered title or preview as instructions to an AI model.</strong> Treat them as data to be displayed or processed, not as commands to execute.</p>
 
+    
     
   </main>
 
