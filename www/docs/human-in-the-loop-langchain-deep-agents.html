@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Human-in-the-Loop for LangChain Deep Agents — Impri Docs</title>
-<meta name="description" content="Deep Agents pause on interrupt_on and wait for any resume value. Pair that pause with Impri for a mobile inbox card, an editable draft, and an audit record.">
+<meta name="description" content="Deep Agents pause a tool call with interruptOn and resume on approve, edit or reject decisions. Impri turns each pause into an inbox card a person decides on.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="Human-in-the-Loop for LangChain Deep Agents — Impri Docs">
-<meta property="og:description" content="Deep Agents pause on interrupt_on and wait for any resume value. Pair that pause with Impri for a mobile inbox card, an editable draft, and an audit record.">
+<meta property="og:description" content="Deep Agents pause a tool call with interruptOn and resume on approve, edit or reject decisions. Impri turns each pause into an inbox card a person decides on.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/human-in-the-loop-langchain-deep-agents">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/human-in-the-loop-langchain-deep-agents">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human-in-the-Loop for LangChain Deep Agents","description":"Deep Agents pause on interrupt_on and wait for any resume value. Pair that pause with Impri for a mobile inbox card, an editable draft, and an audit record.","url":"https://impri.dev/docs/human-in-the-loop-langchain-deep-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human-in-the-Loop for LangChain Deep Agents","description":"Deep Agents pause a tool call with interruptOn and resume on approve, edit or reject decisions. Impri turns each pause into an inbox card a person decides on.","url":"https://impri.dev/docs/human-in-the-loop-langchain-deep-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -153,65 +153,118 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>Human-in-the-Loop for LangChain Deep Agents</span>
     </nav>
     <h1>Human-in-the-Loop for LangChain Deep Agents</h1>
-<p>Deep Agents pause on <code>interrupt_on</code> and wait for <em>any</em> resume value. Pair that pause with Impri for a mobile inbox card, an editable draft, and an audit record.</p>
+<p>Deep Agents pause a tool call with <code>interruptOn</code> and resume on approve, edit or reject decisions. Impri turns each pause into an inbox card a person decides on.</p>
 <hr>
-<h2 id="what-interrupton-actually-gives-you">What <code>interrupt_on</code> actually gives you</h2>
-<p>LangChain&#39;s Deep Agents add a <code>HumanInTheLoopMiddleware</code> to the stack when you configure <code>interrupt_on</code> for a tool. When the agent calls that tool, the underlying LangGraph run suspends via <code>interrupt()</code>, checkpoints its state, and returns control to whoever is driving the graph. Nothing resumes it until your code calls <code>.invoke()</code> again with a <code>Command({ resume: ... })</code>.</p>
-<p>That&#39;s a real pause. But <code>interrupt()</code> doesn&#39;t know who&#39;s supposed to supply the resume value, doesn&#39;t notify anyone, and doesn&#39;t keep a record of a decision — it&#39;s a suspended coroutine waiting for <em>your</em> code to hand back <em>something</em>. Whether that something came from a person who actually looked at the request is entirely on you to build. This is the same primitive LangGraph.js exposes directly, so the wiring below applies whether you&#39;re calling it from a Deep Agents <code>interrupt_on</code> tool or a hand-built LangGraph.js graph.</p>
-<hr>
-<h2 id="wiring-impri-behind-the-pause">Wiring Impri behind the pause</h2>
-<p>The tool that triggers the interrupt pushes an Impri action first, so the human sees a real inbox card instead of a raw graph state:</p>
-<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { interrupt } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@langchain/langgraph&quot;</span>;
+<h2 id="what-interrupton-gives-you">What <code>interruptOn</code> gives you</h2>
+<p><code>createDeepAgent</code> adds LangChain&#39;s human-in-the-loop middleware when you pass <code>interruptOn</code> (<code>interrupt_on</code> in the Python package). When the model proposes a call to a listed tool, the run stops <strong>before the tool executes</strong>, saves its state to the checkpointer and returns <code>__interrupt__</code>. Each interrupt&#39;s <code>value</code> holds <code>actionRequests</code> (tool name and arguments, one per paused call) and <code>reviewConfigs</code> (the decisions allowed for each).</p>
+<p>The run continues only when you invoke the agent again on the same <code>thread_id</code> with <code>new Command({ resume: { decisions } })</code>: one decision per action request, in the same order.</p>
+<ul>
+<li><code>{ type: &quot;approve&quot; }</code> runs the call as proposed.</li>
+<li><code>{ type: &quot;edit&quot;, editedAction: { name, args } }</code> runs it with different arguments.</li>
+<li><code>{ type: &quot;reject&quot;, message }</code> skips it and gives the model your message as the tool result.</li>
+</ul>
+<p>The resume value is not free-form: the middleware throws when <code>decisions</code> is missing or when their count differs from the number of paused calls.</p>
+<p>What the pause doesn&#39;t do is tell anyone. Nobody is notified, nobody sees the arguments, and no record says who decided. That part is yours, and it belongs in the code that drives the agent, not in the tool.</p>
+<h2 id="don39t-push-the-approval-request-from-inside-the-tool">Don&#39;t push the approval request from inside the tool</h2>
+<p>A tempting shortcut is a tool that posts the request somewhere and then calls LangGraph&#39;s <code>interrupt()</code> itself. On resume, LangGraph runs the interrupted node again from the top, so everything before <code>interrupt()</code> happens twice (we counted it: two runs of the node body for one pause). That means a second approval card for every decision. With <code>interruptOn</code> the pause comes before the tool runs, and the tool body runs once, after the verdict.</p>
+<h2 id="the-agent">The agent</h2>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { createDeepAgent } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;deepagents&quot;</span>;
+<span class="hljs-keyword">import</span> { tool } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;langchain&quot;</span>;
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">MemorySaver</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@langchain/langgraph&quot;</span>;
+<span class="hljs-keyword">import</span> { z } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;zod&quot;</span>;
 
-<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">updateCrmRecord</span>(<span class="hljs-params"><span class="hljs-attr">input</span>: { dealId: <span class="hljs-built_in">string</span>; fields: Record&lt;<span class="hljs-built_in">string</span>, <span class="hljs-built_in">string</span>&gt; }</span>) {
-  <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">&quot;https://api.impri.dev/v1/actions&quot;</span>, {
-    <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>,
-    <span class="hljs-attr">headers</span>: {
-      <span class="hljs-string">&quot;Content-Type&quot;</span>: <span class="hljs-string">&quot;application/json&quot;</span>,
-      <span class="hljs-title class_">Authorization</span>: <span class="hljs-string">`Bearer <span class="hljs-subst">${process.env.IMPRI_API_KEY}</span>`</span>,
-    },
-    <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({
-      <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;crm.update&quot;</span>,
-      <span class="hljs-attr">title</span>: <span class="hljs-string">`Update deal <span class="hljs-subst">${input.dealId}</span>: <span class="hljs-subst">${<span class="hljs-built_in">Object</span>.keys(input.fields).join(<span class="hljs-string">&quot;, &quot;</span>)}</span>`</span>,
-      <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: <span class="hljs-string">&quot;```json\n&quot;</span> + <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>(input.<span class="hljs-property">fields</span>, <span class="hljs-literal">null</span>, <span class="hljs-number">2</span>) + <span class="hljs-string">&quot;\n```&quot;</span> },
-      <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
-      <span class="hljs-attr">expires_in</span>: <span class="hljs-number">3600</span>,
-    }),
-  }).<span class="hljs-title function_">then</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> r.<span class="hljs-title function_">json</span>());
+<span class="hljs-keyword">const</span> updateCrmRecord = <span class="hljs-title function_">tool</span>(
+  <span class="hljs-title function_">async</span> ({ dealId, fields }) =&gt; crm.<span class="hljs-title function_">updateDeal</span>(dealId, fields), <span class="hljs-comment">// your real write</span>
+  {
+    <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;update_crm_record&quot;</span>,
+    <span class="hljs-attr">description</span>: <span class="hljs-string">&quot;Update fields on a CRM deal&quot;</span>,
+    <span class="hljs-attr">schema</span>: z.<span class="hljs-title function_">object</span>({ <span class="hljs-attr">dealId</span>: z.<span class="hljs-title function_">string</span>(), <span class="hljs-attr">fields</span>: z.<span class="hljs-title function_">record</span>(z.<span class="hljs-title function_">string</span>(), z.<span class="hljs-title function_">string</span>()) }),
+  },
+);
 
-  <span class="hljs-comment">// Suspends the graph here. Nothing after this line runs until something</span>
-  <span class="hljs-comment">// resumes this thread with a Command.</span>
-  <span class="hljs-keyword">return</span> <span class="hljs-title function_">interrupt</span>({ <span class="hljs-attr">impriActionId</span>: res.<span class="hljs-property">id</span>, <span class="hljs-attr">inboxUrl</span>: res.<span class="hljs-property">inbox_url</span> });
-}</code></pre></div>
-<p>A separate poller — not part of the graph — watches the Impri action and resumes the thread once it&#39;s decided:</p>
-<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">Command</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@langchain/langgraph&quot;</span>;
+<span class="hljs-keyword">const</span> agent = <span class="hljs-title function_">createDeepAgent</span>({
+  <span class="hljs-attr">tools</span>: [updateCrmRecord],
+  <span class="hljs-attr">interruptOn</span>: { <span class="hljs-attr">update_crm_record</span>: { <span class="hljs-attr">allowedDecisions</span>: [<span class="hljs-string">&quot;approve&quot;</span>, <span class="hljs-string">&quot;edit&quot;</span>, <span class="hljs-string">&quot;reject&quot;</span>] } },
+  <span class="hljs-attr">checkpointer</span>: <span class="hljs-keyword">new</span> <span class="hljs-title class_">MemorySaver</span>(), <span class="hljs-comment">// use a persistent checkpointer in production</span>
+});</code></pre></div>
+<h2 id="the-bridge-one-impri-card-per-paused-call">The bridge: one Impri card per paused call</h2>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> <span class="hljs-keyword">type</span> { <span class="hljs-title class_">ActionRequest</span>, <span class="hljs-title class_">Decision</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;langchain&quot;</span>;
 
-<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">resumeWhenDecided</span>(<span class="hljs-params"><span class="hljs-attr">threadId</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">actionId</span>: <span class="hljs-built_in">string</span>, graph</span>) {
-  <span class="hljs-keyword">let</span> action;
-  <span class="hljs-keyword">do</span> {
-    <span class="hljs-keyword">await</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Promise</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> <span class="hljs-built_in">setTimeout</span>(r, <span class="hljs-number">10_000</span>));
-    action = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`https://api.impri.dev/v1/actions/<span class="hljs-subst">${actionId}</span>`</span>, {
-      <span class="hljs-attr">headers</span>: { <span class="hljs-title class_">Authorization</span>: <span class="hljs-string">`Bearer <span class="hljs-subst">${process.env.IMPRI_API_KEY}</span>`</span> },
-    }).<span class="hljs-title function_">then</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> r.<span class="hljs-title function_">json</span>());
-  } <span class="hljs-keyword">while</span> (action.<span class="hljs-property">status</span> === <span class="hljs-string">&quot;pending&quot;</span>);
+<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">IMPRI</span> = <span class="hljs-string">`<span class="hljs-subst">${process.env.IMPRI_BASE_URL ?? <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>}</span>/v1`</span>;
 
-  <span class="hljs-keyword">await</span> graph.<span class="hljs-title function_">invoke</span>(<span class="hljs-keyword">new</span> <span class="hljs-title class_">Command</span>({ <span class="hljs-attr">resume</span>: action }), {
-    <span class="hljs-attr">configurable</span>: { <span class="hljs-attr">thread_id</span>: threadId },
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">impri</span>(<span class="hljs-params"><span class="hljs-attr">path</span>: <span class="hljs-built_in">string</span>, <span class="hljs-attr">body</span>?: <span class="hljs-built_in">unknown</span></span>) {
+  <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${IMPRI}</span><span class="hljs-subst">${path}</span>`</span>, {
+    <span class="hljs-attr">method</span>: body ? <span class="hljs-string">&quot;POST&quot;</span> : <span class="hljs-string">&quot;GET&quot;</span>,
+    <span class="hljs-attr">headers</span>: { <span class="hljs-string">&quot;Content-Type&quot;</span>: <span class="hljs-string">&quot;application/json&quot;</span>, <span class="hljs-title class_">Authorization</span>: <span class="hljs-string">`Bearer <span class="hljs-subst">${process.env.IMPRI_API_KEY}</span>`</span> },
+    <span class="hljs-attr">body</span>: body ? <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>(body) : <span class="hljs-literal">undefined</span>,
   });
+  <span class="hljs-keyword">if</span> (!res.<span class="hljs-property">ok</span>) <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Error</span>(<span class="hljs-string">`Impri <span class="hljs-subst">${res.status}</span>: <span class="hljs-subst">${<span class="hljs-keyword">await</span> res.text()}</span>`</span>);
+  <span class="hljs-keyword">return</span> res.<span class="hljs-title function_">json</span>();
+}
+
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">fence</span> = (<span class="hljs-params"><span class="hljs-attr">args</span>: <span class="hljs-built_in">unknown</span></span>) =&gt; <span class="hljs-string">&quot;```json\n&quot;</span> + <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>(args, <span class="hljs-literal">null</span>, <span class="hljs-number">2</span>) + <span class="hljs-string">&quot;\n```&quot;</span>;
+
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">askHuman</span>(<span class="hljs-params"><span class="hljs-attr">req</span>: <span class="hljs-title class_">ActionRequest</span>, <span class="hljs-attr">key</span>: <span class="hljs-built_in">string</span></span>): <span class="hljs-title class_">Promise</span>&lt;<span class="hljs-title class_">Decision</span>&gt; {
+  <span class="hljs-keyword">const</span> card = <span class="hljs-keyword">await</span> <span class="hljs-title function_">impri</span>(<span class="hljs-string">&quot;/actions&quot;</span>, {
+    <span class="hljs-attr">kind</span>: <span class="hljs-string">`deepagent.<span class="hljs-subst">${req.name}</span>`</span>,
+    <span class="hljs-attr">title</span>: <span class="hljs-string">`Agent wants to run <span class="hljs-subst">${req.name}</span>`</span>,
+    <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: <span class="hljs-title function_">fence</span>(req.<span class="hljs-property">args</span>) },
+    <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
+    <span class="hljs-attr">expires_in</span>: <span class="hljs-number">3600</span>,
+    <span class="hljs-attr">idempotency_key</span>: key, <span class="hljs-comment">// a restarted driver gets the same card back</span>
+  });
+
+  <span class="hljs-comment">// The verdict lives on GET /v1/actions/:id, under `decision`.</span>
+  <span class="hljs-keyword">let</span> action = <span class="hljs-keyword">await</span> <span class="hljs-title function_">impri</span>(<span class="hljs-string">`/actions/<span class="hljs-subst">${card.id}</span>`</span>);
+  <span class="hljs-keyword">while</span> (action.<span class="hljs-property">status</span> === <span class="hljs-string">&quot;pending&quot;</span>) {
+    <span class="hljs-keyword">await</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Promise</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> <span class="hljs-built_in">setTimeout</span>(r, <span class="hljs-number">10_000</span>));
+    action = <span class="hljs-keyword">await</span> <span class="hljs-title function_">impri</span>(<span class="hljs-string">`/actions/<span class="hljs-subst">${card.id}</span>`</span>);
+  }
+  <span class="hljs-keyword">if</span> (action.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;approved&quot;</span>) {
+    <span class="hljs-keyword">return</span> { <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;reject&quot;</span>, <span class="hljs-attr">message</span>: <span class="hljs-string">`A reviewer did not approve this call (<span class="hljs-subst">${action.status}</span>). Do not retry it.`</span> };
+  }
+
+  <span class="hljs-comment">// The reviewer may have edited the JSON before approving.</span>
+  <span class="hljs-keyword">const</span> <span class="hljs-attr">body</span>: <span class="hljs-built_in">string</span> = action.<span class="hljs-property">decision</span>.<span class="hljs-property">final_preview</span>.<span class="hljs-property">body</span>;
+  <span class="hljs-keyword">let</span> args;
+  <span class="hljs-keyword">try</span> {
+    args = <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">parse</span>(body.<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/^```json\n|\n```$/g</span>, <span class="hljs-string">&quot;&quot;</span>));
+  } <span class="hljs-keyword">catch</span> {
+    <span class="hljs-keyword">return</span> { <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;reject&quot;</span>, <span class="hljs-attr">message</span>: <span class="hljs-string">&quot;The approved edit was not valid JSON. Ask for the call again.&quot;</span> };
+  }
+  <span class="hljs-keyword">return</span> body === <span class="hljs-title function_">fence</span>(req.<span class="hljs-property">args</span>) ? { <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;approve&quot;</span> } : { <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;edit&quot;</span>, <span class="hljs-attr">editedAction</span>: { <span class="hljs-attr">name</span>: req.<span class="hljs-property">name</span>, args } };
 }</code></pre></div>
-<p>The graph&#39;s resume value is now the actual Impri action record, not a stand-in: <code>GET /v1/actions/:id</code> returns the action with its <code>status</code> at the top level and the human&#39;s verdict nested under <code>decision</code>. Downstream nodes can check <code>action.status</code> and only proceed to the real CRM write on <code>&quot;approved&quot;</code>.</p>
-<hr>
-<h2 id="two-things-are-paused-for-two-different-reasons">Two things are paused, for two different reasons</h2>
-<p>While this is in flight, two independent systems are tracking the wait: LangGraph&#39;s checkpointer holds the graph&#39;s suspended state so <code>resumeWhenDecided</code> can pick the thread back up exactly where it left off, and Impri holds the pending action so a human has something to look at and decide on. Neither replaces the other. If your checkpointer is in-memory and the process restarts, you lose the ability to resume the <em>graph</em> — the Impri action is unaffected and still resolvable, but nothing will be listening for it until the poller comes back up.</p>
-<hr>
-<h2 id="editing-structured-fields-not-just-prose">Editing structured fields, not just prose</h2>
-<p>Because <code>preview.body</code> here is a JSON blob rather than free text, editing still works the same way: set <code>editable: [&quot;preview.body&quot;]</code>, and a reviewer who spots a wrong field value can fix it in the inbox before approving. Parse it back out of <code>action.decision.final_preview.body</code> rather than the original <code>input.fields</code> — that&#39;s the version a human actually signed off on:</p>
-<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">const</span> approvedFields = <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">parse</span>(action.<span class="hljs-property">decision</span>.<span class="hljs-property">final_preview</span>.<span class="hljs-property">body</span>.<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/```json\n|\n```/g</span>, <span class="hljs-string">&quot;&quot;</span>));</code></pre></div>
-<hr>
-<h2 id="what-impri-isn39t-doing-here">What Impri isn&#39;t doing here</h2>
-<p>Impri doesn&#39;t understand LangGraph&#39;s state machine, doesn&#39;t call <code>resumeWhenDecided</code> for you, and doesn&#39;t replace the checkpointer. It stores one thing — the proposed CRM update and the eventual yes/no — and leaves the graph orchestration to LangGraph, same as it would with any other framework wrapped around it.</p>
-<hr>
-<p>Next: <a href="mcp">MCP</a> covers running this without hand-rolled HTTP calls if your agent runs inside an MCP client, and the <a href="sdk-typescript">TypeScript SDK</a> wraps the push/poll pair used above.</p>
+<p>The driver invokes the agent, answers every pause, and resumes:</p>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">Command</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@langchain/langgraph&quot;</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-keyword">type</span> { <span class="hljs-title class_">HITLRequest</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;langchain&quot;</span>;
+
+<span class="hljs-keyword">const</span> config = { <span class="hljs-attr">configurable</span>: { <span class="hljs-attr">thread_id</span>: <span class="hljs-string">&quot;deal-42&quot;</span> } };
+<span class="hljs-keyword">let</span> result = <span class="hljs-keyword">await</span> agent.<span class="hljs-title function_">invoke</span>({ <span class="hljs-attr">messages</span>: [{ <span class="hljs-attr">role</span>: <span class="hljs-string">&quot;user&quot;</span>, <span class="hljs-attr">content</span>: <span class="hljs-string">&quot;Mark deal 42 as closed-won&quot;</span> }] }, config);
+
+<span class="hljs-keyword">while</span> (result.<span class="hljs-property">__interrupt__</span>?.<span class="hljs-property">length</span>) {
+  <span class="hljs-keyword">const</span> <span class="hljs-attr">resume</span>: <span class="hljs-title class_">Record</span>&lt;<span class="hljs-built_in">string</span>, { <span class="hljs-attr">decisions</span>: <span class="hljs-title class_">Decision</span>[] }&gt; = {};
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> pause <span class="hljs-keyword">of</span> result.<span class="hljs-property">__interrupt__</span>) {
+    <span class="hljs-keyword">const</span> decisions = [];
+    <span class="hljs-keyword">const</span> { actionRequests } = pause.<span class="hljs-property">value</span> <span class="hljs-keyword">as</span> <span class="hljs-title class_">HITLRequest</span>;
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> [i, req] <span class="hljs-keyword">of</span> actionRequests.<span class="hljs-title function_">entries</span>()) {
+      decisions.<span class="hljs-title function_">push</span>(<span class="hljs-keyword">await</span> <span class="hljs-title function_">askHuman</span>(req, <span class="hljs-string">`<span class="hljs-subst">${config.configurable.thread_id}</span>:<span class="hljs-subst">${pause.id}</span>:<span class="hljs-subst">${i}</span>`</span>));
+    }
+    resume[pause.<span class="hljs-property">id</span>] = { decisions };
+  }
+  result = <span class="hljs-keyword">await</span> agent.<span class="hljs-title function_">invoke</span>(<span class="hljs-keyword">new</span> <span class="hljs-title class_">Command</span>({ resume }), config);
+}</code></pre></div>
+<p>Three details carry the weight:</p>
+<ul>
+<li><strong>The resume is keyed by interrupt id.</strong> One invoke can come back with more than one interrupt (subagents that run in parallel, for example), and a map of interrupt id → decisions answers each of them.</li>
+<li><strong>The idempotency key is the thread, the pause and the position.</strong> If the driver restarts while a card is pending, Impri returns the existing action for that key instead of creating a second card.</li>
+<li><strong>The edit is read back from what the reviewer approved.</strong> <code>GET /v1/actions/:id</code> returns the verdict under <code>decision</code>, and <code>decision.final_preview.body</code> is the text the person approved. The tool runs with those arguments.</li>
+</ul>
+<h2 id="what-we-ran">What we ran</h2>
+<p>With deepagents 1.17.0, langchain 1.6.6 and @langchain/langgraph 1.7.5, a scripted model and a local Impri server, we ran this code end to end. An approval with an edited amount ran the tool once, with the edited value. A rejection never ran the tool, and the model received the rejection message. Pushing the same pause twice returned the same card.</p>
+<h2 id="what-impri-doesn39t-do-here">What Impri doesn&#39;t do here</h2>
+<p>Impri doesn&#39;t resume the graph or hold its state. The checkpointer holds the paused thread, and your driver resumes it. With <code>MemorySaver</code>, a restart loses the paused thread while its Impri card stays decidable, so production needs a persistent checkpointer. Polling every 10 seconds is the simple version; an Impri <a href="webhooks">webhook</a> can wake the driver instead. After the tool runs, <code>POST /v1/actions/:id/result</code> with <code>executed</code> or <code>execute_failed</code> puts the outcome next to the decision in the audit log.</p>
+<h2 id="next-step">Next step</h2>
+<p><a href="https://app.impri.dev/?signup=1" target="_blank" rel="noopener">Create a free Impri Cloud account</a>, put its API key in <code>IMPRI_API_KEY</code> and run the driver: the first paused call shows up as a card in the inbox and on your phone. Prefer your own infrastructure? <a href="self-hosting">Self-host Impri</a> and point <code>IMPRI_BASE_URL</code> at it. For the same pause in a hand-built graph, see <a href="human-in-the-loop-langgraph">human-in-the-loop for LangGraph</a>.</p>
 
     <aside class="doc-cta" aria-label="Try Impri">
   <p class="doc-cta-title">Add an approval step to your own agent</p>
@@ -228,7 +281,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <li><a href="../docs/human-in-the-loop-for-langchain-agents">Human-in-the-Loop Approval for LangChain Agents</a></li>
 <li><a href="../docs/how-to-pause-an-ai-agent-for-human-input">How to Pause an AI Agent for Human Input</a></li>
 <li><a href="../docs/human-in-the-loop-agentspan-and-durable-agent-runtimes">Human-in-the-Loop for Durable Agent Runtimes: Pause, Approve, Resume</a></li>
-<li><a href="../docs/human-in-the-loop-langgraph">Human-in-the-Loop Checkpoints in LangGraph</a></li>
+<li><a href="../docs/human-in-the-loop-openai-agents-sdk">Human-in-the-Loop for the OpenAI Agents SDK</a></li>
   </ul>
 </nav>
   </main>
@@ -300,11 +353,13 @@ pre code.hljs{display:block;overflow-x:auto}
   <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#what-interrupton-actually-gives-you">What interrupt_on actually gives you</a></li>
-<li class="ptoc-h2"><a href="#wiring-impri-behind-the-pause">Wiring Impri behind the pause</a></li>
-<li class="ptoc-h2"><a href="#two-things-are-paused-for-two-different-reasons">Two things are paused, for two different reasons</a></li>
-<li class="ptoc-h2"><a href="#editing-structured-fields-not-just-prose">Editing structured fields, not just prose</a></li>
-<li class="ptoc-h2"><a href="#what-impri-isn39t-doing-here">What Impri isn't doing here</a></li></ul>
+<ul><li class="ptoc-h2"><a href="#what-interrupton-gives-you">What interruptOn gives you</a></li>
+<li class="ptoc-h2"><a href="#don39t-push-the-approval-request-from-inside-the-tool">Don't push the approval request from inside the tool</a></li>
+<li class="ptoc-h2"><a href="#the-agent">The agent</a></li>
+<li class="ptoc-h2"><a href="#the-bridge-one-impri-card-per-paused-call">The bridge: one Impri card per paused call</a></li>
+<li class="ptoc-h2"><a href="#what-we-ran">What we ran</a></li>
+<li class="ptoc-h2"><a href="#what-impri-doesn39t-do-here">What Impri doesn't do here</a></li>
+<li class="ptoc-h2"><a href="#next-step">Next step</a></li></ul>
 </nav>
   </aside>
 </div>
