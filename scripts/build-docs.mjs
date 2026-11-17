@@ -15,6 +15,7 @@ import { join, basename, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { marked, Renderer } from 'marked';
 import hljs from 'highlight.js';
+import { pickRelated } from './related-docs.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = dirname(__filename);
@@ -369,6 +370,9 @@ const DOCS_CSS = `
 .doc-main .doc-cta a.btn{text-decoration:none}
 .doc-main .doc-cta a.btn-primary{color:#0a0715}
 .doc-main .doc-cta a.btn-ghost{color:var(--text)}
+/* related guides, under unlisted articles */
+.doc-related{margin:32px 0 0}
+.doc-main .doc-related-title{font-size:16px;font-weight:700;color:var(--text);margin:0 0 6px}
 /* code */
 .code-block{position:relative;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin:14px 0;overflow:hidden}
 .code-block pre{margin:0;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;font-family:var(--mono)}
@@ -462,9 +466,40 @@ function buildArticleCta(root) {
 </aside>`;
 }
 
+// ── Related guides (unlisted articles) ────────────────────────────────────
+// Links picked by scripts/related-docs.mjs, so a reader who finished one
+// article has a next one and no article is linked from nowhere.
+function buildRelated(root, items) {
+  if (!items.length) return '';
+  const links = items.map(({ slug, title }) =>
+    `<li><a href="${root}docs/${slug}">${escHtml(title)}</a></li>`
+  ).join('\n');
+  return `<nav class="doc-related" aria-label="Related guides">
+  <p class="doc-related-title">Related guides</p>
+  <ul>
+${links}
+  </ul>
+</nav>`;
+}
+
+/** Slugs of other docs pages that the rendered body links to. */
+function linkedDocSlugs(contentHtml, knownSlugs) {
+  const found = new Set();
+  for (const [, href] of contentHtml.matchAll(/<a href="([^"]*)"/g)) {
+    const path = href
+      .replace(/^https:\/\/impri\.dev/, '')
+      .replace(/[#?].*$/, '')
+      .replace(/\.html$/, '')
+      .replace(/\/$/, '');
+    const m = path.match(/^(?:\/docs\/|\.\.\/docs\/|\.\/)?([a-z0-9-]+)$/);
+    if (m && knownSlugs.has(m[1])) found.add(m[1]);
+  }
+  return [...found];
+}
+
 // ── Page template (individual doc pages) ─────────────────────────────────
 
-function renderDocPage({ slug, title, desc, section, contentHtml, sidebarHtml, pageTocHtml, root, unlisted }) {
+function renderDocPage({ slug, title, desc, section, contentHtml, sidebarHtml, pageTocHtml, root, unlisted, relatedHtml = '' }) {
   // Cloudflare Pages serves the clean URL (/docs/slug) and 308-redirects the
   // .html form to it, so canonical/OG/JSON-LD must point at the clean URL.
   const canonical = `https://impri.dev/docs/${slug}`;
@@ -531,6 +566,7 @@ ${buildNav(root)}
     </nav>
     ${contentHtml}
     ${unlisted ? buildArticleCta(root) : ''}
+    ${relatedHtml}
   </main>
 
   <aside class="docs-sidebar" aria-label="Documentation navigation">
@@ -638,38 +674,50 @@ function main() {
 
   const pageIndex = new Map(); // slug → { title, desc }
 
-  let rendered = 0;
-  for (const file of files) {
+  // First pass: parse every page, so the related-guides picker sees them all.
+  const parsed = files.map(file => {
     const slug = basename(file, '.md');
-
     const meta = PAGE_MAP.get(slug);
     if (!meta) {
       // File exists on disk but not in NAV — still render it, just unlisted
       console.log(`  note: ${slug}.md not in NAV — rendering unlisted`);
     }
+    // Keep the H1 as the visible document heading; the breadcrumb gives context.
+    const contentHtml = addHeadingIds(marked.parse(readFileSync(file, 'utf8')));
+    return {
+      slug, meta, contentHtml,
+      title:    extractTitle(contentHtml),
+      desc:     extractDesc(contentHtml),
+      headings: extractHeadings(contentHtml),
+    };
+  });
 
+  // Related guides link unlisted articles to each other; NAV pages are
+  // already linked from the sidebar of every page.
+  const unlistedPages = parsed.filter(p => !p.meta);
+  const unlistedSlugs = new Set(unlistedPages.map(p => p.slug));
+  const related = pickRelated(unlistedPages.map(p => ({
+    slug:     p.slug,
+    title:    p.title,
+    lead:     p.desc,
+    headings: p.headings.map(h => h.text),
+    linked:   linkedDocSlugs(p.contentHtml, unlistedSlugs),
+  })));
+  const titleOf = new Map(parsed.map(p => [p.slug, p.title]));
+
+  let rendered = 0;
+  for (const { slug, meta, contentHtml, title, desc, headings } of parsed) {
     const section = meta ? meta.section : 'Reference';
     const root = '../'; // individual pages live in www/docs/, one level below www/
 
-    // Parse markdown
-    const md = readFileSync(file, 'utf8');
-    let contentHtml = marked.parse(md);
-    contentHtml = addHeadingIds(contentHtml);
-
-    const title = extractTitle(contentHtml);
-    const desc  = extractDesc(contentHtml);
-
-    // Strip H1 from content (it's shown in the page heading already via the md)
-    // Actually — keep the H1 as the visible document heading. The markdown files
-    // have H1 at top; we just render it as-is. The breadcrumb gives context.
-
-    const headings    = extractHeadings(contentHtml);
     const pageTocHtml = buildPageToc(headings);
     const sidebarHtml = buildSidebar(slug, root);
+    const relatedHtml = meta ? '' : buildRelated(root,
+      related.get(slug).map(s => ({ slug: s, title: titleOf.get(s) })));
 
     const html = renderDocPage({
       slug, title, desc, section, contentHtml,
-      sidebarHtml, pageTocHtml, root, unlisted: !meta,
+      sidebarHtml, pageTocHtml, root, unlisted: !meta, relatedHtml,
     });
 
     const outPath = join(DOCS_OUT, `${slug}.html`);
