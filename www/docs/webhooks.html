@@ -262,7 +262,7 @@ pre code.hljs{display:block;overflow-x:auto}
 </tr>
 </tbody></table>
 </div>
-<p>The signature is computed over the concatenation <code>${timestamp}.${nonce}.${body}</code> using the shared <code>WEBHOOK_SECRET</code> you set in the server environment.</p>
+<p>The signature is computed over the concatenation <code>${timestamp}.${nonce}.${body}</code> using your project&#39;s webhook signing secret (where to get it is explained below the examples).</p>
 <h3 id="verification-algorithm">Verification algorithm</h3>
 <div class="code-block"><pre><code class="hljs">expected = HMAC-SHA256(secret, &quot;${timestamp}.${nonce}.${rawBody}&quot;)
 signature = &quot;sha256=&quot; + hex(expected)</code></pre></div>
@@ -308,7 +308,8 @@ signature = &quot;sha256=&quot; + hex(expected)</code></pre></div>
 (admin scope) as <code>webhook_secret</code>, and use that value in the verification above.
 Rotate it any time with <code>POST /v1/project/rotate-webhook-secret</code> — update your
 verifier with the new value afterward. The server-level <code>WEBHOOK_SECRET</code> env var
-is only a fallback for actions created before a project secret existed.</p>
+is only a fallback for a project that has no secret of its own (one created
+before per-project secrets existed); every new project gets one.</p>
 <p>The <code>@impri/mcp</code> package ships a ready-made verifier — <code>import { verifyWebhookSignature } from &#39;@impri/mcp/webhook&#39;</code> — so you don&#39;t have to hand-roll the HMAC check.</p>
 <hr>
 <h2 id="retry-schedule">Retry schedule</h2>
