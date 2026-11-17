@@ -84,7 +84,7 @@ Every webhook request carries three headers you should verify before processing:
 | `X-Impri-Timestamp` | `1720000000` | Unix timestamp when the request was sent |
 | `X-Impri-Nonce` | `a1b2c3d4e5f6a7b8` | Random hex string, unique per request |
 
-The signature is computed over the concatenation `${timestamp}.${nonce}.${body}` using the shared `WEBHOOK_SECRET` you set in the server environment.
+The signature is computed over the concatenation `${timestamp}.${nonce}.${body}` using your project's webhook signing secret (where to get it is explained below the examples).
 
 ### Verification algorithm
 
@@ -144,7 +144,8 @@ Each project has its own webhook signing secret. Fetch it with `GET /v1/project`
 (admin scope) as `webhook_secret`, and use that value in the verification above.
 Rotate it any time with `POST /v1/project/rotate-webhook-secret` — update your
 verifier with the new value afterward. The server-level `WEBHOOK_SECRET` env var
-is only a fallback for actions created before a project secret existed.
+is only a fallback for a project that has no secret of its own (one created
+before per-project secrets existed); every new project gets one.
 
 The `@impri/mcp` package ships a ready-made verifier — `import { verifyWebhookSignature } from '@impri/mcp/webhook'` — so you don't have to hand-roll the HMAC check.
 
