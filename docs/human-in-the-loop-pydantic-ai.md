@@ -1,92 +1,158 @@
-# Human-in-the-Loop for Pydantic AI Agents
+# Pydantic AI Human-in-the-Loop with an Approval Inbox
 
-Add human-in-the-loop for Pydantic AI agents at the tool boundary: wrap a refund tool in Impri's `approval_gate`, and no charge reverses until a person says yes.
+Pydantic AI ends a run with DeferredToolRequests when a tool needs approval. Send each call to Impri, save the history, and resume once a person decides.
 
 ---
 
-## Why the tool function, not the system prompt
+## How Pydantic AI pauses a tool call
 
-A Pydantic AI agent with a `stripe.refund`-shaped tool will eventually call it on a customer's word alone, because that's what the system prompt told it to be helpful about. Telling the model "always ask before refunding" in the prompt doesn't hold up once the conversation gets long or the customer is insistent — the instruction is competing with the rest of the context for the model's attention.
+Mark a tool with `requires_approval=True` and add `DeferredToolRequests` to the agent's `output_type`. When the model calls that tool, Pydantic AI doesn't run it. The run ends, and `result.output` is a `DeferredToolRequests` whose `approvals` list holds each pending call: tool name, arguments and `tool_call_id`. You continue with a second run that gets the saved message history plus a `DeferredToolResults` mapping each `tool_call_id` to `ToolApproved` or `ToolDenied`. Leave `DeferredToolRequests` out of `output_type` and the run fails with a `UserError` instead of pausing.
 
-The reliable version puts the check in the tool function itself, where the model has no way to talk its way past it. The agent still decides *when* to call `issue_refund` — but the function's body, not the model, decides whether the refund actually happens.
+Nothing waits in memory between the two runs. That is what makes the pattern fit an approval inbox: the reviewer can answer from a phone an hour later, after your worker has restarted. The [Pydantic AI deferred tools docs](https://pydantic.dev/docs/ai/tools-toolsets/deferred-tools/) show both runs in one process. Below, the pause becomes a card in Impri, and the second run starts when someone decides it.
 
-## A refund tool with a human gate
+## The agent and the gated tool
+
+Requirements: `pip install pydantic-ai httpx`, an Impri API key in `IMPRI_API_KEY`.
 
 ```python
 import os
-import stripe
-from dataclasses import dataclass
-from pydantic_ai import Agent, RunContext
-from impri import ImpriClient, ImpriRejected, ImpriTimeout
+import httpx
+from pydantic_ai import Agent, DeferredToolRequests, RunContext
 
-@dataclass
-class Deps:
-    impri: ImpriClient
-    stripe_key: str
+from mailer import send_email  # your email provider; returns a message id
 
-agent = Agent(
-    "openai:gpt-4o",
-    deps_type=Deps,
-    system_prompt="You are a billing support agent for a SaaS product.",
+impri = httpx.Client(
+    base_url=os.environ.get("IMPRI_BASE_URL", "https://api.impri.dev"),
+    headers={"Authorization": f"Bearer {os.environ['IMPRI_API_KEY']}"},
 )
 
-@agent.tool
-async def issue_refund(
-    ctx: RunContext[Deps], customer_id: str, amount_cents: int, reason: str
-) -> str:
-    """Refund a customer. Requires human approval before the charge is reversed."""
-    body = f"**Customer:** {customer_id}\n**Amount:** ${amount_cents / 100:.2f}\n**Reason:** {reason}"
-
-    try:
-        async with ctx.deps.impri.approval_gate(
-            kind="stripe.refund",
-            title=f"Refund ${amount_cents / 100:.2f} to {customer_id}",
-            preview={"format": "markdown", "body": body},
-            editable=["preview.body"],
-            timeout_s=600,
-        ) as approved:
-            refund = stripe.Refund.create(
-                customer=customer_id,
-                amount=amount_cents,
-                reason="requested_by_customer",
-                api_key=ctx.deps.stripe_key,
-            )
-            return f"Refund {refund.id} issued for {customer_id}."
-    except ImpriRejected as e:
-        return f"Refund not issued — a reviewer rejected it (action {e.action_id})."
-    except ImpriTimeout:
-        return "Refund not issued — no reviewer decision within 10 minutes."
+agent = Agent(
+    os.environ["AGENT_MODEL"],  # any model string Pydantic AI supports
+    output_type=[str, DeferredToolRequests],
+    instructions="You answer support tickets. Reply to customers with send_customer_email.",
+)
 
 
-async def main():
-    deps = Deps(impri=ImpriClient(), stripe_key=os.environ["STRIPE_SECRET_KEY"])
-    result = await agent.run(
-        "Customer cust_9f2 was double-charged on the March invoice, refund $42.00.",
-        deps=deps,
-    )
-    print(result.output)
+@agent.tool(requires_approval=True)
+def send_customer_email(ctx: RunContext[None], to: str, subject: str, body: str) -> str:
+    """Email a customer. A person approves every call before it runs."""
+    action_id = ctx.tool_call_metadata["impri_action_id"]
+    message_id = send_email(to=to, subject=subject, body=body)
+    impri.post(f"/v1/actions/{action_id}/result", json={"status": "executed", "detail": message_id})
+    return f"Email sent to {to} (message {message_id})."
 ```
 
-`approval_gate` is the SDK's context-manager form: it pushes the action, blocks until a human decides, and calls `report_result` automatically on the way out — `executed` on a clean exit, `execute_failed` if the `stripe.Refund.create` call inside the block raises. See [Python SDK](sdk-python.md) for the full method reference.
+The body of `send_customer_email` runs only after approval. `ctx.tool_call_metadata` carries the Impri action id you pass in on resume, so the tool can report the outcome and the card moves from `approved` to `executed`.
 
-## Handling rejection inside the tool, not outside it
+## Step 1: turn the pause into a card
 
-Notice the `try/except` lives *inside* `issue_refund`, wrapping the whole gate. If you let `ImpriRejected` propagate up instead, Pydantic AI's tool-calling loop sees an unhandled exception from a tool call — depending on your retry settings, the agent may interpret that as a transient failure and call `issue_refund` again with the same arguments, which is the last thing you want after a human explicitly said no. Catching it and returning a plain string turns "rejected" into ordinary tool output: the agent reads it, tells the customer no refund went out, and moves on.
+```python
+import json
+from pathlib import Path
 
-## Sync agent, async gate
+PENDING = Path("pending")  # a table in your database in production
 
-`approval_gate` is an async context manager, so `issue_refund` has to be declared `async def` and the run driven with `await agent.run(...)` rather than `agent.run_sync(...)`. If the rest of your agent is otherwise synchronous, this one tool is a reason to switch the entry point to the async form — Pydantic AI supports mixing sync and async tools on the same agent, but the gate itself only comes in async.
 
-## What's actually verified, and what isn't
+def start(conversation_id: str, ticket: str) -> str | None:
+    result = agent.run_sync(ticket)
+    if not isinstance(result.output, DeferredToolRequests):
+        return result.output  # finished without a gated call
+    state = {"messages": result.all_messages_json().decode(), "calls": {}}
+    for call in result.output.approvals:
+        args = call.args_as_dict()
+        r = impri.post("/v1/actions", json={
+            "kind": "email.send",
+            "title": f"Email {args['to']}: {args['subject']}",
+            "preview": {"format": "plain", "body": args["body"]},
+            "editable": ["preview.body"],
+            "idempotency_key": f"{conversation_id}:{call.tool_call_id}",
+            "callback_url": f"https://support.example.com/impri/{conversation_id}",
+        })
+        r.raise_for_status()
+        state["calls"][call.tool_call_id] = {"action_id": r.json()["id"], "args": args}
+    PENDING.mkdir(exist_ok=True)
+    (PENDING / f"{conversation_id}.json").write_text(json.dumps(state))
+    return None  # paused: no process waits for the reviewer
+```
 
-| Exception | What it means | What the tool does |
-|---|---|---|
-| *(none — approved)* | A human read the card and approved it | Calls Stripe, reports `executed` |
-| `ImpriRejected` | A human explicitly declined | Returns a string, Stripe is never called |
-| `ImpriTimeout` | No decision within `timeout_s` | Returns a string, action stays pending server-side |
+Each pending call becomes one action. `preview.body` is the email the customer will get, and `editable: ["preview.body"]` lets the reviewer rewrite it before approving. The `idempotency_key` comes from the tool call id, so a retried POST returns the same card instead of a second one. `callback_url` is where Impri sends a signed webhook when the card is decided or expires ([Webhooks](webhooks.md)): your handler checks the signature and calls `resume()`.
 
-Impri verified that a human looked at exactly the card shown — customer ID, amount, reason — and approved it. It did not verify that `customer_id` is correct, that the amount matches the actual overcharge, or anything about Stripe's response. Those are the agent's and your billing system's job. And the gate only holds if `issue_refund` is the only path from this agent to `stripe.Refund.create` — a second tool with its own Stripe key would bypass it entirely.
+## Step 2: resume with the decision
+
+```python
+from pydantic_ai import DeferredToolResults, ToolApproved, ToolDenied
+from pydantic_ai.messages import ModelMessagesTypeAdapter
+
+
+def resume(conversation_id: str) -> str | None:
+    path = PENDING / f"{conversation_id}.json"
+    try:
+        state = json.loads(path.read_text())
+    except FileNotFoundError:
+        return None  # already resumed
+    results = DeferredToolResults()
+    for call_id, call in state["calls"].items():
+        action = impri.get(f"/v1/actions/{call['action_id']}").json()
+        if action["status"] == "pending":
+            return None  # wait until every card is decided
+        verdict = (action.get("decision") or {}).get("verdict")
+        if verdict == "approve":
+            body = action["decision"]["final_preview"]["body"]  # the reviewer's edit, if any
+            results.approvals[call_id] = ToolApproved(override_args={**call["args"], "body": body})
+            results.metadata[call_id] = {"impri_action_id": call["action_id"]}
+        elif verdict == "reject":
+            results.approvals[call_id] = ToolDenied("A reviewer rejected this email. Do not resend it.")
+        else:  # expired: nobody decided in time
+            results.approvals[call_id] = ToolDenied("No reviewer decided in time. The email was not sent.")
+    try:
+        path.rename(path.with_suffix(".resumed"))  # atomic claim: one caller resumes
+    except FileNotFoundError:
+        return None
+    history = ModelMessagesTypeAdapter.validate_json(state["messages"])
+    result = agent.run_sync(message_history=history, deferred_tool_results=results)
+    return result.output
+```
+
+What this code relies on:
+
+- **The verdict comes from `GET /v1/actions/:id`**, under `decision.verdict`. The webhook only tells you when to look.
+- **The saved history stays on your server.** Pydantic AI runs an approved call from whatever history it is given, so a history a client can edit would let the client approve its own calls (the Pydantic AI docs warn about the same trust boundary).
+- **`override_args` replaces the arguments, it doesn't merge them.** Pass the whole dict with the edited body, as above. Without an edit, `final_preview.body` is the original text.
+- **`ToolDenied` text is what the model reads as the tool's result**, so write it as an instruction ("do not resend").
+- **An expired card has no decision.** Deny the call so the run finishes instead of staying paused forever.
+- **Resume once.** A webhook retry or a cron that also calls `resume()` must not send the email twice, so `resume()` claims the saved state by renaming the file before it runs the agent. With a database, use a conditional update for the same claim. If that second run fails (the model API is down, say), the state stays in the `.resumed` file: check the card before you retry, because `executed` means the email already went out.
+
+## Only some calls need a person: `ApprovalRequired`
+
+When only some calls need review, for example emails to addresses outside your company, drop `requires_approval` and raise `ApprovalRequired` inside the tool:
+
+```python
+from pydantic_ai import ApprovalRequired
+
+
+@agent.tool
+def send_customer_email(ctx: RunContext[None], to: str, subject: str, body: str) -> str:
+    if not to.endswith("@yourcompany.com") and not ctx.tool_call_approved:
+        raise ApprovalRequired()
+    ...  # send; report to Impri only when ctx.tool_call_approved is True
+```
+
+On resume, Pydantic AI runs the function again from the top with `ctx.tool_call_approved=True`. In our run the body was entered twice for one email, so keep side effects below the check. `ctx.tool_call_metadata` is `None` for calls that never needed approval.
+
+## What we ran
+
+On 2026-11-18, with pydantic-ai 2.70.0 against a local Impri server. The model was Pydantic AI's `FunctionModel` returning a scripted tool call (no LLM API key), and `start()` and every `resume()` ran in separate processes.
+
+| What happened in Impri | What the model got back | Email sent | Card status |
+|---|---|---|---|
+| Approved with an edited body | `Email sent to dana@example.com (message …)` | once, with the edited text | `executed` |
+| Rejected | "A reviewer rejected this email. Do not resend it." | no | `rejected` |
+| Expired (expiry forced on the test server) | "No reviewer decided in time. The email was not sent." | no | `expired` |
+| `resume()` before any decision | nothing: `resume()` returned `None`, the run stayed paused | no | `pending` |
+| `resume()` called a second time | nothing: `resume()` returned `None` | no second email | `executed` |
+
+Impri makes sure a person approved this email, in the exact text the tool then sends. It doesn't check that the agent picked the right customer: that stays in your code, and the gate only holds if `send_customer_email` is the agent's only way to send mail.
 
 ## Next step
 
-See [How to add human approval to an AI agent](how-to-add-human-approval-to-an-ai-agent.md) for the underlying REST pattern, or [Quickstart](quickstart.md) to get an API key before wiring this into a real agent.
+[Start free on Impri Cloud](https://app.impri.dev/?signup=1), create an API key and run `start()` on a test ticket: the card appears in your inbox. To keep everything on your own machine, follow [Self-hosting](self-hosting.md) and set `IMPRI_BASE_URL=http://localhost:8484`. The same pattern for other frameworks: [OpenAI Agents SDK](human-in-the-loop-openai-agents-sdk.md), [LangChain Deep Agents](human-in-the-loop-langchain-deep-agents.md).
