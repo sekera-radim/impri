@@ -733,7 +733,6 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human-in-the-Loop for LlamaIndex Agents: https://impri.dev/docs/human-in-the-loop-llamaindex-agents
 - Human-in-the-Loop for Microsoft Semantic Kernel Agents: https://impri.dev/docs/human-in-the-loop-semantic-kernel
 - Human-in-the-Loop for Personal AI Assistants: https://impri.dev/docs/human-in-the-loop-for-personal-ai-assistants
-- Human-in-the-Loop for Pydantic AI Agents: https://impri.dev/docs/human-in-the-loop-pydantic-ai
 - Human-in-the-Loop for RAG Agents That Take Actions: https://impri.dev/docs/human-in-the-loop-for-rag-agents-that-act
 - Human-in-the-Loop for Supply Chain AI Agents: https://impri.dev/docs/human-in-the-loop-for-supply-chain-ai-agents
 - Human-in-the-Loop for Travel Booking AI Agents: https://impri.dev/docs/human-in-the-loop-for-travel-booking-ai-agents
@@ -748,6 +747,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - One-Tap Approve/Reject for AI Agent Actions: https://impri.dev/docs/one-tap-approve-reject-for-ai-agents
 - Open-Source Human-in-the-Loop Tools for AI Agents: https://impri.dev/docs/open-source-human-in-the-loop-tools
 - Prevent Prompt Injection From Executing Real Actions: https://impri.dev/docs/prevent-prompt-injection-from-executing-actions
+- Pydantic AI Human-in-the-Loop with an Approval Inbox: https://impri.dev/docs/human-in-the-loop-pydantic-ai
 - REST API vs MCP for Human-in-the-Loop Approval: https://impri.dev/docs/rest-api-vs-mcp-for-human-approval
 - Require Human Approval Before an Agent Deletes Data: https://impri.dev/docs/human-approval-before-an-agent-deletes-data
 - Reversible vs Irreversible AI Agent Actions: What to Gate: https://impri.dev/docs/approve-reversible-vs-irreversible-ai-agent-actions

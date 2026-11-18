@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Human-in-the-Loop for Pydantic AI Agents — Impri Docs</title>
-<meta name="description" content="Add human-in-the-loop for Pydantic AI agents at the tool boundary: wrap a refund tool in Impri's approval_gate, and no charge reverses until a person says yes.">
+<title>Pydantic AI Human-in-the-Loop with an Approval Inbox — Impri Docs</title>
+<meta name="description" content="Pydantic AI ends a run with DeferredToolRequests when a tool needs approval. Send each call to Impri, save the history, and resume once a person decides.">
 <meta name="theme-color" content="#06070d">
-<meta property="og:title" content="Human-in-the-Loop for Pydantic AI Agents — Impri Docs">
-<meta property="og:description" content="Add human-in-the-loop for Pydantic AI agents at the tool boundary: wrap a refund tool in Impri's approval_gate, and no charge reverses until a person says yes.">
+<meta property="og:title" content="Pydantic AI Human-in-the-Loop with an Approval Inbox — Impri Docs">
+<meta property="og:description" content="Pydantic AI ends a run with DeferredToolRequests when a tool needs approval. Send each call to Impri, save the history, and resume once a person decides.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/human-in-the-loop-pydantic-ai">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/human-in-the-loop-pydantic-ai">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human-in-the-Loop for Pydantic AI Agents","description":"Add human-in-the-loop for Pydantic AI agents at the tool boundary: wrap a refund tool in Impri's approval_gate, and no charge reverses until a person says yes.","url":"https://impri.dev/docs/human-in-the-loop-pydantic-ai","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Pydantic AI Human-in-the-Loop with an Approval Inbox","description":"Pydantic AI ends a run with DeferredToolRequests when a tool needs approval. Send each call to Impri, save the history, and resume once a person decides.","url":"https://impri.dev/docs/human-in-the-loop-pydantic-ai","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -150,101 +150,168 @@ pre code.hljs{display:block;overflow-x:auto}
       <span class="bc-sep">/</span>
       <span>Reference</span>
       <span class="bc-sep">/</span>
-      <span>Human-in-the-Loop for Pydantic AI Agents</span>
+      <span>Pydantic AI Human-in-the-Loop with an Approval Inbox</span>
     </nav>
-    <h1>Human-in-the-Loop for Pydantic AI Agents</h1>
-<p>Add human-in-the-loop for Pydantic AI agents at the tool boundary: wrap a refund tool in Impri&#39;s <code>approval_gate</code>, and no charge reverses until a person says yes.</p>
+    <h1>Pydantic AI Human-in-the-Loop with an Approval Inbox</h1>
+<p>Pydantic AI ends a run with DeferredToolRequests when a tool needs approval. Send each call to Impri, save the history, and resume once a person decides.</p>
 <hr>
-<h2 id="why-the-tool-function-not-the-system-prompt">Why the tool function, not the system prompt</h2>
-<p>A Pydantic AI agent with a <code>stripe.refund</code>-shaped tool will eventually call it on a customer&#39;s word alone, because that&#39;s what the system prompt told it to be helpful about. Telling the model &quot;always ask before refunding&quot; in the prompt doesn&#39;t hold up once the conversation gets long or the customer is insistent — the instruction is competing with the rest of the context for the model&#39;s attention.</p>
-<p>The reliable version puts the check in the tool function itself, where the model has no way to talk its way past it. The agent still decides <em>when</em> to call <code>issue_refund</code> — but the function&#39;s body, not the model, decides whether the refund actually happens.</p>
-<h2 id="a-refund-tool-with-a-human-gate">A refund tool with a human gate</h2>
+<h2 id="how-pydantic-ai-pauses-a-tool-call">How Pydantic AI pauses a tool call</h2>
+<p>Mark a tool with <code>requires_approval=True</code> and add <code>DeferredToolRequests</code> to the agent&#39;s <code>output_type</code>. When the model calls that tool, Pydantic AI doesn&#39;t run it. The run ends, and <code>result.output</code> is a <code>DeferredToolRequests</code> whose <code>approvals</code> list holds each pending call: tool name, arguments and <code>tool_call_id</code>. You continue with a second run that gets the saved message history plus a <code>DeferredToolResults</code> mapping each <code>tool_call_id</code> to <code>ToolApproved</code> or <code>ToolDenied</code>. Leave <code>DeferredToolRequests</code> out of <code>output_type</code> and the run fails with a <code>UserError</code> instead of pausing.</p>
+<p>Nothing waits in memory between the two runs. That is what makes the pattern fit an approval inbox: the reviewer can answer from a phone an hour later, after your worker has restarted. The <a href="https://pydantic.dev/docs/ai/tools-toolsets/deferred-tools/" target="_blank" rel="noopener">Pydantic AI deferred tools docs</a> show both runs in one process. Below, the pause becomes a card in Impri, and the second run starts when someone decides it.</p>
+<h2 id="the-agent-and-the-gated-tool">The agent and the gated tool</h2>
+<p>Requirements: <code>pip install pydantic-ai httpx</code>, an Impri API key in <code>IMPRI_API_KEY</code>.</p>
 <div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> os
-<span class="hljs-keyword">import</span> stripe
-<span class="hljs-keyword">from</span> dataclasses <span class="hljs-keyword">import</span> dataclass
-<span class="hljs-keyword">from</span> pydantic_ai <span class="hljs-keyword">import</span> Agent, RunContext
-<span class="hljs-keyword">from</span> impri <span class="hljs-keyword">import</span> ImpriClient, ImpriRejected, ImpriTimeout
+<span class="hljs-keyword">import</span> httpx
+<span class="hljs-keyword">from</span> pydantic_ai <span class="hljs-keyword">import</span> Agent, DeferredToolRequests, RunContext
 
-<span class="hljs-meta">@dataclass</span>
-<span class="hljs-keyword">class</span> <span class="hljs-title class_">Deps</span>:
-    impri: ImpriClient
-    stripe_key: <span class="hljs-built_in">str</span>
+<span class="hljs-keyword">from</span> mailer <span class="hljs-keyword">import</span> send_email  <span class="hljs-comment"># your email provider; returns a message id</span>
 
-agent = Agent(
-    <span class="hljs-string">&quot;openai:gpt-4o&quot;</span>,
-    deps_type=Deps,
-    system_prompt=<span class="hljs-string">&quot;You are a billing support agent for a SaaS product.&quot;</span>,
+impri = httpx.Client(
+    base_url=os.environ.get(<span class="hljs-string">&quot;IMPRI_BASE_URL&quot;</span>, <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>),
+    headers={<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{os.environ[<span class="hljs-string">&#x27;IMPRI_API_KEY&#x27;</span>]}</span>&quot;</span>},
 )
 
-<span class="hljs-meta">@agent.tool</span>
-<span class="hljs-keyword">async</span> <span class="hljs-keyword">def</span> <span class="hljs-title function_">issue_refund</span>(<span class="hljs-params">
-    ctx: RunContext[Deps], customer_id: <span class="hljs-built_in">str</span>, amount_cents: <span class="hljs-built_in">int</span>, reason: <span class="hljs-built_in">str</span>
-</span>) -&gt; <span class="hljs-built_in">str</span>:
-    <span class="hljs-string">&quot;&quot;&quot;Refund a customer. Requires human approval before the charge is reversed.&quot;&quot;&quot;</span>
-    body = <span class="hljs-string">f&quot;**Customer:** <span class="hljs-subst">{customer_id}</span>\n**Amount:** $<span class="hljs-subst">{amount_cents / <span class="hljs-number">100</span>:<span class="hljs-number">.2</span>f}</span>\n**Reason:** <span class="hljs-subst">{reason}</span>&quot;</span>
+agent = Agent(
+    os.environ[<span class="hljs-string">&quot;AGENT_MODEL&quot;</span>],  <span class="hljs-comment"># any model string Pydantic AI supports</span>
+    output_type=[<span class="hljs-built_in">str</span>, DeferredToolRequests],
+    instructions=<span class="hljs-string">&quot;You answer support tickets. Reply to customers with send_customer_email.&quot;</span>,
+)
 
+
+<span class="hljs-meta">@agent.tool(<span class="hljs-params">requires_approval=<span class="hljs-literal">True</span></span>)</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">send_customer_email</span>(<span class="hljs-params">ctx: RunContext[<span class="hljs-literal">None</span>], to: <span class="hljs-built_in">str</span>, subject: <span class="hljs-built_in">str</span>, body: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">str</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Email a customer. A person approves every call before it runs.&quot;&quot;&quot;</span>
+    action_id = ctx.tool_call_metadata[<span class="hljs-string">&quot;impri_action_id&quot;</span>]
+    message_id = send_email(to=to, subject=subject, body=body)
+    impri.post(<span class="hljs-string">f&quot;/v1/actions/<span class="hljs-subst">{action_id}</span>/result&quot;</span>, json={<span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;executed&quot;</span>, <span class="hljs-string">&quot;detail&quot;</span>: message_id})
+    <span class="hljs-keyword">return</span> <span class="hljs-string">f&quot;Email sent to <span class="hljs-subst">{to}</span> (message <span class="hljs-subst">{message_id}</span>).&quot;</span></code></pre></div>
+<p>The body of <code>send_customer_email</code> runs only after approval. <code>ctx.tool_call_metadata</code> carries the Impri action id you pass in on resume, so the tool can report the outcome and the card moves from <code>approved</code> to <code>executed</code>.</p>
+<h2 id="step-1-turn-the-pause-into-a-card">Step 1: turn the pause into a card</h2>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> json
+<span class="hljs-keyword">from</span> pathlib <span class="hljs-keyword">import</span> Path
+
+PENDING = Path(<span class="hljs-string">&quot;pending&quot;</span>)  <span class="hljs-comment"># a table in your database in production</span>
+
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">start</span>(<span class="hljs-params">conversation_id: <span class="hljs-built_in">str</span>, ticket: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>:
+    result = agent.run_sync(ticket)
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> <span class="hljs-built_in">isinstance</span>(result.output, DeferredToolRequests):
+        <span class="hljs-keyword">return</span> result.output  <span class="hljs-comment"># finished without a gated call</span>
+    state = {<span class="hljs-string">&quot;messages&quot;</span>: result.all_messages_json().decode(), <span class="hljs-string">&quot;calls&quot;</span>: {}}
+    <span class="hljs-keyword">for</span> call <span class="hljs-keyword">in</span> result.output.approvals:
+        args = call.args_as_dict()
+        r = impri.post(<span class="hljs-string">&quot;/v1/actions&quot;</span>, json={
+            <span class="hljs-string">&quot;kind&quot;</span>: <span class="hljs-string">&quot;email.send&quot;</span>,
+            <span class="hljs-string">&quot;title&quot;</span>: <span class="hljs-string">f&quot;Email <span class="hljs-subst">{args[<span class="hljs-string">&#x27;to&#x27;</span>]}</span>: <span class="hljs-subst">{args[<span class="hljs-string">&#x27;subject&#x27;</span>]}</span>&quot;</span>,
+            <span class="hljs-string">&quot;preview&quot;</span>: {<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;plain&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: args[<span class="hljs-string">&quot;body&quot;</span>]},
+            <span class="hljs-string">&quot;editable&quot;</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
+            <span class="hljs-string">&quot;idempotency_key&quot;</span>: <span class="hljs-string">f&quot;<span class="hljs-subst">{conversation_id}</span>:<span class="hljs-subst">{call.tool_call_id}</span>&quot;</span>,
+            <span class="hljs-string">&quot;callback_url&quot;</span>: <span class="hljs-string">f&quot;https://support.example.com/impri/<span class="hljs-subst">{conversation_id}</span>&quot;</span>,
+        })
+        r.raise_for_status()
+        state[<span class="hljs-string">&quot;calls&quot;</span>][call.tool_call_id] = {<span class="hljs-string">&quot;action_id&quot;</span>: r.json()[<span class="hljs-string">&quot;id&quot;</span>], <span class="hljs-string">&quot;args&quot;</span>: args}
+    PENDING.mkdir(exist_ok=<span class="hljs-literal">True</span>)
+    (PENDING / <span class="hljs-string">f&quot;<span class="hljs-subst">{conversation_id}</span>.json&quot;</span>).write_text(json.dumps(state))
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">None</span>  <span class="hljs-comment"># paused: no process waits for the reviewer</span></code></pre></div>
+<p>Each pending call becomes one action. <code>preview.body</code> is the email the customer will get, and <code>editable: [&quot;preview.body&quot;]</code> lets the reviewer rewrite it before approving. The <code>idempotency_key</code> comes from the tool call id, so a retried POST returns the same card instead of a second one. <code>callback_url</code> is where Impri sends a signed webhook when the card is decided or expires (<a href="webhooks">Webhooks</a>): your handler checks the signature and calls <code>resume()</code>.</p>
+<h2 id="step-2-resume-with-the-decision">Step 2: resume with the decision</h2>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">from</span> pydantic_ai <span class="hljs-keyword">import</span> DeferredToolResults, ToolApproved, ToolDenied
+<span class="hljs-keyword">from</span> pydantic_ai.messages <span class="hljs-keyword">import</span> ModelMessagesTypeAdapter
+
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">resume</span>(<span class="hljs-params">conversation_id: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span>:
+    path = PENDING / <span class="hljs-string">f&quot;<span class="hljs-subst">{conversation_id}</span>.json&quot;</span>
     <span class="hljs-keyword">try</span>:
-        <span class="hljs-keyword">async</span> <span class="hljs-keyword">with</span> ctx.deps.impri.approval_gate(
-            kind=<span class="hljs-string">&quot;stripe.refund&quot;</span>,
-            title=<span class="hljs-string">f&quot;Refund $<span class="hljs-subst">{amount_cents / <span class="hljs-number">100</span>:<span class="hljs-number">.2</span>f}</span> to <span class="hljs-subst">{customer_id}</span>&quot;</span>,
-            preview={<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: body},
-            editable=[<span class="hljs-string">&quot;preview.body&quot;</span>],
-            timeout_s=<span class="hljs-number">600</span>,
-        ) <span class="hljs-keyword">as</span> approved:
-            refund = stripe.Refund.create(
-                customer=customer_id,
-                amount=amount_cents,
-                reason=<span class="hljs-string">&quot;requested_by_customer&quot;</span>,
-                api_key=ctx.deps.stripe_key,
-            )
-            <span class="hljs-keyword">return</span> <span class="hljs-string">f&quot;Refund <span class="hljs-subst">{refund.<span class="hljs-built_in">id</span>}</span> issued for <span class="hljs-subst">{customer_id}</span>.&quot;</span>
-    <span class="hljs-keyword">except</span> ImpriRejected <span class="hljs-keyword">as</span> e:
-        <span class="hljs-keyword">return</span> <span class="hljs-string">f&quot;Refund not issued — a reviewer rejected it (action <span class="hljs-subst">{e.action_id}</span>).&quot;</span>
-    <span class="hljs-keyword">except</span> ImpriTimeout:
-        <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;Refund not issued — no reviewer decision within 10 minutes.&quot;</span>
+        state = json.loads(path.read_text())
+    <span class="hljs-keyword">except</span> FileNotFoundError:
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">None</span>  <span class="hljs-comment"># already resumed</span>
+    results = DeferredToolResults()
+    <span class="hljs-keyword">for</span> call_id, call <span class="hljs-keyword">in</span> state[<span class="hljs-string">&quot;calls&quot;</span>].items():
+        action = impri.get(<span class="hljs-string">f&quot;/v1/actions/<span class="hljs-subst">{call[<span class="hljs-string">&#x27;action_id&#x27;</span>]}</span>&quot;</span>).json()
+        <span class="hljs-keyword">if</span> action[<span class="hljs-string">&quot;status&quot;</span>] == <span class="hljs-string">&quot;pending&quot;</span>:
+            <span class="hljs-keyword">return</span> <span class="hljs-literal">None</span>  <span class="hljs-comment"># wait until every card is decided</span>
+        verdict = (action.get(<span class="hljs-string">&quot;decision&quot;</span>) <span class="hljs-keyword">or</span> {}).get(<span class="hljs-string">&quot;verdict&quot;</span>)
+        <span class="hljs-keyword">if</span> verdict == <span class="hljs-string">&quot;approve&quot;</span>:
+            body = action[<span class="hljs-string">&quot;decision&quot;</span>][<span class="hljs-string">&quot;final_preview&quot;</span>][<span class="hljs-string">&quot;body&quot;</span>]  <span class="hljs-comment"># the reviewer&#x27;s edit, if any</span>
+            results.approvals[call_id] = ToolApproved(override_args={**call[<span class="hljs-string">&quot;args&quot;</span>], <span class="hljs-string">&quot;body&quot;</span>: body})
+            results.metadata[call_id] = {<span class="hljs-string">&quot;impri_action_id&quot;</span>: call[<span class="hljs-string">&quot;action_id&quot;</span>]}
+        <span class="hljs-keyword">elif</span> verdict == <span class="hljs-string">&quot;reject&quot;</span>:
+            results.approvals[call_id] = ToolDenied(<span class="hljs-string">&quot;A reviewer rejected this email. Do not resend it.&quot;</span>)
+        <span class="hljs-keyword">else</span>:  <span class="hljs-comment"># expired: nobody decided in time</span>
+            results.approvals[call_id] = ToolDenied(<span class="hljs-string">&quot;No reviewer decided in time. The email was not sent.&quot;</span>)
+    <span class="hljs-keyword">try</span>:
+        path.rename(path.with_suffix(<span class="hljs-string">&quot;.resumed&quot;</span>))  <span class="hljs-comment"># atomic claim: one caller resumes</span>
+    <span class="hljs-keyword">except</span> FileNotFoundError:
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">None</span>
+    history = ModelMessagesTypeAdapter.validate_json(state[<span class="hljs-string">&quot;messages&quot;</span>])
+    result = agent.run_sync(message_history=history, deferred_tool_results=results)
+    <span class="hljs-keyword">return</span> result.output</code></pre></div>
+<p>What this code relies on:</p>
+<ul>
+<li><strong>The verdict comes from <code>GET /v1/actions/:id</code></strong>, under <code>decision.verdict</code>. The webhook only tells you when to look.</li>
+<li><strong>The saved history stays on your server.</strong> Pydantic AI runs an approved call from whatever history it is given, so a history a client can edit would let the client approve its own calls (the Pydantic AI docs warn about the same trust boundary).</li>
+<li><strong><code>override_args</code> replaces the arguments, it doesn&#39;t merge them.</strong> Pass the whole dict with the edited body, as above. Without an edit, <code>final_preview.body</code> is the original text.</li>
+<li><strong><code>ToolDenied</code> text is what the model reads as the tool&#39;s result</strong>, so write it as an instruction (&quot;do not resend&quot;).</li>
+<li><strong>An expired card has no decision.</strong> Deny the call so the run finishes instead of staying paused forever.</li>
+<li><strong>Resume once.</strong> A webhook retry or a cron that also calls <code>resume()</code> must not send the email twice, so <code>resume()</code> claims the saved state by renaming the file before it runs the agent. With a database, use a conditional update for the same claim. If that second run fails (the model API is down, say), the state stays in the <code>.resumed</code> file: check the card before you retry, because <code>executed</code> means the email already went out.</li>
+</ul>
+<h2 id="only-some-calls-need-a-person-approvalrequired">Only some calls need a person: <code>ApprovalRequired</code></h2>
+<p>When only some calls need review, for example emails to addresses outside your company, drop <code>requires_approval</code> and raise <code>ApprovalRequired</code> inside the tool:</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">from</span> pydantic_ai <span class="hljs-keyword">import</span> ApprovalRequired
 
 
-<span class="hljs-keyword">async</span> <span class="hljs-keyword">def</span> <span class="hljs-title function_">main</span>():
-    deps = Deps(impri=ImpriClient(), stripe_key=os.environ[<span class="hljs-string">&quot;STRIPE_SECRET_KEY&quot;</span>])
-    result = <span class="hljs-keyword">await</span> agent.run(
-        <span class="hljs-string">&quot;Customer cust_9f2 was double-charged on the March invoice, refund $42.00.&quot;</span>,
-        deps=deps,
-    )
-    <span class="hljs-built_in">print</span>(result.output)</code></pre></div>
-<p><code>approval_gate</code> is the SDK&#39;s context-manager form: it pushes the action, blocks until a human decides, and calls <code>report_result</code> automatically on the way out — <code>executed</code> on a clean exit, <code>execute_failed</code> if the <code>stripe.Refund.create</code> call inside the block raises. See <a href="sdk-python">Python SDK</a> for the full method reference.</p>
-<h2 id="handling-rejection-inside-the-tool-not-outside-it">Handling rejection inside the tool, not outside it</h2>
-<p>Notice the <code>try/except</code> lives <em>inside</em> <code>issue_refund</code>, wrapping the whole gate. If you let <code>ImpriRejected</code> propagate up instead, Pydantic AI&#39;s tool-calling loop sees an unhandled exception from a tool call — depending on your retry settings, the agent may interpret that as a transient failure and call <code>issue_refund</code> again with the same arguments, which is the last thing you want after a human explicitly said no. Catching it and returning a plain string turns &quot;rejected&quot; into ordinary tool output: the agent reads it, tells the customer no refund went out, and moves on.</p>
-<h2 id="sync-agent-async-gate">Sync agent, async gate</h2>
-<p><code>approval_gate</code> is an async context manager, so <code>issue_refund</code> has to be declared <code>async def</code> and the run driven with <code>await agent.run(...)</code> rather than <code>agent.run_sync(...)</code>. If the rest of your agent is otherwise synchronous, this one tool is a reason to switch the entry point to the async form — Pydantic AI supports mixing sync and async tools on the same agent, but the gate itself only comes in async.</p>
-<h2 id="what39s-actually-verified-and-what-isn39t">What&#39;s actually verified, and what isn&#39;t</h2>
+<span class="hljs-meta">@agent.tool</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">send_customer_email</span>(<span class="hljs-params">ctx: RunContext[<span class="hljs-literal">None</span>], to: <span class="hljs-built_in">str</span>, subject: <span class="hljs-built_in">str</span>, body: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">str</span>:
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> to.endswith(<span class="hljs-string">&quot;@yourcompany.com&quot;</span>) <span class="hljs-keyword">and</span> <span class="hljs-keyword">not</span> ctx.tool_call_approved:
+        <span class="hljs-keyword">raise</span> ApprovalRequired()
+    ...  <span class="hljs-comment"># send; report to Impri only when ctx.tool_call_approved is True</span></code></pre></div>
+<p>On resume, Pydantic AI runs the function again from the top with <code>ctx.tool_call_approved=True</code>. In our run the body was entered twice for one email, so keep side effects below the check. <code>ctx.tool_call_metadata</code> is <code>None</code> for calls that never needed approval.</p>
+<h2 id="what-we-ran">What we ran</h2>
+<p>On 2026-11-18, with pydantic-ai 2.70.0 against a local Impri server. The model was Pydantic AI&#39;s <code>FunctionModel</code> returning a scripted tool call (no LLM API key), and <code>start()</code> and every <code>resume()</code> ran in separate processes.</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-<th>Exception</th>
-<th>What it means</th>
-<th>What the tool does</th>
+<th>What happened in Impri</th>
+<th>What the model got back</th>
+<th>Email sent</th>
+<th>Card status</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><em>(none — approved)</em></td>
-<td>A human read the card and approved it</td>
-<td>Calls Stripe, reports <code>executed</code></td>
+<td>Approved with an edited body</td>
+<td><code>Email sent to dana@example.com (message …)</code></td>
+<td>once, with the edited text</td>
+<td><code>executed</code></td>
 </tr>
 <tr>
-<td><code>ImpriRejected</code></td>
-<td>A human explicitly declined</td>
-<td>Returns a string, Stripe is never called</td>
+<td>Rejected</td>
+<td>&quot;A reviewer rejected this email. Do not resend it.&quot;</td>
+<td>no</td>
+<td><code>rejected</code></td>
 </tr>
 <tr>
-<td><code>ImpriTimeout</code></td>
-<td>No decision within <code>timeout_s</code></td>
-<td>Returns a string, action stays pending server-side</td>
+<td>Expired (expiry forced on the test server)</td>
+<td>&quot;No reviewer decided in time. The email was not sent.&quot;</td>
+<td>no</td>
+<td><code>expired</code></td>
+</tr>
+<tr>
+<td><code>resume()</code> before any decision</td>
+<td>nothing: <code>resume()</code> returned <code>None</code>, the run stayed paused</td>
+<td>no</td>
+<td><code>pending</code></td>
+</tr>
+<tr>
+<td><code>resume()</code> called a second time</td>
+<td>nothing: <code>resume()</code> returned <code>None</code></td>
+<td>no second email</td>
+<td><code>executed</code></td>
 </tr>
 </tbody></table>
 </div>
-<p>Impri verified that a human looked at exactly the card shown — customer ID, amount, reason — and approved it. It did not verify that <code>customer_id</code> is correct, that the amount matches the actual overcharge, or anything about Stripe&#39;s response. Those are the agent&#39;s and your billing system&#39;s job. And the gate only holds if <code>issue_refund</code> is the only path from this agent to <code>stripe.Refund.create</code> — a second tool with its own Stripe key would bypass it entirely.</p>
+<p>Impri makes sure a person approved this email, in the exact text the tool then sends. It doesn&#39;t check that the agent picked the right customer: that stays in your code, and the gate only holds if <code>send_customer_email</code> is the agent&#39;s only way to send mail.</p>
 <h2 id="next-step">Next step</h2>
-<p>See <a href="how-to-add-human-approval-to-an-ai-agent">How to add human approval to an AI agent</a> for the underlying REST pattern, or <a href="quickstart">Quickstart</a> to get an API key before wiring this into a real agent.</p>
+<p><a href="https://app.impri.dev/?signup=1" target="_blank" rel="noopener">Start free on Impri Cloud</a>, create an API key and run <code>start()</code> on a test ticket: the card appears in your inbox. To keep everything on your own machine, follow <a href="self-hosting">Self-hosting</a> and set <code>IMPRI_BASE_URL=http://localhost:8484</code>. The same pattern for other frameworks: <a href="human-in-the-loop-openai-agents-sdk">OpenAI Agents SDK</a>, <a href="human-in-the-loop-langchain-deep-agents">LangChain Deep Agents</a>.</p>
 
     <aside class="doc-cta" aria-label="Try Impri">
   <p class="doc-cta-title">Add an approval step to your own agent</p>
@@ -258,10 +325,10 @@ agent = Agent(
     <nav class="doc-related" aria-label="Related guides">
   <p class="doc-related-title">Related guides</p>
   <ul>
-<li><a href="../docs/wrapping-a-tool-with-a-human-approval-step">Wrapping an Agent Tool With a Human Approval Step</a></li>
-<li><a href="../docs/how-to-add-a-review-step-to-an-mcp-tool">Add a Human Approval Step to Any MCP Tool</a></li>
-<li><a href="../docs/approve-ai-agent-payments-and-charges">Approve Payments Before Your AI Agent Charges a Card</a></li>
-<li><a href="../docs/human-in-the-loop-for-autonomous-agents">Human-in-the-Loop for Autonomous AI Agents</a></li>
+<li><a href="../docs/approval-inbox-for-ai-agents">One Approval Inbox for All Your AI Agents</a></li>
+<li><a href="../docs/human-in-the-loop-temporal-workflows-for-ai-agents">Temporal Human-in-the-Loop with an Approval Inbox</a></li>
+<li><a href="../docs/how-to-pause-an-ai-agent-for-human-input">How to Pause an AI Agent for Human Input</a></li>
+<li><a href="../docs/human-in-the-loop-agentspan-and-durable-agent-runtimes">Human-in-the-Loop for Durable Agent Runtimes: Pause, Approve, Resume</a></li>
   </ul>
 </nav>
   </main>
@@ -333,11 +400,12 @@ agent = Agent(
   <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#why-the-tool-function-not-the-system-prompt">Why the tool function, not the system prompt</a></li>
-<li class="ptoc-h2"><a href="#a-refund-tool-with-a-human-gate">A refund tool with a human gate</a></li>
-<li class="ptoc-h2"><a href="#handling-rejection-inside-the-tool-not-outside-it">Handling rejection inside the tool, not outside it</a></li>
-<li class="ptoc-h2"><a href="#sync-agent-async-gate">Sync agent, async gate</a></li>
-<li class="ptoc-h2"><a href="#what39s-actually-verified-and-what-isn39t">What's actually verified, and what isn't</a></li>
+<ul><li class="ptoc-h2"><a href="#how-pydantic-ai-pauses-a-tool-call">How Pydantic AI pauses a tool call</a></li>
+<li class="ptoc-h2"><a href="#the-agent-and-the-gated-tool">The agent and the gated tool</a></li>
+<li class="ptoc-h2"><a href="#step-1-turn-the-pause-into-a-card">Step 1: turn the pause into a card</a></li>
+<li class="ptoc-h2"><a href="#step-2-resume-with-the-decision">Step 2: resume with the decision</a></li>
+<li class="ptoc-h2"><a href="#only-some-calls-need-a-person-approvalrequired">Only some calls need a person: ApprovalRequired</a></li>
+<li class="ptoc-h2"><a href="#what-we-ran">What we ran</a></li>
 <li class="ptoc-h2"><a href="#next-step">Next step</a></li></ul>
 </nav>
   </aside>
