@@ -110,6 +110,6 @@ Both share the same rate limit (60 requests/min per key to `POST /v1/actions`) a
 
 Regardless of transport, the gate only holds if the wrapped action truly has no other path to execution. An agent that can call the GitHub merge API directly, with its own token, can route around Impri entirely — REST or MCP. The chokepoint has to be the code path, not the request format. See [how to add human approval to an AI agent](how-to-add-human-approval-to-an-ai-agent.md) for the full reasoning on that boundary, and the [MCP integration guide](mcp.md) for server setup details beyond this example.
 
-If you're building specifically on the Claude Agent SDK, [the dedicated guide](claude-agent-sdk.md) covers wrapping tool executors so the approved decision is the only path to the side effect, not just an extra step the model could skip.
+If you're building specifically on the Claude Agent SDK, [the dedicated guide](human-approval-claude-agent-sdk.md) gates tool calls in the SDK's own permission callback, so the check sits in the runtime, not in a step the model could skip.
 
 Next: [quickstart](quickstart.md) to get an API key and try either path in under five minutes.
