@@ -88,4 +88,4 @@ None of these five is sufficient alone, and none of them requires the others to 
 
 ## Next step
 
-For the full three-call approval flow (REST and MCP), see [how to add human approval to an AI agent](how-to-add-human-approval-to-an-ai-agent.md). If your agent runs through the Claude Agent SDK specifically, [the Claude Agent SDK integration](claude-agent-sdk.md) shows the same pattern wired into that runtime, and the [TypeScript SDK reference](sdk-typescript.md) covers the client used above.
+For the full three-call approval flow (REST and MCP), see [how to add human approval to an AI agent](how-to-add-human-approval-to-an-ai-agent.md). If your agent runs through the Claude Agent SDK specifically, [the Claude Agent SDK guide](human-approval-claude-agent-sdk.md) shows the same pattern wired into that runtime, and the [TypeScript SDK reference](sdk-typescript.md) covers the client used above.
