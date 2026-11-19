@@ -93,7 +93,7 @@ Not every tool in an MCP server needs a gate. A reasonable rule: wrap tools that
 - Set `timeoutS` in `awaitDecision` well under any client-side request timeout, and treat a timeout as "not yet decided" rather than "rejected" — check `GET /v1/actions/:id` later instead of re-pushing.
 - For tools where the human might take hours, don't block synchronously at all: push the action, return an "awaiting approval, action id `act_xyz`" message to the agent, and let a follow-up tool call (or a webhook — see [webhooks](webhooks.md)) resolve it later.
 
-For the full server setup — configuring `@impri/mcp` as a standalone process versus building the gate directly into your own server as shown above — see the [MCP integration guide](mcp.md). If your agent runs on the Claude Agent SDK rather than a raw MCP client, [the Claude Agent SDK guide](claude-agent-sdk.md) covers wrapping tool definitions the same way.
+For the full server setup — configuring `@impri/mcp` as a standalone process versus building the gate directly into your own server as shown above — see the [MCP integration guide](mcp.md). If your agent runs on the Claude Agent SDK rather than a raw MCP client, [the Claude Agent SDK guide](human-approval-claude-agent-sdk.md) puts the same review step in the SDK's permission callback.
 
 ---
 
