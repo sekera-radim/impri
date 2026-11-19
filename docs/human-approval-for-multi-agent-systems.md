@@ -75,7 +75,7 @@ Gating every contributing agent individually multiplies review load for no safet
 
 ## Keeping the gate a real chokepoint
 
-This only works as a genuine gate if the publisher agent has no other way to publish. If `publisherAgent.publish()` can be called directly by some other code path with the same credentials, an agent — or a bug, or an injected instruction picked up during research — can route around Impri entirely. Wrap the actual publish call so it only ever runs with an approved `final_preview`, the same pattern described in [the approval guide](how-to-add-human-approval-to-an-ai-agent.md). If your orchestrator is Claude Agent SDK-based, see [claude-agent-sdk](claude-agent-sdk.md) for wiring the gate into a tool definition rather than free-floating code.
+This only works as a genuine gate if the publisher agent has no other way to publish. If `publisherAgent.publish()` can be called directly by some other code path with the same credentials, an agent — or a bug, or an injected instruction picked up during research — can route around Impri entirely. Wrap the actual publish call so it only ever runs with an approved `final_preview`, the same pattern described in [the approval guide](how-to-add-human-approval-to-an-ai-agent.md). If your orchestrator is Claude Agent SDK-based, see [the Claude Agent SDK guide](human-approval-claude-agent-sdk.md) for gating its tool calls in the SDK's permission callback rather than in free-floating code.
 
 ---
 
