@@ -98,7 +98,7 @@ The gate is the `closeIssueWithApproval` wrapper, not Impri itself. Impri stores
 
 ## What this MCP server is, and isn't
 
-`@impri/mcp` is three tools and nothing else. It doesn't decide what counts as risky, doesn't generate the close-comment text, and doesn't retry failed GitHub calls for you — `impri_report_result` just records what happened so the audit log is accurate. If you need branching logic across many tools and services, that's an orchestration layer like n8n or Temporal sitting above this, not something Impri adds. For a broader look at wiring Impri into an SDK-based agent rather than an MCP client, see [the MCP integration guide](mcp.md) and [the Claude Agent SDK guide](claude-agent-sdk.md).
+`@impri/mcp` is three tools and nothing else. It doesn't decide what counts as risky, doesn't generate the close-comment text, and doesn't retry failed GitHub calls for you — `impri_report_result` just records what happened so the audit log is accurate. If you need branching logic across many tools and services, that's an orchestration layer like n8n or Temporal sitting above this, not something Impri adds. For a broader look at wiring Impri into an SDK-based agent rather than an MCP client, see [the MCP integration guide](mcp.md) and [the Claude Agent SDK guide](human-approval-claude-agent-sdk.md).
 
 ---
 
