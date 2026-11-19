@@ -126,4 +126,4 @@ Use a key scoped to `actions` only for this flow — it doesn't need `watch` or 
 
 Same rule as any gated action: `rejected` and `expired` both mean the write does not happen, no exceptions. Don't have the agent silently retry a rejected write with a narrower `WHERE` clause — if the query needs revision, that's a new action with a new preview the reviewer sees, not a retry that reuses the old approval.
 
-For the full three-call pattern this builds on, see [how to add human approval to an AI agent](how-to-add-human-approval-to-an-ai-agent.md). For wiring this specifically into a Claude-based agent, see [the Claude Agent SDK guide](claude-agent-sdk.md). For the MCP server details, see [MCP](mcp.md).
+For the full three-call pattern this builds on, see [how to add human approval to an AI agent](how-to-add-human-approval-to-an-ai-agent.md). For wiring this specifically into a Claude-based agent, see [the Claude Agent SDK guide](human-approval-claude-agent-sdk.md). For the MCP server details, see [MCP](mcp.md).
