@@ -534,9 +534,9 @@ Python. `ImpriApprovalTool` (crewai BaseTool) with `ImpriApprovalCallback`. Appr
 
 Python. `make_guardrail()` returns InputGuardrail. `tripwire_triggered=False` on approve, `True` on reject. `preview_from_input` option.
 
-### Claude Agent SDK (integrations/claude-agent-sdk/)
+### Claude tool use, Anthropic SDK (integrations/claude-agent-sdk/)
 
-TypeScript. `GatedTool` (via `withImpriApproval()`); intercepts tool_use blocks; calls execute() with possibly human-edited input; reports result automatically.
+TypeScript. For a Messages API loop with `@anthropic-ai/sdk`, not for Anthropic's Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`; for that see https://impri.dev/docs/human-approval-claude-agent-sdk). `GatedTool` (via `withImpriApproval()`); intercepts tool_use blocks; calls execute() with possibly human-edited input; reports result automatically.
 
 ```typescript
 const gated = withImpriApproval({
@@ -579,7 +579,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Python SDK reference:                                https://impri.dev/docs/sdk-python
 - TypeScript SDK reference:                            https://impri.dev/docs/sdk-typescript
 - MCP server reference:                                https://impri.dev/docs/mcp
-- Claude Agent SDK integration:                        https://impri.dev/docs/claude-agent-sdk
+- Claude tool use (Anthropic SDK) integration:         https://impri.dev/docs/claude-agent-sdk
 - Integrations (LangChain, CrewAI, OpenAI, n8n, Make, Zapier): https://impri.dev/docs/integrations
 - CLI reference:                                       https://impri.dev/docs/cli
 - Inbox UX, keyboard shortcuts, bulk approve/reject:   https://impri.dev/docs/inbox

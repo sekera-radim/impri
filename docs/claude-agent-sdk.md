@@ -1,8 +1,10 @@
-# Claude Agent SDK Integration
+# Claude Tool Use Approval for the Anthropic SDK
 
 The `integrations/claude-agent-sdk/` package provides a TypeScript integration for adding human-approval gates to Claude-powered agents built with the Anthropic SDK (`@anthropic-ai/sdk`).
 
 It works by intercepting `tool_use` content blocks before they are executed — the agent proposes a tool call, a human approves or rejects it in the Impri inbox, and only then is the tool executor called.
+
+> **Building on Anthropic's Claude Agent SDK** (`@anthropic-ai/claude-agent-sdk`, `query()` with built-in tools)? This package isn't for it: it works on the `tool_use` blocks of a Messages API loop you run yourself, while the Agent SDK runs its own tool loop. Gate Agent SDK tool calls with its `canUseTool` callback or a `PreToolUse` hook: see [Claude Agent SDK human approval](human-approval-claude-agent-sdk.md).
 
 ---
 
