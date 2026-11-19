@@ -92,7 +92,7 @@ File writes are usually not idempotent — writing the same content twice is har
 
 ## Making the gate the only path to disk
 
-This pattern only holds if `write_file` above — not the agent's model output — is the sole function with filesystem write access in that process. If the agent is also running inside an environment where it can shell out (`os.system`, a code-execution tool, a raw MCP filesystem server with no wrapper), it can write around the gate entirely. Wrap or disable direct filesystem tools and expose only the approval-gated `write_file`; the [SDK integration patterns](integrations.md) cover this kind of tool substitution in more depth. If your agent runs on the [Claude Agent SDK](claude-agent-sdk.md), this is the same principle as restricting the `Edit`/`Write` tool to a checked wrapper rather than the raw filesystem.
+This pattern only holds if `write_file` above — not the agent's model output — is the sole function with filesystem write access in that process. If the agent is also running inside an environment where it can shell out (`os.system`, a code-execution tool, a raw MCP filesystem server with no wrapper), it can write around the gate entirely. Wrap or disable direct filesystem tools and expose only the approval-gated `write_file`; the [SDK integration patterns](integrations.md) cover this kind of tool substitution in more depth. If your agent runs on the [Claude Agent SDK](human-approval-claude-agent-sdk.md), this is the same principle as restricting the `Edit`/`Write` tool to a checked wrapper rather than the raw filesystem.
 
 ---
 
