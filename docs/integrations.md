@@ -304,9 +304,9 @@ On rejection, `ImpriRejected` propagates from the callback into `crew.kickoff()`
 
 ---
 
-## Claude Agent SDK (Anthropic)
+## Claude tool use (Anthropic SDK)
 
-The `integrations/claude-agent-sdk/` package provides a TypeScript `GatedTool` that intercepts `tool_use` content blocks before execution. The tool definition is passed to Claude unchanged — only the execution path goes through Impri.
+The `integrations/claude-agent-sdk/` package provides a TypeScript `GatedTool` that intercepts `tool_use` content blocks before execution, in a Messages API loop you run with `@anthropic-ai/sdk`. The tool definition is passed to Claude unchanged — only the execution path goes through Impri. For Anthropic's Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`), use its `canUseTool` callback or a `PreToolUse` hook instead: [Claude Agent SDK human approval](human-approval-claude-agent-sdk.md).
 
 ```typescript
 import { ImpriClient } from '@impri/sdk'
@@ -361,7 +361,7 @@ for (const block of response.content) {
 
 When the reviewer edits `preview.body` and the tool input has a `body` field, the edited value is injected before calling `execute()`. Call `reportResult` is handled automatically inside `handle()`.
 
-Full reference: [Claude Agent SDK](claude-agent-sdk.md)
+Full reference: [Claude tool use (Anthropic SDK)](claude-agent-sdk.md)
 
 ---
 

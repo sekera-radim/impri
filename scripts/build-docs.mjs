@@ -86,7 +86,7 @@ const NAV = [
     pages: [
       { slug: 'mcp',              title: 'MCP server' },
       { slug: 'integrations',     title: 'LangChain / CrewAI / n8n' },
-      { slug: 'claude-agent-sdk', title: 'Claude Agent SDK' },
+      { slug: 'claude-agent-sdk', title: 'Claude tool use (Anthropic SDK)' },
     ],
   },
   {
