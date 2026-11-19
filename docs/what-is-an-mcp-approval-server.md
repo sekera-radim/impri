@@ -33,7 +33,7 @@ Crucially, none of these three tools performs the underlying action. `impri_push
 
 ## Example: gating a coding agent's git push
 
-Say you're running an autonomous coding agent via the [Claude Agent SDK](claude-agent-sdk.md) that can commit and push to a repo. You don't want it pushing to `main` unattended. Wrap the push tool so the approval server's tools sit in front of it:
+Say you're running an autonomous coding agent via the [Claude Agent SDK](human-approval-claude-agent-sdk.md) that can commit and push to a repo. You don't want it pushing to `main` unattended. Wrap the push tool so the approval server's tools sit in front of it:
 
 ```typescript
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
