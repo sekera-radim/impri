@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Claude Agent SDK Integration — Impri Docs</title>
+<title>Claude Tool Use Approval for the Anthropic SDK — Impri Docs</title>
 <meta name="description" content="The integrations/claude-agent-sdk/ package provides a TypeScript integration for adding human-approval gates to Claude-powered agents built with the Anthropic…">
 <meta name="theme-color" content="#06070d">
-<meta property="og:title" content="Claude Agent SDK Integration — Impri Docs">
+<meta property="og:title" content="Claude Tool Use Approval for the Anthropic SDK — Impri Docs">
 <meta property="og:description" content="The integrations/claude-agent-sdk/ package provides a TypeScript integration for adding human-approval gates to Claude-powered agents built with the Anthropic…">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/claude-agent-sdk">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/claude-agent-sdk">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Claude Agent SDK Integration","description":"The integrations/claude-agent-sdk/ package provides a TypeScript integration for adding human-approval gates to Claude-powered agents built with the Anthropic…","url":"https://impri.dev/docs/claude-agent-sdk","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Claude Tool Use Approval for the Anthropic SDK","description":"The integrations/claude-agent-sdk/ package provides a TypeScript integration for adding human-approval gates to Claude-powered agents built with the Anthropic…","url":"https://impri.dev/docs/claude-agent-sdk","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -150,11 +150,14 @@ pre code.hljs{display:block;overflow-x:auto}
       <span class="bc-sep">/</span>
       <span>Integrations</span>
       <span class="bc-sep">/</span>
-      <span>Claude Agent SDK Integration</span>
+      <span>Claude Tool Use Approval for the Anthropic SDK</span>
     </nav>
-    <h1>Claude Agent SDK Integration</h1>
+    <h1>Claude Tool Use Approval for the Anthropic SDK</h1>
 <p>The <code>integrations/claude-agent-sdk/</code> package provides a TypeScript integration for adding human-approval gates to Claude-powered agents built with the Anthropic SDK (<code>@anthropic-ai/sdk</code>).</p>
 <p>It works by intercepting <code>tool_use</code> content blocks before they are executed — the agent proposes a tool call, a human approves or rejects it in the Impri inbox, and only then is the tool executor called.</p>
+<blockquote>
+<p><strong>Building on Anthropic&#39;s Claude Agent SDK</strong> (<code>@anthropic-ai/claude-agent-sdk</code>, <code>query()</code> with built-in tools)? This package isn&#39;t for it: it works on the <code>tool_use</code> blocks of a Messages API loop you run yourself, while the Agent SDK runs its own tool loop. Gate Agent SDK tool calls with its <code>canUseTool</code> callback or a <code>PreToolUse</code> hook: see <a href="human-approval-claude-agent-sdk">Claude Agent SDK human approval</a>.</p>
+</blockquote>
 <hr>
 <h2 id="how-it-works">How it works</h2>
 <ol>
@@ -439,7 +442,7 @@ npm install ./integrations/claude-agent-sdk</code></pre></div>
 <div class="sg-label">Integrations</div>
 <a href="../docs/mcp" class="sl">MCP server</a>
 <a href="../docs/integrations" class="sl">LangChain / CrewAI / n8n</a>
-<a href="../docs/claude-agent-sdk" class="sl active">Claude Agent SDK</a>
+<a href="../docs/claude-agent-sdk" class="sl active">Claude tool use (Anthropic SDK)</a>
 </div>
 <div class="sg">
 <div class="sg-label">Inbox &amp; webhooks</div>

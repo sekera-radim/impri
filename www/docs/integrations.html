@@ -485,8 +485,8 @@ crew = Crew(
 </blockquote>
 <p>On rejection, <code>ImpriRejected</code> propagates from the callback into <code>crew.kickoff()</code>, surfacing as a task failure. <code>ImpriTimeout</code> (human did not decide within <code>timeout_s</code>) propagates the same way.</p>
 <hr>
-<h2 id="claude-agent-sdk-anthropic">Claude Agent SDK (Anthropic)</h2>
-<p>The <code>integrations/claude-agent-sdk/</code> package provides a TypeScript <code>GatedTool</code> that intercepts <code>tool_use</code> content blocks before execution. The tool definition is passed to Claude unchanged — only the execution path goes through Impri.</p>
+<h2 id="claude-tool-use-anthropic-sdk">Claude tool use (Anthropic SDK)</h2>
+<p>The <code>integrations/claude-agent-sdk/</code> package provides a TypeScript <code>GatedTool</code> that intercepts <code>tool_use</code> content blocks before execution, in a Messages API loop you run with <code>@anthropic-ai/sdk</code>. The tool definition is passed to Claude unchanged — only the execution path goes through Impri. For Anthropic&#39;s Claude Agent SDK (<code>@anthropic-ai/claude-agent-sdk</code>), use its <code>canUseTool</code> callback or a <code>PreToolUse</code> hook instead: <a href="human-approval-claude-agent-sdk">Claude Agent SDK human approval</a>.</p>
 <div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">ImpriClient</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@impri/sdk&#x27;</span>
 <span class="hljs-keyword">import</span> { withImpriApproval } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@impri/claude-agent-sdk&#x27;</span>
 
@@ -537,7 +537,7 @@ crew = Crew(
 <li><code>execute</code> — the underlying executor, available for direct testing</li>
 </ul>
 <p>When the reviewer edits <code>preview.body</code> and the tool input has a <code>body</code> field, the edited value is injected before calling <code>execute()</code>. Call <code>reportResult</code> is handled automatically inside <code>handle()</code>.</p>
-<p>Full reference: <a href="claude-agent-sdk">Claude Agent SDK</a></p>
+<p>Full reference: <a href="claude-agent-sdk">Claude tool use (Anthropic SDK)</a></p>
 <hr>
 <h2 id="n8n">n8n</h2>
 <p>Use the <strong>HTTP Request</strong> node to call the Impri REST API directly. A two-node pattern works for most workflows:</p>
@@ -719,7 +719,7 @@ app.<span class="hljs-title function_">post</span>(<span class="hljs-string">&#x
 <div class="sg-label">Integrations</div>
 <a href="../docs/mcp" class="sl">MCP server</a>
 <a href="../docs/integrations" class="sl active">LangChain / CrewAI / n8n</a>
-<a href="../docs/claude-agent-sdk" class="sl">Claude Agent SDK</a>
+<a href="../docs/claude-agent-sdk" class="sl">Claude tool use (Anthropic SDK)</a>
 </div>
 <div class="sg">
 <div class="sg-label">Inbox &amp; webhooks</div>
@@ -746,7 +746,7 @@ app.<span class="hljs-title function_">post</span>(<span class="hljs-string">&#x
 <li class="ptoc-h2"><a href="#crewai">CrewAI</a></li>
 <li class="ptoc-h3"><a href="#impriapprovaltool-agent-initiated-approval">ImpriApprovalTool — agent-initiated approval</a></li>
 <li class="ptoc-h3"><a href="#impriapprovalcallback-automatic-steptask-gating">ImpriApprovalCallback — automatic step/task gating</a></li>
-<li class="ptoc-h2"><a href="#claude-agent-sdk-anthropic">Claude Agent SDK (Anthropic)</a></li>
+<li class="ptoc-h2"><a href="#claude-tool-use-anthropic-sdk">Claude tool use (Anthropic SDK)</a></li>
 <li class="ptoc-h2"><a href="#n8n">n8n</a></li>
 <li class="ptoc-h2"><a href="#make-integromat">Make (Integromat)</a></li>
 <li class="ptoc-h2"><a href="#zapier">Zapier</a></li>
