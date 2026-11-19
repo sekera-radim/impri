@@ -245,7 +245,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <h2 id="the-honest-limit">The honest limit</h2>
 <p>This only holds if the approved path is the agent&#39;s <em>only</em> route to the side effect. If the agent (or a library it calls) also has the raw <code>SMTP</code> credentials or API key needed to send directly, it can route around the gate entirely — Impri doesn&#39;t intercept network calls, it just stores actions and decisions for code that chooses to call it. The fix above works because <code>sendEmail</code> is only invoked from inside the gated branch; if another code path in the same agent can call <code>sendEmail</code> directly, the gate isn&#39;t actually load-bearing.</p>
 <h2 id="next-step">Next step</h2>
-<p>If you&#39;re integrating this for the first time, <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a> covers the full push/poll/execute pattern in more depth, including MCP for agents running in Claude Code or Claude Desktop. For agents built on the <a href="claude-agent-sdk">Claude Agent SDK</a> specifically, the same gate wraps around any tool call, not just email.</p>
+<p>If you&#39;re integrating this for the first time, <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a> covers the full push/poll/execute pattern in more depth, including MCP for agents running in Claude Code or Claude Desktop. For agents built on the <a href="human-approval-claude-agent-sdk">Claude Agent SDK</a> specifically, the same gate wraps around any tool call, not just email.</p>
 
     <aside class="doc-cta" aria-label="Try Impri">
   <p class="doc-cta-title">Add an approval step to your own agent</p>

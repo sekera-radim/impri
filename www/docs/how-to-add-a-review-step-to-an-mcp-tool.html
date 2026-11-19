@@ -239,7 +239,7 @@ server.<span class="hljs-title function_">tool</span>(
 <li>Set <code>timeoutS</code> in <code>awaitDecision</code> well under any client-side request timeout, and treat a timeout as &quot;not yet decided&quot; rather than &quot;rejected&quot; — check <code>GET /v1/actions/:id</code> later instead of re-pushing.</li>
 <li>For tools where the human might take hours, don&#39;t block synchronously at all: push the action, return an &quot;awaiting approval, action id <code>act_xyz</code>&quot; message to the agent, and let a follow-up tool call (or a webhook — see <a href="webhooks">webhooks</a>) resolve it later.</li>
 </ul>
-<p>For the full server setup — configuring <code>@impri/mcp</code> as a standalone process versus building the gate directly into your own server as shown above — see the <a href="mcp">MCP integration guide</a>. If your agent runs on the Claude Agent SDK rather than a raw MCP client, <a href="claude-agent-sdk">the Claude Agent SDK guide</a> covers wrapping tool definitions the same way.</p>
+<p>For the full server setup — configuring <code>@impri/mcp</code> as a standalone process versus building the gate directly into your own server as shown above — see the <a href="mcp">MCP integration guide</a>. If your agent runs on the Claude Agent SDK rather than a raw MCP client, <a href="human-approval-claude-agent-sdk">the Claude Agent SDK guide</a> puts the same review step in the SDK&#39;s permission callback.</p>
 <hr>
 <h2 id="next-step">Next step</h2>
 <p>Start with <a href="quickstart">the quickstart</a> to get an API key, then wrap your first tool handler using the pattern above.</p>

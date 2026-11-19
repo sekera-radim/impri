@@ -271,7 +271,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <hr>
 <h2 id="rejected-expired-and-retried-writes">Rejected, expired, and retried writes</h2>
 <p>Same rule as any gated action: <code>rejected</code> and <code>expired</code> both mean the write does not happen, no exceptions. Don&#39;t have the agent silently retry a rejected write with a narrower <code>WHERE</code> clause — if the query needs revision, that&#39;s a new action with a new preview the reviewer sees, not a retry that reuses the old approval.</p>
-<p>For the full three-call pattern this builds on, see <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a>. For wiring this specifically into a Claude-based agent, see <a href="claude-agent-sdk">the Claude Agent SDK guide</a>. For the MCP server details, see <a href="mcp">MCP</a>.</p>
+<p>For the full three-call pattern this builds on, see <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a>. For wiring this specifically into a Claude-based agent, see <a href="human-approval-claude-agent-sdk">the Claude Agent SDK guide</a>. For the MCP server details, see <a href="mcp">MCP</a>.</p>
 
     <aside class="doc-cta" aria-label="Try Impri">
   <p class="doc-cta-title">Add an approval step to your own agent</p>

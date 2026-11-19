@@ -652,6 +652,7 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Approve Terminal Commands Before Your AI Coding Agent Runs Them: https://impri.dev/docs/approve-ai-coding-agent-terminal-commands
 - Blocking vs Polling for Human Approval in Agents: https://impri.dev/docs/blocking-vs-polling-for-human-approval
 - Build an Audit Trail for AI Agent Actions: https://impri.dev/docs/audit-trail-for-ai-agent-actions
+- Claude Agent SDK Human Approval: canUseTool and defer: https://impri.dev/docs/human-approval-claude-agent-sdk
 - Draft Preview and Diff Review for AI Agent Actions: https://impri.dev/docs/draft-preview-and-diff-review-for-ai-agent-actions
 - Edit AI Agent Drafts Before You Approve Them: https://impri.dev/docs/edit-ai-agent-drafts-before-approving
 - Gate Database Writes From an AI Agent: https://impri.dev/docs/approve-database-writes-from-an-ai-agent
@@ -668,7 +669,6 @@ Use HTTP Request nodes with `Authorization: Bearer im_...`. Webhook trigger for 
 - Human Approval Before an AI Agent Writes to Your Filesystem: https://impri.dev/docs/human-approval-for-ai-agent-file-writes
 - Human Approval Before an Agent Posts to Social Media: https://impri.dev/docs/human-approval-before-an-agent-posts-to-social-media
 - Human Approval Before an Agent Sends SMS: https://impri.dev/docs/human-approval-before-an-agent-sends-sms
-- Human Approval Gates in the Claude Agent SDK: https://impri.dev/docs/human-approval-claude-agent-sdk
 - Human Approval for AI Agencies and Freelancers: https://impri.dev/docs/human-approval-for-ai-agencies
 - Human Approval for AI Agent App Store and Play Store Submissions: https://impri.dev/docs/human-approval-for-ai-agent-app-store-submissions
 - Human Approval for AI Agent Bulk Operations and Mass Updates: https://impri.dev/docs/human-approval-for-ai-agent-bulk-operations

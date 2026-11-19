@@ -6,7 +6,7 @@
   <url><loc>https://impri.dev/docs/account-recovery</loc><lastmod>2026-09-13</lastmod></url>
   <url><loc>https://impri.dev/docs/add-a-kill-switch-to-your-ai-agent</loc><lastmod>2026-07-13</lastmod></url>
   <url><loc>https://impri.dev/docs/adding-an-audit-log-to-your-ai-agent</loc><lastmod>2026-08-20</lastmod></url>
-  <url><loc>https://impri.dev/docs/agentic-ai-safety-patterns</loc><lastmod>2026-11-14</lastmod></url>
+  <url><loc>https://impri.dev/docs/agentic-ai-safety-patterns</loc><lastmod>2026-11-19</lastmod></url>
   <url><loc>https://impri.dev/docs/ai-agent-approval-workflow</loc><lastmod>2026-09-29</lastmod></url>
   <url><loc>https://impri.dev/docs/ai-agent-guardrails-for-real-world-actions</loc><lastmod>2026-07-27</lastmod></url>
   <url><loc>https://impri.dev/docs/alternatives-to-building-your-own-approval-system</loc><lastmod>2026-10-08</lastmod></url>
@@ -41,7 +41,7 @@
   <url><loc>https://impri.dev/docs/approve-ai-coding-agent-terminal-commands</loc><lastmod>2026-10-08</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-ai-generated-content-before-publishing</loc><lastmod>2026-07-20</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-ai-voice-agent-calls-before-they-dial</loc><lastmod>2026-09-17</lastmod></url>
-  <url><loc>https://impri.dev/docs/approve-database-writes-from-an-ai-agent</loc><lastmod>2026-07-19</lastmod></url>
+  <url><loc>https://impri.dev/docs/approve-database-writes-from-an-ai-agent</loc><lastmod>2026-11-19</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-emails-before-your-ai-agent-sends-them</loc><lastmod>2026-07-13</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-multiple-ai-agent-actions-at-once</loc><lastmod>2026-10-24</lastmod></url>
   <url><loc>https://impri.dev/docs/approve-refunds-issued-by-an-ai-support-agent</loc><lastmod>2026-07-21</lastmod></url>
@@ -68,7 +68,7 @@
   <url><loc>https://impri.dev/docs/gemini-cli-human-approval</loc><lastmod>2026-11-09</lastmod></url>
   <url><loc>https://impri.dev/docs/handling-approval-timeouts-and-expiry-in-agents</loc><lastmod>2026-08-23</lastmod></url>
   <url><loc>https://impri.dev/docs/hitl-tools-for-llm-agents-compared</loc><lastmod>2026-11-18</lastmod></url>
-  <url><loc>https://impri.dev/docs/how-to-add-a-review-step-to-an-mcp-tool</loc><lastmod>2026-11-13</lastmod></url>
+  <url><loc>https://impri.dev/docs/how-to-add-a-review-step-to-an-mcp-tool</loc><lastmod>2026-11-19</lastmod></url>
   <url><loc>https://impri.dev/docs/how-to-add-human-approval-to-an-ai-agent</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://impri.dev/docs/how-to-build-a-human-in-the-loop-ai-agent</loc><lastmod>2026-07-13</lastmod></url>
   <url><loc>https://impri.dev/docs/how-to-get-human-approval-into-your-coding-agent</loc><lastmod>2026-09-13</lastmod></url>
@@ -82,14 +82,14 @@
   <url><loc>https://impri.dev/docs/human-approval-before-an-agent-deletes-data</loc><lastmod>2026-07-19</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-before-an-agent-posts-to-social-media</loc><lastmod>2026-07-18</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-before-an-agent-sends-sms</loc><lastmod>2026-07-21</lastmod></url>
-  <url><loc>https://impri.dev/docs/human-approval-before-deploying-code-with-an-agent</loc><lastmod>2026-07-20</lastmod></url>
-  <url><loc>https://impri.dev/docs/human-approval-claude-agent-sdk</loc><lastmod>2026-07-14</lastmod></url>
+  <url><loc>https://impri.dev/docs/human-approval-before-deploying-code-with-an-agent</loc><lastmod>2026-11-19</lastmod></url>
+  <url><loc>https://impri.dev/docs/human-approval-claude-agent-sdk</loc><lastmod>2026-11-19</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-ai-agencies</loc><lastmod>2026-11-14</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-ai-agent-app-store-submissions</loc><lastmod>2026-09-26</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-ai-agent-browser-automation</loc><lastmod>2026-09-08</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-ai-agent-bulk-operations</loc><lastmod>2026-10-02</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-ai-agent-customer-data-exports</loc><lastmod>2026-10-10</lastmod></url>
-  <url><loc>https://impri.dev/docs/human-approval-for-ai-agent-file-writes</loc><lastmod>2026-09-06</lastmod></url>
+  <url><loc>https://impri.dev/docs/human-approval-for-ai-agent-file-writes</loc><lastmod>2026-11-19</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-ai-agent-github-issue-and-comment-automation</loc><lastmod>2026-09-25</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-ai-agent-price-and-inventory-changes</loc><lastmod>2026-09-20</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-ai-agent-secrets-rotation</loc><lastmod>2026-09-13</lastmod></url>
@@ -109,7 +109,7 @@
   <url><loc>https://impri.dev/docs/human-approval-for-fintech-ai-agents</loc><lastmod>2026-08-25</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-jira-ai-agents</loc><lastmod>2026-09-09</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-legal-ai-agents</loc><lastmod>2026-08-25</lastmod></url>
-  <url><loc>https://impri.dev/docs/human-approval-for-multi-agent-systems</loc><lastmod>2026-11-12</lastmod></url>
+  <url><loc>https://impri.dev/docs/human-approval-for-multi-agent-systems</loc><lastmod>2026-11-19</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-openai-agentkit</loc><lastmod>2026-11-13</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-real-estate-ai-agents</loc><lastmod>2026-08-30</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-for-scheduled-ai-scripts</loc><lastmod>2026-07-24</lastmod></url>
@@ -163,7 +163,7 @@
   <url><loc>https://impri.dev/docs/keep-an-ai-agent-in-sandbox-until-a-human-approves-going-live</loc><lastmod>2026-11-13</lastmod></url>
   <url><loc>https://impri.dev/docs/lightweight-alternative-to-workflow-engines-for-hitl</loc><lastmod>2026-11-16</lastmod></url>
   <url><loc>https://impri.dev/docs/maker-checker-pattern-for-ai-agents</loc><lastmod>2026-10-24</lastmod></url>
-  <url><loc>https://impri.dev/docs/mcp-approval-server-for-ai-agents</loc><lastmod>2026-08-09</lastmod></url>
+  <url><loc>https://impri.dev/docs/mcp-approval-server-for-ai-agents</loc><lastmod>2026-11-19</lastmod></url>
   <url><loc>https://impri.dev/docs/mcp</loc><lastmod>2026-10-09</lastmod></url>
   <url><loc>https://impri.dev/docs/mobile-approvals-for-ai-agents</loc><lastmod>2026-08-16</lastmod></url>
   <url><loc>https://impri.dev/docs/notifications</loc><lastmod>2026-10-15</lastmod></url>
@@ -175,7 +175,7 @@
   <url><loc>https://impri.dev/docs/prevent-prompt-injection-from-executing-actions</loc><lastmod>2026-07-27</lastmod></url>
   <url><loc>https://impri.dev/docs/privacy</loc><lastmod>2026-10-15</lastmod></url>
   <url><loc>https://impri.dev/docs/quickstart</loc><lastmod>2026-11-10</lastmod></url>
-  <url><loc>https://impri.dev/docs/rest-api-vs-mcp-for-human-approval</loc><lastmod>2026-11-13</lastmod></url>
+  <url><loc>https://impri.dev/docs/rest-api-vs-mcp-for-human-approval</loc><lastmod>2026-11-19</lastmod></url>
   <url><loc>https://impri.dev/docs/review-ai-agent-decisions-before-they-happen</loc><lastmod>2026-08-01</lastmod></url>
   <url><loc>https://impri.dev/docs/rules</loc><lastmod>2026-11-14</lastmod></url>
   <url><loc>https://impri.dev/docs/safe-autonomy-for-ai-agents</loc><lastmod>2026-11-13</lastmod></url>
@@ -194,9 +194,9 @@
   <url><loc>https://impri.dev/docs/web-push-notifications-for-agent-approvals</loc><lastmod>2026-08-16</lastmod></url>
   <url><loc>https://impri.dev/docs/web-push</loc><lastmod>2026-07-11</lastmod></url>
   <url><loc>https://impri.dev/docs/webhooks</loc><lastmod>2026-11-17</lastmod></url>
-  <url><loc>https://impri.dev/docs/what-happens-when-an-ai-agent-acts-without-approval</loc><lastmod>2026-09-08</lastmod></url>
+  <url><loc>https://impri.dev/docs/what-happens-when-an-ai-agent-acts-without-approval</loc><lastmod>2026-11-19</lastmod></url>
   <url><loc>https://impri.dev/docs/what-is-an-approval-inbox</loc><lastmod>2026-09-01</lastmod></url>
-  <url><loc>https://impri.dev/docs/what-is-an-mcp-approval-server</loc><lastmod>2026-09-03</lastmod></url>
+  <url><loc>https://impri.dev/docs/what-is-an-mcp-approval-server</loc><lastmod>2026-11-19</lastmod></url>
   <url><loc>https://impri.dev/docs/what-is-human-in-the-loop-for-ai-agents</loc><lastmod>2026-09-29</lastmod></url>
   <url><loc>https://impri.dev/docs/when-to-let-an-ai-agent-act-autonomously</loc><lastmod>2026-09-01</lastmod></url>
   <url><loc>https://impri.dev/docs/why-ai-agents-need-approval-gates</loc><lastmod>2026-08-30</lastmod></url>

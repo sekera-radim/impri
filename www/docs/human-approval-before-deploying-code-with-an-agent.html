@@ -283,7 +283,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <p><code>rejected</code> and <code>expired</code> both mean <code>exec.Command</code> never runs — same rule as any gated action. Set <code>expires_in</code> short enough that an approval can&#39;t sit stale past a deploy window; a production deploy approved two days late, after three more commits have merged on top, isn&#39;t the same deploy the reviewer looked at. If the code still needs to ship, push a fresh action against the current commit rather than resurrecting an old approval.</p>
 <hr>
 <h2 id="what-impri-isn39t-doing-here">What Impri isn&#39;t doing here</h2>
-<p>Impri stores the deploy request, notifies a human, and holds the decision — it does not run <code>kubectl apply</code> itself, does not know whether your tests are trustworthy, and does not evaluate whether the diff is actually safe. That judgment stays with whoever&#39;s holding the phone. For the base three-call pattern this builds on, see <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a>; if the agent doing the merging runs on the Claude Agent SDK, see <a href="claude-agent-sdk">that integration guide</a> for wiring the gate into the same process. Once you&#39;re gating deploys, <a href="audit-log">the audit log</a> gives you a record of every production rollout, who approved it, and when — useful the next time someone asks &quot;who shipped this.&quot;</p>
+<p>Impri stores the deploy request, notifies a human, and holds the decision — it does not run <code>kubectl apply</code> itself, does not know whether your tests are trustworthy, and does not evaluate whether the diff is actually safe. That judgment stays with whoever&#39;s holding the phone. For the base three-call pattern this builds on, see <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a>; if the agent doing the merging runs on the Claude Agent SDK, see <a href="human-approval-claude-agent-sdk">the Claude Agent SDK guide</a> for wiring the gate into the same process. Once you&#39;re gating deploys, <a href="audit-log">the audit log</a> gives you a record of every production rollout, who approved it, and when — useful the next time someone asks &quot;who shipped this.&quot;</p>
 <p>Next step: <a href="quickstart">quickstart</a> to get an API key and try this against a staging pipeline first.</p>
 
     <aside class="doc-cta" aria-label="Try Impri">
@@ -299,8 +299,8 @@ pre code.hljs{display:block;overflow-x:auto}
   <p class="doc-related-title">Related guides</p>
   <ul>
 <li><a href="../docs/human-in-the-loop-for-ai-agent-incident-response">Human-in-the-Loop for AI Agent Incident Response</a></li>
-<li><a href="../docs/the-risks-of-autonomous-ai-agents-taking-actions">The Risks of Autonomous AI Agents Taking Actions</a></li>
 <li><a href="../docs/human-in-the-loop-ci-cd-ai-agents">Human-in-the-Loop for CI/CD AI Agents</a></li>
+<li><a href="../docs/the-risks-of-autonomous-ai-agents-taking-actions">The Risks of Autonomous AI Agents Taking Actions</a></li>
 <li><a href="../docs/draft-preview-and-diff-review-for-ai-agent-actions">Draft Preview and Diff Review for AI Agent Actions</a></li>
   </ul>
 </nav>

@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Human Approval Gates in the Claude Agent SDK — Impri Docs</title>
-<meta name="description" content="The Claude Agent SDK lets Claude run shell commands with real autonomy — here's how to gate the risky ones behind a human approval step before they execute.">
+<title>Claude Agent SDK Human Approval: canUseTool and defer — Impri Docs</title>
+<meta name="description" content="The Claude Agent SDK asks your canUseTool callback before a risky tool call, or ends the turn when a hook defers it. Send either to Impri and a person decides.">
 <meta name="theme-color" content="#06070d">
-<meta property="og:title" content="Human Approval Gates in the Claude Agent SDK — Impri Docs">
-<meta property="og:description" content="The Claude Agent SDK lets Claude run shell commands with real autonomy — here's how to gate the risky ones behind a human approval step before they execute.">
+<meta property="og:title" content="Claude Agent SDK Human Approval: canUseTool and defer — Impri Docs">
+<meta property="og:description" content="The Claude Agent SDK asks your canUseTool callback before a risky tool call, or ends the turn when a hook defers it. Send either to Impri and a person decides.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/human-approval-claude-agent-sdk">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/human-approval-claude-agent-sdk">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human Approval Gates in the Claude Agent SDK","description":"The Claude Agent SDK lets Claude run shell commands with real autonomy — here's how to gate the risky ones behind a human approval step before they execute.","url":"https://impri.dev/docs/human-approval-claude-agent-sdk","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Claude Agent SDK Human Approval: canUseTool and defer","description":"The Claude Agent SDK asks your canUseTool callback before a risky tool call, or ends the turn when a hook defers it. Send either to Impri and a person decides.","url":"https://impri.dev/docs/human-approval-claude-agent-sdk","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -150,95 +150,228 @@ pre code.hljs{display:block;overflow-x:auto}
       <span class="bc-sep">/</span>
       <span>Reference</span>
       <span class="bc-sep">/</span>
-      <span>Human Approval Gates in the Claude Agent SDK</span>
+      <span>Claude Agent SDK Human Approval: canUseTool and defer</span>
     </nav>
-    <h1>Human Approval Gates in the Claude Agent SDK</h1>
-<p>The Claude Agent SDK lets Claude run shell commands with real autonomy — here&#39;s how to gate the risky ones behind a human approval step before they execute.</p>
+    <h1>Claude Agent SDK Human Approval: canUseTool and defer</h1>
+<p>The Claude Agent SDK asks your canUseTool callback before a risky tool call, or ends the turn when a hook defers it. Send either to Impri and a person decides.</p>
 <hr>
-<h2 id="where-the-risk-actually-sits">Where the risk actually sits</h2>
-<p>Agents built on the Claude Agent SDK (<code>claude-agent-sdk</code> for Python, <code>@anthropic-ai/claude-agent-sdk</code> for TypeScript) get their capabilities through tools — <code>Bash</code>, file edits, and any MCP servers you attach. Most of what an autonomous coding or ops agent does is safe to let run unattended: reading files, running tests, <code>git diff</code>. A smaller set of calls are not — <code>git push --force</code>, a deploy script, <code>kubectl delete</code>, <code>terraform apply</code>. Those are the ones worth pausing on.</p>
-<p>The SDK already has a hook built for exactly this: <code>can_use_tool</code>, an async callback on <code>ClaudeAgentOptions</code> that fires whenever the CLI&#39;s permission rules would otherwise show an interactive &quot;allow this tool?&quot; prompt. It receives the tool name and its input and returns an allow or deny decision. That&#39;s the same shape as Impri&#39;s push → approve → execute pattern, so wiring the two together is a matter of making the callback block on a real human decision instead of a local prompt.</p>
-<hr>
-<h2 id="gating-bash-calls-with-canusetool">Gating Bash calls with <code>can_use_tool</code></h2>
-<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> os
-<span class="hljs-keyword">import</span> time
-<span class="hljs-keyword">import</span> requests
-<span class="hljs-keyword">from</span> claude_agent_sdk <span class="hljs-keyword">import</span> (
-    ClaudeSDKClient,
-    ClaudeAgentOptions,
-    PermissionResultDeny,
-    ToolPermissionContext,
-)
+<h2 id="where-the-sdk-asks-for-permission">Where the SDK asks for permission</h2>
+<p>When Claude wants a tool, Claude Code checks the call in a fixed order: <code>PreToolUse</code> hooks, deny rules, ask rules, the permission mode, allow rules, and only then your <code>canUseTool</code> callback (<a href="https://code.claude.com/docs/en/agent-sdk/permissions" target="_blank" rel="noopener">permissions docs</a>). A call settled earlier never reaches the callback: a bare tool name in <code>allowedTools</code> such as <code>&quot;Bash&quot;</code>, file edits under <code>acceptEdits</code>, nearly everything under <code>bypassPermissions</code>, and read-only commands like <code>ls</code>. List routine commands as scoped rules (<code>&quot;Bash(npm test *)&quot;</code>) and let the callback see the rest. Which of the two places below fits depends on whether your process can wait.</p>
+<h2 id="option-1-wait-inside-canusetool">Option 1: wait inside <code>canUseTool</code></h2>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { query, <span class="hljs-keyword">type</span> <span class="hljs-title class_">CanUseTool</span>, <span class="hljs-keyword">type</span> <span class="hljs-title class_">HookCallback</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@anthropic-ai/claude-agent-sdk&quot;</span>;
 
-IMPRI_API_KEY = os.environ[<span class="hljs-string">&quot;IMPRI_API_KEY&quot;</span>]
-IMPRI_BASE = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
-GATED_PREFIXES = (<span class="hljs-string">&quot;git push&quot;</span>, <span class="hljs-string">&quot;terraform apply&quot;</span>, <span class="hljs-string">&quot;kubectl delete&quot;</span>, <span class="hljs-string">&quot;rm -rf&quot;</span>)
+<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">IMPRI</span> = process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_BASE_URL</span> ?? <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>;
+<span class="hljs-keyword">const</span> headers = {
+  <span class="hljs-title class_">Authorization</span>: <span class="hljs-string">`Bearer <span class="hljs-subst">${process.env.IMPRI_API_KEY}</span>`</span>,
+  <span class="hljs-string">&quot;Content-Type&quot;</span>: <span class="hljs-string">&quot;application/json&quot;</span>,
+};
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">sleep</span> = (<span class="hljs-params"><span class="hljs-attr">ms</span>: <span class="hljs-built_in">number</span></span>) =&gt; <span class="hljs-keyword">new</span> <span class="hljs-title class_">Promise</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> <span class="hljs-built_in">setTimeout</span>(r, ms));
+<span class="hljs-keyword">const</span> cards = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Map</span>&lt;<span class="hljs-built_in">string</span>, <span class="hljs-built_in">string</span>&gt;(); <span class="hljs-comment">// tool_use id -&gt; Impri action id</span>
 
-<span class="hljs-keyword">async</span> <span class="hljs-keyword">def</span> <span class="hljs-title function_">gate_bash</span>(<span class="hljs-params">tool_name: <span class="hljs-built_in">str</span>, tool_input: <span class="hljs-built_in">dict</span>, context: ToolPermissionContext</span>):
-    <span class="hljs-keyword">if</span> tool_name != <span class="hljs-string">&quot;Bash&quot;</span>:
-        <span class="hljs-keyword">return</span> {<span class="hljs-string">&quot;behavior&quot;</span>: <span class="hljs-string">&quot;allow&quot;</span>}
+<span class="hljs-keyword">const</span> <span class="hljs-attr">askImpri</span>: <span class="hljs-title class_">CanUseTool</span> = <span class="hljs-title function_">async</span> (toolName, input, { signal, toolUseID }) =&gt; {
+  <span class="hljs-keyword">if</span> (toolName !== <span class="hljs-string">&quot;Bash&quot;</span>) {
+    <span class="hljs-keyword">return</span> { <span class="hljs-attr">behavior</span>: <span class="hljs-string">&quot;deny&quot;</span>, <span class="hljs-attr">message</span>: <span class="hljs-string">`<span class="hljs-subst">${toolName}</span> is not enabled for this agent.`</span> };
+  }
+  <span class="hljs-keyword">const</span> command = <span class="hljs-title class_">String</span>(input.<span class="hljs-property">command</span>);
+  <span class="hljs-keyword">const</span> res = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${IMPRI}</span>/v1/actions`</span>, {
+    <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>, headers, signal,
+    <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({
+      <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;shell.exec&quot;</span>,
+      <span class="hljs-attr">title</span>: <span class="hljs-string">`Run: <span class="hljs-subst">${command.replace(/\s+/g, <span class="hljs-string">&quot; &quot;</span>).slice(<span class="hljs-number">0</span>, <span class="hljs-number">80</span>)}</span>`</span>,
+      <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;plain&quot;</span>, <span class="hljs-attr">body</span>: command },
+      <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
+      <span class="hljs-attr">idempotency_key</span>: toolUseID,
+      <span class="hljs-attr">expires_in</span>: <span class="hljs-number">1800</span>,
+    }),
+  });
+  <span class="hljs-keyword">if</span> (!res.<span class="hljs-property">ok</span>) <span class="hljs-keyword">return</span> { <span class="hljs-attr">behavior</span>: <span class="hljs-string">&quot;deny&quot;</span>, <span class="hljs-attr">message</span>: <span class="hljs-string">`Approval inbox unavailable (<span class="hljs-subst">${res.status}</span>).`</span> };
+  <span class="hljs-keyword">const</span> { id } = <span class="hljs-keyword">await</span> res.<span class="hljs-title function_">json</span>();
+  cards.<span class="hljs-title function_">set</span>(toolUseID, id);
 
-    command = <span class="hljs-built_in">str</span>(tool_input.get(<span class="hljs-string">&quot;command&quot;</span>, <span class="hljs-string">&quot;&quot;</span>))
-    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> <span class="hljs-built_in">any</span>(command.startswith(p) <span class="hljs-keyword">for</span> p <span class="hljs-keyword">in</span> GATED_PREFIXES):
-        <span class="hljs-keyword">return</span> {<span class="hljs-string">&quot;behavior&quot;</span>: <span class="hljs-string">&quot;allow&quot;</span>}
+  <span class="hljs-keyword">for</span> (;;) {
+    <span class="hljs-keyword">const</span> action = <span class="hljs-title function_">await</span> (<span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${IMPRI}</span>/v1/actions/<span class="hljs-subst">${id}</span>`</span>, { headers, signal })).<span class="hljs-title function_">json</span>();
+    <span class="hljs-keyword">if</span> (action.<span class="hljs-property">status</span> === <span class="hljs-string">&quot;approved&quot;</span>) {
+      <span class="hljs-comment">// The reviewer may have edited the command before approving.</span>
+      <span class="hljs-keyword">return</span> { <span class="hljs-attr">behavior</span>: <span class="hljs-string">&quot;allow&quot;</span>, <span class="hljs-attr">updatedInput</span>: { ...input, <span class="hljs-attr">command</span>: action.<span class="hljs-property">decision</span>.<span class="hljs-property">final_preview</span>.<span class="hljs-property">body</span> } };
+    }
+    <span class="hljs-keyword">if</span> (action.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;pending&quot;</span>) {
+      <span class="hljs-keyword">return</span> { <span class="hljs-attr">behavior</span>: <span class="hljs-string">&quot;deny&quot;</span>, <span class="hljs-attr">message</span>: <span class="hljs-string">`Not run: the reviewer&#x27;s answer was &quot;<span class="hljs-subst">${action.status}</span>&quot;.`</span> };
+    }
+    <span class="hljs-keyword">await</span> <span class="hljs-title function_">sleep</span>(<span class="hljs-number">3000</span>);
+  }
+};
 
-    resp = requests.post(
-        <span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions&quot;</span>,
-        headers={<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{IMPRI_API_KEY}</span>&quot;</span>},
-        json={
-            <span class="hljs-string">&quot;kind&quot;</span>: <span class="hljs-string">&quot;shell.exec&quot;</span>,
-            <span class="hljs-string">&quot;title&quot;</span>: <span class="hljs-string">f&quot;Run: <span class="hljs-subst">{command[:<span class="hljs-number">80</span>]}</span>&quot;</span>,
-            <span class="hljs-string">&quot;preview&quot;</span>: {<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: <span class="hljs-string">f&quot;```bash\n<span class="hljs-subst">{command}</span>\n```&quot;</span>},
-            <span class="hljs-string">&quot;expires_in&quot;</span>: <span class="hljs-number">1800</span>,
-        },
-    )
-    action_id = resp.json()[<span class="hljs-string">&quot;id&quot;</span>]
+<span class="hljs-comment">// Close the card with what actually happened.</span>
+<span class="hljs-keyword">const</span> <span class="hljs-attr">report</span>: <span class="hljs-title class_">HookCallback</span> = <span class="hljs-title function_">async</span> (input, toolUseID) =&gt; {
+  <span class="hljs-keyword">const</span> id = toolUseID &amp;&amp; cards.<span class="hljs-title function_">get</span>(toolUseID);
+  <span class="hljs-keyword">if</span> (id &amp;&amp; input.<span class="hljs-property">hook_event_name</span> === <span class="hljs-string">&quot;PostToolUse&quot;</span>) {
+    <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${IMPRI}</span>/v1/actions/<span class="hljs-subst">${id}</span>/result`</span>, {
+      <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>, headers,
+      <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({ <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span>, <span class="hljs-attr">detail</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>(input.<span class="hljs-property">tool_response</span>).<span class="hljs-title function_">slice</span>(<span class="hljs-number">0</span>, <span class="hljs-number">2000</span>) }),
+    });
+  }
+  <span class="hljs-keyword">return</span> {};
+};
 
-    <span class="hljs-keyword">while</span> <span class="hljs-literal">True</span>:
-        result = requests.get(
-            <span class="hljs-string">f&quot;<span class="hljs-subst">{IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>&quot;</span>,
-            headers={<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{IMPRI_API_KEY}</span>&quot;</span>},
-        ).json()
-        <span class="hljs-keyword">if</span> result[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;pending&quot;</span>:
-            <span class="hljs-keyword">break</span>
-        time.sleep(<span class="hljs-number">5</span>)
-
-    <span class="hljs-keyword">if</span> result[<span class="hljs-string">&quot;status&quot;</span>] == <span class="hljs-string">&quot;approved&quot;</span>:
-        <span class="hljs-keyword">return</span> {<span class="hljs-string">&quot;behavior&quot;</span>: <span class="hljs-string">&quot;allow&quot;</span>}
-
-    <span class="hljs-keyword">return</span> PermissionResultDeny(
-        behavior=<span class="hljs-string">&quot;deny&quot;</span>,
-        message=<span class="hljs-string">f&quot;Command not approved (status: <span class="hljs-subst">{result[<span class="hljs-string">&#x27;status&#x27;</span>]}</span>).&quot;</span>,
-        interrupt=<span class="hljs-literal">False</span>,
-    )</code></pre></div>
-<p>Wire it in:</p>
-<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">async</span> <span class="hljs-keyword">def</span> <span class="hljs-title function_">main</span>():
-    options = ClaudeAgentOptions(can_use_tool=gate_bash)
-    <span class="hljs-keyword">async</span> <span class="hljs-keyword">with</span> ClaudeSDKClient(options) <span class="hljs-keyword">as</span> client:
-        <span class="hljs-keyword">await</span> client.connect(prompt=<span class="hljs-string">&quot;Cut the release branch and deploy it to staging.&quot;</span>)
-        <span class="hljs-keyword">async</span> <span class="hljs-keyword">for</span> msg <span class="hljs-keyword">in</span> client.receive_response():
-            <span class="hljs-built_in">print</span>(msg)
-
-anyio.run(main)</code></pre></div>
-<p>Claude keeps reasoning and calling tools normally. When it proposes a <code>Bash</code> call matching a gated prefix, <code>gate_bash</code> blocks that one call on an Impri decision before the SDK ever runs it. Everything else — reads, tests, non-matching commands — passes straight through.</p>
-<hr>
-<h2 id="why-not-editable-here">Why not <code>editable</code> here</h2>
-<p>Every other Impri REST integration in these docs sets <code>editable: [&quot;preview.body&quot;]</code> so a reviewer can fix a draft before approving. Skip it for this pattern. <code>can_use_tool</code> only returns allow or deny — it has no path to rewrite <code>tool_input[&quot;command&quot;]</code> with an edited version, so an edited preview would silently have no effect on what actually runs. If you want reviewers to adjust a command, do it upstream of the shell string (have Claude regenerate it with feedback) and gate the result, rather than editing the executed text after the fact.</p>
-<hr>
-<h2 id="canusetool-vs-a-pretooluse-hook"><code>can_use_tool</code> vs a <code>PreToolUse</code> hook</h2>
-<p><code>can_use_tool</code> only fires for calls that would have hit an interactive permission prompt — anything already covered by <code>allowed_tools</code>, <code>permission_mode</code>, or a <code>permissions.allow</code> rule never reaches it. If you need to observe or gate every tool call unconditionally, use a <code>PreToolUse</code> hook via the <code>hooks</code> option instead; note that a hook returning an allow decision skips <code>can_use_tool</code> for that call, so don&#39;t register both on the same tool without thinking through the order.</p>
-<hr>
-<h2 id="security-notes">Security notes</h2>
-<p><strong>Rate limit</strong>: <code>POST /v1/actions</code> is capped at 60 requests per minute per key. An agent looping on a failing gated command will hit this before it hits anything more serious — treat repeated denials as a signal to stop, not retry harder.</p>
-<p><strong>Scope</strong>: a key used only for this gate needs the <code>actions</code> scope. Don&#39;t reuse an <code>admin</code>-scoped key for an agent process.</p>
-<p><strong>Untrusted input</strong>: if <code>command</code> was built from content Claude read off the web or a ticket, treat that content as data when constructing the preview shown to the reviewer — don&#39;t let it masquerade as part of your own instructions.</p>
-<hr>
-<h2 id="next-step">Next step</h2>
+<span class="hljs-keyword">for</span> <span class="hljs-title function_">await</span> (<span class="hljs-keyword">const</span> message <span class="hljs-keyword">of</span> <span class="hljs-title function_">query</span>({
+  <span class="hljs-attr">prompt</span>: <span class="hljs-string">&quot;Tag the release and deploy it to staging.&quot;</span>,
+  <span class="hljs-attr">options</span>: {
+    <span class="hljs-attr">canUseTool</span>: askImpri,
+    <span class="hljs-attr">allowedTools</span>: [<span class="hljs-string">&quot;Bash(npm test *)&quot;</span>], <span class="hljs-comment">// routine commands skip the inbox</span>
+    <span class="hljs-attr">hooks</span>: { <span class="hljs-title class_">PostToolUse</span>: [{ <span class="hljs-attr">matcher</span>: <span class="hljs-string">&quot;Bash&quot;</span>, <span class="hljs-attr">hooks</span>: [report] }] },
+  },
+})) {
+  <span class="hljs-keyword">if</span> (message.<span class="hljs-property">type</span> === <span class="hljs-string">&quot;result&quot;</span>) <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(message.<span class="hljs-property">subtype</span>, message.<span class="hljs-property">stop_reason</span>);
+}</code></pre></div>
+<p>Each call that needs permission becomes a card in Impri with the exact command as an editable preview. The tool use ID is the idempotency key, so a retried request finds the same card. The callback polls until someone answers:</p>
 <ul>
-<li><a href="quickstart">Quickstart</a> — get an API key and push your first action</li>
-<li><a href="claude-agent-sdk">Claude Agent SDK TypeScript integration</a> — a different approach: wrapping individual tool definitions instead of the permission hook</li>
-<li><a href="mcp">MCP server</a> — if you&#39;d rather expose the gate as an MCP tool than call the REST API directly from the hook</li>
+<li><strong>Approved</strong>: the callback returns <code>allow</code> with <code>updatedInput</code>. If the reviewer edited the command, the edited one runs. Claude isn&#39;t told it changed; it only sees the output.</li>
+<li><strong>Rejected or expired</strong>: <code>deny</code> with a message, which Claude reads as the tool&#39;s error.</li>
+<li><strong>Impri unreachable</strong>: a denial. The SDK also turned an error thrown inside the callback into a denial.</li>
 </ul>
+<p>The <code>PostToolUse</code> hook reports <code>executed</code>, so the card shows what ran. The callback may stay pending as long as it needs. Python works the same way with <code>can_use_tool</code> and <code>PermissionResultAllow(updated_input=...)</code>, but needs streaming input and a dummy <code>PreToolUse</code> hook that keeps the stream open (<a href="https://code.claude.com/docs/en/agent-sdk/user-input" target="_blank" rel="noopener">user input docs</a>).</p>
+<h2 id="option-2-let-the-process-exit-with-defer">Option 2: let the process exit with <code>defer</code></h2>
+<p>When the answer may take hours, don&#39;t hold a process open. A <code>PreToolUse</code> hook can return <code>defer</code>: the tool doesn&#39;t run, the turn ends with a result whose <code>stop_reason</code> is <code>tool_deferred</code>, and the session stays on disk, 30 days by default (<a href="https://code.claude.com/docs/en/hooks#defer-a-tool-call-for-later" target="_blank" rel="noopener">hooks docs</a>). On resume, Claude Code sends the same call through the hook again, and this time the hook finds a decision.</p>
+<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { query, <span class="hljs-keyword">type</span> <span class="hljs-title class_">HookCallback</span>, <span class="hljs-keyword">type</span> <span class="hljs-title class_">SDKUserMessage</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@anthropic-ai/claude-agent-sdk&quot;</span>;
+<span class="hljs-keyword">import</span> { readFileSync, rmSync, writeFileSync } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;node:fs&quot;</span>;
+
+<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">IMPRI</span> = process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_BASE_URL</span> ?? <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>;
+<span class="hljs-keyword">const</span> headers = {
+  <span class="hljs-title class_">Authorization</span>: <span class="hljs-string">`Bearer <span class="hljs-subst">${process.env.IMPRI_API_KEY}</span>`</span>,
+  <span class="hljs-string">&quot;Content-Type&quot;</span>: <span class="hljs-string">&quot;application/json&quot;</span>,
+};
+<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">RISKY</span> = <span class="hljs-regexp">/^\s*(git push|kubectl|terraform apply|helm|\.\/deploy)/</span>;
+
+<span class="hljs-keyword">let</span> busy = <span class="hljs-literal">false</span>; <span class="hljs-comment">// a deferred turn can carry only one pending call</span>
+
+<span class="hljs-keyword">const</span> <span class="hljs-attr">gate</span>: <span class="hljs-title class_">HookCallback</span> = <span class="hljs-title function_">async</span> (input) =&gt; {
+  <span class="hljs-keyword">if</span> (input.<span class="hljs-property">hook_event_name</span> !== <span class="hljs-string">&quot;PreToolUse&quot;</span>) <span class="hljs-keyword">return</span> {};
+  <span class="hljs-keyword">const</span> toolInput = input.<span class="hljs-property">tool_input</span> <span class="hljs-keyword">as</span> { <span class="hljs-attr">command</span>: <span class="hljs-built_in">string</span> };
+  <span class="hljs-keyword">if</span> (!<span class="hljs-variable constant_">RISKY</span>.<span class="hljs-title function_">test</span>(toolInput.<span class="hljs-property">command</span>)) <span class="hljs-keyword">return</span> {}; <span class="hljs-comment">// normal permission flow</span>
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">decide</span> = (<span class="hljs-params"><span class="hljs-attr">permissionDecision</span>: <span class="hljs-string">&quot;allow&quot;</span> | <span class="hljs-string">&quot;deny&quot;</span> | <span class="hljs-string">&quot;defer&quot;</span>, extra = {}</span>) =&gt; ({
+    <span class="hljs-attr">hookSpecificOutput</span>: { <span class="hljs-attr">hookEventName</span>: <span class="hljs-string">&quot;PreToolUse&quot;</span> <span class="hljs-keyword">as</span> <span class="hljs-keyword">const</span>, permissionDecision, ...extra },
+  });
+  <span class="hljs-keyword">if</span> (busy) {
+    <span class="hljs-keyword">return</span> <span class="hljs-title function_">decide</span>(<span class="hljs-string">&quot;deny&quot;</span>, { <span class="hljs-attr">permissionDecisionReason</span>: <span class="hljs-string">&quot;Another command is waiting for approval. Run one risky command at a time.&quot;</span> });
+  }
+  busy = <span class="hljs-literal">true</span>;
+
+  <span class="hljs-keyword">try</span> {
+    <span class="hljs-comment">// The resumed session replays the same tool call, so the same idempotency</span>
+    <span class="hljs-comment">// key finds the same card instead of creating a second one.</span>
+    <span class="hljs-keyword">const</span> created = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${IMPRI}</span>/v1/actions`</span>, {
+      <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>, headers,
+      <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({
+        <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;shell.exec&quot;</span>,
+        <span class="hljs-attr">title</span>: <span class="hljs-string">`Run: <span class="hljs-subst">${toolInput.command.replace(/\s+/g, <span class="hljs-string">&quot; &quot;</span>).slice(<span class="hljs-number">0</span>, <span class="hljs-number">80</span>)}</span>`</span>,
+        <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;plain&quot;</span>, <span class="hljs-attr">body</span>: toolInput.<span class="hljs-property">command</span> },
+        <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
+        <span class="hljs-attr">idempotency_key</span>: input.<span class="hljs-property">tool_use_id</span>,
+        <span class="hljs-attr">expires_in</span>: <span class="hljs-number">86400</span>,
+      }),
+    });
+    <span class="hljs-keyword">if</span> (!created.<span class="hljs-property">ok</span>) <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Error</span>(<span class="hljs-string">`HTTP <span class="hljs-subst">${created.status}</span>`</span>);
+    <span class="hljs-keyword">const</span> { id } = <span class="hljs-keyword">await</span> created.<span class="hljs-title function_">json</span>();
+    <span class="hljs-keyword">const</span> action = <span class="hljs-title function_">await</span> (<span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${IMPRI}</span>/v1/actions/<span class="hljs-subst">${id}</span>`</span>, { headers })).<span class="hljs-title function_">json</span>();
+
+    <span class="hljs-keyword">if</span> (action.<span class="hljs-property">status</span> === <span class="hljs-string">&quot;pending&quot;</span>) <span class="hljs-keyword">return</span> <span class="hljs-title function_">decide</span>(<span class="hljs-string">&quot;defer&quot;</span>);
+    busy = <span class="hljs-literal">false</span>;
+    <span class="hljs-keyword">if</span> (action.<span class="hljs-property">status</span> === <span class="hljs-string">&quot;approved&quot;</span>) {
+      <span class="hljs-keyword">return</span> <span class="hljs-title function_">decide</span>(<span class="hljs-string">&quot;allow&quot;</span>, { <span class="hljs-attr">updatedInput</span>: { ...toolInput, <span class="hljs-attr">command</span>: action.<span class="hljs-property">decision</span>.<span class="hljs-property">final_preview</span>.<span class="hljs-property">body</span> } });
+    }
+    <span class="hljs-keyword">return</span> <span class="hljs-title function_">decide</span>(<span class="hljs-string">&quot;deny&quot;</span>, { <span class="hljs-attr">permissionDecisionReason</span>: <span class="hljs-string">`Not run: the reviewer&#x27;s answer was &quot;<span class="hljs-subst">${action.status}</span>&quot;.`</span> });
+  } <span class="hljs-keyword">catch</span> (err) {
+    busy = <span class="hljs-literal">false</span>; <span class="hljs-comment">// fail closed, whatever the permission mode</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-title function_">decide</span>(<span class="hljs-string">&quot;deny&quot;</span>, { <span class="hljs-attr">permissionDecisionReason</span>: <span class="hljs-string">`Not run: approval inbox unreachable (<span class="hljs-subst">${err}</span>).`</span> });
+  }
+};
+
+<span class="hljs-comment">// `start`: run until a risky call waits for review, save the session, exit.</span>
+<span class="hljs-comment">// `resume`: run after the decision; Claude Code checks the same call again.</span>
+<span class="hljs-comment">// Resume with no new message, and keep the input open until the result:</span>
+<span class="hljs-comment">// a prompt (even &quot;&quot;) or a closed input makes Claude Code drop the pending call.</span>
+<span class="hljs-keyword">let</span> done!: <span class="hljs-function">() =&gt;</span> <span class="hljs-built_in">void</span>;
+<span class="hljs-keyword">const</span> finished = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Promise</span>&lt;<span class="hljs-built_in">void</span>&gt;(<span class="hljs-function">(<span class="hljs-params">resolve</span>) =&gt;</span> (done = resolve));
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span>* <span class="hljs-title function_">noNewMessage</span>(): <span class="hljs-title class_">AsyncGenerator</span>&lt;<span class="hljs-title class_">SDKUserMessage</span>&gt; { <span class="hljs-keyword">await</span> finished; }
+
+<span class="hljs-keyword">const</span> resume = process.<span class="hljs-property">argv</span>[<span class="hljs-number">2</span>] === <span class="hljs-string">&quot;resume&quot;</span> ? <span class="hljs-title function_">readFileSync</span>(<span class="hljs-string">&quot;session.txt&quot;</span>, <span class="hljs-string">&quot;utf8&quot;</span>) : <span class="hljs-literal">undefined</span>;
+<span class="hljs-keyword">for</span> <span class="hljs-title function_">await</span> (<span class="hljs-keyword">const</span> message <span class="hljs-keyword">of</span> <span class="hljs-title function_">query</span>({
+  <span class="hljs-attr">prompt</span>: resume ? <span class="hljs-title function_">noNewMessage</span>() : <span class="hljs-string">&quot;Tag the release and deploy it to staging.&quot;</span>,
+  <span class="hljs-attr">options</span>: { resume, <span class="hljs-attr">hooks</span>: { <span class="hljs-title class_">PreToolUse</span>: [{ <span class="hljs-attr">matcher</span>: <span class="hljs-string">&quot;Bash&quot;</span>, <span class="hljs-attr">hooks</span>: [gate] }] } },
+})) {
+  <span class="hljs-keyword">if</span> (message.<span class="hljs-property">type</span> !== <span class="hljs-string">&quot;result&quot;</span>) <span class="hljs-keyword">continue</span>;
+  <span class="hljs-keyword">if</span> (message.<span class="hljs-property">stop_reason</span> === <span class="hljs-string">&quot;tool_deferred&quot;</span>) <span class="hljs-title function_">writeFileSync</span>(<span class="hljs-string">&quot;session.txt&quot;</span>, message.<span class="hljs-property">session_id</span>);
+  <span class="hljs-keyword">else</span> <span class="hljs-title function_">rmSync</span>(<span class="hljs-string">&quot;session.txt&quot;</span>, { <span class="hljs-attr">force</span>: <span class="hljs-literal">true</span> });
+  <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(message.<span class="hljs-property">subtype</span>, message.<span class="hljs-property">stop_reason</span>);
+  <span class="hljs-title function_">done</span>();
+}</code></pre></div>
+<p>Run <code>start</code> from your job and <code>resume</code> once the card is decided, for example from Impri&#39;s webhook: add a <code>callback_url</code> and Impri posts to it on approval, rejection or expiry (<a href="webhooks">webhooks</a>). Three details come from runs that went wrong:</p>
+<ul>
+<li><strong>Resume with no new message, and keep the input open until the result.</strong> With <code>prompt: &quot;&quot;</code>, or an empty input stream that closed at once, the pending call got an error result (&quot;The user doesn&#39;t want to take this action right now&quot;) without the hook being called, and the call was gone. With the input held open, Claude Code ran the hook again for the same tool use ID.</li>
+<li><strong>One pending call per turn.</strong> The hooks docs say <code>defer</code> is honored only for a single tool call in a turn and ignored otherwise. In our run it wasn&#39;t ignored: two risky calls in one assistant message both got cards and the turn ended deferred, but after we approved both, only one ran and the other disappeared from the transcript without a result. The <code>busy</code> flag denies the second call with a reason Claude can act on.</li>
+<li><strong>Fail closed in the hook.</strong> A hook that throws makes no decision. In the default mode the call was then denied, but under <code>bypassPermissions</code>, with Impri stopped, the deploy ran. The <code>catch</code> makes any error a denial.</li>
+</ul>
+<p>Pass the same options on every resume: Claude Code doesn&#39;t restore a stored permission mode.</p>
+<h2 id="what-we-ran">What we ran</h2>
+<p>On 2026-11-19, with <code>@anthropic-ai/claude-agent-sdk</code> 0.3.328 (Claude Code 2.1.328) against a local Impri server. The model was a local stand-in for the Messages API returning scripted <code>Bash</code> calls; the SDK, Claude Code and its permission flow were real. Every <code>start</code> and <code>resume</code> was a separate process.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>What ran</th>
+<th>What Claude got back</th>
+<th>Card</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Option 1, approved with an edit</td>
+<td>the edited command</td>
+<td>the command&#39;s output</td>
+<td><code>executed</code></td>
+</tr>
+<tr>
+<td>Option 1, rejected</td>
+<td>nothing</td>
+<td><code>Not run: the reviewer&#39;s answer was &quot;rejected&quot;.</code></td>
+<td><code>rejected</code></td>
+</tr>
+<tr>
+<td>Option 1, <code>npm test</code> under the allow rule</td>
+<td><code>npm test</code></td>
+<td>its output</td>
+<td>none created</td>
+</tr>
+<tr>
+<td>Option 2, resumed while pending</td>
+<td>nothing</td>
+<td>nothing yet: the turn deferred again</td>
+<td>same card, <code>pending</code></td>
+</tr>
+<tr>
+<td>Option 2, approved with an edit, then resumed</td>
+<td>the edited command</td>
+<td>the command&#39;s output</td>
+<td><code>approved</code></td>
+</tr>
+<tr>
+<td>Option 2, rejected, then resumed</td>
+<td>nothing</td>
+<td>the reason, prefixed <code>PreToolUse:Bash hook error:</code></td>
+<td><code>rejected</code></td>
+</tr>
+<tr>
+<td>Impri unreachable, either option</td>
+<td>nothing</td>
+<td>a denial</td>
+<td>none</td>
+</tr>
+</tbody></table>
+</div>
+<p>Option 2 leaves the card at <code>approved</code>; add the <code>PostToolUse</code> report from Option 1 to mark it <code>executed</code>.</p>
+<h2 id="which-one-to-use">Which one to use</h2>
+<p>Option 1 when the agent&#39;s process stays up during the review. Option 2 for jobs, serverless functions and anything that restarts: nothing waits in memory, and the reviewer can answer the next morning. An agent key needs only the <code>actions</code> scope; <code>POST /v1/actions</code> allows 60 requests per minute per key. Impri holds the decision and never runs the command: Claude Code does, and the gate covers only calls that reach your callback or hook.</p>
+<h2 id="next-step">Next step</h2>
+<p><a href="https://app.impri.dev/?signup=1" target="_blank" rel="noopener">Start free on Impri Cloud</a>, create an API key and run Option 1 with a harmless command: the card appears in your inbox. To keep everything on your own machine, follow <a href="self-hosting">Self-hosting</a> and set <code>IMPRI_BASE_URL=http://localhost:8484</code>. On the Anthropic Messages API with your own tool loop instead of the Agent SDK? The <a href="claude-agent-sdk">tool_use wrapper</a> gates each call there.</p>
 
     <aside class="doc-cta" aria-label="Try Impri">
   <p class="doc-cta-title">Add an approval step to your own agent</p>
@@ -253,9 +386,9 @@ anyio.run(main)</code></pre></div>
   <p class="doc-related-title">Related guides</p>
   <ul>
 <li><a href="../docs/human-in-the-loop-openai-agents-sdk">Human-in-the-Loop for the OpenAI Agents SDK</a></li>
-<li><a href="../docs/human-approval-for-claude-cowork-agent">Human Approval for Claude Cowork Browser Agent Actions</a></li>
 <li><a href="../docs/human-approval-vercel-ai-sdk">Human Approval for the Vercel AI SDK</a></li>
 <li><a href="../docs/human-in-the-loop-cloudflare-agents">Human-in-the-Loop for Cloudflare Agents SDK</a></li>
+<li><a href="../docs/human-approval-for-claude-cowork-agent">Human Approval for Claude Cowork Browser Agent Actions</a></li>
   </ul>
 </nav>
   </main>
@@ -327,11 +460,11 @@ anyio.run(main)</code></pre></div>
   <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#where-the-risk-actually-sits">Where the risk actually sits</a></li>
-<li class="ptoc-h2"><a href="#gating-bash-calls-with-canusetool">Gating Bash calls with can_use_tool</a></li>
-<li class="ptoc-h2"><a href="#why-not-editable-here">Why not editable here</a></li>
-<li class="ptoc-h2"><a href="#canusetool-vs-a-pretooluse-hook">can_use_tool vs a PreToolUse hook</a></li>
-<li class="ptoc-h2"><a href="#security-notes">Security notes</a></li>
+<ul><li class="ptoc-h2"><a href="#where-the-sdk-asks-for-permission">Where the SDK asks for permission</a></li>
+<li class="ptoc-h2"><a href="#option-1-wait-inside-canusetool">Option 1: wait inside canUseTool</a></li>
+<li class="ptoc-h2"><a href="#option-2-let-the-process-exit-with-defer">Option 2: let the process exit with defer</a></li>
+<li class="ptoc-h2"><a href="#what-we-ran">What we ran</a></li>
+<li class="ptoc-h2"><a href="#which-one-to-use">Which one to use</a></li>
 <li class="ptoc-h2"><a href="#next-step">Next step</a></li></ul>
 </nav>
   </aside>

@@ -256,7 +256,7 @@ impri_report_result(action_id=&quot;act_482&quot;, status=&quot;executed&quot;)<
 <hr>
 <h2 id="the-part-that-doesn39t-change-either-way">The part that doesn&#39;t change either way</h2>
 <p>Regardless of transport, the gate only holds if the wrapped action truly has no other path to execution. An agent that can call the GitHub merge API directly, with its own token, can route around Impri entirely — REST or MCP. The chokepoint has to be the code path, not the request format. See <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a> for the full reasoning on that boundary, and the <a href="mcp">MCP integration guide</a> for server setup details beyond this example.</p>
-<p>If you&#39;re building specifically on the Claude Agent SDK, <a href="claude-agent-sdk">the dedicated guide</a> covers wrapping tool executors so the approved decision is the only path to the side effect, not just an extra step the model could skip.</p>
+<p>If you&#39;re building specifically on the Claude Agent SDK, <a href="human-approval-claude-agent-sdk">the dedicated guide</a> gates tool calls in the SDK&#39;s own permission callback, so the check sits in the runtime, not in a step the model could skip.</p>
 <p>Next: <a href="quickstart">quickstart</a> to get an API key and try either path in under five minutes.</p>
 
     <aside class="doc-cta" aria-label="Try Impri">

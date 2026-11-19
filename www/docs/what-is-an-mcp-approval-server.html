@@ -173,7 +173,7 @@ impri_report_result(action_id, status)
 <p>Crucially, none of these three tools performs the underlying action. <code>impri_push_action</code> doesn&#39;t send anything — it stores a proposal. The agent (or the code wrapping the agent) is still the one that calls the real <code>send_email</code> or <code>git push</code>, and it only does so after <code>impri_await_decision</code> returns <code>&quot;approved&quot;</code>. The approval server&#39;s job ends at the decision; execution is always the caller&#39;s responsibility.</p>
 <hr>
 <h2 id="example-gating-a-coding-agent39s-git-push">Example: gating a coding agent&#39;s git push</h2>
-<p>Say you&#39;re running an autonomous coding agent via the <a href="claude-agent-sdk">Claude Agent SDK</a> that can commit and push to a repo. You don&#39;t want it pushing to <code>main</code> unattended. Wrap the push tool so the approval server&#39;s tools sit in front of it:</p>
+<p>Say you&#39;re running an autonomous coding agent via the <a href="human-approval-claude-agent-sdk">Claude Agent SDK</a> that can commit and push to a repo. You don&#39;t want it pushing to <code>main</code> unattended. Wrap the push tool so the approval server&#39;s tools sit in front of it:</p>
 <div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">Client</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;@modelcontextprotocol/sdk/client/index.js&quot;</span>;
 <span class="hljs-keyword">import</span> { execSync } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;node:child_process&quot;</span>;
 
