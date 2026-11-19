@@ -98,4 +98,4 @@ This only holds if the approved path is the agent's *only* route to the side eff
 
 ## Next step
 
-If you're integrating this for the first time, [how to add human approval to an AI agent](how-to-add-human-approval-to-an-ai-agent.md) covers the full push/poll/execute pattern in more depth, including MCP for agents running in Claude Code or Claude Desktop. For agents built on the [Claude Agent SDK](claude-agent-sdk.md) specifically, the same gate wraps around any tool call, not just email.
+If you're integrating this for the first time, [how to add human approval to an AI agent](how-to-add-human-approval-to-an-ai-agent.md) covers the full push/poll/execute pattern in more depth, including MCP for agents running in Claude Code or Claude Desktop. For agents built on the [Claude Agent SDK](human-approval-claude-agent-sdk.md) specifically, the same gate wraps around any tool call, not just email.
