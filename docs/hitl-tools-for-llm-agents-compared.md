@@ -19,7 +19,7 @@ Framework interrupts, workflow-engine nodes, general approval software, and dedi
 
 ## Framework-native interrupts
 
-If you're building on LangGraph, CrewAI, the OpenAI Agents SDK ([tools marked `needs_approval`](human-in-the-loop-openai-agents-sdk.md)), Pydantic AI ([tools marked `requires_approval`](human-in-the-loop-pydantic-ai.md)), or a similar framework, there's often a built-in way to pause a run and wait for external input. LangGraph's `interrupt()` is the clearest example: it suspends graph execution at a node and resumes when you feed a value back in.
+If you're building on LangGraph, CrewAI, the OpenAI Agents SDK ([tools marked `needs_approval`](human-in-the-loop-openai-agents-sdk.md)), Pydantic AI ([tools marked `requires_approval`](human-in-the-loop-pydantic-ai.md)), LlamaIndex ([`ctx.wait_for_event` inside a tool](human-in-the-loop-llamaindex-agents.md)), or a similar framework, there's often a built-in way to pause a run and wait for external input. LangGraph's `interrupt()` is the clearest example: it suspends graph execution at a node and resumes when you feed a value back in.
 
 ```typescript
 // LangGraph-style interrupt, illustrative
