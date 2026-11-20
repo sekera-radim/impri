@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Human-in-the-Loop for LlamaIndex Agents — Impri Docs</title>
-<meta name="description" content="LlamaIndex agents that write back to your knowledge base need a human check first — gate the publish step with Impri before any page is overwritten.">
+<title>LlamaIndex Human-in-the-Loop: Pause a Tool for Approval — Impri Docs</title>
+<meta name="description" content="LlamaIndex pauses a tool with ctx.wait_for_event until a HumanResponseEvent arrives. Open an Impri card there, save the run, and resume it after the decision.">
 <meta name="theme-color" content="#06070d">
-<meta property="og:title" content="Human-in-the-Loop for LlamaIndex Agents — Impri Docs">
-<meta property="og:description" content="LlamaIndex agents that write back to your knowledge base need a human check first — gate the publish step with Impri before any page is overwritten.">
+<meta property="og:title" content="LlamaIndex Human-in-the-Loop: Pause a Tool for Approval — Impri Docs">
+<meta property="og:description" content="LlamaIndex pauses a tool with ctx.wait_for_event until a HumanResponseEvent arrives. Open an Impri card there, save the run, and resume it after the decision.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/human-in-the-loop-llamaindex-agents">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/human-in-the-loop-llamaindex-agents">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human-in-the-Loop for LlamaIndex Agents","description":"LlamaIndex agents that write back to your knowledge base need a human check first — gate the publish step with Impri before any page is overwritten.","url":"https://impri.dev/docs/human-in-the-loop-llamaindex-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"LlamaIndex Human-in-the-Loop: Pause a Tool for Approval","description":"LlamaIndex pauses a tool with ctx.wait_for_event until a HumanResponseEvent arrives. Open an Impri card there, save the run, and resume it after the decision.","url":"https://impri.dev/docs/human-in-the-loop-llamaindex-agents","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -150,111 +150,219 @@ pre code.hljs{display:block;overflow-x:auto}
       <span class="bc-sep">/</span>
       <span>Reference</span>
       <span class="bc-sep">/</span>
-      <span>Human-in-the-Loop for LlamaIndex Agents</span>
+      <span>LlamaIndex Human-in-the-Loop: Pause a Tool for Approval</span>
     </nav>
-    <h1>Human-in-the-Loop for LlamaIndex Agents</h1>
-<p>LlamaIndex agents that write back to your knowledge base need a human check first — gate the publish step with Impri before any page is overwritten.</p>
+    <h1>LlamaIndex Human-in-the-Loop: Pause a Tool for Approval</h1>
+<p>LlamaIndex pauses a tool with ctx.wait_for_event until a HumanResponseEvent arrives. Open an Impri card there, save the run, and resume it after the decision.</p>
 <hr>
-<h2 id="when-agentic-rag-wants-to-write-back">When agentic RAG wants to write back</h2>
-<p>Most LlamaIndex agents are read-only: they retrieve chunks from an index and answer a question. Give the same agent a tool that can also <em>write</em> — update a wiki page, correct a stale runbook, patch a Confluence doc — and the retrieval half stays safe while the write half needs a gate. The agent noticing a doc is wrong is useful; the agent silently overwriting it is not.</p>
-<p>A concrete version: a support-docs agent indexed over your internal wiki. When a user asks a question and the agent finds the matching page is out of date, it should draft the correction and hand it to a human, not publish over the source of truth on its own judgment.</p>
-<hr>
-<h2 id="gate-the-write-with-a-functiontool">Gate the write with a FunctionTool</h2>
-<p>Keep your existing retrieval tool unrestricted — reads have no side effect — and add a second tool that only ever proposes a change. The propose → poll → publish sequence is the same one used everywhere in Impri, wrapped here in TypeScript for LlamaIndex.TS:</p>
-<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">FunctionTool</span>, <span class="hljs-title class_">OpenAIAgent</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;llamaindex&quot;</span>;
+<h2 id="how-llamaindex-pauses-a-tool">How LlamaIndex pauses a tool</h2>
+<p>A <code>FunctionAgent</code> tool that takes <code>ctx: Context</code> can stop in the middle and wait: <code>ctx.wait_for_event(HumanResponseEvent, waiter_event=InputRequiredEvent(...))</code> writes the <code>InputRequiredEvent</code> to the event stream, and the caller answers with <code>send_event(HumanResponseEvent(...))</code> (<a href="https://developers.llamaindex.ai/python/framework/understanding/agent/human_in_the_loop/" target="_blank" rel="noopener">LlamaIndex human in the loop</a>). Two lines in the <a href="https://developers.llamaindex.ai/python/workflows-api-reference/context/" target="_blank" rel="noopener">`wait_for_event` reference</a> shape everything below. The runtime &quot;replays the entire step when the event arrives&quot;, so your tool runs again from its first line. And the default timeout is 2000 seconds, about 33 minutes.</p>
+<p>A wiki correction or a refund can wait a day for its reviewer, so don&#39;t keep the process alive. Do what the <a href="https://developers.llamaindex.ai/python/llamaagents/workflows/human_in_the_loop/" target="_blank" rel="noopener">workflows docs</a> suggest: snapshot the run with <code>handler.ctx.to_dict()</code>, cancel it, and restore it with <code>Context.from_dict()</code> when the answer comes. Impri holds the question in between: the tool opens a card, a person approves, edits or rejects it in the inbox, and a second process resumes the run.</p>
+<h2 id="the-tool-one-card-per-proposed-change">The tool: one card per proposed change</h2>
+<p>The agent below fixes stale wiki pages. Retrieval stays ungated; only the write goes through Impri.</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> hashlib
+<span class="hljs-keyword">import</span> os
 
-<span class="hljs-keyword">const</span> <span class="hljs-variable constant_">IMPRI_BASE</span> = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>;
-<span class="hljs-keyword">const</span> headers = {
-  <span class="hljs-title class_">Authorization</span>: <span class="hljs-string">`Bearer <span class="hljs-subst">${process.env.IMPRI_API_KEY}</span>`</span>,
-  <span class="hljs-string">&quot;Content-Type&quot;</span>: <span class="hljs-string">&quot;application/json&quot;</span>,
-};
+<span class="hljs-keyword">import</span> httpx
+<span class="hljs-keyword">from</span> llama_index.core.agent.workflow <span class="hljs-keyword">import</span> FunctionAgent
+<span class="hljs-keyword">from</span> llama_index.core.workflow <span class="hljs-keyword">import</span> Context, HumanResponseEvent, InputRequiredEvent
+<span class="hljs-keyword">from</span> llama_index.llms.openai <span class="hljs-keyword">import</span> OpenAI
 
-<span class="hljs-keyword">async</span> <span class="hljs-keyword">function</span> <span class="hljs-title function_">proposeWikiUpdate</span>(<span class="hljs-params"><span class="hljs-attr">input</span>: {
-  pageId: <span class="hljs-built_in">string</span>;
-  title: <span class="hljs-built_in">string</span>;
-  newBody: <span class="hljs-built_in">string</span>;
-  reason: <span class="hljs-built_in">string</span>;
-}</span>) {
-  <span class="hljs-keyword">const</span> action = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${IMPRI_BASE}</span>/v1/actions`</span>, {
-    <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>,
-    headers,
-    <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({
-      <span class="hljs-attr">kind</span>: <span class="hljs-string">&quot;wiki.page.update&quot;</span>,
-      <span class="hljs-attr">title</span>: <span class="hljs-string">`Update wiki page: <span class="hljs-subst">${input.title}</span>`</span>,
-      <span class="hljs-attr">preview</span>: { <span class="hljs-attr">format</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-attr">body</span>: <span class="hljs-string">`**Reason:** <span class="hljs-subst">${input.reason}</span>\n\n---\n\n<span class="hljs-subst">${input.newBody}</span>`</span> },
-      <span class="hljs-attr">editable</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
-      <span class="hljs-attr">expires_in</span>: <span class="hljs-number">259200</span>, <span class="hljs-comment">// 3 days -- a doc correction is not urgent</span>
-      <span class="hljs-attr">idempotent</span>: <span class="hljs-literal">true</span>,   <span class="hljs-comment">// publishing the same content twice is harmless</span>
-    }),
-  }).<span class="hljs-title function_">then</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> r.<span class="hljs-title function_">json</span>());
+IMPRI = os.environ.get(<span class="hljs-string">&quot;IMPRI_BASE_URL&quot;</span>, <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>)
+HEADERS = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{os.environ[<span class="hljs-string">&#x27;IMPRI_API_KEY&#x27;</span>]}</span>&quot;</span>}
 
-  <span class="hljs-keyword">let</span> state = action;
-  <span class="hljs-keyword">while</span> (state.<span class="hljs-property">status</span> === <span class="hljs-string">&quot;pending&quot;</span>) {
-    <span class="hljs-keyword">await</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Promise</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> <span class="hljs-built_in">setTimeout</span>(r, <span class="hljs-number">15_000</span>));
-    state = <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">${action.id}</span>`</span>, { headers }).<span class="hljs-title function_">then</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> r.<span class="hljs-title function_">json</span>());
-  }
-  <span class="hljs-keyword">if</span> (state.<span class="hljs-property">status</span> !== <span class="hljs-string">&quot;approved&quot;</span>) {
-    <span class="hljs-keyword">return</span> <span class="hljs-string">`Not published -- reviewer <span class="hljs-subst">${state.status}</span> the update.`</span>;
-  }
 
-  <span class="hljs-keyword">const</span> finalBody = state.<span class="hljs-property">decision</span>.<span class="hljs-property">final_preview</span>.<span class="hljs-property">body</span>;
-  <span class="hljs-keyword">const</span> page = <span class="hljs-keyword">await</span> <span class="hljs-title function_">publishToWiki</span>(input.<span class="hljs-property">pageId</span>, finalBody); <span class="hljs-comment">// your wiki client</span>
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">def</span> <span class="hljs-title function_">publish_to_wiki</span>(<span class="hljs-params">page_id: <span class="hljs-built_in">str</span>, body: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">int</span>:
+    <span class="hljs-keyword">raise</span> NotImplementedError(<span class="hljs-string">&quot;your wiki client: write the page, return the revision&quot;</span>)
 
-  <span class="hljs-keyword">await</span> <span class="hljs-title function_">fetch</span>(<span class="hljs-string">`<span class="hljs-subst">${IMPRI_BASE}</span>/v1/actions/<span class="hljs-subst">${action.id}</span>/result`</span>, {
-    <span class="hljs-attr">method</span>: <span class="hljs-string">&quot;POST&quot;</span>,
-    headers,
-    <span class="hljs-attr">body</span>: <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">stringify</span>({
-      <span class="hljs-attr">status</span>: <span class="hljs-string">&quot;executed&quot;</span>,
-      <span class="hljs-attr">payload</span>: { <span class="hljs-attr">pageId</span>: page.<span class="hljs-property">id</span>, <span class="hljs-attr">url</span>: page.<span class="hljs-property">url</span>, <span class="hljs-attr">revision</span>: page.<span class="hljs-property">revision</span> },
-    }),
-  });
-  <span class="hljs-keyword">return</span> <span class="hljs-string">`Published revision <span class="hljs-subst">${page.revision}</span>: <span class="hljs-subst">${page.url}</span>`</span>;
-}</code></pre></div>
-<p><code>editable: [&quot;preview.body&quot;]</code> matters more here than in most gates — a reviewer who knows the doc will often fix a word rather than reject a mostly-right draft outright. Always publish <code>state.decision.final_preview.body</code>, not the <code>newBody</code> the agent proposed, since that is the version the human signed off on.</p>
-<hr>
-<h2 id="wiring-the-tool-into-the-agent">Wiring the tool into the agent</h2>
-<div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">const</span> updateTool = <span class="hljs-title class_">FunctionTool</span>.<span class="hljs-title function_">from</span>(proposeWikiUpdate, {
-  <span class="hljs-attr">name</span>: <span class="hljs-string">&quot;propose_wiki_update&quot;</span>,
-  <span class="hljs-attr">description</span>:
-    <span class="hljs-string">&quot;Propose a correction to an internal wiki page. The page is not changed until a human approves it.&quot;</span>,
-  <span class="hljs-attr">parameters</span>: {
-    <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;object&quot;</span>,
-    <span class="hljs-attr">properties</span>: {
-      <span class="hljs-attr">pageId</span>: { <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;string&quot;</span> },
-      <span class="hljs-attr">title</span>: { <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;string&quot;</span> },
-      <span class="hljs-attr">newBody</span>: { <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;string&quot;</span>, <span class="hljs-attr">description</span>: <span class="hljs-string">&quot;Corrected page content, in markdown.&quot;</span> },
-      <span class="hljs-attr">reason</span>: { <span class="hljs-attr">type</span>: <span class="hljs-string">&quot;string&quot;</span>, <span class="hljs-attr">description</span>: <span class="hljs-string">&quot;Why the current page is stale or wrong.&quot;</span> },
-    },
-    <span class="hljs-attr">required</span>: [<span class="hljs-string">&quot;pageId&quot;</span>, <span class="hljs-string">&quot;title&quot;</span>, <span class="hljs-string">&quot;newBody&quot;</span>, <span class="hljs-string">&quot;reason&quot;</span>],
-  },
-});
 
-<span class="hljs-keyword">const</span> agent = <span class="hljs-keyword">new</span> <span class="hljs-title class_">OpenAIAgent</span>({
-  <span class="hljs-attr">tools</span>: [searchTool, updateTool], <span class="hljs-comment">// searchTool is your existing read-only retrieval tool</span>
-  <span class="hljs-attr">systemPrompt</span>:
-    <span class="hljs-string">&quot;Answer questions from the indexed docs. If a page you retrieved is stale or wrong, &quot;</span> +
-    <span class="hljs-string">&quot;call propose_wiki_update instead of only saying so in the chat response.&quot;</span>,
-});
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">def</span> <span class="hljs-title function_">propose_wiki_update</span>(<span class="hljs-params">ctx: Context, page_id: <span class="hljs-built_in">str</span>, new_body: <span class="hljs-built_in">str</span>, reason: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">str</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Propose a corrected wiki page. Nothing changes until a human approves it.&quot;&quot;&quot;</span>
+    <span class="hljs-comment"># LlamaIndex replays this whole function when the wait ends, so the POST runs</span>
+    <span class="hljs-comment"># twice. The idempotency key makes the second POST return the same card.</span>
+    key = <span class="hljs-string">&quot;wiki:&quot;</span> + hashlib.sha256(<span class="hljs-string">f&quot;<span class="hljs-subst">{page_id}</span>\n<span class="hljs-subst">{new_body}</span>&quot;</span>.encode()).hexdigest()
+    <span class="hljs-keyword">async</span> <span class="hljs-keyword">with</span> httpx.AsyncClient(base_url=IMPRI, headers=HEADERS, timeout=<span class="hljs-number">30</span>) <span class="hljs-keyword">as</span> impri:
+        r = <span class="hljs-keyword">await</span> impri.post(<span class="hljs-string">&quot;/v1/actions&quot;</span>, json={
+            <span class="hljs-string">&quot;kind&quot;</span>: <span class="hljs-string">&quot;wiki.page.update&quot;</span>,
+            <span class="hljs-string">&quot;title&quot;</span>: <span class="hljs-string">f&quot;Update wiki page <span class="hljs-subst">{page_id}</span>&quot;</span>,
+            <span class="hljs-string">&quot;preview&quot;</span>: {<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: new_body},
+            <span class="hljs-string">&quot;payload&quot;</span>: {<span class="hljs-string">&quot;page_id&quot;</span>: page_id, <span class="hljs-string">&quot;reason&quot;</span>: reason},
+            <span class="hljs-string">&quot;editable&quot;</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
+            <span class="hljs-string">&quot;expires_in&quot;</span>: <span class="hljs-number">3</span> * <span class="hljs-number">24</span> * <span class="hljs-number">3600</span>,
+            <span class="hljs-string">&quot;idempotency_key&quot;</span>: key,
+        })
+        r.raise_for_status()
+        action_id = r.json()[<span class="hljs-string">&quot;id&quot;</span>]
 
-<span class="hljs-keyword">const</span> response = <span class="hljs-keyword">await</span> agent.<span class="hljs-title function_">chat</span>({ <span class="hljs-attr">message</span>: <span class="hljs-string">&quot;Is the on-call escalation doc still accurate?&quot;</span> });</code></pre></div>
-<p>The agent answers the user immediately from what it retrieved — the approval wait happens independently, and the correction lands whenever a human gets to it.</p>
-<hr>
-<h2 id="reporting-what-happened-back-to-the-card">Reporting what happened back to the card</h2>
-<p>The <code>payload</code> field on <code>POST /v1/actions/:id/result</code> is what turns &quot;approved&quot; into a receipt. Here it carries the published page&#39;s id, URL, and new revision number — all three show up on the Impri card and come back from <code>GET /v1/actions/:id</code> as <code>result_payload</code>. Without it you would know the update was approved but still have to go dig up the resulting page yourself.</p>
-<hr>
-<h2 id="keep-search-and-write-on-separate-tools">Keep search and write on separate tools</h2>
-<p>A few things worth being deliberate about:</p>
+        <span class="hljs-comment"># Pause here. The event only wakes the tool; the verdict comes from Impri.</span>
+        <span class="hljs-keyword">await</span> ctx.wait_for_event(
+            HumanResponseEvent,
+            waiter_id=action_id,
+            waiter_event=InputRequiredEvent(prefix=<span class="hljs-string">&quot;Waiting for Impri&quot;</span>, action_id=action_id),
+            requirements={<span class="hljs-string">&quot;action_id&quot;</span>: action_id},
+            timeout=<span class="hljs-literal">None</span>,
+        )
+
+        r = <span class="hljs-keyword">await</span> impri.get(<span class="hljs-string">f&quot;/v1/actions/<span class="hljs-subst">{action_id}</span>&quot;</span>)
+        r.raise_for_status()
+        action = r.json()
+        <span class="hljs-keyword">if</span> action[<span class="hljs-string">&quot;status&quot;</span>] == <span class="hljs-string">&quot;executed&quot;</span>:
+            <span class="hljs-keyword">return</span> <span class="hljs-string">f&quot;Already published (<span class="hljs-subst">{action_id}</span>).&quot;</span>
+        <span class="hljs-keyword">if</span> action[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;approved&quot;</span>:
+            <span class="hljs-keyword">return</span> <span class="hljs-string">f&quot;Not published: the reviewer&#x27;s verdict is <span class="hljs-subst">{action[<span class="hljs-string">&#x27;status&#x27;</span>]}</span>.&quot;</span>
+
+        body = action[<span class="hljs-string">&quot;decision&quot;</span>][<span class="hljs-string">&quot;final_preview&quot;</span>][<span class="hljs-string">&quot;body&quot;</span>]  <span class="hljs-comment"># the reviewer&#x27;s edit, if any</span>
+        revision = <span class="hljs-keyword">await</span> publish_to_wiki(page_id, body)
+        <span class="hljs-keyword">await</span> impri.post(<span class="hljs-string">f&quot;/v1/actions/<span class="hljs-subst">{action_id}</span>/result&quot;</span>, json={
+            <span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;executed&quot;</span>,
+            <span class="hljs-string">&quot;payload&quot;</span>: {<span class="hljs-string">&quot;page_id&quot;</span>: page_id, <span class="hljs-string">&quot;revision&quot;</span>: revision},
+        })
+        <span class="hljs-keyword">return</span> <span class="hljs-string">f&quot;Published revision <span class="hljs-subst">{revision}</span> of <span class="hljs-subst">{page_id}</span>.&quot;</span>
+
+
+agent = FunctionAgent(
+    tools=[propose_wiki_update],  <span class="hljs-comment"># next to your read-only QueryEngineTool</span>
+    llm=OpenAI(model=<span class="hljs-string">&quot;gpt-4.1&quot;</span>),
+    allow_parallel_tool_calls=<span class="hljs-literal">False</span>,  <span class="hljs-comment"># one card per turn: see &quot;One card at a time&quot;</span>
+    system_prompt=(
+        <span class="hljs-string">&quot;Answer from the wiki. If a page you retrieved is stale, call &quot;</span>
+        <span class="hljs-string">&quot;propose_wiki_update with the corrected page instead of only saying so.&quot;</span>
+    ),
+)</code></pre></div>
+<p>What each part is for:</p>
 <ul>
-<li><strong>Don&#39;t gate retrieval.</strong> Wrapping the read-only search tool in the same flow adds latency to every question and trains reviewers to rubber-stamp cards.</li>
-<li><strong>Long expiry, not short.</strong> A wiki correction is not time-sensitive the way a refund or an incident reply is; three days beats forcing same-hour review.</li>
-<li><strong>One write tool per side effect.</strong> A raw wiki API key handed to the agent &quot;just in case&quot; turns this gate decorative.</li>
+<li><strong>The idempotency key.</strong> In our runs the POST went out three times per approval: once at the start, once when the restored run replayed the step to rebuild its waiter, once after the event. Impri returns the existing card for a known <code>idempotency_key</code> (200 instead of 201) whatever its status. Without the key, the replay after approval opened a second card and the run waited on that one.</li>
+<li><strong>The verdict comes from Impri, not from the event.</strong> Whoever sends <code>HumanResponseEvent</code> only wakes the tool. <code>GET /v1/actions/:id</code> says whether the card was approved, and <code>decision.final_preview.body</code> holds the text the reviewer signed off on, including their edit (<code>editable: [&quot;preview.body&quot;]</code>).</li>
+<li><strong><code>timeout=None</code>.</strong> With the default, an in-process wait gives up after 2000 seconds and the model gets the tool error &quot;Timed out waiting for HumanResponseEvent&quot; while the card stays pending in the inbox. The card&#39;s own expiry (<code>expires_in</code>, here 3 days, at most 30) is the deadline that counts.</li>
+<li><strong>The result report.</strong> <code>POST /v1/actions/:id/result</code> with <code>executed</code> and a <code>payload</code> puts the revision on the card as <code>result_payload</code>, so the reviewer sees what was written.</li>
 </ul>
-<hr>
-<h2 id="what-impri-is-not-doing-here">What Impri is not doing here</h2>
-<p>Impri stores the proposed page content, notifies a reviewer, and holds the decision — it does not read the wiki or know if the correction is factually right, and it never calls your wiki API. <code>publishToWiki(...)</code> is still your code, called only after <code>state.status === &quot;approved&quot;</code>. Impri is the gate; judging the content is still the human&#39;s job, same as reviewing a pull request.</p>
-<hr>
+<h2 id="save-the-run-resume-after-the-decision">Save the run, resume after the decision</h2>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> asyncio
+<span class="hljs-keyword">import</span> json
+<span class="hljs-keyword">import</span> sys
+<span class="hljs-keyword">from</span> pathlib <span class="hljs-keyword">import</span> Path
+
+<span class="hljs-keyword">import</span> httpx
+<span class="hljs-keyword">from</span> llama_index.core.llms <span class="hljs-keyword">import</span> ChatMessage
+<span class="hljs-keyword">from</span> llama_index.core.memory <span class="hljs-keyword">import</span> ChatMemoryBuffer
+<span class="hljs-keyword">from</span> llama_index.core.workflow <span class="hljs-keyword">import</span> Context, HumanResponseEvent, InputRequiredEvent
+
+<span class="hljs-keyword">from</span> wiki_agent <span class="hljs-keyword">import</span> HEADERS, IMPRI, agent
+
+RUNS = Path(<span class="hljs-string">&quot;runs&quot;</span>)
+RUNS.mkdir(exist_ok=<span class="hljs-literal">True</span>)
+
+
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">def</span> <span class="hljs-title function_">start</span>(<span class="hljs-params">question: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-literal">None</span>:
+    handler = agent.run(user_msg=question)
+    <span class="hljs-keyword">async</span> <span class="hljs-keyword">for</span> ev <span class="hljs-keyword">in</span> handler.stream_events():
+        <span class="hljs-keyword">if</span> <span class="hljs-built_in">isinstance</span>(ev, InputRequiredEvent):
+            <span class="hljs-comment"># Save the paused run under the card&#x27;s id and let the process exit.</span>
+            <span class="hljs-comment"># to_dict() skips the chat memory, so its messages are saved next to it.</span>
+            memory = <span class="hljs-keyword">await</span> handler.ctx.store.get(<span class="hljs-string">&quot;memory&quot;</span>)
+            messages = [m.model_dump(mode=<span class="hljs-string">&quot;json&quot;</span>) <span class="hljs-keyword">for</span> m <span class="hljs-keyword">in</span> <span class="hljs-keyword">await</span> memory.aget_all()]
+            snapshot = {<span class="hljs-string">&quot;ctx&quot;</span>: handler.ctx.to_dict(), <span class="hljs-string">&quot;messages&quot;</span>: messages}
+            (RUNS / <span class="hljs-string">f&quot;<span class="hljs-subst">{ev.action_id}</span>.json&quot;</span>).write_text(json.dumps(snapshot))
+            <span class="hljs-keyword">await</span> handler.cancel_run()
+            <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;waiting for approval: <span class="hljs-subst">{ev.action_id}</span>&quot;</span>)
+            <span class="hljs-keyword">return</span>
+    <span class="hljs-built_in">print</span>(<span class="hljs-keyword">await</span> handler)
+
+
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">def</span> <span class="hljs-title function_">resume_decided</span>() -&gt; <span class="hljs-literal">None</span>:
+    <span class="hljs-keyword">async</span> <span class="hljs-keyword">with</span> httpx.AsyncClient(base_url=IMPRI, headers=HEADERS, timeout=<span class="hljs-number">30</span>) <span class="hljs-keyword">as</span> impri:
+        <span class="hljs-keyword">for</span> saved <span class="hljs-keyword">in</span> RUNS.glob(<span class="hljs-string">&quot;*.json&quot;</span>):
+            action_id = saved.stem
+            r = <span class="hljs-keyword">await</span> impri.get(<span class="hljs-string">f&quot;/v1/actions/<span class="hljs-subst">{action_id}</span>&quot;</span>)
+            r.raise_for_status()
+            status = r.json()[<span class="hljs-string">&quot;status&quot;</span>]
+            <span class="hljs-keyword">if</span> status == <span class="hljs-string">&quot;pending&quot;</span>:
+                <span class="hljs-keyword">continue</span>
+            snapshot = json.loads(saved.read_text())
+            ctx = Context.from_dict(agent, snapshot[<span class="hljs-string">&quot;ctx&quot;</span>])
+            history = [ChatMessage.model_validate(m) <span class="hljs-keyword">for</span> m <span class="hljs-keyword">in</span> snapshot[<span class="hljs-string">&quot;messages&quot;</span>]]
+            handler = agent.run(ctx=ctx)
+            <span class="hljs-keyword">await</span> handler.ctx.store.<span class="hljs-built_in">set</span>(
+                <span class="hljs-string">&quot;memory&quot;</span>, ChatMemoryBuffer.from_defaults(chat_history=history, llm=agent.llm))
+            <span class="hljs-keyword">await</span> handler.send_event(HumanResponseEvent(response=status, action_id=action_id))
+            <span class="hljs-built_in">print</span>(<span class="hljs-keyword">await</span> handler)
+            saved.unlink()
+
+
+<span class="hljs-keyword">if</span> __name__ == <span class="hljs-string">&quot;__main__&quot;</span>:
+    <span class="hljs-keyword">if</span> sys.argv[<span class="hljs-number">1</span>] == <span class="hljs-string">&quot;start&quot;</span>:
+        asyncio.run(start(sys.argv[<span class="hljs-number">2</span>]))
+    <span class="hljs-keyword">else</span>:
+        asyncio.run(resume_decided())</code></pre></div>
+<p><code>python run.py start &quot;Is the on-call doc still accurate?&quot;</code> prints <code>waiting for approval: act_…</code> and exits. Run <code>python run.py resume</code> from cron every minute, or from your webhook handler: set <code>callback_url</code> on the card and Impri posts a signed request when it is decided or expires (see <a href="webhooks">webhooks</a> for the <code>X-Impri-Signature</code> check). A run whose card is still pending is left alone; an expired or rejected one resumes and the tool reports that nothing was published.</p>
+<p><strong>The memory step is not optional.</strong> On llama-index-core 0.14.26 with llama-index-workflows 2.26.1, <code>to_dict()</code> skips the agent&#39;s chat memory with an <code>UnserializableKeyWarning</code>. Resumed without it, as in the documented pattern, the run crashed with <code>ValueError: Path &#39;memory&#39; not found in state</code>, after the tool had already published and marked the card <code>executed</code>. <code>ChatMemoryBuffer.to_dict()</code> failed on its messages too, so the runner saves the messages with <code>model_dump(mode=&quot;json&quot;)</code>. It sets the memory on <code>handler.ctx.store</code> after <code>run(ctx=...)</code>: set on the restored context before <code>run()</code>, it was lost.</p>
+<h2 id="what-we-ran">What we ran</h2>
+<p>Both files verbatim, each start and each resume a separate Python process, against a local Impri server. The OpenAI model was swapped for LlamaIndex&#39;s <code>MockFunctionCallingLLM</code> with a scripted tool call, and <code>publish_to_wiki</code> for a stub that records its input.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Wiki</th>
+<th>The model gets</th>
+<th>Card</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Approved with an edit, then resumed</td>
+<td>the edited text, once</td>
+<td>&quot;Published revision 42 of oncall.&quot;</td>
+<td><code>executed</code>, revision in <code>result_payload</code></td>
+</tr>
+<tr>
+<td>Rejected, then resumed</td>
+<td>nothing</td>
+<td>&quot;Not published: the reviewer&#39;s verdict is rejected.&quot;</td>
+<td><code>rejected</code></td>
+</tr>
+<tr>
+<td>Resume while the card is pending</td>
+<td>nothing, snapshot kept</td>
+<td>(run not resumed)</td>
+<td><code>pending</code></td>
+</tr>
+<tr>
+<td>Same snapshot resumed a second time</td>
+<td>nothing</td>
+<td>&quot;Already published (act_…).&quot;</td>
+<td><code>executed</code></td>
+</tr>
+<tr>
+<td>No <code>idempotency_key</code></td>
+<td>nothing, the run waits on a second card</td>
+<td>nothing yet</td>
+<td>a new <code>pending</code> card</td>
+</tr>
+<tr>
+<td>In-process wait, timeout reached</td>
+<td>nothing</td>
+<td>&quot;Timed out waiting for HumanResponseEvent&quot;</td>
+<td>stays <code>pending</code></td>
+</tr>
+<tr>
+<td>Resumed without the memory step</td>
+<td>published</td>
+<td>the run crashes</td>
+<td><code>executed</code></td>
+</tr>
+<tr>
+<td>Two proposals in one model turn</td>
+<td>the first one</td>
+<td>for the second: &quot;Not published: the reviewer&#39;s verdict is pending.&quot;</td>
+<td>second card left <code>pending</code></td>
+</tr>
+</tbody></table>
+</div>
+<h2 id="one-card-at-a-time">One card at a time</h2>
+<p>The last row is why the agent sets <code>allow_parallel_tool_calls=False</code>. When the model proposed two pages in one turn, both cards opened before the runner saw the first <code>InputRequiredEvent</code>, and the snapshot was filed under one of them. On resume, the one event we sent for the first card also released the second waiting call. Because the tool reads its verdict from Impri, it published nothing, but its card stayed in the inbox with no run behind it. With the flag, <code>llama_index.llms.openai</code> sends <code>parallel_tool_calls: false</code>, which asks the model for one tool call per turn. Our scripted model ignores that flag, so we checked the request code, not a live model.</p>
+<h2 id="what-impri-does-here">What Impri does here</h2>
+<p>Impri stores the card, notifies your reviewers, keeps their edit and decision, and records the result. It never reads or writes your wiki: <code>publish_to_wiki</code> is your code and runs only after the tool has read <code>approved</code> from Impri. An agent key needs only the <code>actions</code> scope. Replayed POSTs pass the same checks as new cards: they count toward the 60 requests per minute per key, and on Impri Cloud, once a project has used its plan&#39;s monthly approvals, they get a 402, which the tool raises as an error instead of publishing.</p>
 <h2 id="next-step">Next step</h2>
-<p>Get an API key with the <code>actions</code> scope from the <a href="quickstart">quickstart</a>, swap the raw <code>fetch</code> calls above for the <a href="sdk-typescript">TypeScript SDK</a> once this leaves prototype stage, and see <a href="webhooks">webhooks</a> if polling every 15 seconds is too chatty for a background job.</p>
+<p><a href="https://app.impri.dev/?signup=1" target="_blank" rel="noopener">Start free on Impri Cloud</a>, create an API key, put a harmless <code>publish_to_wiki</code> in place and run <code>start</code>: the card appears in your inbox. To keep everything on your machine, follow <a href="self-hosting">Self-hosting</a> and set <code>IMPRI_BASE_URL=http://localhost:8484</code>. On LangGraph instead? The same pattern with <code>interrupt()</code> is in <a href="human-in-the-loop-langgraph">Human-in-the-loop for LangGraph</a>.</p>
 
     <aside class="doc-cta" aria-label="Try Impri">
   <p class="doc-cta-title">Add an approval step to your own agent</p>
@@ -268,10 +376,10 @@ pre code.hljs{display:block;overflow-x:auto}
     <nav class="doc-related" aria-label="Related guides">
   <p class="doc-related-title">Related guides</p>
   <ul>
-<li><a href="../docs/human-approval-for-ai-agent-file-writes">Human Approval Before an AI Agent Writes to Your Filesystem</a></li>
-<li><a href="../docs/approve-database-writes-from-an-ai-agent">Gate Database Writes From an AI Agent</a></li>
-<li><a href="../docs/human-in-the-loop-for-rag-agents-that-act">Human-in-the-Loop for RAG Agents That Take Actions</a></li>
-<li><a href="../docs/human-in-the-loop-for-ai-agent-incident-response">Human-in-the-Loop for AI Agent Incident Response</a></li>
+<li><a href="../docs/how-to-pause-an-ai-agent-for-human-input">How to Pause an AI Agent for Human Input</a></li>
+<li><a href="../docs/open-source-human-in-the-loop-tools">Open-Source Human-in-the-Loop Tools for AI Agents</a></li>
+<li><a href="../docs/human-in-the-loop-openai-agents-sdk">Human-in-the-Loop for the OpenAI Agents SDK</a></li>
+<li><a href="../docs/human-in-the-loop-pydantic-ai">Pydantic AI Human-in-the-Loop with an Approval Inbox</a></li>
   </ul>
 </nav>
   </main>
@@ -343,12 +451,12 @@ pre code.hljs{display:block;overflow-x:auto}
   <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#when-agentic-rag-wants-to-write-back">When agentic RAG wants to write back</a></li>
-<li class="ptoc-h2"><a href="#gate-the-write-with-a-functiontool">Gate the write with a FunctionTool</a></li>
-<li class="ptoc-h2"><a href="#wiring-the-tool-into-the-agent">Wiring the tool into the agent</a></li>
-<li class="ptoc-h2"><a href="#reporting-what-happened-back-to-the-card">Reporting what happened back to the card</a></li>
-<li class="ptoc-h2"><a href="#keep-search-and-write-on-separate-tools">Keep search and write on separate tools</a></li>
-<li class="ptoc-h2"><a href="#what-impri-is-not-doing-here">What Impri is not doing here</a></li>
+<ul><li class="ptoc-h2"><a href="#how-llamaindex-pauses-a-tool">How LlamaIndex pauses a tool</a></li>
+<li class="ptoc-h2"><a href="#the-tool-one-card-per-proposed-change">The tool: one card per proposed change</a></li>
+<li class="ptoc-h2"><a href="#save-the-run-resume-after-the-decision">Save the run, resume after the decision</a></li>
+<li class="ptoc-h2"><a href="#what-we-ran">What we ran</a></li>
+<li class="ptoc-h2"><a href="#one-card-at-a-time">One card at a time</a></li>
+<li class="ptoc-h2"><a href="#what-impri-does-here">What Impri does here</a></li>
 <li class="ptoc-h2"><a href="#next-step">Next step</a></li></ul>
 </nav>
   </aside>
