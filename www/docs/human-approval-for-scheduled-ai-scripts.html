@@ -251,7 +251,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <hr>
 <h2 id="what-this-doesn39t-replace">What this doesn&#39;t replace</h2>
 <p>This pattern is not a substitute for GitHub&#39;s own Environments protection rules if you&#39;re already using them for deploy gating inside a single workflow run — use those when the approval and the job are the same CI run. Reach for the propose/execute split specifically when the script runs unattended on a schedule and you don&#39;t want a runner burning minutes (or a self-hosted runner sitting blocked) waiting on a human. And as always, Impri only holds the decision — it doesn&#39;t generate the release notes, doesn&#39;t know what &quot;good&quot; output looks like, and the execute script is what actually has to enforce that nothing runs without <code>status: &quot;approved&quot;</code>.</p>
-<p>For the single-workflow blocking version of this pattern, see <a href="gate-a-cron-job-with-human-approval">gating a cron job</a>. For everything else on wiring up the three calls, start with the <a href="quickstart">quickstart</a> or browse <a href="integrations">integrations</a>.</p>
+<p>For the same pattern on a server&#39;s crontab, where the card&#39;s <code>idempotency_key</code> replaces the pending file, see <a href="gate-a-cron-job-with-human-approval">adding human approval to a cron job</a>. For everything else on wiring up the three calls, start with the <a href="quickstart">quickstart</a> or browse <a href="integrations">integrations</a>.</p>
 
     <aside class="doc-cta" aria-label="Try Impri">
   <p class="doc-cta-title">Add an approval step to your own agent</p>

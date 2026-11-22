@@ -213,7 +213,7 @@ curl -s -X POST https://api.impri.dev/v1/actions/bulk-decision \
 <p>Impri holds the decision; it doesn&#39;t decide anything about <em>when</em> your agent should run or <em>how</em> it should batch work — that scheduling logic is yours (cron, a queue, whatever you already use). It also doesn&#39;t retroactively protect you from an agent that has its own direct credentials to the sending service — the gate only holds if the overnight process&#39;s <em>only</em> path to sending is through the approved action. Wrap the actual send/publish call so it hard-depends on the approved <code>final_preview</code>, as described in <a href="how-to-add-human-approval-to-an-ai-agent">the approval guide</a>.</p>
 <hr>
 <h2 id="next-step">Next step</h2>
-<p>Start with <a href="quickstart">quickstart</a> to get an API key, then wire your nightly job to push actions instead of executing them directly.</p>
+<p>Start with <a href="quickstart">quickstart</a> to get an API key, then wire your nightly job to push actions instead of executing them directly. For a job that runs from cron and must not send twice, follow <a href="gate-a-cron-job-with-human-approval">adding human approval to a cron job</a>.</p>
 
     <aside class="doc-cta" aria-label="Try Impri">
   <p class="doc-cta-title">Add an approval step to your own agent</p>

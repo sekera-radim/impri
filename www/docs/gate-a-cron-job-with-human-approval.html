@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Add Human Approval to a Cron Job — Impri Docs</title>
-<meta name="description" content="Add human approval to a cron job so the schedule fires but the side effect waits for your go-ahead — with a working Python example and expiry window guidance.">
+<title>Add Human Approval to a Cron Job Without Blocking — Impri Docs</title>
+<meta name="description" content="Let the cron job propose instead of act: the first run files an Impri card keyed to its slot, later runs read the decision and send the approved text once.">
 <meta name="theme-color" content="#06070d">
-<meta property="og:title" content="Add Human Approval to a Cron Job — Impri Docs">
-<meta property="og:description" content="Add human approval to a cron job so the schedule fires but the side effect waits for your go-ahead — with a working Python example and expiry window guidance.">
+<meta property="og:title" content="Add Human Approval to a Cron Job Without Blocking — Impri Docs">
+<meta property="og:description" content="Let the cron job propose instead of act: the first run files an Impri card keyed to its slot, later runs read the decision and send the approved text once.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/gate-a-cron-job-with-human-approval">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/gate-a-cron-job-with-human-approval">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Add Human Approval to a Cron Job","description":"Add human approval to a cron job so the schedule fires but the side effect waits for your go-ahead — with a working Python example and expiry window guidance.","url":"https://impri.dev/docs/gate-a-cron-job-with-human-approval","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Add Human Approval to a Cron Job Without Blocking","description":"Let the cron job propose instead of act: the first run files an Impri card keyed to its slot, later runs read the decision and send the approved text once.","url":"https://impri.dev/docs/gate-a-cron-job-with-human-approval","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -150,155 +150,169 @@ pre code.hljs{display:block;overflow-x:auto}
       <span class="bc-sep">/</span>
       <span>Reference</span>
       <span class="bc-sep">/</span>
-      <span>Add Human Approval to a Cron Job</span>
+      <span>Add Human Approval to a Cron Job Without Blocking</span>
     </nav>
-    <h1>Add Human Approval to a Cron Job</h1>
-<p>Add human approval to a cron job so the schedule fires but the side effect waits for your go-ahead — with a working Python example and expiry window guidance.</p>
+    <h1>Add Human Approval to a Cron Job Without Blocking</h1>
+<p>Let the cron job propose instead of act: the first run files an Impri card keyed to its slot, later runs read the decision and send the approved text once.</p>
+<p>Each run is a short check; Impri holds the state between runs. The script below was run end to end on 2026-11-22 against a local Impri server built from the repository (Python 3.12, httpx 0.28.1, every run a separate process). What those runs showed is listed after the code.</p>
 <hr>
-<h2 id="why-scheduled-jobs-are-a-blind-spot">Why scheduled jobs are a blind spot</h2>
-<p>Cron jobs run without anyone watching. A weekly newsletter goes out even if the draft has a typo. A nightly database purge fires even if someone is in the middle of a migration. A deploy job kicks off at 3 AM regardless of whether there is an active incident.</p>
-<p>The instinct is to add an environment flag or a config toggle to pause them. That works, but it requires you to remember to flip the flag before the window opens — and a toggle you forgot is the same as no toggle at all.</p>
-<p>A better pattern: the schedule fires on time, but the job <em>proposes</em> its action to you and cannot proceed until you approve. The cron script does its preparation work, then blocks on your decision, then either executes or exits cleanly.</p>
+<h2 id="why-not-wait-inside-the-cron-run">Why not wait inside the cron run</h2>
+<p>The obvious version pushes the draft and then polls <code>GET /v1/actions/:id</code> until someone decides. On a cron schedule that breaks in three ways:</p>
+<ul>
+<li>The process lives for hours. If the next tick fires while it waits, a second copy starts and pushes a second card.</li>
+<li>A reboot or a deploy kills the waiting process, and the decision arrives to nobody.</li>
+<li>A retry or a manual rerun opens another card. Without an <code>idempotency_key</code>, Impri only folds a repeat into an existing card when kind, title and body are identical and still pending, and an LLM-written draft is never identical twice.</li>
+</ul>
+<p>So each run looks up the card for its slot and does whatever the card&#39;s status says.</p>
 <hr>
-<h2 id="how-the-pattern-works">How the pattern works</h2>
-<div class="code-block"><pre><code class="hljs">cron fires
-    │
-    ├── job prepares the payload (draft newsletter, purge SQL, deploy config)
-    │
-    ├── POST /v1/actions  →  Impri stores it, notifies you on phone/Slack/email
-    │
-    ├── job polls GET /v1/actions/:id  (blocks until decided or expired)
-    │
-    ├─[approved]─ executes with final_preview content
-    │
-    └─[rejected/expired]─ exits without side effect, logs reason</code></pre></div>
-<p>The cron tab entry stays unchanged. What changes is that the script itself will not fire its side effect until a human decision comes back.</p>
-<hr>
-<h2 id="example-weekly-newsletter-send-python">Example: weekly newsletter send (Python)</h2>
-<p>This script runs via cron every Monday morning. It drafts the newsletter, pushes it to Impri for approval, then either sends or exits cleanly.</p>
-<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-comment">#!/usr/bin/env python3</span>
-<span class="hljs-string">&quot;&quot;&quot;weekly-newsletter.py — push draft for approval, then send on go-ahead.&quot;&quot;&quot;</span>
-
-<span class="hljs-keyword">import</span> os
-<span class="hljs-keyword">import</span> time
-<span class="hljs-keyword">import</span> requests
-
-API_BASE = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
-HEADERS = {
-    <span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{os.environ[<span class="hljs-string">&#x27;IMPRI_API_KEY&#x27;</span>]}</span>&quot;</span>,
-    <span class="hljs-string">&quot;Content-Type&quot;</span>: <span class="hljs-string">&quot;application/json&quot;</span>,
-}
-
-<span class="hljs-keyword">def</span> <span class="hljs-title function_">draft_newsletter</span>() -&gt; <span class="hljs-built_in">str</span>:
-    <span class="hljs-comment"># Your existing newsletter generation logic here</span>
-    <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;**This week in AI tools** — five picks from the past 7 days...&quot;</span>
-
-<span class="hljs-keyword">def</span> <span class="hljs-title function_">send_newsletter</span>(<span class="hljs-params">body: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-literal">None</span>:
-    <span class="hljs-comment"># Your existing send logic (MailerLite, Postmark, etc.)</span>
-    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Sending newsletter (<span class="hljs-subst">{<span class="hljs-built_in">len</span>(body)}</span> chars)&quot;</span>)
-
-<span class="hljs-keyword">def</span> <span class="hljs-title function_">main</span>():
-    body = draft_newsletter()
-
-    <span class="hljs-comment"># Push the action — give 12 hours to approve before the window closes</span>
-    resp = requests.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{API_BASE}</span>/v1/actions&quot;</span>, headers=HEADERS, json={
-        <span class="hljs-string">&quot;kind&quot;</span>: <span class="hljs-string">&quot;newsletter.send&quot;</span>,
-        <span class="hljs-string">&quot;title&quot;</span>: <span class="hljs-string">&quot;Weekly newsletter — 14 Jul 2026&quot;</span>,
-        <span class="hljs-string">&quot;preview&quot;</span>: {<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: body},
-        <span class="hljs-string">&quot;expires_in&quot;</span>: <span class="hljs-number">43200</span>,          <span class="hljs-comment"># 12 hours</span>
-        <span class="hljs-string">&quot;editable&quot;</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>], <span class="hljs-comment"># allow last-minute edits before approving</span>
-    })
-    resp.raise_for_status()
-    action = resp.json()
-    action_id = action[<span class="hljs-string">&quot;id&quot;</span>]
-    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Pushed: <span class="hljs-subst">{action_id}</span>  inbox: <span class="hljs-subst">{action[<span class="hljs-string">&#x27;inbox_url&#x27;</span>]}</span>&quot;</span>)
-
-    <span class="hljs-comment"># Poll until decided or expired</span>
-    <span class="hljs-keyword">while</span> <span class="hljs-literal">True</span>:
-        result = requests.get(<span class="hljs-string">f&quot;<span class="hljs-subst">{API_BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>&quot;</span>, headers=HEADERS)
-        result.raise_for_status()
-        data = result.json()
-        status = data[<span class="hljs-string">&quot;status&quot;</span>]
-        <span class="hljs-keyword">if</span> status != <span class="hljs-string">&quot;pending&quot;</span>:
-            <span class="hljs-keyword">break</span>
-        time.sleep(<span class="hljs-number">30</span>)  <span class="hljs-comment"># check every 30 seconds</span>
-
-    <span class="hljs-keyword">if</span> status == <span class="hljs-string">&quot;approved&quot;</span>:
-        <span class="hljs-comment"># Always use final_preview — it carries human edits when editable fields were changed</span>
-        final_body = data[<span class="hljs-string">&quot;decision&quot;</span>][<span class="hljs-string">&quot;final_preview&quot;</span>][<span class="hljs-string">&quot;body&quot;</span>]
-        send_newsletter(final_body)
-
-        requests.post(
-            <span class="hljs-string">f&quot;<span class="hljs-subst">{API_BASE}</span>/v1/actions/<span class="hljs-subst">{action_id}</span>/result&quot;</span>,
-            headers=HEADERS,
-            json={<span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;executed&quot;</span>},
-        )
-        <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Newsletter sent and result reported.&quot;</span>)
-    <span class="hljs-keyword">else</span>:
-        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Newsletter not sent: action <span class="hljs-subst">{status}</span>. Exiting cleanly.&quot;</span>)
-
-<span class="hljs-keyword">if</span> __name__ == <span class="hljs-string">&quot;__main__&quot;</span>:
-    main()</code></pre></div>
-<p>Wire it into your crontab:</p>
-<div class="code-block"><span class="code-lang">cron</span><pre><code class="hljs">0 7 * * 1  IMPRI_API_KEY=im_... /usr/local/bin/python3 /opt/jobs/weekly-newsletter.py</code></pre></div>
-<hr>
-<h2 id="choosing-the-right-expiry-window">Choosing the right expiry window</h2>
-<p><code>expires_in</code> is the window within which you must approve. After it passes, the action cannot be approved and the script exits cleanly.</p>
+<h2 id="the-pattern-one-card-per-slot-every-run-checks-it">The pattern: one card per slot, every run checks it</h2>
+<p>The slot is the unit of work: this week&#39;s newsletter, tonight&#39;s purge, today&#39;s report. Its key (<code>newsletter-2026-W48</code>) goes into <code>idempotency_key</code>, so the slot can never hold two cards.</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-<th>Job type</th>
-<th>Suggested <code>expires_in</code></th>
-<th>Reasoning</th>
+<th>What the run finds</th>
+<th>What it does</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>Newsletter send</td>
-<td>3–12 hours</td>
-<td>Wide review window; content goes stale after a few days</td>
+<td>No card for this slot</td>
+<td>Proposes it (<code>POST /v1/actions</code> with the slot key) and exits</td>
 </tr>
 <tr>
-<td>Database purge</td>
-<td>1–4 hours</td>
-<td>Narrow window — if you miss it, wait for the next run checkpoint</td>
+<td><code>pending</code></td>
+<td>Exits; the next run looks again</td>
 </tr>
 <tr>
-<td>Deployment</td>
-<td>900 s (15 min)</td>
-<td>Tight window forces attention; stale deploys are risky</td>
+<td><code>approved</code></td>
+<td>Reads <code>decision.final_preview</code>, sends it, reports <code>executed</code></td>
 </tr>
 <tr>
-<td>Report generation</td>
-<td>86400 s (24 h)</td>
-<td>Reporting is low-risk and can wait a full day</td>
+<td><code>rejected</code>, <code>expired</code>, <code>executed</code>, <code>execute_failed</code></td>
+<td>Nothing: the slot is settled</td>
 </tr>
 </tbody></table>
 </div>
-<p>The default is 72 hours. For most scheduled jobs, something shorter is safer: it forces the decision to happen while the data is still fresh and stops an old action from being accidentally approved days later.</p>
+<p>The lookup is <code>GET /v1/actions?kind=…&amp;since=…</code> filtered by <code>idempotency_key</code> in the script. <code>since</code> is the start of the slot (Unix seconds), so the list stays short.</p>
 <hr>
-<h2 id="what-rejection-and-expiry-mean">What rejection and expiry mean</h2>
-<p>When <code>status</code> is <code>rejected</code> or <code>expired</code>, the script exits without the side effect. Nothing is sent, deleted, or deployed.</p>
-<p>Rejection is explicit: someone reviewed the draft and declined. Expiry is implicit: no one responded within the window. Both are safe exits. You can treat them identically in your error handling or distinguish them if you want different alerting behavior:</p>
-<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">elif</span> status == <span class="hljs-string">&quot;rejected&quot;</span>:
-    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;Rejected by reviewer. Exiting.&quot;</span>)
-<span class="hljs-keyword">elif</span> status == <span class="hljs-string">&quot;expired&quot;</span>:
-    <span class="hljs-built_in">print</span>(<span class="hljs-string">&quot;No response within window. Scheduled for next cycle.&quot;</span>)</code></pre></div>
-<p>Expiry is not a failure — it is a correctness feature. A draft newsletter from three days ago is probably not worth sending. Setting a short window and letting it expire is a valid workflow.</p>
+<h2 id="example-weekly-newsletter-python">Example: weekly newsletter (Python)</h2>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-comment">#!/usr/bin/env python3</span>
+<span class="hljs-string">&quot;&quot;&quot;weekly_newsletter.py: cron runs this every 10 minutes on Mondays.
+
+The first run of the week proposes the draft as an Impri card. Later runs
+look the card up and send the approved text once. Nothing waits in between.
+&quot;&quot;&quot;</span>
+<span class="hljs-keyword">import</span> datetime <span class="hljs-keyword">as</span> dt
+<span class="hljs-keyword">import</span> os
+<span class="hljs-keyword">import</span> sys
+
+<span class="hljs-keyword">import</span> httpx
+
+KIND = <span class="hljs-string">&quot;newsletter.send&quot;</span>
+impri = httpx.Client(
+    base_url=os.environ.get(<span class="hljs-string">&quot;IMPRI_BASE_URL&quot;</span>, <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>),
+    headers={<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{os.environ[<span class="hljs-string">&#x27;IMPRI_API_KEY&#x27;</span>]}</span>&quot;</span>},
+    timeout=<span class="hljs-number">15</span>,
+)
+
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">draft_newsletter</span>() -&gt; <span class="hljs-built_in">str</span>:
+    <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;**This week in AI tools**: five picks from the past 7 days...&quot;</span>
+
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">send_newsletter</span>(<span class="hljs-params">body: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">str</span>:
+    <span class="hljs-keyword">raise</span> NotImplementedError(<span class="hljs-string">&quot;your send call; return the provider&#x27;s message id&quot;</span>)
+
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">this_week</span>() -&gt; <span class="hljs-built_in">tuple</span>[<span class="hljs-built_in">str</span>, <span class="hljs-built_in">int</span>]:
+    <span class="hljs-string">&quot;&quot;&quot;ISO week label and Monday 00:00 local time as Unix seconds.&quot;&quot;&quot;</span>
+    today = dt.date.today()
+    year, week, weekday = today.isocalendar()
+    monday = dt.datetime.combine(today - dt.timedelta(days=weekday - <span class="hljs-number">1</span>), dt.time())
+    <span class="hljs-keyword">return</span> <span class="hljs-string">f&quot;<span class="hljs-subst">{year}</span>-W<span class="hljs-subst">{week:02d}</span>&quot;</span>, <span class="hljs-built_in">int</span>(monday.timestamp())
+
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">find_card</span>(<span class="hljs-params">key: <span class="hljs-built_in">str</span>, since: <span class="hljs-built_in">int</span></span>) -&gt; <span class="hljs-built_in">dict</span> | <span class="hljs-literal">None</span>:
+    r = impri.get(<span class="hljs-string">&quot;/v1/actions&quot;</span>, params={<span class="hljs-string">&quot;kind&quot;</span>: KIND, <span class="hljs-string">&quot;since&quot;</span>: since, <span class="hljs-string">&quot;limit&quot;</span>: <span class="hljs-number">100</span>})
+    r.raise_for_status()
+    <span class="hljs-keyword">return</span> <span class="hljs-built_in">next</span>((a <span class="hljs-keyword">for</span> a <span class="hljs-keyword">in</span> r.json()[<span class="hljs-string">&quot;items&quot;</span>] <span class="hljs-keyword">if</span> a.get(<span class="hljs-string">&quot;idempotency_key&quot;</span>) == key), <span class="hljs-literal">None</span>)
+
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">report</span>(<span class="hljs-params">action_id: <span class="hljs-built_in">str</span>, status: <span class="hljs-built_in">str</span>, detail: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-literal">None</span>:
+    r = impri.post(<span class="hljs-string">f&quot;/v1/actions/<span class="hljs-subst">{action_id}</span>/result&quot;</span>,
+                   json={<span class="hljs-string">&quot;status&quot;</span>: status, <span class="hljs-string">&quot;detail&quot;</span>: detail[:<span class="hljs-number">500</span>]})
+    r.raise_for_status()
+
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">main</span>() -&gt; <span class="hljs-built_in">int</span>:
+    week, since = this_week()
+    key = <span class="hljs-string">f&quot;newsletter-<span class="hljs-subst">{week}</span>&quot;</span>
+    card = find_card(key, since)
+
+    <span class="hljs-keyword">if</span> card <span class="hljs-keyword">is</span> <span class="hljs-literal">None</span>:
+        r = impri.post(<span class="hljs-string">&quot;/v1/actions&quot;</span>, json={
+            <span class="hljs-string">&quot;kind&quot;</span>: KIND,
+            <span class="hljs-string">&quot;title&quot;</span>: <span class="hljs-string">f&quot;Weekly newsletter <span class="hljs-subst">{week}</span>&quot;</span>,
+            <span class="hljs-string">&quot;preview&quot;</span>: {<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: draft_newsletter()},
+            <span class="hljs-string">&quot;editable&quot;</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
+            <span class="hljs-string">&quot;expires_in&quot;</span>: <span class="hljs-number">10</span> * <span class="hljs-number">3600</span>,
+            <span class="hljs-string">&quot;idempotency_key&quot;</span>: key,
+        })
+        r.raise_for_status()
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;proposed <span class="hljs-subst">{r.json()[<span class="hljs-string">&#x27;id&#x27;</span>]}</span> <span class="hljs-subst">{r.json().get(<span class="hljs-string">&#x27;inbox_url&#x27;</span>, <span class="hljs-string">&#x27;&#x27;</span>)}</span>&quot;</span>)
+        <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>
+
+    <span class="hljs-keyword">if</span> card[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;approved&quot;</span>:
+        <span class="hljs-comment"># pending: look again next run. rejected, expired, executed,</span>
+        <span class="hljs-comment"># execute_failed: this week is settled.</span>
+        <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;<span class="hljs-subst">{card[<span class="hljs-string">&#x27;id&#x27;</span>]}</span> is <span class="hljs-subst">{card[<span class="hljs-string">&#x27;status&#x27;</span>]}</span>&quot;</span>)
+        <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>
+
+    r = impri.get(<span class="hljs-string">f&quot;/v1/actions/<span class="hljs-subst">{card[<span class="hljs-string">&#x27;id&#x27;</span>]}</span>&quot;</span>)
+    r.raise_for_status()
+    body = r.json()[<span class="hljs-string">&quot;decision&quot;</span>][<span class="hljs-string">&quot;final_preview&quot;</span>][<span class="hljs-string">&quot;body&quot;</span>]  <span class="hljs-comment"># with the reviewer&#x27;s edits</span>
+    <span class="hljs-keyword">try</span>:
+        receipt = send_newsletter(body)
+    <span class="hljs-keyword">except</span> Exception <span class="hljs-keyword">as</span> exc:
+        report(card[<span class="hljs-string">&quot;id&quot;</span>], <span class="hljs-string">&quot;execute_failed&quot;</span>, <span class="hljs-built_in">str</span>(exc))
+        <span class="hljs-keyword">raise</span>
+    report(card[<span class="hljs-string">&quot;id&quot;</span>], <span class="hljs-string">&quot;executed&quot;</span>, receipt)
+    <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;sent <span class="hljs-subst">{card[<span class="hljs-string">&#x27;id&#x27;</span>]}</span> as <span class="hljs-subst">{receipt}</span>&quot;</span>)
+    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>
+
+
+<span class="hljs-keyword">if</span> __name__ == <span class="hljs-string">&quot;__main__&quot;</span>:
+    sys.exit(main())</code></pre></div>
+<p>The crontab runs it every 10 minutes from 07:00 to 18:50 on Mondays. <code>flock -n</code> skips a run while the previous one still holds the lock:</p>
+<div class="code-block"><span class="code-lang">cron</span><pre><code class="hljs">IMPRI_API_KEY=im_...
+*/10 7-18 * * 1  flock -n /tmp/weekly-newsletter.lock /opt/jobs/venv/bin/python /opt/jobs/weekly_newsletter.py</code></pre></div>
+<p>Every call in the script needs only the <code>actions</code> scope, so give the job a key with nothing else. <code>expires_in</code> of 10 hours closes a card proposed at 07:00 at 17:00; the runs after that find it <code>expired</code> and leave the week alone.</p>
 <hr>
-<h2 id="handling-human-edits">Handling human edits</h2>
-<p>When you set <code>editable: [&quot;preview.body&quot;]</code>, the reviewer can modify the draft before approving. The polling response then carries:</p>
+<h2 id="what-the-runs-showed">What the runs showed</h2>
 <ul>
-<li><code>decision.final_preview.body</code> — the version the human approved (use this, not the original)</li>
-<li><code>decision.diff</code> — a unified diff of what changed (present only when something was actually modified)</li>
+<li><strong>A regenerated draft changes nothing.</strong> The second run drafted a different text, found the card and exited. The card kept the first draft, so what the reviewer reads is what goes out.</li>
+<li><strong>Edits arrive.</strong> The card was approved with a corrected body in the inbox; the next run sent the corrected text from <code>decision.final_preview.body</code> and reported <code>executed</code>. The run after that printed <code>executed</code> and sent nothing. A second result report gets <code>409</code>.</li>
+<li><strong>The key holds under a race.</strong> Six simultaneous <code>POST /v1/actions</code> with one key returned one <code>201</code> and five <code>200</code>, and the slot had one card.</li>
+<li><strong>The key does not stop a double send; the lock does.</strong> Two overlapping runs over an approved card, with a send that took 2 seconds, sent the newsletter twice (the second report got <code>409</code>). With <code>flock -n</code>, once.</li>
+<li><strong>Rejected and expired cards send nothing.</strong> An expired card flipped from <code>pending</code> to <code>expired</code> within a minute of its <code>expires_at</code>; later runs left the week alone.</li>
+<li><strong>A failed send is recorded.</strong> When the send raised, the run reported <code>execute_failed</code> with the error as <code>detail</code> (it shows in the audit log) and exited with status 1, so cron mails you. Later runs did not retry.</li>
 </ul>
-<p>Always execute with <code>final_preview.body</code>. This is how one-click corrections work: the reviewer fixes a typo or updates a link directly in the inbox card, approves, and the corrected version goes out automatically.</p>
 <hr>
-<h2 id="next-steps">Next steps</h2>
+<h2 id="two-gaps-to-know">Two gaps to know</h2>
+<p><strong>Between the send and the report.</strong> If the send succeeds and the result call fails, the next run sees <code>approved</code> and sends again. If your provider accepts an idempotency key, pass it the card id.</p>
+<p><strong>The monthly limit on the cloud plans.</strong> Cloud plans count decisions per month (100 on Free). Once a project has used them, <code>POST /v1/actions</code> returns <code>402</code>, today also for a repeat of a key that already has a card. The script reads with <code>GET</code>, which the limit does not touch, so a card approved before the limit still goes out; only next week&#39;s proposal waits.</p>
+<hr>
+<h2 id="picking-expiresin-for-a-schedule">Picking <code>expires_in</code> for a schedule</h2>
+<p>Size the window to how long the side effect is still worth doing. Impri accepts 300 seconds to 30 days; the default is 72 hours, too long for most schedules. The run interval sets the delay between approval and execution: with runs every 10 minutes, an approved newsletter goes out within 10 minutes. More on choosing windows in <a href="handling-approval-timeouts-and-expiry-in-agents">handling approval timeouts and expiry</a>.</p>
+<hr>
+<h2 id="related-patterns">Related patterns</h2>
 <ul>
-<li><a href="quickstart">Quickstart</a> — get an API key and push your first test action in under five minutes</li>
-<li><a href="notifications">Notifications</a> — configure email, Slack, or Telegram so you are alerted the moment a cron job pushes an action</li>
-<li><a href="audit-log">Audit log</a> — review a history of what ran, what was approved, what was rejected, and when</li>
+<li><a href="human-approval-for-scheduled-ai-scripts">Scheduled AI scripts on CI runners</a>: the same propose and execute split on GitHub Actions.</li>
+<li><a href="approval-gate-for-overnight-ai-agents">Agents that run overnight</a>: many cards, one morning review pass.</li>
+<li><a href="blocking-vs-polling-for-human-approval">Blocking vs polling for approval</a>: when a long-running process may wait.</li>
 </ul>
+<hr>
+<h2 id="next-step">Next step</h2>
+<p>Run the script against your own inbox. <a href="quickstart">Self-host Impri</a> with <code>docker compose</code> and set <code>IMPRI_BASE_URL</code> to your server, or <a href="https://app.impri.dev/?signup=1" target="_blank" rel="noopener">start free on the cloud</a> and <a href="api-keys">create an `actions`-scoped key</a>. Then set up <a href="notifications">notifications</a> so the Monday card reaches your phone.</p>
 
     <aside class="doc-cta" aria-label="Try Impri">
   <p class="doc-cta-title">Add an approval step to your own agent</p>
@@ -312,10 +326,10 @@ HEADERS = {
     <nav class="doc-related" aria-label="Related guides">
   <p class="doc-related-title">Related guides</p>
   <ul>
-<li><a href="../docs/human-approval-for-scheduled-ai-scripts">Human Approval for Scheduled AI Scripts</a></li>
 <li><a href="../docs/rest-api-vs-mcp-for-human-approval">REST API vs MCP for Human-in-the-Loop Approval</a></li>
 <li><a href="../docs/human-approval-for-unattended-ai-agents">Human Approval for Unattended AI Agents</a></li>
-<li><a href="../docs/human-in-the-loop-for-ai-newsletter-automation">Human-in-the-Loop for AI Newsletter Automation</a></li>
+<li><a href="../docs/human-approval-mastra-agents">Human Approval for Mastra AI Agents</a></li>
+<li><a href="../docs/human-in-the-loop-openai-agents-sdk">Human-in-the-Loop for the OpenAI Agents SDK</a></li>
   </ul>
 </nav>
   </main>
@@ -387,13 +401,14 @@ HEADERS = {
   <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#why-scheduled-jobs-are-a-blind-spot">Why scheduled jobs are a blind spot</a></li>
-<li class="ptoc-h2"><a href="#how-the-pattern-works">How the pattern works</a></li>
-<li class="ptoc-h2"><a href="#example-weekly-newsletter-send-python">Example: weekly newsletter send (Python)</a></li>
-<li class="ptoc-h2"><a href="#choosing-the-right-expiry-window">Choosing the right expiry window</a></li>
-<li class="ptoc-h2"><a href="#what-rejection-and-expiry-mean">What rejection and expiry mean</a></li>
-<li class="ptoc-h2"><a href="#handling-human-edits">Handling human edits</a></li>
-<li class="ptoc-h2"><a href="#next-steps">Next steps</a></li></ul>
+<ul><li class="ptoc-h2"><a href="#why-not-wait-inside-the-cron-run">Why not wait inside the cron run</a></li>
+<li class="ptoc-h2"><a href="#the-pattern-one-card-per-slot-every-run-checks-it">The pattern: one card per slot, every run checks it</a></li>
+<li class="ptoc-h2"><a href="#example-weekly-newsletter-python">Example: weekly newsletter (Python)</a></li>
+<li class="ptoc-h2"><a href="#what-the-runs-showed">What the runs showed</a></li>
+<li class="ptoc-h2"><a href="#two-gaps-to-know">Two gaps to know</a></li>
+<li class="ptoc-h2"><a href="#picking-expiresin-for-a-schedule">Picking expires_in for a schedule</a></li>
+<li class="ptoc-h2"><a href="#related-patterns">Related patterns</a></li>
+<li class="ptoc-h2"><a href="#next-step">Next step</a></li></ul>
 </nav>
   </aside>
 </div>
