@@ -162,7 +162,7 @@ Configure in the Stripe Dashboard as `POST https://api.impri.dev/v1/billing/webh
 
 When a project hits a limit, the relevant endpoint returns `402 Payment Required`:
 
-- `POST /v1/actions` — when `approvals_per_month` limit is reached
+- `POST /v1/actions` — when `approvals_per_month` limit is reached and the request would create a new action. A repeat that matches an existing action (same `idempotency_key`, or without a key the same kind, title and body still pending) returns that action with `200`, as below the limit, so an agent that replays a step on resume still gets its decision.
 - `POST /v1/watchers` and `POST /v1/watchers/from-preset` — when `watchers` limit is reached or the requested schedule is more frequent than the tier's `min_interval`
 
 `402` response body:
@@ -170,7 +170,7 @@ When a project hits a limit, the relevant endpoint returns `402 Payment Required
 ```json
 {
   "error": "Payment Required",
-  "message": "Monthly approval quota reached (100/100). Upgrade to indie for 2 000/month.",
+  "message": "Monthly approvals limit reached for the free plan (100). Pending actions can still be decided; upgrade to push more.",
   "limit": 100,
   "tier": "free"
 }

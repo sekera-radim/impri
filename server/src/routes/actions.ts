@@ -77,18 +77,6 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
       return reply.status(429).send({ error: 'Too Many Requests', message: 'Rate limit: 60 requests/min per key' });
     }
 
-    // Tier limit: monthly approvals quota gates NEW actions only — deciding on
-    // already-pending actions is never blocked (safety). No-op when self-host.
-    if (approvalsLimitReached(db, key.projectId)) {
-      const tier = getProjectBilling(db, key.projectId).tier;
-      return reply.status(402).send({
-        error: 'Payment Required',
-        message: `Monthly approvals limit reached for the ${tier} plan (${TIER_LIMITS[tier].approvalsPerMonth}). Pending actions can still be decided; upgrade to push more.`,
-        limit: TIER_LIMITS[tier].approvalsPerMonth,
-        tier,
-      });
-    }
-
     const parsed = CreateActionBody.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: 'Bad Request', issues: parsed.error.issues });
@@ -124,6 +112,21 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
         reply.status(200);
         return { ...serializeActionWithDelivery(db, dup), duplicate_of: dup.id };
       }
+    }
+
+    // Tier limit: monthly approvals quota gates NEW actions only — deciding on
+    // already-pending actions is never blocked (safety). Checked after the
+    // idempotency and soft-dedup lookups: an agent framework that replays a
+    // step re-POSTs the same action on resume, and that replay must get its
+    // existing (possibly approved) action back, not a 402. No-op when self-host.
+    if (approvalsLimitReached(db, key.projectId)) {
+      const tier = getProjectBilling(db, key.projectId).tier;
+      return reply.status(402).send({
+        error: 'Payment Required',
+        message: `Monthly approvals limit reached for the ${tier} plan (${TIER_LIMITS[tier].approvalsPerMonth}). Pending actions can still be decided; upgrade to push more.`,
+        limit: TIER_LIMITS[tier].approvalsPerMonth,
+        tier,
+      });
     }
 
     const actionId = genId('act_');

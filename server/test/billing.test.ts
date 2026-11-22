@@ -134,3 +134,59 @@ describe('billing endpoints', () => {
     expect(fourth.json().tier).toBe('free');
   });
 });
+
+describe('approvals limit gates new actions only', () => {
+  const card = (body: string, idempotency_key?: string) => ({
+    kind: 'newsletter.send', title: 'Weekly newsletter', preview: { format: 'markdown', body },
+    ...(idempotency_key ? { idempotency_key } : {}),
+  });
+
+  it('an idempotent replay over the limit returns the existing action, not 402', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_test_x';
+    const { db, app, adminKey, projectId } = await setup();
+    const post = (payload: object) => app.inject({ method: 'POST', url: '/v1/actions', headers: auth(adminKey), payload });
+
+    const created = await post(card('draft v1', 'slot-1'));
+    expect(created.statusCode).toBe(201);
+    const { id } = created.json();
+
+    seedDecisions(db, projectId, 100);
+    expect(approvalsLimitReached(db, projectId)).toBe(true);
+
+    // Replay while pending: same action, stored body (a regenerated draft is ignored)
+    const replay = await post(card('draft v2', 'slot-1'));
+    expect(replay.statusCode).toBe(200);
+    expect(replay.json().id).toBe(id);
+    expect(replay.json().preview.body).toBe('draft v1');
+
+    // Decided over the limit, then replayed: the verdict is still reachable
+    const decided = await app.inject({
+      method: 'POST', url: `/v1/actions/${id}/decision`, headers: auth(adminKey), payload: { decision: 'approve' },
+    });
+    expect(decided.statusCode).toBe(200);
+    const after = await post(card('draft v3', 'slot-1'));
+    expect(after.statusCode).toBe(200);
+    expect(after.json().status).toBe('approved');
+
+    // A new key is a new action: still blocked
+    const fresh = await post(card('draft', 'slot-2'));
+    expect(fresh.statusCode).toBe(402);
+    expect(fresh.json().tier).toBe('free');
+  });
+
+  it('a soft-dedup repeat of a pending action over the limit returns it; a new one gets 402', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_test_x';
+    const { db, app, adminKey, projectId } = await setup();
+    const post = (payload: object) => app.inject({ method: 'POST', url: '/v1/actions', headers: auth(adminKey), payload });
+
+    const created = await post(card('same body'));
+    expect(created.statusCode).toBe(201);
+    seedDecisions(db, projectId, 100);
+
+    const repeat = await post(card('same body'));
+    expect(repeat.statusCode).toBe(200);
+    expect(repeat.json().duplicate_of).toBe(created.json().id);
+
+    expect((await post(card('other body'))).statusCode).toBe(402);
+  });
+});

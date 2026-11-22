@@ -257,7 +257,7 @@ Tiers: free (100 approvals/month, 3 watchers, 15-min min interval), indie (2000,
 `billing_enabled: false` on self-hosted instances without STRIPE_SECRET_KEY — no limits enforced.
 `POST /v1/billing/checkout` body: `{"plan": "indie|team", "period": "monthly|yearly"}`
 Stripe webhook handles: checkout.session.completed, customer.subscription.{created,updated,deleted}.
-402 response when limit reached: `{"error": "Payment Required", "limit": N, "tier": "free"}`
+402 response when limit reached: `{"error": "Payment Required", "limit": N, "tier": "free"}`. On POST /v1/actions only a new action gets 402; a repeat with an existing idempotency_key (or an identical pending action) returns that action (200).
 
 ### Web push
 
