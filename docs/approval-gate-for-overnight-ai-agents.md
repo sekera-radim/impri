@@ -87,4 +87,4 @@ Impri holds the decision; it doesn't decide anything about *when* your agent sho
 
 ## Next step
 
-Start with [quickstart](quickstart.md) to get an API key, then wire your nightly job to push actions instead of executing them directly.
+Start with [quickstart](quickstart.md) to get an API key, then wire your nightly job to push actions instead of executing them directly. For a job that runs from cron and must not send twice, follow [adding human approval to a cron job](gate-a-cron-job-with-human-approval.md).
