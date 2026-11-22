@@ -65,7 +65,7 @@ If the window closes before anyone looks, the action expires and is never execut
 
 Two honest patterns, pick based on how your unattended agent is deployed:
 
-- **Stateless cron job**: push the action and exit immediately. On the *next* scheduled run, check any actions pushed by the previous run before doing new work. This avoids holding a process open for hours.
+- **Stateless cron job**: push the action and exit immediately. On the *next* scheduled run, check any actions pushed by the previous run before doing new work. This avoids holding a process open for hours. [Adding human approval to a cron job](gate-a-cron-job-with-human-approval.md) shows it end to end: each run finds its slot's card by `idempotency_key`, so no state file is needed.
 - **Long-running daemon**: use `impri_await_decision` (MCP) or a polling loop with backoff (REST) and just block, since the process is already resident.
 
 Either way, the agent's actual side effect — sending the invoices, posting the summary — must live behind the `status == "approved"` check, not before it. An unattended agent is exactly the case where "the model will remember to check" isn't good enough; the code path has to make the unapproved branch unreachable.
