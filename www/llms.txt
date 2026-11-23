@@ -319,8 +319,8 @@ GET    /.well-known/mcp/server-card.json  MCP server card for directories (publi
 
 ## Webhook delivery
 
-When callback_url is set, Impri POSTs a signed JSON payload on each decision.
-Retry schedule on failure: immediate → 1 min → 5 min → 25 min → 2 h → 12 h → DLQ (7 attempts total).
+When callback_url is set, Impri POSTs a signed JSON payload after the action is created and again when it is decided or expires (only the first if a rule decides it on creation). Deliveries go out on a 60 s tick and carry the action's status at send time (`pending` on the creation delivery), so the same status can arrive twice: handle deliveries idempotently.
+Retry schedule on failure: next tick → 1 min → 5 min → 25 min → 2 h → 12 h → DLQ (6 attempts total).
 Return `410 Gone` to permanently deregister a callback URL.
 
 Signature: `sha256=HMAC-SHA256(WEBHOOK_SECRET, "${X-Impri-Timestamp}.${X-Impri-Nonce}.${rawBody}")`

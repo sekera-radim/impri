@@ -6,7 +6,7 @@ When a human approves or rejects an action in the Impri inbox, you can receive t
 
 ## Overview
 
-**Webhook**: Impri makes a POST request to your `callback_url` when a decision is recorded. Useful when your agent has a public URL and you want near-instant notification.
+**Webhook**: Impri makes a POST request to your `callback_url` after the action is created and again when it is decided or expires. Useful when your agent has a public URL and you want near-instant notification.
 
 **Polling**: Your agent calls `GET /v1/actions/:id` in a loop until `status` changes from `pending`. Always works — no public URL required. The MCP tool `impri_await_decision` implements this automatically.
 
@@ -31,7 +31,7 @@ curl -X POST https://api.impri.dev/v1/actions \
   }'
 ```
 
-When the human makes a decision, Impri POSTs to `https://your-agent.example.com/impri/webhook`.
+Impri POSTs to `https://your-agent.example.com/impri/webhook` once after the action is created and again when a human decides it or it expires. An action that a [rule](rules.md) decides on creation gets only the first delivery, which already carries the verdict.
 
 ### Restrictions on callback URLs
 
@@ -62,11 +62,19 @@ Impri sends a POST with `Content-Type: application/json`. The body is always a J
 |-------|------|-------------|
 | `event` | string | Always (`"action.updated"`) |
 | `action_id` | string | Always |
-| `status` | string | Always (`approved`, `rejected`, `expired`) |
+| `status` | string | Always: the action's status when the delivery is sent (`pending`, `approved`, `rejected`, `expired`, or `executed` / `execute_failed` if a result was reported before this delivery went out) |
 | `decided_at` | number (unix) | When a human decision was recorded |
 | `verdict` | string | When a human decision was recorded (`"approve"` or `"reject"`) |
 | `final_preview` | object | When approved (carries human-edited content if editable fields were changed) |
 | `diff` | string or null | When approved and the reviewer modified an editable field; a unified-style diff against the original |
+
+### The body carries the status at send time
+
+Deliveries go out on the server's 60-second tick, and Impri builds the body when it sends it, not when the event happened. An action decided before its creation delivery goes out therefore arrives twice with the decided status, and a retry carries the status at the time of the retry. Make the receiver safe to run twice:
+
+- act on `approved` only while `GET /v1/actions/:id` still returns `approved`, and report the outcome with `POST /v1/actions/:id/result`, so a repeat finds `executed`;
+- remember which `rejected` or `expired` actions you already handled;
+- return a 2xx for a `pending` delivery and keep waiting.
 
 When `diff` is present, `final_preview` contains the edited content. **Always use `final_preview.body` for execution — never the original** — because the reviewer may have changed it.
 
@@ -157,7 +165,7 @@ If your endpoint does not return a 2xx response, Impri retries up to 5 times:
 
 | Attempt | Delay after previous attempt |
 |---------|------------------------------|
-| 1 (initial) | immediate |
+| 1 (initial) | next delivery tick (within 60 seconds) |
 | 2 | 1 minute |
 | 3 | 5 minutes |
 | 4 | 25 minutes |
