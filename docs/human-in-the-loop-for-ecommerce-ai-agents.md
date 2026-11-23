@@ -70,7 +70,7 @@ The inbox card is a diff, not a wall of JSON: current price, proposed price, and
 
 ## Refunds are a separate, higher-stakes gate
 
-If the same agent also handles customer-facing refunds, treat those as a distinct `kind` (e.g. `shopify.refund`) with its own review — refund amounts and reasons need different scrutiny than a catalog price update, and mixing the two in one inbox makes the queue harder to triage. The REST API also accepts an `idempotent` hint on the action body (set `idempotent: false` for refunds, which the inbox shows as a warning badge) — again, send it via a direct `POST /v1/actions` call since the SDK's `createAction` doesn't take that param yet. Either way, approving the same refund action twice should never double-charge a reversal.
+If the same agent also handles customer-facing refunds, treat those as a distinct `kind` (e.g. `shopify.refund`) with its own review — refund amounts and reasons need different scrutiny than a catalog price update, and mixing the two in one inbox makes the queue harder to triage. The REST API also accepts an `idempotent` hint on the action body (set `idempotent: false` for refunds, which the inbox shows as a warning badge) — again, send it via a direct `POST /v1/actions` call since the SDK's `createAction` doesn't take that param yet. Either way, approving the same refund action twice should never double-charge a reversal. Discount codes a customer-facing chat bot hands out are a third gate, covered in [human-in-the-loop AI for e-commerce discounts](human-in-the-loop-for-ai-in-ecommerce.md): one card per conversation, the code issued from a signed webhook.
 
 ## What Impri is and isn't for e-commerce
 
