@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Human-in-the-Loop AI for E-commerce Discounts — Impri Docs</title>
-<meta name="description" content="Gate discount codes and order cancellations behind a human tap, so an AI agent's mistake in your store can't touch revenue before someone signs off.">
+<meta name="description" content="Let a support bot propose discount codes and order cancellations, but issue them only after a person approves in Impri: one card per chat, no blocked chat.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="Human-in-the-Loop AI for E-commerce Discounts — Impri Docs">
-<meta property="og:description" content="Gate discount codes and order cancellations behind a human tap, so an AI agent's mistake in your store can't touch revenue before someone signs off.">
+<meta property="og:description" content="Let a support bot propose discount codes and order cancellations, but issue them only after a person approves in Impri: one card per chat, no blocked chat.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/human-in-the-loop-for-ai-in-ecommerce">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/human-in-the-loop-for-ai-in-ecommerce">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human-in-the-Loop AI for E-commerce Discounts","description":"Gate discount codes and order cancellations behind a human tap, so an AI agent's mistake in your store can't touch revenue before someone signs off.","url":"https://impri.dev/docs/human-in-the-loop-for-ai-in-ecommerce","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Human-in-the-Loop AI for E-commerce Discounts","description":"Let a support bot propose discount codes and order cancellations, but issue them only after a person approves in Impri: one card per chat, no blocked chat.","url":"https://impri.dev/docs/human-in-the-loop-for-ai-in-ecommerce","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -153,96 +153,168 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>Human-in-the-Loop AI for E-commerce Discounts</span>
     </nav>
     <h1>Human-in-the-Loop AI for E-commerce Discounts</h1>
-<p>Gate discount codes and order cancellations behind a human tap, so an AI agent&#39;s mistake in your store can&#39;t touch revenue before someone signs off.</p>
+<p>Let a support bot propose discount codes and order cancellations, but issue them only after a person approves in Impri: one card per chat, no blocked chat.</p>
 <hr>
-<h2 id="where-the-risk-actually-sits">Where the risk actually sits</h2>
-<p>Most e-commerce AI agents aren&#39;t dangerous because they&#39;re wrong often — they&#39;re dangerous because the actions they can take are asymmetric. A shopping assistant that misreads a return policy and offers a customer 15% off instead of 5% costs you a few dollars. The same agent, given a long enough conversation and a persistent customer, can be talked into stacking discount codes, waiving shipping, or canceling and refunding an order that already shipped. None of that requires a bug — it&#39;s the normal behavior of a model trying to be helpful in a conversation it doesn&#39;t fully control.</p>
-<p>The fix isn&#39;t to make the agent more cautious in its system prompt. It&#39;s to make a specific set of actions — the ones that move money or reverse a fulfilled order — require a human decision before they execute.</p>
-<h2 id="sorting-actions-by-what-they-cost-you-if-wrong">Sorting actions by what they cost you if wrong</h2>
-<p>Not every action an e-commerce agent takes needs a gate. Updating a saved-for-later list or answering a sizing question doesn&#39;t touch money. Splitting the agent&#39;s action surface into tiers makes it obvious which calls get wrapped:</p>
+<h2 id="where-the-risk-sits">Where the risk sits</h2>
+<p>A support or shopping assistant that misreads a return policy and offers 15% off instead of 5% costs you a few dollars. Given a long conversation and a persistent customer, the same assistant can be talked into stacking codes, waiving shipping or cancelling an order that already shipped. No bug is needed: it&#39;s a model trying to help in a conversation it doesn&#39;t control.</p>
+<p>A stricter system prompt is something the next message can argue with. A decision made by a person outside the conversation is not. So the bot still decides <em>what</em> to offer, and actions that move money wait for a human.</p>
+<h2 id="which-actions-need-a-person">Which actions need a person</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
 <th>Action</th>
-<th>Reversible?</th>
-<th>Gate it?</th>
+<th>Undo</th>
+<th>Who decides</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>Answer product/sizing question</td>
-<td>n/a</td>
-<td>No</td>
+<td>Answer a sizing or policy question</td>
+<td>nothing to undo</td>
+<td>the bot</td>
 </tr>
 <tr>
-<td>Apply a pre-approved loyalty discount</td>
-<td>Yes, easily</td>
-<td>No</td>
+<td>Loyalty discount up to 5%</td>
+<td>deactivate the code</td>
+<td>an Impri rule, at once</td>
 </tr>
 <tr>
-<td>Issue a custom discount code</td>
-<td>Only if unused</td>
-<td>Yes</td>
+<td>Custom discount above 5%</td>
+<td>only while unused</td>
+<td>a person in the inbox</td>
 </tr>
 <tr>
 <td>Cancel an unshipped order</td>
-<td>Yes</td>
-<td>Yes</td>
+<td>re-create the order</td>
+<td>a person</td>
 </tr>
 <tr>
-<td>Cancel/refund a shipped order</td>
-<td>No (money moved)</td>
-<td>Yes</td>
+<td>Cancel or refund a shipped order</td>
+<td>money has moved</td>
+<td>a person</td>
 </tr>
 </tbody></table>
 </div>
-<p>The bottom three go through Impri as pending actions. The top two stay fully automated.</p>
-<h2 id="gating-a-discount-code-from-a-python-support-bot">Gating a discount code from a Python support bot</h2>
-<p>The agent still decides <em>what</em> to offer — Impri just sits between that decision and the code actually being issued:</p>
+<p>The 5% row is a <a href="rules">rule</a> in your Impri project: <code>kind_pattern</code> <code>support.discount_code</code>, a payload condition <code>{&quot;path&quot;: &quot;percent&quot;, &quot;op&quot;: &quot;lte&quot;, &quot;value&quot;: 5}</code> and <code>rule_action</code> <code>auto_approve</code>. The card is approved on creation, still logged, and goes through the same code path below.</p>
+<h2 id="step-1-the-bot-proposes-and-returns">Step 1: the bot proposes and returns</h2>
+<p>The agent&#39;s tool creates the card and returns a sentence for the customer at once; it never waits for the decision.</p>
 <div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> os
-<span class="hljs-keyword">import</span> time
-<span class="hljs-keyword">import</span> requests
+<span class="hljs-keyword">import</span> httpx
 
-API = <span class="hljs-string">&quot;https://api.impri.dev/v1&quot;</span>
-HEADERS = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{os.environ[<span class="hljs-string">&#x27;IMPRI_API_KEY&#x27;</span>]}</span>&quot;</span>}
+IMPRI = os.environ.get(<span class="hljs-string">&quot;IMPRI_BASE_URL&quot;</span>, <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>)
+PUBLIC_URL = os.environ[<span class="hljs-string">&quot;PUBLIC_URL&quot;</span>]  <span class="hljs-comment"># where Impri can reach your webhook</span>
+impri = httpx.Client(
+    base_url=IMPRI,
+    headers={<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{os.environ[<span class="hljs-string">&#x27;IMPRI_API_KEY&#x27;</span>]}</span>&quot;</span>},
+    timeout=<span class="hljs-number">10</span>,
+)
 
-<span class="hljs-keyword">def</span> <span class="hljs-title function_">propose_discount</span>(<span class="hljs-params">customer_email, code, percent, reason, order_id=<span class="hljs-literal">None</span></span>):
-    resp = requests.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{API}</span>/actions&quot;</span>, headers=HEADERS, json={
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">propose_discount</span>(<span class="hljs-params">conversation_id: <span class="hljs-built_in">str</span>, email: <span class="hljs-built_in">str</span>, percent: <span class="hljs-built_in">int</span>, reason: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">str</span>:
+    <span class="hljs-string">&quot;&quot;&quot;Tool the agent calls. The code itself is issued by the webhook below.&quot;&quot;&quot;</span>
+    r = impri.post(<span class="hljs-string">&quot;/v1/actions&quot;</span>, json={
         <span class="hljs-string">&quot;kind&quot;</span>: <span class="hljs-string">&quot;support.discount_code&quot;</span>,
-        <span class="hljs-string">&quot;title&quot;</span>: <span class="hljs-string">f&quot;Issue <span class="hljs-subst">{percent}</span>% code to <span class="hljs-subst">{customer_email}</span>&quot;</span>,
+        <span class="hljs-string">&quot;title&quot;</span>: <span class="hljs-string">f&quot;<span class="hljs-subst">{percent}</span>% discount for <span class="hljs-subst">{email}</span>&quot;</span>,
         <span class="hljs-string">&quot;preview&quot;</span>: {
             <span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>,
-            <span class="hljs-string">&quot;body&quot;</span>: <span class="hljs-string">f&quot;**Customer:** <span class="hljs-subst">{customer_email}</span>\n**Code:** <span class="hljs-subst">{code}</span>\n&quot;</span>
-                    <span class="hljs-string">f&quot;**Discount:** <span class="hljs-subst">{percent}</span>%\n**Reason:** <span class="hljs-subst">{reason}</span>&quot;</span>,
+            <span class="hljs-string">&quot;body&quot;</span>: <span class="hljs-string">f&quot;**Customer:** <span class="hljs-subst">{email}</span>\n\n**Discount:** <span class="hljs-subst">{percent}</span>%\n\n&quot;</span>
+                    <span class="hljs-string">f&quot;**Agent&#x27;s reason:** <span class="hljs-subst">{reason}</span>&quot;</span>,
         },
-        <span class="hljs-string">&quot;editable&quot;</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
-        <span class="hljs-string">&quot;idempotent&quot;</span>: <span class="hljs-literal">False</span>,  <span class="hljs-comment"># issuing the same code twice = double discount</span>
-        <span class="hljs-string">&quot;undo&quot;</span>: <span class="hljs-string">&quot;Deactivate the code in the discounts admin panel&quot;</span>,
-        <span class="hljs-string">&quot;expires_in&quot;</span>: <span class="hljs-number">3600</span>,  <span class="hljs-comment"># a support conversation goes stale fast</span>
+        <span class="hljs-string">&quot;payload&quot;</span>: {<span class="hljs-string">&quot;conversation_id&quot;</span>: conversation_id, <span class="hljs-string">&quot;email&quot;</span>: email, <span class="hljs-string">&quot;percent&quot;</span>: percent},
+        <span class="hljs-string">&quot;editable&quot;</span>: [<span class="hljs-string">&quot;payload.percent&quot;</span>],
+        <span class="hljs-string">&quot;idempotency_key&quot;</span>: <span class="hljs-string">f&quot;discount:<span class="hljs-subst">{conversation_id}</span>&quot;</span>,
+        <span class="hljs-string">&quot;idempotent&quot;</span>: <span class="hljs-literal">False</span>,
+        <span class="hljs-string">&quot;undo&quot;</span>: <span class="hljs-string">&quot;Deactivate the code in the store&#x27;s discount admin&quot;</span>,
+        <span class="hljs-string">&quot;expires_in&quot;</span>: <span class="hljs-number">3600</span>,
+        <span class="hljs-string">&quot;callback_url&quot;</span>: <span class="hljs-string">f&quot;<span class="hljs-subst">{PUBLIC_URL}</span>/impri-webhook&quot;</span>,
     })
-    action_id = resp.json()[<span class="hljs-string">&quot;id&quot;</span>]
+    r.raise_for_status()
+    card = r.json()
+    <span class="hljs-keyword">if</span> r.status_code == <span class="hljs-number">200</span>:  <span class="hljs-comment"># this conversation already has a discount card</span>
+        <span class="hljs-keyword">return</span> <span class="hljs-string">f&quot;This chat already has a discount request (<span class="hljs-subst">{card[<span class="hljs-string">&#x27;status&#x27;</span>]}</span>). Don&#x27;t offer another.&quot;</span>
+    <span class="hljs-keyword">if</span> card[<span class="hljs-string">&quot;status&quot;</span>] == <span class="hljs-string">&quot;approved&quot;</span>:  <span class="hljs-comment"># a rule approved it</span>
+        <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;Approved. The code will arrive in this chat within a minute.&quot;</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;A teammate will confirm the discount. The code will arrive in this chat.&quot;</span></code></pre></div>
+<p>Three fields carry the protection:</p>
+<ul>
+<li><strong><code>idempotency_key</code>, one per conversation.</strong> A customer who asks again, or asks for more, gets the same card back with a <code>200</code>, even after it was rejected. Without a key, Impri folds a repeat only when its kind, title and body are identical and the first card is still pending, so &quot;15%&quot; followed by &quot;20%&quot; would open two cards.</li>
+<li><strong><code>payload.percent</code> is what gets issued</strong>, and it is the one field the reviewer may edit. The card body shows the agent&#39;s figure and its reason.</li>
+<li><strong><code>callback_url</code></strong> must be reachable from Impri: on the cloud, a public URL, since Impri doesn&#39;t deliver to private addresses.</li>
+</ul>
+<h2 id="step-2-issue-the-code-when-the-decision-arrives">Step 2: issue the code when the decision arrives</h2>
+<p>The handler lives in the same module as the tool. Impri posts a signed webhook to <code>callback_url</code> when the card is created, decided or expires, and each delivery carries the status at the moment it is sent. A card decided before the first delivery goes out arrives with that status twice, and a retry repeats it, so the handler must be safe to run again. The body has no payload: the handler reads the action for the reviewer&#39;s edit.</p>
+<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> hashlib
+<span class="hljs-keyword">import</span> hmac
+<span class="hljs-keyword">import</span> time
+<span class="hljs-keyword">from</span> flask <span class="hljs-keyword">import</span> Flask, abort, request
 
-    <span class="hljs-keyword">while</span> <span class="hljs-literal">True</span>:
-        status = requests.get(<span class="hljs-string">f&quot;<span class="hljs-subst">{API}</span>/actions/<span class="hljs-subst">{action_id}</span>&quot;</span>, headers=HEADERS).json()
-        <span class="hljs-keyword">if</span> status[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;pending&quot;</span>:
-            <span class="hljs-keyword">break</span>
-        time.sleep(<span class="hljs-number">5</span>)
+WEBHOOK_SECRET = os.environ[<span class="hljs-string">&quot;IMPRI_WEBHOOK_SECRET&quot;</span>]  <span class="hljs-comment"># GET /v1/project → webhook_secret</span>
+MAX_PERCENT = <span class="hljs-number">20</span>  <span class="hljs-comment"># your policy, checked again after a human edit</span>
+answered: <span class="hljs-built_in">set</span>[<span class="hljs-built_in">str</span>] = <span class="hljs-built_in">set</span>()  <span class="hljs-comment"># action ids already answered; keep this in your database</span>
+app = Flask(__name__)
 
-    <span class="hljs-keyword">if</span> status[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;approved&quot;</span>:
-        <span class="hljs-keyword">return</span> <span class="hljs-literal">None</span>  <span class="hljs-comment"># rejected or expired — never issued</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">create_discount_code</span>(<span class="hljs-params">code: <span class="hljs-built_in">str</span>, percent: <span class="hljs-built_in">int</span></span>) -&gt; <span class="hljs-literal">None</span>: ...  <span class="hljs-comment"># your store; succeed if code exists</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">tell_customer</span>(<span class="hljs-params">conversation_id: <span class="hljs-built_in">str</span>, text: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-literal">None</span>: ...  <span class="hljs-comment"># your chat channel</span>
 
-    final_body = status[<span class="hljs-string">&quot;decision&quot;</span>][<span class="hljs-string">&quot;final_preview&quot;</span>][<span class="hljs-string">&quot;body&quot;</span>]
-    issued_code = create_discount_in_store(code, percent)  <span class="hljs-comment"># your store&#x27;s API</span>
+<span class="hljs-meta">@app.post(<span class="hljs-params"><span class="hljs-string">&quot;/impri-webhook&quot;</span></span>)</span>
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">impri_webhook</span>():
+    ts = request.headers.get(<span class="hljs-string">&quot;X-Impri-Timestamp&quot;</span>, <span class="hljs-string">&quot;&quot;</span>)
+    nonce = request.headers.get(<span class="hljs-string">&quot;X-Impri-Nonce&quot;</span>, <span class="hljs-string">&quot;&quot;</span>)
+    sent = request.headers.get(<span class="hljs-string">&quot;X-Impri-Signature&quot;</span>, <span class="hljs-string">&quot;&quot;</span>).removeprefix(<span class="hljs-string">&quot;sha256=&quot;</span>)
+    signed = <span class="hljs-string">f&quot;<span class="hljs-subst">{ts}</span>.<span class="hljs-subst">{nonce}</span>.&quot;</span>.encode() + request.get_data()
+    expected = hmac.new(WEBHOOK_SECRET.encode(), signed, hashlib.sha256).hexdigest()
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> (ts.isdigit() <span class="hljs-keyword">and</span> <span class="hljs-built_in">abs</span>(time.time() - <span class="hljs-built_in">int</span>(ts)) &lt;= <span class="hljs-number">300</span>
+            <span class="hljs-keyword">and</span> hmac.compare_digest(sent, expected)):
+        abort(<span class="hljs-number">401</span>)
 
-    requests.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{API}</span>/actions/<span class="hljs-subst">{action_id}</span>/result&quot;</span>, headers=HEADERS,
-                  json={<span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;executed&quot;</span>, <span class="hljs-string">&quot;payload&quot;</span>: {<span class="hljs-string">&quot;code&quot;</span>: issued_code}})
-    <span class="hljs-keyword">return</span> issued_code</code></pre></div>
-<p>Order cancellations use the same shape with <code>kind: &quot;support.order_cancel&quot;</code> and a preview that shows order ID, items, and fulfillment status — a reviewer approving a cancellation on a shipped order needs to see &quot;shipped&quot; in the card, not just the order number.</p>
-<h2 id="what-the-reviewer-sees-and-why-that-matters-more-than-the-code">What the reviewer sees, and why that matters more than the code</h2>
-<p>The person approving isn&#39;t reading source code — they&#39;re reading a card with a customer email, a percentage, and a reason. That&#39;s the entire point: a five-second mobile decision on the one message where an agent&#39;s judgment actually needs checking, instead of a blanket rule like &quot;never discount more than 10%&quot; that a persuasive conversation can still argue its way around within.</p>
+    r = impri.get(<span class="hljs-string">f&quot;/v1/actions/<span class="hljs-subst">{request.get_json()[<span class="hljs-string">&#x27;action_id&#x27;</span>]}</span>&quot;</span>)
+    r.raise_for_status()
+    action = r.json()
+    <span class="hljs-keyword">if</span> action[<span class="hljs-string">&quot;kind&quot;</span>] != <span class="hljs-string">&quot;support.discount_code&quot;</span>:
+        <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;&quot;</span>, <span class="hljs-number">204</span>
+    chat = action[<span class="hljs-string">&quot;payload&quot;</span>][<span class="hljs-string">&quot;conversation_id&quot;</span>]
+    <span class="hljs-keyword">if</span> action[<span class="hljs-string">&quot;status&quot;</span>] <span class="hljs-keyword">in</span> (<span class="hljs-string">&quot;rejected&quot;</span>, <span class="hljs-string">&quot;expired&quot;</span>):
+        <span class="hljs-keyword">if</span> action[<span class="hljs-string">&quot;id&quot;</span>] <span class="hljs-keyword">not</span> <span class="hljs-keyword">in</span> answered:
+            answered.add(action[<span class="hljs-string">&quot;id&quot;</span>])
+            tell_customer(chat, <span class="hljs-string">&quot;I can&#x27;t offer a discount on this order, sorry.&quot;</span>)
+        <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;&quot;</span>, <span class="hljs-number">204</span>
+    <span class="hljs-keyword">if</span> action[<span class="hljs-string">&quot;status&quot;</span>] != <span class="hljs-string">&quot;approved&quot;</span>:  <span class="hljs-comment"># still pending, or already executed</span>
+        <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;&quot;</span>, <span class="hljs-number">204</span>
+
+    raw = action[<span class="hljs-string">&quot;payload&quot;</span>][<span class="hljs-string">&quot;percent&quot;</span>]  <span class="hljs-comment"># an inbox edit arrives as text</span>
+    percent = <span class="hljs-built_in">int</span>(raw) <span class="hljs-keyword">if</span> <span class="hljs-built_in">str</span>(raw).isdigit() <span class="hljs-keyword">else</span> -<span class="hljs-number">1</span>
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> <span class="hljs-number">1</span> &lt;= percent &lt;= MAX_PERCENT:
+        impri.post(<span class="hljs-string">f&quot;/v1/actions/<span class="hljs-subst">{action[<span class="hljs-string">&#x27;id&#x27;</span>]}</span>/result&quot;</span>, json={
+            <span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;execute_failed&quot;</span>,
+            <span class="hljs-string">&quot;detail&quot;</span>: <span class="hljs-string">f&quot;percent <span class="hljs-subst">{raw!r}</span> is outside 1-<span class="hljs-subst">{MAX_PERCENT}</span>, nothing issued&quot;</span>,
+        }).raise_for_status()
+        <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;&quot;</span>, <span class="hljs-number">204</span>
+
+    code = <span class="hljs-string">&quot;SUPPORT-&quot;</span> + hashlib.sha256(action[<span class="hljs-string">&quot;id&quot;</span>].encode()).hexdigest()[:<span class="hljs-number">10</span>].upper()
+    create_discount_code(code, percent)  <span class="hljs-comment"># raises → 500 → Impri delivers again</span>
+    impri.post(<span class="hljs-string">f&quot;/v1/actions/<span class="hljs-subst">{action[<span class="hljs-string">&#x27;id&#x27;</span>]}</span>/result&quot;</span>, json={
+        <span class="hljs-string">&quot;status&quot;</span>: <span class="hljs-string">&quot;executed&quot;</span>, <span class="hljs-string">&quot;detail&quot;</span>: <span class="hljs-string">f&quot;<span class="hljs-subst">{percent}</span>% code issued&quot;</span>, <span class="hljs-string">&quot;payload&quot;</span>: {<span class="hljs-string">&quot;code&quot;</span>: code},
+    }).raise_for_status()
+    tell_customer(chat, <span class="hljs-string">f&quot;Here is your <span class="hljs-subst">{percent}</span>% code: <span class="hljs-subst">{code}</span>&quot;</span>)
+    <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;&quot;</span>, <span class="hljs-number">204</span></code></pre></div>
+<p>The code string comes from the action id, so a retry asks your store for the same code. If <code>create_discount_code</code> succeeds quietly when the code exists, a crash between creating it and reporting the result can&#39;t issue a second discount.</p>
+<h2 id="what-happened-when-we-ran-it">What happened when we ran it</h2>
+<p>We ran both functions as written (Python 3.12, httpx, Flask) against a local Impri server on 2026-11-23, with the store and chat stubbed:</p>
+<ul>
+<li>Three more requests in one conversation returned <code>200</code> and the same card; after a rejection, too.</li>
+<li>The reviewer changed <code>percent</code> from 15 to 10 in the decision: the webhook arrived without the payload, the <code>GET</code> returned <code>&quot;10&quot;</code> as a string, and a 10% code was issued.</li>
+<li>An edit to 50 ended as <code>execute_failed</code> with the detail above; nothing was issued.</li>
+<li>With the 5% rule, a 5% request came back <code>approved</code> from the <code>POST</code> and the webhook issued the code with no person involved; an 8% request stayed pending.</li>
+<li>A card rejected, and one expired, before the first delivery each arrived twice; <code>answered</code> told each customer once.</li>
+<li>With the store failing once, the handler returned <code>500</code>; Impri delivered again 60 seconds later and the code was issued once.</li>
+<li>A re-sent <code>approved</code> event for a card already executed returned <code>204</code> and issued nothing; a wrong signature or a stale timestamp got <code>401</code>.</li>
+</ul>
+<p>Webhooks go out on the server&#39;s 60-second tick, so expect up to a minute between the tap and the customer&#39;s code.</p>
+<h2 id="order-cancellations">Order cancellations</h2>
+<p>Use the same two steps with <code>kind: &quot;support.order_cancel&quot;</code> and one key per order. Put the fulfilment status in the card body: the reviewer needs to see &quot;shipped&quot;, not just an order number. Refunds have their own page: <a href="approve-refunds-issued-by-an-ai-support-agent">approve refunds issued by an AI support agent</a>.</p>
 <h2 id="what-impri-does-not-do-here">What Impri does not do here</h2>
-<p>Impri stores the proposed discount or cancellation, notifies whoever&#39;s on support duty, and holds the decision — it doesn&#39;t know your discount policy, doesn&#39;t talk to your store&#39;s API, and doesn&#39;t decide whether 15% is reasonable. That judgment is still the human&#39;s, and the actual code creation or order update is still your agent&#39;s code to write. The gate only holds if the agent&#39;s store credentials are wrapped so <code>create_discount_in_store</code> can&#39;t be reached without an approved decision — see <a href="wrapping-a-tool-with-a-human-approval-step">wrapping a tool with a human approval step</a>.</p>
+<p>Impri stores the request, notifies whoever is on duty, records the decision and calls your webhook. It doesn&#39;t know your discount policy or talk to your store. The gate holds only if the bot&#39;s tools can&#39;t reach the store&#39;s discount API directly: see <a href="wrapping-a-tool-with-a-human-approval-step">wrapping a tool with a human approval step</a>.</p>
 <hr>
-<p>Next: <a href="how-to-add-human-approval-to-an-ai-agent">how to add human approval to an AI agent</a> for the base REST/MCP pattern, and <a href="approve-refunds-issued-by-an-ai-support-agent">approve refunds issued by an AI support agent</a> if refunds specifically are your next gate.</p>
+<h2 id="next-step">Next step</h2>
+<p><a href="quickstart">Self-host Impri</a> with <code>docker compose</code>, or <a href="https://app.impri.dev/?signup=1" target="_blank" rel="noopener">start free on the cloud</a> and <a href="api-keys">create an `actions`-scoped key</a>. Then read <a href="webhooks">webhooks</a> for the signing secret and retries, and set up <a href="notifications">notifications</a> so the request reaches whoever is on support duty.</p>
 
     <aside class="doc-cta" aria-label="Try Impri">
   <p class="doc-cta-title">Add an approval step to your own agent</p>
@@ -257,9 +329,9 @@ HEADERS = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span cla
   <p class="doc-related-title">Related guides</p>
   <ul>
 <li><a href="../docs/human-in-the-loop-for-ecommerce-ai-agents">Human-in-the-Loop for E-commerce AI Agents</a></li>
-<li><a href="../docs/human-approval-for-ai-agent-app-store-submissions">Human Approval for AI Agent App Store and Play Store Submissions</a></li>
-<li><a href="../docs/one-tap-approve-reject-for-ai-agents">One-Tap Approve/Reject for AI Agent Actions</a></li>
-<li><a href="../docs/human-approval-before-deploying-code-with-an-agent">Human Approval Before an AI Agent Deploys Code</a></li>
+<li><a href="../docs/human-in-the-loop-ai-customer-support">Human-in-the-Loop for AI Customer Support Agents</a></li>
+<li><a href="../docs/review-ai-agent-decisions-before-they-happen">Review AI Agent Decisions Before They Happen</a></li>
+<li><a href="../docs/human-approval-for-ai-trading-agents">Human Approval for AI Trading Agents</a></li>
   </ul>
 </nav>
   </main>
@@ -331,11 +403,14 @@ HEADERS = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span cla
   <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#where-the-risk-actually-sits">Where the risk actually sits</a></li>
-<li class="ptoc-h2"><a href="#sorting-actions-by-what-they-cost-you-if-wrong">Sorting actions by what they cost you if wrong</a></li>
-<li class="ptoc-h2"><a href="#gating-a-discount-code-from-a-python-support-bot">Gating a discount code from a Python support bot</a></li>
-<li class="ptoc-h2"><a href="#what-the-reviewer-sees-and-why-that-matters-more-than-the-code">What the reviewer sees, and why that matters more than the code</a></li>
-<li class="ptoc-h2"><a href="#what-impri-does-not-do-here">What Impri does not do here</a></li></ul>
+<ul><li class="ptoc-h2"><a href="#where-the-risk-sits">Where the risk sits</a></li>
+<li class="ptoc-h2"><a href="#which-actions-need-a-person">Which actions need a person</a></li>
+<li class="ptoc-h2"><a href="#step-1-the-bot-proposes-and-returns">Step 1: the bot proposes and returns</a></li>
+<li class="ptoc-h2"><a href="#step-2-issue-the-code-when-the-decision-arrives">Step 2: issue the code when the decision arrives</a></li>
+<li class="ptoc-h2"><a href="#what-happened-when-we-ran-it">What happened when we ran it</a></li>
+<li class="ptoc-h2"><a href="#order-cancellations">Order cancellations</a></li>
+<li class="ptoc-h2"><a href="#what-impri-does-not-do-here">What Impri does not do here</a></li>
+<li class="ptoc-h2"><a href="#next-step">Next step</a></li></ul>
 </nav>
   </aside>
 </div>
