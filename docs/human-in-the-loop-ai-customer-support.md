@@ -25,7 +25,7 @@ Not every support action deserves an approval step — that would just turn your
 | Replying to an angry or legal-sounding message | Yes |
 | Escalating to a human teammate | No — that's already the safe path |
 
-The pattern below applies to any of the "yes" rows; refunds specifically are covered in more depth in [approving refunds issued by an AI support agent](approve-refunds-issued-by-an-ai-support-agent.md).
+The pattern below applies to any of the "yes" rows; refunds specifically are covered in more depth in [approving refunds issued by an AI support agent](approve-refunds-issued-by-an-ai-support-agent.md), and discount codes offered in a chat in [human-in-the-loop AI for e-commerce discounts](human-in-the-loop-for-ai-in-ecommerce.md).
 
 ---
 
