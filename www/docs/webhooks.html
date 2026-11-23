@@ -156,7 +156,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <p>When a human approves or rejects an action in the Impri inbox, you can receive the decision in two ways: a webhook pushed to your server, or polling from your agent. Both are always available — they are not mutually exclusive.</p>
 <hr>
 <h2 id="overview">Overview</h2>
-<p><strong>Webhook</strong>: Impri makes a POST request to your <code>callback_url</code> when a decision is recorded. Useful when your agent has a public URL and you want near-instant notification.</p>
+<p><strong>Webhook</strong>: Impri makes a POST request to your <code>callback_url</code> after the action is created and again when it is decided or expires. Useful when your agent has a public URL and you want near-instant notification.</p>
 <p><strong>Polling</strong>: Your agent calls <code>GET /v1/actions/:id</code> in a loop until <code>status</code> changes from <code>pending</code>. Always works — no public URL required. The MCP tool <code>impri_await_decision</code> implements this automatically.</p>
 <p>The source of truth is always the database. If a webhook delivery fails, polling still returns the correct state.</p>
 <hr>
@@ -172,7 +172,7 @@ pre code.hljs{display:block;overflow-x:auto}
     &quot;callback_url&quot;: &quot;https://your-agent.example.com/impri/webhook&quot;,
     &quot;expires_in&quot;: 86400
   }&#x27;</span></code></pre></div>
-<p>When the human makes a decision, Impri POSTs to <code>https://your-agent.example.com/impri/webhook</code>.</p>
+<p>Impri POSTs to <code>https://your-agent.example.com/impri/webhook</code> once after the action is created and again when a human decides it or it expires. An action that a <a href="rules">rule</a> decides on creation gets only the first delivery, which already carries the verdict.</p>
 <h3 id="restrictions-on-callback-urls">Restrictions on callback URLs</h3>
 <p>For security, <code>callback_url</code> must be an <code>http://</code> or <code>https://</code> URL. <code>javascript:</code> and <code>data:</code> schemes are rejected. By default the SSRF guard also blocks URLs that resolve to private IP ranges (RFC 1918, loopback, link-local) — this protects against an agent being manipulated into sending secrets to an internal service. On an isolated intranet deployment you can opt out by setting <code>IMPRI_ALLOW_PRIVATE_TARGETS=1</code> in the server environment.</p>
 <hr>
@@ -211,7 +211,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <tr>
 <td><code>status</code></td>
 <td>string</td>
-<td>Always (<code>approved</code>, <code>rejected</code>, <code>expired</code>)</td>
+<td>Always: the action&#39;s status when the delivery is sent (<code>pending</code>, <code>approved</code>, <code>rejected</code>, <code>expired</code>, or <code>executed</code> / <code>execute_failed</code> if a result was reported before this delivery went out)</td>
 </tr>
 <tr>
 <td><code>decided_at</code></td>
@@ -235,6 +235,13 @@ pre code.hljs{display:block;overflow-x:auto}
 </tr>
 </tbody></table>
 </div>
+<h3 id="the-body-carries-the-status-at-send-time">The body carries the status at send time</h3>
+<p>Deliveries go out on the server&#39;s 60-second tick, and Impri builds the body when it sends it, not when the event happened. An action decided before its creation delivery goes out therefore arrives twice with the decided status, and a retry carries the status at the time of the retry. Make the receiver safe to run twice:</p>
+<ul>
+<li>act on <code>approved</code> only while <code>GET /v1/actions/:id</code> still returns <code>approved</code>, and report the outcome with <code>POST /v1/actions/:id/result</code>, so a repeat finds <code>executed</code>;</li>
+<li>remember which <code>rejected</code> or <code>expired</code> actions you already handled;</li>
+<li>return a 2xx for a <code>pending</code> delivery and keep waiting.</li>
+</ul>
 <p>When <code>diff</code> is present, <code>final_preview</code> contains the edited content. <strong>Always use <code>final_preview.body</code> for execution — never the original</strong> — because the reviewer may have changed it.</p>
 <p>On rejection or expiry, <code>final_preview</code> and <code>diff</code> are absent. On expiry, <code>verdict</code> is absent; <code>status</code> is <code>&quot;expired&quot;</code>.</p>
 <hr>
@@ -326,7 +333,7 @@ before per-project secrets existed); every new project gets one.</p>
 </thead>
 <tbody><tr>
 <td>1 (initial)</td>
-<td>immediate</td>
+<td>next delivery tick (within 60 seconds)</td>
 </tr>
 <tr>
 <td>2</td>
@@ -452,6 +459,7 @@ before per-project secrets existed); every new project gets one.</p>
 <li class="ptoc-h2"><a href="#setting-up-a-webhook">Setting up a webhook</a></li>
 <li class="ptoc-h3"><a href="#restrictions-on-callback-urls">Restrictions on callback URLs</a></li>
 <li class="ptoc-h2"><a href="#webhook-payload">Webhook payload</a></li>
+<li class="ptoc-h3"><a href="#the-body-carries-the-status-at-send-time">The body carries the status at send time</a></li>
 <li class="ptoc-h2"><a href="#verifying-the-signature">Verifying the signature</a></li>
 <li class="ptoc-h3"><a href="#verification-algorithm">Verification algorithm</a></li>
 <li class="ptoc-h2"><a href="#retry-schedule">Retry schedule</a></li>
