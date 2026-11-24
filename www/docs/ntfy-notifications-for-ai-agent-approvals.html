@@ -233,7 +233,7 @@ ntfy access phone impri-approvals-9f3c1d2e read-only</code></pre></div>
 <p>A non-2xx answer or a network error is a failed send, and five in a row disable the channel. With the topic not yet open for anonymous writes, five actions each got <code>ntfy HTTP 403</code> and the fifth set <code>enabled: false</code>. Nothing was lost: after we restored access and enabled the channel, the next pending action sent one digest, &quot;6 actions pending your approval: Deploy build 1, Deploy build 2, Deploy build 3 +3 more&quot;. Two details:</p>
 <ul>
 <li>Actions created while a channel is disabled are not queued for it.</li>
-<li>Enabling the channel doesn&#39;t reset the failure count, and a test send doesn&#39;t either. Only the next real notification that succeeds does, so one more failure right after you enable it disables the channel again.</li>
+<li>Enabling the channel doesn&#39;t reset the failure count unless the same update changes its config, and a test send doesn&#39;t reset it either. Otherwise only the next real notification that succeeds does, so one more failure right after you enable it disables the channel again.</li>
 </ul>
 <p><code>GET /v1/notification-channels/&lt;id&gt;</code> shows <code>enabled</code>, <code>fail_count</code> and <code>last_error</code>. Check them after an outage instead of reading silence as &quot;no approvals waiting&quot;.</p>
 <hr>
