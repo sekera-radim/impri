@@ -298,12 +298,24 @@ This generalises the global `NTFY_URL` / `NTFY_TOPIC` environment
 variables to per-project, per-channel configuration.
 
 `topic` must match `/^[A-Za-z0-9_/-]{1,64}$/` to prevent path traversal
-when the URL is assembled server-side.
+when the URL is assembled server-side. ntfy itself accepts only letters,
+digits, `_` and `-` in a topic name, so don't use `/`.
 
-`url` is treated as a secret (useful for self-hosted ntfy instances that
-embed a token in the URL). `topic` is not a secret and is returned as-is.
+`url` is masked in API responses (`****` plus its last four characters).
+`topic` is not a secret and is returned as-is.
 
-**Security:** `url` validated as `http`/`https`, no private IPs.
+Impri sends no credentials to ntfy, and the URL can't carry them:
+`http://user:pass@host` fails at send time ("Request cannot be constructed
+from a URL that includes credentials"), and `https://host/?auth=…` fails
+because the topic is appended after the query string. The topic must accept
+anonymous writes. On a private ntfy server with `auth-default-access: deny-all`,
+open just that topic with `ntfy access everyone <topic> write-only`.
+Walkthrough: [ntfy notifications for AI agent approvals](ntfy-notifications-for-ai-agent-approvals.md).
+
+**Security:** `url` must be `http`/`https`. A literal private IP is refused
+when the channel is created; a hostname that resolves to a private address
+is blocked at send time (the test returns `fetch failed`) unless the server
+sets `IMPRI_ALLOW_PRIVATE_TARGETS=1`.
 Title and kind values are passed through the `headerSafe()` helper
 (strips `\r` / `\n`) before being placed in `Title` and `Tags` HTTP
 headers — identical to the global ntfy adapter in `notify.ts`.
@@ -509,7 +521,7 @@ governs two behaviours:
 
 2. **Subsequent notifications within the window are queued.** They
    accumulate in `digest_queue` and are flushed by a background tick
-   that runs approximately every 30 seconds. When the flush fires, all
+   that runs every 60 seconds. When the flush fires, all
    queued items plus the triggering item are combined into a single
    digest message:
 
@@ -551,15 +563,25 @@ One channel failing does not prevent the others from firing.
 
 After **5 consecutive delivery failures**, a channel is automatically
 set to `enabled = false` and a structured warning is logged
-(`channelId`, `type`, `projectId`). This prevents a misconfigured
+(`channel_id`, `channel_type`, `project_id`, `fail_count`). This prevents a misconfigured
 channel from silently absorbing notification attempts.
+`GET /v1/notification-channels/:id` shows `enabled`, `fail_count` and
+`last_error`.
 
 To re-enable, fix the config (via `PATCH /v1/notification-channels/:id`)
 and then re-enable (`"enabled": true` in the same or a separate PATCH).
-Updating the config resets `fail_count` to 0 automatically.
+Updating the config resets `fail_count` to 0 automatically. Re-enabling
+without a config change keeps the old `fail_count` until the next
+successful delivery (a test send doesn't count), so one more failure
+disables the channel again.
 
-The threshold (default 5) will be configurable via
-`IMPRI_CHANNEL_MAX_FAILS` in a future release.
+Items queued before the channel was disabled are kept: after it is
+re-enabled they go out as one digest with the next pending action or the
+next background tick, whichever comes first (a channel that has never
+delivered waits for the next pending action).
+Actions created while the channel is disabled are not queued for it.
+
+The threshold is read from `IMPRI_CHANNEL_MAX_FAILS` (default 5).
 
 ---
 

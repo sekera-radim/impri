@@ -96,7 +96,7 @@ NTFY_URL=https://ntfy.sh
 NTFY_TOPIC=my-secret-topic-abc123
 ```
 
-Install the ntfy app on your phone, subscribe to the topic, and you will receive a push notification for every pending action.
+Install the ntfy app on your phone, subscribe to the topic, and you will receive a push notification for every pending action. This instance-wide push is not subject to the private-address guard, so `NTFY_URL` may point at an ntfy container on the same network (e.g. `http://ntfy`). It sends no credentials: on an ntfy server with access control, the topic needs anonymous write access. Per-project ntfy channels are described in [Notification channels](notifications.md#ntfy).
 
 ### Web push (VAPID) — optional
 
@@ -128,7 +128,7 @@ pending action.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `IMPRI_ALLOW_PRIVATE_TARGETS` | unset | Set to `1` to allow `callback_url` and watcher `config.url` to target private/intranet addresses (RFC 1918, loopback). **Only set this on an isolated intranet deployment.** By default, the SSRF guard blocks any URL that resolves to a private IP. |
+| `IMPRI_ALLOW_PRIVATE_TARGETS` | unset | Set to `1` to allow `callback_url`, watcher `config.url` and notification channel URLs (for example an ntfy or webhook server on the same Docker network) to target private/intranet addresses (RFC 1918, loopback). **Only set this on an isolated intranet deployment.** By default, the SSRF guard blocks any URL that resolves to a private IP. |
 
 ---
 
