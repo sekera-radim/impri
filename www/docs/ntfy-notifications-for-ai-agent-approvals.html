@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ntfy Notifications for AI Agent Approvals — Impri Docs</title>
-<meta name="description" content="Get a phone buzz for every AI agent action waiting on your review by wiring Impri to ntfy — no Slack workspace, no app store install, just a topic URL your…">
+<meta name="description" content="Get an ntfy push on your phone for every AI agent action waiting in Impri: channel setup, a locked-down self-hosted topic, digests, and failure handling.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="ntfy Notifications for AI Agent Approvals — Impri Docs">
-<meta property="og:description" content="Get a phone buzz for every AI agent action waiting on your review by wiring Impri to ntfy — no Slack workspace, no app store install, just a topic URL your…">
+<meta property="og:description" content="Get an ntfy push on your phone for every AI agent action waiting in Impri: channel setup, a locked-down self-hosted topic, digests, and failure handling.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/ntfy-notifications-for-ai-agent-approvals">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/ntfy-notifications-for-ai-agent-approvals">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ntfy Notifications for AI Agent Approvals","description":"Get a phone buzz for every AI agent action waiting on your review by wiring Impri to ntfy — no Slack workspace, no app store install, just a topic URL your…","url":"https://impri.dev/docs/ntfy-notifications-for-ai-agent-approvals","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"ntfy Notifications for AI Agent Approvals","description":"Get an ntfy push on your phone for every AI agent action waiting in Impri: channel setup, a locked-down self-hosted topic, digests, and failure handling.","url":"https://impri.dev/docs/ntfy-notifications-for-ai-agent-approvals","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -153,59 +153,92 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>ntfy Notifications for AI Agent Approvals</span>
     </nav>
     <h1>ntfy Notifications for AI Agent Approvals</h1>
-<p>Get a phone buzz for every AI agent action waiting on your review by wiring Impri to ntfy — no Slack workspace, no app store install, just a topic URL your phone subscribes to.</p>
+<p>Get an ntfy push on your phone for every AI agent action waiting in Impri: channel setup, a locked-down self-hosted topic, digests, and failure handling.</p>
+<p>Everything below was run on 2026-11-24 against a local Impri server built from the repository and ntfy 2.38.1 in Docker. The messages quoted are the ones ntfy stored.</p>
 <hr>
-<h2 id="the-self-hosted-case-for-ntfy">The self-hosted case for ntfy</h2>
-<p>Say you&#39;re running Impri on a home server alongside a small agent that drafts and queues social posts overnight, and you want a phone notification the moment there&#39;s a draft to approve — without creating a Slack workspace just for yourself, or trusting a third-party push SaaS with your homelab&#39;s traffic. <a href="https://ntfy.sh" target="_blank" rel="noopener">ntfy</a> is a natural fit: it&#39;s a lightweight, MIT-licensed pub/sub push service you can either use hosted at <code>ntfy.sh</code> or run yourself in a container next to Impri, and the client is a single Android/iOS app that subscribes to a topic — no account, no API key on the phone side.</p>
-<p>Impri treats ntfy as a first-class notification channel type, alongside Slack, Discord, Telegram, and email.</p>
+<h2 id="what-reaches-the-phone">What reaches the phone</h2>
+<p>Your agent doesn&#39;t change: it creates actions with <code>POST /v1/actions</code>, and every enabled channel of the project fires when a new action is <code>pending</code>. An ntfy channel sends:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Event</th>
+<th>ntfy title</th>
+<th>Tags</th>
+<th>Tapping it opens</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>One pending action</td>
+<td>the action&#39;s <code>title</code></td>
+<td><code>impri</code>, the action&#39;s <code>kind</code></td>
+<td>the action in the inbox (<code>/inbox/&lt;id&gt;</code>)</td>
+</tr>
+<tr>
+<td>Several inside the digest window</td>
+<td><code>3 actions pending your approval: A, B, C</code> (<code>+N more</code> after three)</td>
+<td><code>impri</code>, <code>action.pending</code></td>
+<td>the inbox list</td>
+</tr>
+<tr>
+<td>Action approved or rejected by a <a href="rules">rule</a></td>
+<td>nothing</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Decision or expiry</td>
+<td>nothing (that&#39;s what <a href="webhooks">webhooks</a> are for)</td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+</div>
+<p>The body repeats the title after <code>New action pending:</code>, priority is ntfy&#39;s default (3), and the tap target comes from ntfy&#39;s <code>Click</code> header. There are no approve or reject buttons: you decide in the inbox. To decide from the notification itself, use <a href="telegram-approval">Telegram approval</a>, or Slack or Discord in approval mode.</p>
 <hr>
-<h2 id="creating-the-channel">Creating the channel</h2>
-<p>Channel management requires an <strong>admin-scope</strong> API key. Point it at either the public <code>ntfy.sh</code> or your own self-hosted server:</p>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">curl -X POST https://api.impri.dev/v1/notification-channels \
+<h2 id="create-the-channel">Create the channel</h2>
+<p>In the inbox, open the <strong>Notifications</strong> tab and choose <strong>Add channel</strong> → ntfy, or use the API with an <code>admin</code>-scope key:</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">TOPIC=<span class="hljs-string">&quot;impri-approvals-<span class="hljs-subst">$(openssl rand -hex 8)</span>&quot;</span>
+
+curl -s -X POST https://api.impri.dev/v1/notification-channels \
   -H <span class="hljs-string">&quot;Authorization: Bearer <span class="hljs-variable">$IMPRI_ADMIN_KEY</span>&quot;</span> \
   -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
-  -d <span class="hljs-string">&#x27;{
-    &quot;name&quot;: &quot;Phone - overnight posting agent&quot;,
-    &quot;type&quot;: &quot;ntfy&quot;,
-    &quot;config&quot;: {
-      &quot;url&quot;: &quot;https://ntfy.sh&quot;,
-      &quot;topic&quot;: &quot;acme-social-agent-a1b2c3&quot;
-    },
-    &quot;digest_window_sec&quot;: 60
-  }&#x27;</span></code></pre></div>
-<p>Pick a topic name that&#39;s hard to guess — ntfy topics are unauthenticated by default, so anything predictable like <code>my-approvals</code> can be subscribed to by a stranger. A random suffix, as above, is enough on the public server; a self-hosted ntfy instance behind auth removes the concern entirely.</p>
-<p>Subscribe from your phone: open the ntfy app, add topic <code>acme-social-agent-a1b2c3</code> on <code>ntfy.sh</code> (or your own server URL), and you&#39;re done. Use <code>POST /v1/notification-channels/:id/test</code> to confirm delivery before trusting it overnight.</p>
+  -d <span class="hljs-string">&quot;{\&quot;name\&quot;: \&quot;Phone\&quot;, \&quot;type\&quot;: \&quot;ntfy\&quot;,
+       \&quot;config\&quot;: {\&quot;url\&quot;: \&quot;https://ntfy.sh\&quot;, \&quot;topic\&quot;: \&quot;<span class="hljs-variable">$TOPIC</span>\&quot;},
+       \&quot;digest_window_sec\&quot;: 60}&quot;</span>
+
+<span class="hljs-comment"># then: POST /v1/notification-channels/&lt;id&gt;/test  -&gt;  {&quot;ok&quot;:true}</span></code></pre></div>
+<p>Subscribe to the same topic in the ntfy app. ntfy topic names are up to 64 letters, digits, <code>_</code> and <code>-</code>; Impri also accepts <code>/</code>, but ntfy doesn&#39;t, so leave it out. On <code>ntfy.sh</code> anyone who knows a topic name can read it and post to it, so the random suffix is what keeps strangers out.</p>
 <hr>
-<h2 id="where-this-fits-in-the-agent-loop">Where this fits in the agent loop</h2>
-<p>The overnight posting agent doesn&#39;t know or care that ntfy exists — it just pushes actions to Impri and stops. The channel config you created above is what turns that into a phone notification:</p>
-<div class="code-block"><span class="code-lang">python</span><pre><code class="hljs"><span class="hljs-keyword">import</span> requests, time
-
-IMPRI_KEY = <span class="hljs-string">&quot;im_...&quot;</span>
-BASE = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
-
-<span class="hljs-keyword">def</span> <span class="hljs-title function_">queue_post_for_approval</span>(<span class="hljs-params">caption: <span class="hljs-built_in">str</span>, image_url: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-built_in">str</span>:
-    resp = requests.post(<span class="hljs-string">f&quot;<span class="hljs-subst">{BASE}</span>/v1/actions&quot;</span>,
-        headers={<span class="hljs-string">&quot;Authorization&quot;</span>: <span class="hljs-string">f&quot;Bearer <span class="hljs-subst">{IMPRI_KEY}</span>&quot;</span>},
-        json={
-            <span class="hljs-string">&quot;kind&quot;</span>: <span class="hljs-string">&quot;social.post&quot;</span>,
-            <span class="hljs-string">&quot;title&quot;</span>: <span class="hljs-string">f&quot;Scheduled post: <span class="hljs-subst">{caption[:<span class="hljs-number">60</span>]}</span>&quot;</span>,
-            <span class="hljs-string">&quot;preview&quot;</span>: {<span class="hljs-string">&quot;format&quot;</span>: <span class="hljs-string">&quot;markdown&quot;</span>, <span class="hljs-string">&quot;body&quot;</span>: <span class="hljs-string">f&quot;<span class="hljs-subst">{caption}</span>\n\n![preview](<span class="hljs-subst">{image_url}</span>)&quot;</span>},
-            <span class="hljs-string">&quot;expires_in&quot;</span>: <span class="hljs-number">43200</span>,  <span class="hljs-comment"># 12h — stale by the next posting window otherwise</span>
-            <span class="hljs-string">&quot;editable&quot;</span>: [<span class="hljs-string">&quot;preview.body&quot;</span>],
-        })
-    action = resp.json()
-    <span class="hljs-keyword">return</span> action[<span class="hljs-string">&quot;id&quot;</span>]
-
-<span class="hljs-comment"># agent&#x27;s overnight loop calls this once per drafted post, then exits;</span>
-<span class="hljs-comment"># a separate cron job polls each action_id the next morning and publishes on approval</span></code></pre></div>
-<p>Every call to <code>queue_post_for_approval</code> creates a pending action; within the channel&#39;s 60-second digest window, ntfy batches same-window actions into one notification instead of buzzing your phone once per post.</p>
+<h2 id="a-private-ntfy-server-write-only-for-impri">A private ntfy server: write-only for Impri</h2>
+<p>Impri&#39;s ntfy channel sends no credentials, and the URL can&#39;t carry them: <code>http://user:pass@host</code> fails with &quot;Request cannot be constructed from a URL that includes credentials&quot;, and <code>https://host/?auth=…</code> gets <code>ntfy HTTP 500</code>, because Impri appends the topic to the URL and it ends up inside the query string. So the topic has to accept anonymous writes. On your own server, deny everything by default and open that one topic for writing:</p>
+<div class="code-block"><span class="code-lang">yaml</span><pre><code class="hljs"><span class="hljs-comment"># server.yml</span>
+<span class="hljs-attr">auth-file:</span> <span class="hljs-string">/var/lib/ntfy/user.db</span>
+<span class="hljs-attr">auth-default-access:</span> <span class="hljs-string">deny-all</span></code></pre></div>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">ntfy user add phone                                       <span class="hljs-comment"># the account your phone logs in with</span>
+ntfy access everyone impri-approvals-9f3c1d2e write-only
+ntfy access phone impri-approvals-9f3c1d2e read-only</code></pre></div>
+<p>Before the <code>everyone … write-only</code> line every send failed with <code>ntfy HTTP 403</code>; after it Impri&#39;s messages got through. Anonymous reads of the topic and anonymous posts to other topics got 403, and the <code>phone</code> user saw the messages. Anyone who learns the topic name can still post a fake notification, so keep the random name here too.</p>
 <hr>
-<h2 id="what-ntfy-does-and-doesn39t-guarantee">What ntfy does and doesn&#39;t guarantee</h2>
-<p>Impri validates the channel <code>url</code> as <code>http</code>/<code>https</code> and rejects private-IP targets, and the <code>topic</code> field is restricted to <code>/^[A-Za-z0-9_/-]{1,64}$/</code> to stop path-traversal tricks when the URL is built server-side — but ntfy itself has no built-in approve/reject buttons the way Impri&#39;s Slack channel does. A push through ntfy tells you <em>that</em> something needs review; you still open the Impri inbox link in the notification to actually approve, reject, or edit it. If you want tap-to-decide from the notification itself, that&#39;s what <a href="telegram-approval">Telegram approval</a> is for instead.</p>
-<p>A channel that fails delivery five times running is auto-disabled — worth knowing if your homelab server reboots and ntfy is briefly unreachable; check Settings → Notifications after an outage rather than assuming silence means nothing happened.</p>
+<h2 id="ntfy-on-the-same-host-or-lan">ntfy on the same host or LAN</h2>
+<p>Impri checks channel URLs against private addresses:</p>
+<ul>
+<li>A literal private IP (<code>http://192.168.1.20</code>) is refused when you create the channel: &quot;Only http/https URLs to non-private addresses are allowed for ntfy server URL&quot;.</li>
+<li>A hostname that resolves to a private address (<code>http://ntfy</code> on a Docker network, <code>localhost</code>) is accepted, but every send fails with <code>fetch failed</code> until the Impri server runs with <code>IMPRI_ALLOW_PRIVATE_TARGETS=1</code>. That also opens webhook and watcher URLs to the private network: use it only on a <a href="self-hosting">self-hosted</a> server you don&#39;t share.</li>
+</ul>
+<p>On Impri Cloud the ntfy server must be publicly reachable: <code>ntfy.sh</code> or your own public instance.</p>
+<p>A self-hosted server also has an instance-wide push, <code>NTFY_URL</code> and <code>NTFY_TOPIC</code> in the server environment. It isn&#39;t behind that check (it reached ntfy on <code>localhost</code> without the opt-out), fires for every project, sends one push per action with no digest, and follows <code>escalate</code> rules: the push goes to the ntfy topic named in the rule&#39;s <code>channel</code> (a topic name, not one of your project&#39;s channels) instead of <code>NTFY_TOPIC</code>. In our run, <code>deploy.prod</code> actions went to <code>impri-oncall</code>, not to <code>NTFY_TOPIC</code>.</p>
+<hr>
+<h2 id="digests-and-failures">Digests and failures</h2>
+<p><code>digest_window_sec</code> (10–3600, default 60) controls batching. After a quiet period the first pending action is sent immediately. Actions created inside the window are queued and sent as one digest by the server&#39;s 60-second background check. With a 10-second window, two posts created two seconds after the first arrived as one message 45 seconds later.</p>
+<p>A non-2xx answer or a network error is a failed send, and five in a row disable the channel. With the topic not yet open for anonymous writes, five actions each got <code>ntfy HTTP 403</code> and the fifth set <code>enabled: false</code>. Nothing was lost: after we restored access and enabled the channel, the next pending action sent one digest, &quot;6 actions pending your approval: Deploy build 1, Deploy build 2, Deploy build 3 +3 more&quot;. Two details:</p>
+<ul>
+<li>Actions created while a channel is disabled are not queued for it.</li>
+<li>Enabling the channel doesn&#39;t reset the failure count, and a test send doesn&#39;t either. Only the next real notification that succeeds does, so one more failure right after you enable it disables the channel again.</li>
+</ul>
+<p><code>GET /v1/notification-channels/&lt;id&gt;</code> shows <code>enabled</code>, <code>fail_count</code> and <code>last_error</code>. Check them after an outage instead of reading silence as &quot;no approvals waiting&quot;.</p>
 <hr>
 <h2 id="next-step">Next step</h2>
-<p>Full channel config reference — digest windows, all channel types, secret masking — is in <a href="notifications">notifications</a>. If you&#39;re setting this up on your own server rather than Impri Cloud, <a href="self-hosting">self-hosting</a> covers the Docker Compose and environment variables. New to the base approval loop entirely? Start with <a href="quickstart">quickstart</a>.</p>
+<p><a href="quickstart">Self-host Impri</a> with <code>docker compose</code> next to your ntfy server, or <a href="https://app.impri.dev/?signup=1" target="_blank" rel="noopener">start free on the cloud</a> and point a channel at <code>ntfy.sh</code>. Add the channel, send a test, then create one action from your agent and watch it reach your phone. The full channel reference is in <a href="notifications">notifications</a>.</p>
 
     <aside class="doc-cta" aria-label="Try Impri">
   <p class="doc-cta-title">Add an approval step to your own agent</p>
@@ -221,8 +254,8 @@ BASE = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
   <ul>
 <li><a href="../docs/approve-ai-agent-actions-from-your-phone">Approve AI Agent Actions From Your Phone</a></li>
 <li><a href="../docs/web-push-notifications-for-agent-approvals">Web Push Notifications for Agent Approvals</a></li>
-<li><a href="../docs/approve-ai-agent-actions-from-slack">Approve AI Agent Actions From Slack</a></li>
-<li><a href="../docs/human-approval-for-ai-agent-app-store-submissions">Human Approval for AI Agent App Store and Play Store Submissions</a></li>
+<li><a href="../docs/self-hosted-approval-inbox-for-ai-agents">A Self-Hosted Approval Inbox for AI Agents</a></li>
+<li><a href="../docs/one-tap-approve-reject-for-ai-agents">One-Tap Approve/Reject for AI Agent Actions</a></li>
   </ul>
 </nav>
   </main>
@@ -294,10 +327,11 @@ BASE = <span class="hljs-string">&quot;https://api.impri.dev&quot;</span>
   <aside class="docs-toc" aria-label="On this page">
     <nav class="ptoc" aria-label="On this page">
 <div class="ptoc-label">On this page</div>
-<ul><li class="ptoc-h2"><a href="#the-self-hosted-case-for-ntfy">The self-hosted case for ntfy</a></li>
-<li class="ptoc-h2"><a href="#creating-the-channel">Creating the channel</a></li>
-<li class="ptoc-h2"><a href="#where-this-fits-in-the-agent-loop">Where this fits in the agent loop</a></li>
-<li class="ptoc-h2"><a href="#what-ntfy-does-and-doesn39t-guarantee">What ntfy does and doesn't guarantee</a></li>
+<ul><li class="ptoc-h2"><a href="#what-reaches-the-phone">What reaches the phone</a></li>
+<li class="ptoc-h2"><a href="#create-the-channel">Create the channel</a></li>
+<li class="ptoc-h2"><a href="#a-private-ntfy-server-write-only-for-impri">A private ntfy server: write-only for Impri</a></li>
+<li class="ptoc-h2"><a href="#ntfy-on-the-same-host-or-lan">ntfy on the same host or LAN</a></li>
+<li class="ptoc-h2"><a href="#digests-and-failures">Digests and failures</a></li>
 <li class="ptoc-h2"><a href="#next-step">Next step</a></li></ul>
 </nav>
   </aside>

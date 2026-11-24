@@ -159,7 +159,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <p>The cloud at impri.dev is the fastest way to get started. But there are reasons to prefer running Impri on your own infrastructure:</p>
 <p><strong>Data stays internal.</strong> Every action pushed to Impri includes the draft content your agent produced — an email body, a database query, a file to be modified. For agents working with internal documents, customer records, or anything under compliance review, you may not want that content leaving your network at all.</p>
 <p><strong>No per-seat or per-action cost at scale.</strong> If you run a high-volume agent loop that produces hundreds of approval requests per day, self-hosting removes that ceiling.</p>
-<p><strong>Integration with internal tooling.</strong> Running on-prem means you can put Impri behind your VPN or an authenticating reverse proxy, and point notifications at your own SMTP server or ntfy instance.</p>
+<p><strong>Integration with internal tooling.</strong> Running on-prem means you can put Impri behind your VPN or an authenticating reverse proxy, and point notifications at your own SMTP server or <a href="ntfy-notifications-for-ai-agent-approvals">ntfy instance</a>.</p>
 <p>Impri is open-core: the server that handles the approval inbox, the REST API, the MCP server, and the web UI is MIT-licensed and available at <a href="https://github.com/sekera-radim/impri" target="_blank" rel="noopener">github.com/sekera-radim/impri</a>. The hosted version at impri.dev runs the same code with managed infrastructure on top.</p>
 <hr>
 <h2 id="running-the-server">Running the server</h2>
