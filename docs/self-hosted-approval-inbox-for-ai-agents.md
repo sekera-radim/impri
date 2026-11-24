@@ -12,7 +12,7 @@ The cloud at impri.dev is the fastest way to get started. But there are reasons 
 
 **No per-seat or per-action cost at scale.** If you run a high-volume agent loop that produces hundreds of approval requests per day, self-hosting removes that ceiling.
 
-**Integration with internal tooling.** Running on-prem means you can put Impri behind your VPN or an authenticating reverse proxy, and point notifications at your own SMTP server or ntfy instance.
+**Integration with internal tooling.** Running on-prem means you can put Impri behind your VPN or an authenticating reverse proxy, and point notifications at your own SMTP server or [ntfy instance](ntfy-notifications-for-ai-agent-approvals.md).
 
 Impri is open-core: the server that handles the approval inbox, the REST API, the MCP server, and the web UI is MIT-licensed and available at [github.com/sekera-radim/impri](https://github.com/sekera-radim/impri). The hosted version at impri.dev runs the same code with managed infrastructure on top.
 
