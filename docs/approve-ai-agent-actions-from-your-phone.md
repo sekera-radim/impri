@@ -12,7 +12,7 @@ If an agent only ever needs approval while you're already at your desk, a browse
 
 | Channel | Setup | Approve without opening the app? |
 |---|---|---|
-| [ntfy](notifications.md) | Point a channel at any ntfy server + topic, no account needed | No — tap to open the inbox link |
+| [ntfy](ntfy-notifications-for-ai-agent-approvals.md) | Point a channel at any ntfy server + topic, no account needed | No — tap to open the inbox link |
 | [Telegram](telegram-approval.md) | Create a bot, set `approval_mode: true` | Yes — inline Approve/Reject buttons in the chat |
 | Web push | Subscribe from a mobile browser tab | No — tap to open the inbox link |
 
