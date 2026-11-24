@@ -82,7 +82,7 @@ A self-hosted server also has an instance-wide push, `NTFY_URL` and `NTFY_TOPIC`
 A non-2xx answer or a network error is a failed send, and five in a row disable the channel. With the topic not yet open for anonymous writes, five actions each got `ntfy HTTP 403` and the fifth set `enabled: false`. Nothing was lost: after we restored access and enabled the channel, the next pending action sent one digest, "6 actions pending your approval: Deploy build 1, Deploy build 2, Deploy build 3 +3 more". Two details:
 
 - Actions created while a channel is disabled are not queued for it.
-- Enabling the channel doesn't reset the failure count, and a test send doesn't either. Only the next real notification that succeeds does, so one more failure right after you enable it disables the channel again.
+- Enabling the channel doesn't reset the failure count unless the same update changes its config, and a test send doesn't reset it either. Otherwise only the next real notification that succeeds does, so one more failure right after you enable it disables the channel again.
 
 `GET /v1/notification-channels/<id>` shows `enabled`, `fail_count` and `last_error`. Check them after an outage instead of reading silence as "no approvals waiting".
 
