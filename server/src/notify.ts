@@ -302,7 +302,7 @@ function channelMaxFails(): number {
 
 // Inbox links must point at the web UI (APP_URL, e.g. app.impri.dev), NOT the
 // API host (BASE_URL, api.impri.dev) which has no /inbox route → 404.
-function baseUrl(): string {
+export function inboxBaseUrl(): string {
   return process.env.APP_URL ?? process.env.BASE_URL ?? 'http://localhost:5173';
 }
 
@@ -805,7 +805,7 @@ function buildDigestMessage(queue: QueueItem[]): DigestMessage {
     return {
       title: item.title,
       kind: item.kind,
-      inboxUrl: `${baseUrl()}/inbox/${item.actionId}`,
+      inboxUrl: `${inboxBaseUrl()}/inbox/${item.actionId}`,
       primaryActionId: item.actionId,
     };
   }
@@ -819,7 +819,7 @@ function buildDigestMessage(queue: QueueItem[]): DigestMessage {
   return {
     title,
     kind: 'action.pending',
-    inboxUrl: `${baseUrl()}/inbox`,
+    inboxUrl: `${inboxBaseUrl()}/inbox`,
     primaryActionId: queue[0].actionId,
   };
 }

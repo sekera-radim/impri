@@ -819,6 +819,36 @@ describe('POST /v1/notification-channels/:id/test', () => {
     expect(res.json().ok).toBe(true);
   });
 
+  it('links the test message to the web inbox (APP_URL), not the API host', async () => {
+    vi.stubEnv('APP_URL', 'https://app.example.test');
+    vi.stubEnv('BASE_URL', 'https://api.example.test');
+    try {
+      const { app, adminKey } = await setup();
+
+      const ch = await app.inject({
+        method: 'POST',
+        url: '/v1/notification-channels',
+        headers: auth(adminKey),
+        payload: { name: 'Phone', type: 'ntfy', config: { url: VALID_NTFY_URL, topic: 'impri-test-topic' } },
+      });
+      const { id } = ch.json() as { id: string };
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/v1/notification-channels/${id}/test`,
+        headers: auth(adminKey),
+      });
+
+      expect(res.json().ok).toBe(true);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit & { headers: Record<string, string> }];
+      expect(url).toBe('https://ntfy.sh/impri-test-topic');
+      expect(init.headers.Click).toBe('https://app.example.test/inbox');
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('returns { ok: false, error } when delivery fails (secret stripped from error)', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401, text: async () => '' }));
 

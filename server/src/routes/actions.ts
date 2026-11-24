@@ -4,7 +4,7 @@ import { genId, hashContent, nowSec, encodeCursor, decodeCursor } from '../db.js
 import { hasScope, checkRateLimit } from '../auth.js';
 import { approvalsLimitReached, getProjectBilling, TIER_LIMITS } from '../billing.js';
 import { scheduleWebhookDelivery } from '../webhooks.js';
-import { notifyAll, notifyChannels } from '../notify.js';
+import { inboxBaseUrl, notifyAll, notifyChannels } from '../notify.js';
 import { notifyPush } from '../push.js';
 import { evaluateRules } from '../rules.js';
 import { incCounter, obsHistogram } from '../metrics.js';
@@ -127,10 +127,7 @@ export function registerActionRoutes(app: FastifyInstance, db: Db): void {
     }
 
     const actionId = genId('act_');
-    // Inbox link must target the web UI (APP_URL), not the API host — api.impri.dev
-    // has no /inbox route (would 404). Falls back to BASE_URL for single-host setups.
-    const appBase = process.env.APP_URL ?? process.env.BASE_URL ?? 'http://localhost:5173';
-    const inboxUrl = `${appBase}/inbox/${actionId}`;
+    const inboxUrl = `${inboxBaseUrl()}/inbox/${actionId}`;
 
     // Evaluate rules AFTER idempotency/dedup and BEFORE INSERT so we can
     // override expires_in or short-circuit to auto_approve / auto_reject.
