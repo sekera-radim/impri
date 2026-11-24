@@ -314,7 +314,7 @@ docker compose up -d</code></pre></div>
 <p>Example: to receive notifications at <code>https://ntfy.sh/my-secret-topic-abc123</code>:</p>
 <div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">NTFY_URL=https://ntfy.sh
 NTFY_TOPIC=my-secret-topic-abc123</code></pre></div>
-<p>Install the ntfy app on your phone, subscribe to the topic, and you will receive a push notification for every pending action.</p>
+<p>Install the ntfy app on your phone, subscribe to the topic, and you will receive a push notification for every pending action. This instance-wide push is not subject to the private-address guard, so <code>NTFY_URL</code> may point at an ntfy container on the same network (e.g. <code>http://ntfy</code>). It sends no credentials: on an ntfy server with access control, the topic needs anonymous write access. Per-project ntfy channels are described in <a href="notifications#ntfy">Notification channels</a>.</p>
 <h3 id="web-push-vapid-optional">Web push (VAPID) — optional</h3>
 <p>Browser push notifications for the web inbox. Generate a keypair once and set it
 in the environment; without these keys the web-push channel is simply off
@@ -376,7 +376,7 @@ pending action.</p>
 <tbody><tr>
 <td><code>IMPRI_ALLOW_PRIVATE_TARGETS</code></td>
 <td>unset</td>
-<td>Set to <code>1</code> to allow <code>callback_url</code> and watcher <code>config.url</code> to target private/intranet addresses (RFC 1918, loopback). <strong>Only set this on an isolated intranet deployment.</strong> By default, the SSRF guard blocks any URL that resolves to a private IP.</td>
+<td>Set to <code>1</code> to allow <code>callback_url</code>, watcher <code>config.url</code> and notification channel URLs (for example an ntfy or webhook server on the same Docker network) to target private/intranet addresses (RFC 1918, loopback). <strong>Only set this on an isolated intranet deployment.</strong> By default, the SSRF guard blocks any URL that resolves to a private IP.</td>
 </tr>
 </tbody></table>
 </div>

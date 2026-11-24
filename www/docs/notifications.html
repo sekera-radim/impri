@@ -485,10 +485,21 @@ instructions, config reference, security model, and troubleshooting.</p>
 This generalises the global <code>NTFY_URL</code> / <code>NTFY_TOPIC</code> environment
 variables to per-project, per-channel configuration.</p>
 <p><code>topic</code> must match <code>/^[A-Za-z0-9_/-]{1,64}$/</code> to prevent path traversal
-when the URL is assembled server-side.</p>
-<p><code>url</code> is treated as a secret (useful for self-hosted ntfy instances that
-embed a token in the URL). <code>topic</code> is not a secret and is returned as-is.</p>
-<p><strong>Security:</strong> <code>url</code> validated as <code>http</code>/<code>https</code>, no private IPs.
+when the URL is assembled server-side. ntfy itself accepts only letters,
+digits, <code>_</code> and <code>-</code> in a topic name, so don&#39;t use <code>/</code>.</p>
+<p><code>url</code> is masked in API responses (<code>****</code> plus its last four characters).
+<code>topic</code> is not a secret and is returned as-is.</p>
+<p>Impri sends no credentials to ntfy, and the URL can&#39;t carry them:
+<code>http://user:pass@host</code> fails at send time (&quot;Request cannot be constructed
+from a URL that includes credentials&quot;), and <code>https://host/?auth=…</code> fails
+because the topic is appended after the query string. The topic must accept
+anonymous writes. On a private ntfy server with <code>auth-default-access: deny-all</code>,
+open just that topic with <code>ntfy access everyone &lt;topic&gt; write-only</code>.
+Walkthrough: <a href="ntfy-notifications-for-ai-agent-approvals">ntfy notifications for AI agent approvals</a>.</p>
+<p><strong>Security:</strong> <code>url</code> must be <code>http</code>/<code>https</code>. A literal private IP is refused
+when the channel is created; a hostname that resolves to a private address
+is blocked at send time (the test returns <code>fetch failed</code>) unless the server
+sets <code>IMPRI_ALLOW_PRIVATE_TARGETS=1</code>.
 Title and kind values are passed through the <code>headerSafe()</code> helper
 (strips <code>\r</code> / <code>\n</code>) before being placed in <code>Title</code> and <code>Tags</code> HTTP
 headers — identical to the global ntfy adapter in <code>notify.ts</code>.</p>
@@ -648,7 +659,7 @@ expired, the notification is sent straight away.</p>
 </li>
 <li><p><strong>Subsequent notifications within the window are queued.</strong> They
 accumulate in <code>digest_queue</code> and are flushed by a background tick
-that runs approximately every 30 seconds. When the flush fires, all
+that runs every 60 seconds. When the flush fires, all
 queued items plus the triggering item are combined into a single
 digest message:</p>
 <ul>
@@ -688,13 +699,22 @@ One channel failing does not prevent the others from firing.</p>
 <h2 id="auto-disable-on-repeated-failure">Auto-disable on repeated failure</h2>
 <p>After <strong>5 consecutive delivery failures</strong>, a channel is automatically
 set to <code>enabled = false</code> and a structured warning is logged
-(<code>channelId</code>, <code>type</code>, <code>projectId</code>). This prevents a misconfigured
-channel from silently absorbing notification attempts.</p>
+(<code>channel_id</code>, <code>channel_type</code>, <code>project_id</code>, <code>fail_count</code>). This prevents a misconfigured
+channel from silently absorbing notification attempts.
+<code>GET /v1/notification-channels/:id</code> shows <code>enabled</code>, <code>fail_count</code> and
+<code>last_error</code>.</p>
 <p>To re-enable, fix the config (via <code>PATCH /v1/notification-channels/:id</code>)
 and then re-enable (<code>&quot;enabled&quot;: true</code> in the same or a separate PATCH).
-Updating the config resets <code>fail_count</code> to 0 automatically.</p>
-<p>The threshold (default 5) will be configurable via
-<code>IMPRI_CHANNEL_MAX_FAILS</code> in a future release.</p>
+Updating the config resets <code>fail_count</code> to 0 automatically. Re-enabling
+without a config change keeps the old <code>fail_count</code> until the next
+successful delivery (a test send doesn&#39;t count), so one more failure
+disables the channel again.</p>
+<p>Items queued before the channel was disabled are kept: after it is
+re-enabled they go out as one digest with the next pending action or the
+next background tick, whichever comes first (a channel that has never
+delivered waits for the next pending action).
+Actions created while the channel is disabled are not queued for it.</p>
+<p>The threshold is read from <code>IMPRI_CHANNEL_MAX_FAILS</code> (default 5).</p>
 <hr>
 <h2 id="secrets-and-masking">Secrets and masking</h2>
 <p>All fields that contain credentials are <strong>masked</strong> in every API response
