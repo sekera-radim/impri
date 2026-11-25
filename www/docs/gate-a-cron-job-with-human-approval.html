@@ -299,7 +299,7 @@ impri = httpx.Client(
 <hr>
 <h2 id="two-gaps-to-know">Two gaps to know</h2>
 <p><strong>Between the send and the report.</strong> If the send succeeds and the result call fails, the next run sees <code>approved</code> and sends again. If your provider accepts an idempotency key, pass it the card id.</p>
-<p><strong>The monthly limit on the cloud plans.</strong> Cloud plans count decisions per month (100 on Free). Once a project has used them, <code>POST /v1/actions</code> returns <code>402</code>, today also for a repeat of a key that already has a card. The script reads with <code>GET</code>, which the limit does not touch, so a card approved before the limit still goes out; only next week&#39;s proposal waits.</p>
+<p><strong>The monthly limit on the cloud plans.</strong> Cloud plans count decisions per month (100 on Free). Once a project has used them, <code>POST /v1/actions</code> returns <code>402</code> for a new card; a repeat of a key that already has a card still gets that card back with <code>200</code>. The script reads with <code>GET</code>, which the limit does not touch, so a card approved before the limit still goes out; only next week&#39;s proposal waits.</p>
 <hr>
 <h2 id="picking-expiresin-for-a-schedule">Picking <code>expires_in</code> for a schedule</h2>
 <p>Size the window to how long the side effect is still worth doing. Impri accepts 300 seconds to 30 days; the default is 72 hours, too long for most schedules. The run interval sets the delay between approval and execution: with runs every 10 minutes, an approved newsletter goes out within 10 minutes. More on choosing windows in <a href="handling-approval-timeouts-and-expiry-in-agents">handling approval timeouts and expiry</a>.</p>

@@ -63,7 +63,7 @@
   <url><loc>https://impri.dev/docs/draft-preview-and-diff-review-for-ai-agent-actions</loc><lastmod>2026-10-01</lastmod></url>
   <url><loc>https://impri.dev/docs/edit-ai-agent-drafts-before-approving</loc><lastmod>2026-11-12</lastmod></url>
   <url><loc>https://impri.dev/docs/eu-ai-act-human-oversight-requirement-for-ai-agents</loc><lastmod>2026-09-18</lastmod></url>
-  <url><loc>https://impri.dev/docs/gate-a-cron-job-with-human-approval</loc><lastmod>2026-11-22</lastmod></url>
+  <url><loc>https://impri.dev/docs/gate-a-cron-job-with-human-approval</loc><lastmod>2026-11-25</lastmod></url>
   <url><loc>https://impri.dev/docs/gdpr</loc><lastmod>2026-07-12</lastmod></url>
   <url><loc>https://impri.dev/docs/gemini-cli-human-approval</loc><lastmod>2026-11-09</lastmod></url>
   <url><loc>https://impri.dev/docs/handling-approval-timeouts-and-expiry-in-agents</loc><lastmod>2026-08-23</lastmod></url>
@@ -121,7 +121,7 @@
   <url><loc>https://impri.dev/docs/human-approval-vercel-ai-sdk</loc><lastmod>2026-07-17</lastmod></url>
   <url><loc>https://impri.dev/docs/human-approval-zapier-ai-agents</loc><lastmod>2026-09-23</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-agentspan-and-durable-agent-runtimes</loc><lastmod>2026-09-28</lastmod></url>
-  <url><loc>https://impri.dev/docs/human-in-the-loop-ai-customer-support</loc><lastmod>2026-11-23</lastmod></url>
+  <url><loc>https://impri.dev/docs/human-in-the-loop-ai-customer-support</loc><lastmod>2026-11-25</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-aws-strands-agents</loc><lastmod>2026-09-21</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-ci-cd-ai-agents</loc><lastmod>2026-07-26</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-cloudflare-agents</loc><lastmod>2026-09-04</lastmod></url>
@@ -143,7 +143,7 @@
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-healthcare-ai-messaging</loc><lastmod>2026-08-25</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-langchain-agents</loc><lastmod>2026-07-13</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-personal-ai-assistants</loc><lastmod>2026-08-06</lastmod></url>
-  <url><loc>https://impri.dev/docs/human-in-the-loop-for-rag-agents-that-act</loc><lastmod>2026-07-24</lastmod></url>
+  <url><loc>https://impri.dev/docs/human-in-the-loop-for-rag-agents-that-act</loc><lastmod>2026-11-25</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-supply-chain-ai-agents</loc><lastmod>2026-09-23</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-for-travel-booking-ai-agents</loc><lastmod>2026-09-23</lastmod></url>
   <url><loc>https://impri.dev/docs/human-in-the-loop-langchain-deep-agents</loc><lastmod>2026-11-17</lastmod></url>
@@ -189,7 +189,7 @@
   <url><loc>https://impri.dev/docs/terms</loc><lastmod>2026-07-12</lastmod></url>
   <url><loc>https://impri.dev/docs/the-propose-approve-execute-pattern</loc><lastmod>2026-11-13</lastmod></url>
   <url><loc>https://impri.dev/docs/the-risks-of-autonomous-ai-agents-taking-actions</loc><lastmod>2026-08-30</lastmod></url>
-  <url><loc>https://impri.dev/docs/trust-boundaries-for-ai-agents</loc><lastmod>2026-09-01</lastmod></url>
+  <url><loc>https://impri.dev/docs/trust-boundaries-for-ai-agents</loc><lastmod>2026-11-25</lastmod></url>
   <url><loc>https://impri.dev/docs/watcher-presets</loc><lastmod>2026-07-11</lastmod></url>
   <url><loc>https://impri.dev/docs/web-push-notifications-for-agent-approvals</loc><lastmod>2026-08-16</lastmod></url>
   <url><loc>https://impri.dev/docs/web-push</loc><lastmod>2026-07-11</lastmod></url>
