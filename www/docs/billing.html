@@ -316,13 +316,13 @@ for debugging, not returned to the client.</p>
 <h2 id="limit-enforcement">Limit enforcement</h2>
 <p>When a project hits a limit, the relevant endpoint returns <code>402 Payment Required</code>:</p>
 <ul>
-<li><code>POST /v1/actions</code> — when <code>approvals_per_month</code> limit is reached</li>
+<li><code>POST /v1/actions</code> — when <code>approvals_per_month</code> limit is reached and the request would create a new action. A repeat that matches an existing action (same <code>idempotency_key</code>, or without a key the same kind, title and body still pending) returns that action with <code>200</code>, as below the limit, so an agent that replays a step on resume still gets its decision.</li>
 <li><code>POST /v1/watchers</code> and <code>POST /v1/watchers/from-preset</code> — when <code>watchers</code> limit is reached or the requested schedule is more frequent than the tier&#39;s <code>min_interval</code></li>
 </ul>
 <p><code>402</code> response body:</p>
 <div class="code-block"><span class="code-lang">json</span><pre><code class="hljs"><span class="hljs-punctuation">{</span>
   <span class="hljs-attr">&quot;error&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Payment Required&quot;</span><span class="hljs-punctuation">,</span>
-  <span class="hljs-attr">&quot;message&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Monthly approval quota reached (100/100). Upgrade to indie for 2 000/month.&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;message&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;Monthly approvals limit reached for the free plan (100). Pending actions can still be decided; upgrade to push more.&quot;</span><span class="hljs-punctuation">,</span>
   <span class="hljs-attr">&quot;limit&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">100</span><span class="hljs-punctuation">,</span>
   <span class="hljs-attr">&quot;tier&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;free&quot;</span>
 <span class="hljs-punctuation">}</span></code></pre></div>
