@@ -151,7 +151,7 @@ Every call in the script needs only the `actions` scope, so give the job a key w
 
 **Between the send and the report.** If the send succeeds and the result call fails, the next run sees `approved` and sends again. If your provider accepts an idempotency key, pass it the card id.
 
-**The monthly limit on the cloud plans.** Cloud plans count decisions per month (100 on Free). Once a project has used them, `POST /v1/actions` returns `402`, today also for a repeat of a key that already has a card. The script reads with `GET`, which the limit does not touch, so a card approved before the limit still goes out; only next week's proposal waits.
+**The monthly limit on the cloud plans.** Cloud plans count decisions per month (100 on Free). Once a project has used them, `POST /v1/actions` returns `402` for a new card; a repeat of a key that already has a card still gets that card back with `200`. The script reads with `GET`, which the limit does not touch, so a card approved before the limit still goes out; only next week's proposal waits.
 
 ---
 
