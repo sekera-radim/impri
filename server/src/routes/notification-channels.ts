@@ -11,6 +11,7 @@ import {
   isPublicBaseUrl,
   emailDeliveryConfigured,
   htmlEscape,
+  inboxBaseUrl,
   EMAIL_NOT_CONFIGURED_MESSAGE,
 } from '../notify.js';
 import { fetchGuarded } from '../net-guard.js';
@@ -569,7 +570,7 @@ export function registerNotificationChannelRoutes(app: FastifyInstance, db: Db):
 
     // Load raw (unmasked) config for the actual send.
     const rawConfig = JSON.parse(channel.config) as Record<string, unknown>;
-    const inboxUrl = `${process.env.BASE_URL ?? 'http://localhost:8484'}/inbox`;
+    const inboxUrl = `${inboxBaseUrl()}/inbox`;
 
     // Test emails count toward the project's daily email cap like any other.
     let emailSendId: number | null = null;
