@@ -74,7 +74,7 @@ The important detail is `editable=["preview.body"]` — a support lead can fix t
 
 ## Give reviewers enough to decide fast
 
-A support lead approving from their phone between other tickets doesn't have time to re-read the whole thread. Put the decision-relevant facts in the title and keep the preview body to what's actually being sent — not a dump of internal context. If the action depends on something the reviewer can't see in the preview (e.g., "this customer has churned twice before"), that belongs in your ticket system, not stuffed into the approval card.
+A support lead approving from their phone between other tickets doesn't have time to re-read the whole thread. Put the decision-relevant facts in the title and keep the preview body to what's actually being sent — not a dump of internal context. If the action depends on something the reviewer can't see in the preview (e.g., "this customer has churned twice before"), that belongs in your ticket system, not stuffed into the approval card. Replies grounded in KB articles are the exception: the sources are what the reviewer checks, so show them under the draft, as in [human-in-the-loop for RAG agents that act](human-in-the-loop-for-rag-agents-that-act.md).
 
 For refunds and other actions with financial impact, add `idempotent: false` to the raw `POST /v1/actions` body — the Python SDK's `create_action` doesn't expose that field yet — so the approval card shows a warning against approving it twice; see the optional fields in [the main integration guide](how-to-add-human-approval-to-an-ai-agent.md).
 
