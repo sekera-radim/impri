@@ -1,6 +1,6 @@
 # Observability
 
-Impri exposes three observability surfaces for self-hosters and operators:
+Impri exposes five observability surfaces for self-hosters and operators: Prometheus metrics, readiness and liveness probes, a usage snapshot and JSON logs.
 
 - **`/metrics`** — Prometheus text-format endpoint (opt-in)
 - **`/readyz`** — readiness probe (always available, no auth)

@@ -354,7 +354,7 @@ Key environment variables:
 
 ### Python SDK (sdk/python/)
 
-Install: `pip install -e sdk/python`. Python 3.10+. No third-party dependencies; stdlib urllib only.
+Install: `pip install "impri @ git+https://gitlab.com/sekera.radim/impri.git#subdirectory=sdk/python"` (not on PyPI yet; in a clone: `pip install -e sdk/python`). Python 3.9+. No third-party dependencies; stdlib urllib only.
 
 Client: `ImpriClient(api_key="im_...", base_url="http://localhost:8484")`. Falls back to IMPRI_API_KEY / IMPRI_BASE_URL env vars.
 
@@ -411,7 +411,7 @@ Exception hierarchy: ImpriError > ImpriConfigError, ImpriUnauthorized (401/403),
 
 ### TypeScript SDK (sdk/typescript/)
 
-Install: `npm install ./sdk/typescript`. Node 18+; native fetch. No runtime dependencies.
+Install (not on npm yet): in a clone, `cd sdk/typescript && npm install && npm run build`, then `npm install /path/to/impri/sdk/typescript` in your project (the package ships only dist/: an unbuilt folder fails at import with ERR_MODULE_NOT_FOUND). Node 18+; native fetch. No runtime dependencies.
 
 Client: `new ImpriClient({ apiKey: 'im_...', baseUrl: 'http://localhost:8484' })`. Falls back to IMPRI_API_KEY / IMPRI_BASE_URL env vars.
 
@@ -459,6 +459,7 @@ Standalone export: `verifyWebhook(rawBody, secret, timestamp, nonce, signature)`
 
 Install from source:
 ```bash
+git clone https://gitlab.com/sekera.radim/impri.git && cd impri
 cd sdk/typescript && npm install && npm run build
 cd ../cli && npm install && npm run build && npm install -g .
 ```
@@ -536,7 +537,7 @@ Python. `make_guardrail()` returns InputGuardrail. `tripwire_triggered=False` on
 
 ### Claude tool use, Anthropic SDK (integrations/claude-agent-sdk/)
 
-TypeScript. For a Messages API loop with `@anthropic-ai/sdk`, not for Anthropic's Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`; for that see https://impri.dev/docs/human-approval-claude-agent-sdk). `GatedTool` (via `withImpriApproval()`); intercepts tool_use blocks; calls execute() with possibly human-edited input; reports result automatically.
+TypeScript; not on npm yet: build it in a clone (`npm install && npm run build` in integrations/claude-agent-sdk), then install that folder. Exports its own `ImpriClient` (use it, not the one from @impri/sdk). For a Messages API loop with `@anthropic-ai/sdk`, not for Anthropic's Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`; for that see https://impri.dev/docs/human-approval-claude-agent-sdk). `GatedTool` (via `withImpriApproval()`); intercepts tool_use blocks; calls execute() with possibly human-edited input; reports result automatically.
 
 ```typescript
 const gated = withImpriApproval({
