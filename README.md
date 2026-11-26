@@ -171,8 +171,8 @@ Everything below is unchanged technical detail: CLI, SDKs, integrations, the ful
 |---|---|---|
 | MCP server | `mcp/` / `npx @impri/mcp` | Published |
 | CLI (`impri`) | `cli/` | Local build — see [CLI reference](docs/cli.md) |
-| Python SDK | `sdk/python/` | Local install (`pip install -e sdk/python`) |
-| TypeScript SDK | `sdk/typescript/` | Local install (`npm install ./sdk/typescript`) |
+| Python SDK | `sdk/python/` | Install from the repo (`pip install "impri @ git+https://gitlab.com/sekera.radim/impri.git#subdirectory=sdk/python"`, or `pip install -e sdk/python` in a clone) |
+| TypeScript SDK | `sdk/typescript/` | Local build (`npm install && npm run build` in `sdk/typescript/` first) — see [TypeScript SDK](docs/sdk-typescript.md) |
 
 Framework integrations in [`integrations/`](integrations/): packages for the [Claude Agent SDK](integrations/claude-agent-sdk), [CrewAI](integrations/crewai), [LangChain](integrations/langchain), and the [OpenAI Agents SDK](integrations/openai-agents); documented webhook-based patterns for n8n, Make, and Zapier in [Integrations](docs/integrations.md).
 
