@@ -489,7 +489,7 @@ cli/
 ```bash
 cd sdk/typescript && npm install && npm run build
 cd ../cli && npm install && npm run build
-npm install -g ./cli
+npm install -g .
 ```
 
 The bundle carries the shebang so the OS can execute `dist/cli.js` directly. No `node_modules/` needed at runtime beyond Node 18.
