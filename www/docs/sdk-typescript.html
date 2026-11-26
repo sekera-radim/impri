@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TypeScript SDK — Impri Docs</title>
-<meta name="description" content="Status — v0.1, pre-release. The SDK lives at sdk/typescript/ in this repository. It is not yet published to npm. Install it from the local source while the…">
+<meta name="description" content="The Impri TypeScript SDK lets a Node.js agent ask before it acts: it puts a proposed action in the approval inbox and waits for a human to approve or reject it.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="TypeScript SDK — Impri Docs">
-<meta property="og:description" content="Status — v0.1, pre-release. The SDK lives at sdk/typescript/ in this repository. It is not yet published to npm. Install it from the local source while the…">
+<meta property="og:description" content="The Impri TypeScript SDK lets a Node.js agent ask before it acts: it puts a proposed action in the approval inbox and waits for a human to approve or reject it.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/sdk-typescript">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/sdk-typescript">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"TypeScript SDK","description":"Status — v0.1, pre-release. The SDK lives at sdk/typescript/ in this repository. It is not yet published to npm. Install it from the local source while the…","url":"https://impri.dev/docs/sdk-typescript","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"TypeScript SDK","description":"The Impri TypeScript SDK lets a Node.js agent ask before it acts: it puts a proposed action in the approval inbox and waits for a human to approve or reject it.","url":"https://impri.dev/docs/sdk-typescript","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -153,13 +153,16 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>TypeScript SDK</span>
     </nav>
     <h1>TypeScript SDK</h1>
+<p>The Impri TypeScript SDK lets a Node.js agent ask before it acts: it puts a proposed action in the approval inbox and waits for a human to approve or reject it.</p>
+<p><code>createAction</code> files the card, <code>awaitDecision</code> waits for the verdict (it throws <code>ImpriRejected</code>, <code>ImpriExpired</code> or <code>ImpriTimeout</code> when there is nothing to run), <code>reportResult</code> records what the agent did, and <code>verifyWebhook</code> checks a signed decision webhook. Requires <strong>Node 18+</strong> (native <code>fetch</code>); ESM and CommonJS builds, no runtime dependencies.</p>
 <blockquote>
-<p><strong>Status — v0.1, pre-release.</strong> The SDK lives at <code>sdk/typescript/</code> in this repository. It is not yet published to npm. Install it from the local source while the package matures. The REST API it wraps is stable and works the same against the hosted cloud (<code>api.impri.dev</code>, early beta) or a self-hosted instance.</p>
+<p><strong>Status — v0.1, pre-release.</strong> <code>@impri/sdk</code> is not on npm yet. Build it in a clone of the repository, then install that folder into your project. The package ships only <code>dist/</code>, so a folder installed before <code>npm run build</code> fails at import with <code>ERR_MODULE_NOT_FOUND</code>. The REST API it wraps is stable and works the same against the hosted cloud (<code>api.impri.dev</code>, early beta) or a self-hosted instance.</p>
 </blockquote>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># From the repo root</span>
-npm install ./sdk/typescript
-<span class="hljs-comment"># or: pnpm add ./sdk/typescript</span></code></pre></div>
-<p>Requires <strong>Node 18+</strong> (uses native <code>fetch</code>). No runtime dependencies beyond the Node stdlib.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">git <span class="hljs-built_in">clone</span> https://gitlab.com/sekera.radim/impri.git
+<span class="hljs-built_in">cd</span> impri/sdk/typescript &amp;&amp; npm install &amp;&amp; npm run build
+
+<span class="hljs-comment"># then, in your project:</span>
+npm install /path/to/impri/sdk/typescript</code></pre></div>
 <hr>
 <h2 id="setup">Setup</h2>
 <div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> { <span class="hljs-title class_">ImpriClient</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@impri/sdk&#x27;</span>

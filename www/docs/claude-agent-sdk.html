@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Claude Tool Use Approval for the Anthropic SDK — Impri Docs</title>
-<meta name="description" content="The integrations/claude-agent-sdk/ package provides a TypeScript integration for adding human-approval gates to Claude-powered agents built with the Anthropic…">
+<meta name="description" content="@impri/claude-agent-sdk puts a human approval step in front of the tools of a Claude agent that runs its own Messages API loop with @anthropic-ai/sdk.">
 <meta name="theme-color" content="#06070d">
 <meta property="og:title" content="Claude Tool Use Approval for the Anthropic SDK — Impri Docs">
-<meta property="og:description" content="The integrations/claude-agent-sdk/ package provides a TypeScript integration for adding human-approval gates to Claude-powered agents built with the Anthropic…">
+<meta property="og:description" content="@impri/claude-agent-sdk puts a human approval step in front of the tools of a Claude agent that runs its own Messages API loop with @anthropic-ai/sdk.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://impri.dev/docs/claude-agent-sdk">
 <meta property="og:image" content="https://impri.dev/assets/og/og-docs.png">
@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://impri.dev/assets/og/og-docs.png">
 <link rel="canonical" href="https://impri.dev/docs/claude-agent-sdk">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Claude Tool Use Approval for the Anthropic SDK","description":"The integrations/claude-agent-sdk/ package provides a TypeScript integration for adding human-approval gates to Claude-powered agents built with the Anthropic…","url":"https://impri.dev/docs/claude-agent-sdk","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Claude Tool Use Approval for the Anthropic SDK","description":"@impri/claude-agent-sdk puts a human approval step in front of the tools of a Claude agent that runs its own Messages API loop with @anthropic-ai/sdk.","url":"https://impri.dev/docs/claude-agent-sdk","inLanguage":"en","author":{"@type":"Organization","name":"Impri","url":"https://impri.dev"},"publisher":{"@type":"Organization","name":"Impri","url":"https://impri.dev"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -153,7 +153,8 @@ pre code.hljs{display:block;overflow-x:auto}
       <span>Claude Tool Use Approval for the Anthropic SDK</span>
     </nav>
     <h1>Claude Tool Use Approval for the Anthropic SDK</h1>
-<p>The <code>integrations/claude-agent-sdk/</code> package provides a TypeScript integration for adding human-approval gates to Claude-powered agents built with the Anthropic SDK (<code>@anthropic-ai/sdk</code>).</p>
+<p><code>@impri/claude-agent-sdk</code> puts a human approval step in front of the tools of a Claude agent that runs its own Messages API loop with <code>@anthropic-ai/sdk</code>.</p>
+<p>The package lives in <code>integrations/claude-agent-sdk/</code> and is written in TypeScript.</p>
 <p>It works by intercepting <code>tool_use</code> content blocks before they are executed — the agent proposes a tool call, a human approves or rejects it in the Impri inbox, and only then is the tool executor called.</p>
 <blockquote>
 <p><strong>Building on Anthropic&#39;s Claude Agent SDK</strong> (<code>@anthropic-ai/claude-agent-sdk</code>, <code>query()</code> with built-in tools)? This package isn&#39;t for it: it works on the <code>tool_use</code> blocks of a Messages API loop you run yourself, while the Agent SDK runs its own tool loop. Gate Agent SDK tool calls with its <code>canUseTool</code> callback or a <code>PreToolUse</code> hook: see <a href="human-approval-claude-agent-sdk">Claude Agent SDK human approval</a>.</p>
@@ -170,13 +171,17 @@ pre code.hljs{display:block;overflow-x:auto}
 </ol>
 <hr>
 <h2 id="installation">Installation</h2>
-<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs"><span class="hljs-comment"># From the repo root</span>
-npm install ./integrations/claude-agent-sdk</code></pre></div>
+<p><code>@impri/claude-agent-sdk</code> is not on npm yet. Build it in a clone of the repository, then install that folder into your project next to the Anthropic SDK. It ships only <code>dist/</code>, so a folder installed before <code>npm run build</code> fails at import with <code>ERR_MODULE_NOT_FOUND</code>.</p>
+<div class="code-block"><span class="code-lang">bash</span><pre><code class="hljs">git <span class="hljs-built_in">clone</span> https://gitlab.com/sekera.radim/impri.git
+<span class="hljs-built_in">cd</span> impri/integrations/claude-agent-sdk &amp;&amp; npm install &amp;&amp; npm run build
+
+<span class="hljs-comment"># then, in your project:</span>
+npm install /path/to/impri/integrations/claude-agent-sdk @anthropic-ai/sdk</code></pre></div>
+<p>The package brings its own <code>ImpriClient</code>: import it from <code>@impri/claude-agent-sdk</code>, not from <code>@impri/sdk</code>.</p>
 <hr>
 <h2 id="quick-start">Quick start</h2>
 <div class="code-block"><span class="code-lang">typescript</span><pre><code class="hljs"><span class="hljs-keyword">import</span> <span class="hljs-title class_">Anthropic</span> <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@anthropic-ai/sdk&#x27;</span>
-<span class="hljs-keyword">import</span> { <span class="hljs-title class_">ImpriClient</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@impri/sdk&#x27;</span>
-<span class="hljs-keyword">import</span> { withImpriApproval } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@impri/claude-agent-sdk&#x27;</span>
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">ImpriClient</span>, withImpriApproval } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@impri/claude-agent-sdk&#x27;</span>
 
 <span class="hljs-keyword">const</span> anthropic = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Anthropic</span>()
 <span class="hljs-keyword">const</span> impri = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ImpriClient</span>({ <span class="hljs-attr">apiKey</span>: process.<span class="hljs-property">env</span>.<span class="hljs-property">IMPRI_API_KEY</span>! })
