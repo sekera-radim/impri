@@ -28,12 +28,29 @@ export interface AnthropicTool {
   };
 }
 
-/** A tool_use content block returned by the Anthropic messages API. */
+/**
+ * A tool_use content block returned by the Anthropic messages API.
+ * `input` is `unknown`, as in `@anthropic-ai/sdk`'s own ToolUseBlock, so a block
+ * from `response.content` can be passed to `handle()` without a cast.
+ */
 export interface ToolUseBlock {
   type: "tool_use";
   id: string;
   name: string;
-  input: Record<string, unknown>;
+  input: unknown;
+}
+
+// The Messages API sends a tool's input as a JSON object matching its
+// input_schema. Anything else did not come from that tool: refuse it before an
+// action is filed, so a reviewer never sees a card the executor can't run.
+function toolInput(block: ToolUseBlock): Record<string, unknown> {
+  const { input } = block;
+  if (typeof input !== "object" || input === null || Array.isArray(input)) {
+    throw new TypeError(
+      `tool_use block ${block.id} (${block.name}): input must be a JSON object`,
+    );
+  }
+  return input as Record<string, unknown>;
 }
 
 // ─── Gated tool ───────────────────────────────────────────────────────────────
@@ -142,7 +159,7 @@ export function withImpriApproval<T = unknown>(
   } = opts;
 
   async function handle(block: ToolUseBlock): Promise<string> {
-    const input = block.input;
+    const input = toolInput(block);
 
     const resolvedTitle =
       typeof title === "function" ? title(input) : title;

@@ -368,6 +368,50 @@ describe("withImpriApproval", () => {
 
 // ─── makeToolResult ───────────────────────────────────────────────────────────
 
+describe("withImpriApproval input from the Anthropic SDK", () => {
+  // Same shape as @anthropic-ai/sdk's ToolUseBlock, whose input is `unknown`.
+  type AnthropicToolUseBlock = { type: "tool_use"; id: string; name: string; input: unknown };
+
+  it("accepts a block whose input is typed unknown", async () => {
+    makeMockSequence("approve");
+    const gated = withImpriApproval({
+      toolDef: sendEmailTool,
+      execute: async (input) => `sent to ${input["to"] as string}`,
+      impriClient: new ImpriClient({ apiKey: "im_test" }),
+      kind: "email.send",
+      title: "Send email",
+    });
+    const block: AnthropicToolUseBlock = {
+      type: "tool_use",
+      id: "tool_use_abc",
+      name: "send_email",
+      input: { to: "alice@example.com", body: "Hello Alice!" },
+    };
+
+    await expect(gated.handle(block)).resolves.toBe("sent to alice@example.com");
+  });
+
+  it.each([null, "send it", ["alice@example.com"], 42])(
+    "refuses input %j without filing an action",
+    async (input) => {
+      const execute = vi.fn(async () => "ok");
+      const gated = withImpriApproval({
+        toolDef: sendEmailTool,
+        execute,
+        impriClient: new ImpriClient({ apiKey: "im_test" }),
+        kind: "email.send",
+        title: "Send email",
+      });
+
+      await expect(
+        gated.handle({ type: "tool_use", id: "tool_use_bad", name: "send_email", input }),
+      ).rejects.toThrow(TypeError);
+      expect(mockFetch).not.toHaveBeenCalled();
+      expect(execute).not.toHaveBeenCalled();
+    },
+  );
+});
+
 describe("makeToolResult", () => {
   it("builds a tool_result block param", () => {
     const block = makeToolResult("tool_use_abc", "Email sent successfully");
