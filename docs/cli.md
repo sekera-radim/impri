@@ -1,24 +1,25 @@
 # Impri CLI
 
-> **Status — v0.1, pre-release.** The CLI lives at `cli/` in this repository and is not yet published to npm. Install it from the local source using the build steps below. The REST API it wraps is stable and works against either the hosted cloud (`api.impri.dev`, early beta) or a self-hosted instance — see `impri init --cloud --signup` below.
+The `impri` CLI runs the Impri approval inbox from a terminal: push actions, watch for new ones, approve or reject them, and manage watchers and API keys.
 
-The `impri` CLI is the fastest way to manage the approval inbox from a terminal — push actions, watch for new ones, approve or reject, and manage watchers and API keys — without writing any code.
+> **Status — v0.1, pre-release.** `@impri/cli` is not on npm yet: build it from a clone of the repository with the steps below (Node 18+). It works against the hosted cloud (`api.impri.dev`, early beta) or a self-hosted instance; `impri init --cloud --signup` creates a free cloud project and key in one step.
 
 ---
 
-## Install (local, pre-npm)
+## Install (from source, pre-npm)
 
-The CLI depends on the TypeScript SDK via a `file:` reference. Build the SDK first:
+The CLI depends on the TypeScript SDK via a `file:` reference. Clone the repository and build the SDK first:
 
 ```bash
+git clone https://gitlab.com/sekera.radim/impri.git && cd impri
 cd sdk/typescript && npm install && npm run build
 cd ../cli && npm install && npm run build
 ```
 
-Install globally to put `impri` on your PATH:
+Still in `cli/`, install it globally to put `impri` on your PATH:
 
 ```bash
-npm install -g ./cli
+npm install -g .
 impri --version
 ```
 
@@ -488,7 +489,7 @@ cli/
 ```bash
 cd sdk/typescript && npm install && npm run build
 cd ../cli && npm install && npm run build
-npm install -g ./cli
+npm install -g .
 ```
 
 The bundle carries the shebang so the OS can execute `dist/cli.js` directly. No `node_modules/` needed at runtime beyond Node 18.

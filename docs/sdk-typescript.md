@@ -1,14 +1,18 @@
 # TypeScript SDK
 
-> **Status — v0.1, pre-release.** The SDK lives at `sdk/typescript/` in this repository. It is not yet published to npm. Install it from the local source while the package matures. The REST API it wraps is stable and works the same against the hosted cloud (`api.impri.dev`, early beta) or a self-hosted instance.
+The Impri TypeScript SDK lets a Node.js agent ask before it acts: it puts a proposed action in the approval inbox and waits for a human to approve or reject it.
+
+`createAction` files the card, `awaitDecision` waits for the verdict (it throws `ImpriRejected`, `ImpriExpired` or `ImpriTimeout` when there is nothing to run), `reportResult` records what the agent did, and `verifyWebhook` checks a signed decision webhook. Requires **Node 18+** (native `fetch`); ESM and CommonJS builds, no runtime dependencies.
+
+> **Status — v0.1, pre-release.** `@impri/sdk` is not on npm yet. Build it in a clone of the repository, then install that folder into your project. The package ships only `dist/`, so a folder installed before `npm run build` fails at import with `ERR_MODULE_NOT_FOUND`. The REST API it wraps is stable and works the same against the hosted cloud (`api.impri.dev`, early beta) or a self-hosted instance.
 
 ```bash
-# From the repo root
-npm install ./sdk/typescript
-# or: pnpm add ./sdk/typescript
-```
+git clone https://gitlab.com/sekera.radim/impri.git
+cd impri/sdk/typescript && npm install && npm run build
 
-Requires **Node 18+** (uses native `fetch`). No runtime dependencies beyond the Node stdlib.
+# then, in your project:
+npm install /path/to/impri/sdk/typescript
+```
 
 ---
 

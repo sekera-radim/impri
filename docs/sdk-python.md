@@ -1,11 +1,14 @@
 # Python SDK
 
-> **Status — v0.1, pre-release.** The SDK lives at `sdk/python/` in this repository. It is not yet published to PyPI. Install it from the local source while the package matures. The REST API it wraps is stable and works the same against the hosted cloud (`api.impri.dev`, early beta) or a self-hosted instance.
+The Impri Python SDK lets an agent ask before it acts: it puts a proposed action in the approval inbox and waits until a human approves, edits or rejects it.
+
+`create_action` files the card, `await_decision` waits for the verdict (it raises `ImpriRejected` on a rejection and `ImpriTimeout` when the wait runs out), and `report_result` records what the agent did after an approval. Python 3.9+, no third-party dependencies (stdlib `urllib`).
 
 ```bash
-# From the repo root
-pip install -e sdk/python
+pip install "impri @ git+https://gitlab.com/sekera.radim/impri.git#subdirectory=sdk/python"
 ```
+
+> **Status — v0.1, pre-release.** The package is not on PyPI yet: the command above installs it straight from the public repository. In a clone of the repo, `pip install -e sdk/python` from the repo root does the same. The REST API it wraps is stable and works the same against the hosted cloud (`api.impri.dev`, early beta) or a self-hosted instance.
 
 ---
 

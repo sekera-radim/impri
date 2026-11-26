@@ -1,6 +1,8 @@
 # Claude Tool Use Approval for the Anthropic SDK
 
-The `integrations/claude-agent-sdk/` package provides a TypeScript integration for adding human-approval gates to Claude-powered agents built with the Anthropic SDK (`@anthropic-ai/sdk`).
+`@impri/claude-agent-sdk` puts a human approval step in front of the tools of a Claude agent that runs its own Messages API loop with `@anthropic-ai/sdk`.
+
+The package lives in `integrations/claude-agent-sdk/` and is written in TypeScript.
 
 It works by intercepting `tool_use` content blocks before they are executed — the agent proposes a tool call, a human approves or rejects it in the Impri inbox, and only then is the tool executor called.
 
@@ -21,10 +23,17 @@ It works by intercepting `tool_use` content blocks before they are executed — 
 
 ## Installation
 
+`@impri/claude-agent-sdk` is not on npm yet. Build it in a clone of the repository, then install that folder into your project next to the Anthropic SDK. It ships only `dist/`, so a folder installed before `npm run build` fails at import with `ERR_MODULE_NOT_FOUND`.
+
 ```bash
-# From the repo root
-npm install ./integrations/claude-agent-sdk
+git clone https://gitlab.com/sekera.radim/impri.git
+cd impri/integrations/claude-agent-sdk && npm install && npm run build
+
+# then, in your project:
+npm install /path/to/impri/integrations/claude-agent-sdk @anthropic-ai/sdk
 ```
+
+The package brings its own `ImpriClient`: import it from `@impri/claude-agent-sdk`, not from `@impri/sdk`.
 
 ---
 
@@ -32,8 +41,7 @@ npm install ./integrations/claude-agent-sdk
 
 ```typescript
 import Anthropic from '@anthropic-ai/sdk'
-import { ImpriClient } from '@impri/sdk'
-import { withImpriApproval } from '@impri/claude-agent-sdk'
+import { ImpriClient, withImpriApproval } from '@impri/claude-agent-sdk'
 
 const anthropic = new Anthropic()
 const impri = new ImpriClient({ apiKey: process.env.IMPRI_API_KEY! })
