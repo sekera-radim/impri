@@ -231,6 +231,6 @@ curl -X POST https://api.impri.dev/v1/actions/$ACTION_ID/result \
 
 **Rate limit**: `POST /v1/actions` is rate-limited to 60 requests per minute per API key. An agent caught in a loop will be throttled.
 
-**Prompt injection from external sources**: if your agent reads from RSS, web pages, or social media before constructing the action, those sources may contain adversarial instructions. Impri does not interpret action content — it presents it to you visually as a card. But you should still treat any external text as data, not instructions, in your agent's system prompt.
+**Prompt injection from external sources**: if your agent reads from RSS, web pages, or social media before constructing the action, those sources may contain adversarial instructions. Impri does not interpret action content — it presents it to you visually as a card. But you should still treat any external text as data, not instructions, in your agent's system prompt. Put `untrusted: true` in the payload so the inbox shows that text as plain text, and keep the decision out of the agent's reach: an `actions` key can approve cards too. [Preventing prompt injection from executing actions](prevent-prompt-injection-from-executing-actions.md) shows an executor that checks who approved.
 
 **Scopes**: use the minimum scope your key needs. A key used only for actions approval needs `actions` scope, not `admin`. Create separate keys for watchers (`watch` scope) if you use those.
