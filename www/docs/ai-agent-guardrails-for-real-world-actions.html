@@ -157,7 +157,7 @@ pre code.hljs{display:block;overflow-x:auto}
 <hr>
 <h2 id="quotguardrailsquot-usually-means-a-prompt-not-a-gate">&quot;Guardrails&quot; usually means a prompt, not a gate</h2>
 <p>Search for &quot;AI agent guardrails&quot; and most results describe system-prompt phrasing: &quot;always ask before doing X,&quot; constitutional AI, refusal training, output filters that scan for toxic content. Those are useful for <em>what the model says</em>. They do nothing for <em>what the model&#39;s tools do</em>, because a tool call bypasses the conversational layer entirely. If your agent has a <code>send_email(to, body)</code> function bound to it, a prompt instruction not to email strangers is a suggestion the model can talk itself past — via prompt injection, a misread instruction, or a plain reasoning error. The tool still runs.</p>
-<p>A structural guardrail sits below the prompt, in the function the tool calls. It does not ask the model to behave — it makes the side effect unreachable without an external signal.</p>
+<p>A structural guardrail sits below the prompt, in the function the tool calls. It does not ask the model to behave — it makes the side effect unreachable without an external signal. That signal has to be one the model can&#39;t give itself: <a href="prevent-prompt-injection-from-executing-actions">preventing prompt injection from executing actions</a> shows an executor that checks who approved a card before it acts.</p>
 <hr>
 <h2 id="the-shape-of-a-structural-guardrail">The shape of a structural guardrail</h2>
 <p>Three properties separate a real gate from a prompt suggestion:</p>
@@ -229,8 +229,8 @@ HEADERS = {<span class="hljs-string">&quot;Authorization&quot;</span>: <span cla
   <ul>
 <li><a href="../docs/why-ai-agents-need-approval-gates">Why AI Agents Need Approval Gates</a></li>
 <li><a href="../docs/human-approval-for-multi-agent-systems">Human Approval in Multi-Agent Systems</a></li>
-<li><a href="../docs/prevent-prompt-injection-from-executing-actions">Prevent Prompt Injection From Executing Real Actions</a></li>
 <li><a href="../docs/human-approval-for-openai-agentkit">Human Approval for OpenAI AgentKit After Agent Builder</a></li>
+<li><a href="../docs/human-approval-for-real-estate-ai-agents">Human Approval for Real Estate AI Agents</a></li>
   </ul>
 </nav>
   </main>

@@ -343,7 +343,7 @@ curl -X POST https://api.impri.dev/v1/actions/<span class="hljs-variable">$ACTIO
 <hr>
 <h2 id="security-considerations">Security considerations</h2>
 <p><strong>Rate limit</strong>: <code>POST /v1/actions</code> is rate-limited to 60 requests per minute per API key. An agent caught in a loop will be throttled.</p>
-<p><strong>Prompt injection from external sources</strong>: if your agent reads from RSS, web pages, or social media before constructing the action, those sources may contain adversarial instructions. Impri does not interpret action content — it presents it to you visually as a card. But you should still treat any external text as data, not instructions, in your agent&#39;s system prompt.</p>
+<p><strong>Prompt injection from external sources</strong>: if your agent reads from RSS, web pages, or social media before constructing the action, those sources may contain adversarial instructions. Impri does not interpret action content — it presents it to you visually as a card. But you should still treat any external text as data, not instructions, in your agent&#39;s system prompt. Put <code>untrusted: true</code> in the payload so the inbox shows that text as plain text, and keep the decision out of the agent&#39;s reach: an <code>actions</code> key can approve cards too. <a href="prevent-prompt-injection-from-executing-actions">Preventing prompt injection from executing actions</a> shows an executor that checks who approved.</p>
 <p><strong>Scopes</strong>: use the minimum scope your key needs. A key used only for actions approval needs <code>actions</code> scope, not <code>admin</code>. Create separate keys for watchers (<code>watch</code> scope) if you use those.</p>
 
     
