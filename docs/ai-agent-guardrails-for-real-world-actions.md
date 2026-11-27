@@ -8,7 +8,7 @@ Real AI agent guardrails don't live in the prompt — they live in the code path
 
 Search for "AI agent guardrails" and most results describe system-prompt phrasing: "always ask before doing X," constitutional AI, refusal training, output filters that scan for toxic content. Those are useful for *what the model says*. They do nothing for *what the model's tools do*, because a tool call bypasses the conversational layer entirely. If your agent has a `send_email(to, body)` function bound to it, a prompt instruction not to email strangers is a suggestion the model can talk itself past — via prompt injection, a misread instruction, or a plain reasoning error. The tool still runs.
 
-A structural guardrail sits below the prompt, in the function the tool calls. It does not ask the model to behave — it makes the side effect unreachable without an external signal.
+A structural guardrail sits below the prompt, in the function the tool calls. It does not ask the model to behave — it makes the side effect unreachable without an external signal. That signal has to be one the model can't give itself: [preventing prompt injection from executing actions](prevent-prompt-injection-from-executing-actions.md) shows an executor that checks who approved a card before it acts.
 
 ---
 
